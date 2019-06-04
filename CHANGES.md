@@ -7,7 +7,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to [Mesos 1.7.3-dev](https://github.com/apache/mesos/blob/0f4e34b4dfe98178a7d94f5242041b5958eb7a24/CHANGELOG).
 
-* Updated to [Metronome 0.6.18](https://github.com/dcos/metronome/blob/e06e8285c089ed7e03590053395f9436a4ac34f4/changelog.md#0618).
+* Updated to [Metronome 0.6.23](https://github.com/dcos/metronome/tree/be50099).
 
 * Updated to [Marathon 1.7.216](https://github.com/mesosphere/marathon/tree/9e2a9b579).
 
@@ -65,6 +65,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Support large uploads for Admin Router service endpoint. (DCOS-52768)
 
 * Added Round-Robin DNS support. (DCOS_OSS-5118)
+
+* [Metronome] Missing request metrics in Metronome. (DCOS_OSS-5020)
+
+* [Metronome] Improve secrets validation to only point out unprovided secrets. (DCOS_OSS-5019)
 
 ### Security updates
 
