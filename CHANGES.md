@@ -15,3 +15,14 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ### Breaking changes
 
 Admin Router now requires a CPU with SSE4.2 support.
+
+The following parameters have been removed from the DC/OS installer:
+
+* --set-superuser-password
+* --offline
+* --cli-telemetry-disabled
+* --validate-config
+* --preflight
+* --install-prereqs
+* --deploy
+* --postflight

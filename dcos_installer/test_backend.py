@@ -27,27 +27,6 @@ def test_password_hash():
     assert passlib.hash.sha512_crypt.verify(password, hash_pw), 'Hash does not match password'
 
 
-def test_set_superuser_password(tmpdir):
-    """Test that --set-superuser-hash works"""
-
-    with tmpdir.as_cwd():
-        tmpdir.join('genconf').ensure(dir=True)
-
-        # TODO(cmaloney): Add tests for the behavior around a non-existent config.yaml
-
-        # Setting in a non-empty config.yaml which has no password set
-        make_default_config_if_needed('genconf/config.yaml')
-        assert 'superuser_password_hash' not in Config('genconf/config.yaml').config
-
-        # Set the password
-        create_fake_build_artifacts(tmpdir)
-        subprocess.check_call(['dcos_installer', '--set-superuser-password', 'foo'], cwd=str(tmpdir))
-
-        # Check that config.yaml has the password set
-        config = Config('genconf/config.yaml')
-        assert passlib.hash.sha512_crypt.verify('foo', config['superuser_password_hash'])
-
-
 # TODO: DCOS_OSS-3473 - muted Windows tests requiring investigation
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_generate_node_upgrade_script(tmpdir, monkeypatch):
