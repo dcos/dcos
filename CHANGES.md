@@ -8,6 +8,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Telegraf reports procstat metrics only for DC/OS systemd services, instead of all processes. (DCOS-53589)
 
 ### Security updates
 
