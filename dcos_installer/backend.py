@@ -369,53 +369,6 @@ def do_aws_cf_configure():
     return 0
 
 
-def create_config_from_post(post_data, config_path):
-    """Returns error code and validation messages for only keys POSTed
-    to the UI.
-
-    :param config_path: path to config.yaml
-    :type config_path: string | CONFIG_PATH (genconf/config.yaml)
-
-    :param post_data: data from POST to UI
-    :type post_data: dict | {}
-    """
-    log.info("Updating config with POST data.")
-
-    # Make sure this isn't passed ssh_key how the web installer used to, the web installer should
-    # take care of it's wrapping / unwrapping.
-    assert 'ssh_key' not in post_data
-    assert 'ip_detect_script' not in post_data
-
-    # Create a new configuration object, pass it the config.yaml path and POSTed dictionary.
-    # Add in "hidden config" we don't present in the config.yaml, and then create a meta
-    # validation dictionary from gen and ssh validation libs.
-    # We do not use the already built methods for this since those are used to read the
-    # coniguration off disk, here we need to validate the configuration overridees, and
-    # return the key and message for the POSTed parameter.
-    config = Config(config_path)
-    config.update(post_data)
-    validation_messages = config.do_validate(include_ssh=True)
-
-    # TODO(cmaloney): Return all errors to the UI so it can display / decide how
-    # it wants to log (new parameter might cause an error with an old set key)
-    # Return only the keys the UI POSTed, do not write config to disk if
-    # validation fails.
-    post_validation_errors = {key: validation_messages[key] for key in validation_messages if key in post_data}
-
-    # If validation is successful, write the data to disk, otherwise, if
-    # they keys POSTed failed, do not write to disk.
-    if post_validation_errors:
-        log.error("POSTed configuration has errors, not writing to disk.")
-        for key, value in post_validation_errors.items():
-            log.error('{}: {}'.format(key, value))
-    else:
-        log.debug("Success! POSTed configuration looks good, writing to disk.")
-        config.update(post_data)
-        config.write_config()
-
-    return post_validation_errors
-
-
 def determine_config_type(config_path=CONFIG_PATH):
     """Returns the configuration type to the UI. One of either 'minimal' or
     'advanced'. 'advanced' blocks UI usage.
