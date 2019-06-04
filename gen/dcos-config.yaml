@@ -2275,16 +2275,29 @@ package:
       [[inputs.net]]
       # Get the number of processes and group them by status
       [[inputs.processes]]
-      # Gather resource usage of processes
-      [[inputs.procstat]]
-        pattern = "."
-        pid_finder = "pgrep"
       # Read metrics about system load & uptime
       [[inputs.system]]
       # Collect statistics about itself
       [[inputs.internal]]
         ## If true, collect telegraf memory stats.
         collect_memstats = true
+      # The following procstat inputs collect process resource metrics for components that run on all cluster nodes.
+      [[inputs.procstat]]
+        systemd_unit = "dcos-checks-api.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-checks-poststart.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-diagnostics.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-fluent-bit.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-net-watchdog.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-net.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-pkgpanda-api.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-telegraf.service"
       # Configuration for the Prometheus client to spawn
       [[outputs.prometheus_client]]
         ## Address to listen on
@@ -2347,6 +2360,37 @@ package:
   - path: /etc_master/telegraf/telegraf.d/master.conf
     content: |
       # Additional Telegraf config for masters
+      # The following procstat inputs collect process resource metrics for components that run on masters.
+      [[inputs.procstat]]
+        systemd_unit = "dcos-adminrouter.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-bouncer.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-cockroach.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-cockroachdb-config-change.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-cosmos.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-exhibitor.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-history.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-log-master.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-logrotate-master.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-marathon.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-mesos-dns.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-mesos-master.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-metronome.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-signal.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-ui-update-service.service"
 {% switch enable_mesos_input_plugin %}
 {% case "true" %}
       # Telegraf plugin for gathering metrics from mesos
@@ -2503,6 +2547,23 @@ package:
   - path: /etc_slave/telegraf/telegraf.d/agent.conf
     content: |
       # Additional Telegraf config for agents
+      # The following procstat inputs collect process resource metrics for components that run on agents.
+      [[inputs.procstat]]
+        systemd_unit = "dcos-adminrouter-agent.service"
+{% switch enable_docker_gc %}
+{% case "true" %}
+      [[inputs.procstat]]
+        systemd_unit = "dcos-docker-gc.service"
+{% case "false" %}
+{% endswitch %}
+      [[inputs.procstat]]
+        systemd_unit = "dcos-log-agent.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-logrotate-agent.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-mesos-slave.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-rexray.service"
       # Plugin for monitoring mesos container resource consumption
       [[inputs.dcos_containers]]
         ## The interval at which to collect metrics
@@ -2637,6 +2698,23 @@ package:
   - path: /etc_slave_public/telegraf/telegraf.d/agent.conf
     content: |
       # Additional Telegraf config for agents
+      # The following procstat inputs collect process resource metrics for components that run on agents.
+      [[inputs.procstat]]
+        systemd_unit = "dcos-adminrouter-agent.service"
+{% switch enable_docker_gc %}
+{% case "true" %}
+      [[inputs.procstat]]
+        systemd_unit = "dcos-docker-gc.service"
+{% case "false" %}
+{% endswitch %}
+      [[inputs.procstat]]
+        systemd_unit = "dcos-log-agent.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-logrotate-agent.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-mesos-slave.service"
+      [[inputs.procstat]]
+        systemd_unit = "dcos-rexray.service"
       # Plugin for monitoring mesos container resource consumption
       [[inputs.dcos_containers]]
         ## The interval at which to collect metrics

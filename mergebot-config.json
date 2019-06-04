@@ -3,6 +3,8 @@
    "ship-it": false,
    "test": false,
    "bump-ee": true,
+   "changelog-not-required": true,
+   "request-review": true,
    "merge-it": true,
    "sync": true,
    "override-status": {

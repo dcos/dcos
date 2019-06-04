@@ -630,12 +630,6 @@ function main()
         esac
     done
 
-    if [[ $DISABLE_PREFLIGHT -eq 1 && $PREFLIGHT_ONLY -eq 1 ]]; then
-        echo -e 'Both --disable-preflight and --preflight-only can not be specified'
-        usage
-        exit 1
-    fi
-
     ROLES=$@
 
     if [[ $PREFLIGHT_ONLY -eq 1 ]] ; then
