@@ -401,6 +401,23 @@ def test_metrics_diagnostics(dcos_api_session):
         check_diagnostics_metrics()
 
 
+def test_metrics_fluentbit(dcos_api_session):
+    """Ensure that fluent bit metrics are present on masters and agents"""
+    nodes = get_master_and_agents(dcos_api_session)
+
+    for node in nodes:
+        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+        def check_fluentbit_metrics():
+            response = get_metrics_prom(dcos_api_session, node)
+            for family in text_string_to_metric_families(response.text):
+                for sample in family.samples:
+                    if sample[0].startswith('fluentbit_output_errors_total'):
+                        assert sample[1]['dcos_component_name'] == 'DC/OS Fluent Bit'
+                        return
+            raise Exception('Expected DC/OS Fluent Bit metrics not found')
+        check_fluentbit_metrics()
+
+
 def check_statsd_app_metrics(dcos_api_session, marathon_app, node, expected_metrics):
     with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
         endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
