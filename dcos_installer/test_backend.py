@@ -39,7 +39,6 @@ exhibitor_storage_backend: 'static'
 resolvers:
 - 8.8.8.8
 - 8.8.4.4
-ssh_port: 22
 process_timeout: 10000
 bootstrap_url: file:///opt/dcos_install_tmp
 master_list: ['10.0.0.1', '10.0.0.2', '10.0.0.5']
@@ -70,62 +69,6 @@ def test_version(monkeypatch):
     }
 
 
-def test_good_create_config_from_post(tmpdir):
-    """
-    Test that it creates the config
-    """
-    # Create a temp config
-    workspace = tmpdir.strpath
-    temp_config_path = workspace + '/config.yaml'
-    make_default_config_if_needed(temp_config_path)
-
-    temp_ip_detect_path = workspace + '/ip-detect'
-    f = open(temp_ip_detect_path, "w")
-    f.write("#/bin/bash foo")
-
-    good_post_data = {
-        "agent_list": ["10.0.0.2"],
-        "master_list": ["10.0.0.1"],
-        "cluster_name": "Good Test",
-        "resolvers": ["4.4.4.4"],
-        "ip_detect_filename": temp_ip_detect_path
-    }
-    expected_good_messages = {}
-
-    create_fake_build_artifacts(tmpdir)
-    with tmpdir.as_cwd():
-        messages = backend.create_config_from_post(
-            post_data=good_post_data,
-            config_path=temp_config_path)
-
-    assert messages == expected_good_messages
-
-
-def test_bad_create_config_from_post(tmpdir):
-    # Create a temp config
-    workspace = tmpdir.strpath
-    temp_config_path = workspace + '/config.yaml'
-    make_default_config_if_needed(temp_config_path)
-
-    bad_post_data = {
-        "agent_list": "foo",
-        "master_list": ["foo"],
-    }
-    expected_bad_messages = {
-        "agent_list": "Must be a JSON formatted list, but couldn't be parsed the given value `foo` as "
-                      "one because of: Expecting value: line 1 column 1 (char 0)",
-        "master_list": 'Invalid IPv4 addresses in list: foo',
-    }
-
-    create_fake_build_artifacts(tmpdir)
-    with tmpdir.as_cwd():
-        messages = backend.create_config_from_post(
-            post_data=bad_post_data,
-            config_path=temp_config_path)
-
-    assert messages == expected_bad_messages
-
-
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="Code tests linux configuration")
 def test_do_validate_config(tmpdir, monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
@@ -144,7 +87,7 @@ def test_do_validate_config(tmpdir, monkeypatch):
         'master_list': 'Must set master_list, no way to calculate value.',
     }
     with tmpdir.as_cwd():
-        assert Config(config_path='genconf/config.yaml').do_validate(include_ssh=True) == expected_output
+        assert Config(config_path='genconf/config.yaml').do_validate() == expected_output
 
 
 def test_get_config(tmpdir):
@@ -156,7 +99,6 @@ def test_get_config(tmpdir):
         'master_discovery': 'static',
         'exhibitor_storage_backend': 'static',
         'resolvers': ['8.8.8.8', '8.8.4.4'],
-        'ssh_port': 22,
         'process_timeout': 10000,
         'bootstrap_url': 'file:///opt/dcos_install_tmp'
     }
@@ -202,20 +144,6 @@ def test_success():
     assert code == 200
     assert bad_out == expected_output_bad
     assert bad_code == 400
-
-
-def test_accept_overrides_for_undefined_config_params(tmpdir):
-    temp_config_path = tmpdir.strpath + '/config.yaml'
-    param = ('fake_test_param_name', 'fake_test_param_value')
-    make_default_config_if_needed(temp_config_path)
-    create_fake_build_artifacts(tmpdir)
-    with tmpdir.as_cwd():
-        messages = backend.create_config_from_post(
-            post_data=dict([param]),
-            config_path=temp_config_path)
-
-    assert not messages, "unexpected validation error: {}".format(messages)
-    assert Config(config_path=temp_config_path)[param[0]] == param[1]
 
 
 simple_full_config = """---

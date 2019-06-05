@@ -48,8 +48,7 @@ setup(
         'pkgpanda.build',
         'pkgpanda.http',
         'release',
-        'release.storage',
-        'ssh'],
+        'release.storage'],
     install_requires=[
         # DCOS-21656 - `botocore`` requires less than 2.7.0 while
         # `analytics-python` package installs 2.7.0 version
