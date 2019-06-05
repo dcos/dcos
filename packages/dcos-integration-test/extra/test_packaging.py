@@ -172,7 +172,13 @@ def test_mom_installation(dcos_api_session):
         pytest.skip('DCOS-53467 - test_mom_installation fails '
                     'on permissive mode cluster')
 
-    install_response = dcos_api_session.cosmos.install_package('marathon')
+    options = {
+        'service': {
+            'name': 'marathon-test-mom-installation'
+        }
+    }
+
+    install_response = dcos_api_session.cosmos.install_package('marathon', options=options)
     data = install_response.json()
 
     dcos_api_session.marathon.wait_for_deployments_complete()
