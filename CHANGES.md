@@ -21,6 +21,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Added Fluent Bit metrics to the pipeline (DCOS-54425)
+
 * Fixed Telegraf configuration error that dropped task metrics with certain names or tags. (DCOS_OSS-5032)
 
 * `dcos_generate_config[ee].sh --validate-config` doesn't complain about missing deprecated `ssh_*` options anymore. (DCOS_OSS-5152)
@@ -52,7 +54,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * [Marathon] Prevent instance leak. (DCOS-51375)
 
 * [Marathon] Introduce new exit error code when the framework was removed from Mesos.
+
 * Ensure Bouncer uses configured web proxy. (DCOS_OSS-5167)
+
 
 ### Security updates
 
