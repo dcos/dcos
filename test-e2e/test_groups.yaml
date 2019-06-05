@@ -53,3 +53,4 @@
 groups:
     group_1:
         - test_make_disk_resources.py
+        - test_zookeeper_backup.py
