@@ -1,21 +1,13 @@
 import copy
 import logging
 import os.path
-import sys
 
 import yaml
 
 import gen
-try:
-    import ssh.validate
-except ImportError:
-    pass
 from gen.build_deploy.bash import onprem_source
 from gen.exceptions import ValidationError
-from pkgpanda.util import is_windows, load_yaml, write_string, YamlParseError
-
-if not is_windows:
-    assert 'ssh.validate' in sys.modules
+from pkgpanda.util import load_yaml, write_string, YamlParseError
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +20,6 @@ exhibitor_storage_backend: 'static'
 resolvers:
 - 8.8.8.8
 - 8.8.4.4
-ssh_port: 22
 process_timeout: 10000
 bootstrap_url: file:///opt/dcos_install_tmp
 """
@@ -118,13 +109,10 @@ class Config():
     def as_gen_format(self):
         return gen.stringify_configuration(self._config)
 
-    def do_validate(self, include_ssh):
+    def do_validate(self):
         user_arguments = self.as_gen_format()
         extra_sources = [onprem_source]
         extra_targets = []
-        if include_ssh:
-            extra_sources.append(ssh.validate.source)
-            extra_targets.append(ssh.validate.get_target())
 
         sources, targets, _ = gen.get_dcosconfig_source_target_and_templates(user_arguments, [], extra_sources)
         targets = targets + extra_targets
