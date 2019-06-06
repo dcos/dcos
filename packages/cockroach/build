@@ -25,6 +25,8 @@ update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 40
 update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-6 40
 update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 40
 
+# Cockroach 2.1.7 refuses to build with Go 1.12:
+# https://www.cockroachlabs.com/docs/releases/v2.1.7.html#build-changes
 GOLANG_VERSION=1.11.5
 GOLANG_DOWNLOAD_URL=https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
 GOLANG_DOWNLOAD_SHA256=ff54aafedff961eb94792487e827515da683d61a5f9482f668008832631e5d25
@@ -47,11 +49,11 @@ sed -i 's/CFLAGS: -Wno-unused-result/CFLAGS: -Wno-unused-result -I\/opt\/mesosph
 # recognizing paths correctly
 export CC=/usr/bin/gcc
 export CXX=/usr/bin/g++
-make build TYPE=release-linux-gnu CC_PATH=/usr/bin/gcc  CXX_PATH=/usr/bin/g++
+make build BUILDTYPE=release XCC=/usr/bin/gcc XCXX=/usr/bin/g++
 
 # Copy the cockroach binary to the the package bin directory.
 mkdir -p $PKG_PATH/bin
-install -m 755 /pkg/src/cockroach/src/github.com/cockroachdb/cockroach/cockroach-linux-2.6.32-gnu-amd64 $PKG_PATH/bin/cockroach
+install -m 755 /pkg/src/cockroach/src/github.com/cockroachdb/cockroach/cockroach $PKG_PATH/bin/cockroach
 
 # Copy the registration script to the package bin directory.
 install -m 755 /pkg/extra/register.py $PKG_PATH/bin/register.py
