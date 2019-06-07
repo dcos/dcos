@@ -45,11 +45,7 @@ sed -i 's/LDFLAGS: -lncurses/LDFLAGS: -L\/opt\/mesosphere\/active\/ncurses\/lib 
 sed -i 's/CFLAGS: -Wno-unused-result/CFLAGS: -Wno-unused-result -I\/opt\/mesosphere\/active\/ncurses\/include -I\/opt\/mesosphere\/active\/ncurses\/include\/ncurses/g' src/github.com/cockroachdb/cockroach/vendor/github.com/knz/go-libedit/unix/editline_unix.go
 
 # Build the cockroach binary.
-# We need to set CC_PATH and CXX_PATH because the build in the teamcity is not
-# recognizing paths correctly
-export CC=/usr/bin/gcc
-export CXX=/usr/bin/g++
-make build BUILDTYPE=release XCC=/usr/bin/gcc XCXX=/usr/bin/g++
+make build BUILDTYPE=release
 
 # Copy the cockroach binary to the the package bin directory.
 mkdir -p $PKG_PATH/bin
