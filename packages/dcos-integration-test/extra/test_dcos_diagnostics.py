@@ -319,11 +319,6 @@ def test_dcos_diagnostics_report(dcos_api_session):
         assert len(report_response['Nodes']) > 0
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS-54568',
-    reason='test_dcos_diagnostics_bundle fails with ifconfig - executable file not found in $PATH"',
-    since='2019-05-30'
-)
 def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session):
     """
     test bundle create, read, delete workflow
