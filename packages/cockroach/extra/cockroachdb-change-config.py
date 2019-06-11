@@ -74,11 +74,11 @@ def set_num_replicas(my_internal_ip: str, num_replicas: int) -> None:
             host=my_internal_ip,
         )
         message = (
-            'Set {zone_config} for {zone} via command {command}'
+            'Set `{zone_config}` for `{zone}` via command `{command}`'
         ).format(
-            zone_config=zone_config,
-            zone=zone,
-            command=command,
+            zone_config=repr(zone_config),
+            zone=repr(zone),
+            command=repr(command),
         )
         log.info(message)
         subprocess.run(command, shell=True)
