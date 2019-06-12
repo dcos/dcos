@@ -5,12 +5,17 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
+* Updated to [Metronome 0.6.23](https://github.com/dcos/metronome/tree/be50099).
 
 ### Fixed and improved
 
 * Mesos task logs are sent to Fluent Bit with task metadata included. (DCOS-53834)
 
 * Telegraf reports procstat metrics only for DC/OS systemd services, instead of all processes. (DCOS-53589)
+
+* [Metronome] Missing request metrics in Metronome. (DCOS_OSS-5020)
+
+* [Metronome] Improve secrets validation to only point out unprovided secrets. (DCOS_OSS-5019)
 
 ### Security updates
 
