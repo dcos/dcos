@@ -342,9 +342,6 @@ def _check_diagnostics_bundle_status(dcos_api_session):
                               'job_progress_percentage']
 
     for _, properties in diagnostics_bundle_status.items():
-        assert len(properties) == len(required_status_fields), 'response must have the following fields: {}'.format(
-            required_status_fields
-        )
         for required_status_field in required_status_fields:
             assert required_status_field in properties, 'property {} not found'.format(required_status_field)
 
