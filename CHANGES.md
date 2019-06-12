@@ -12,6 +12,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated DC/OS UI to [master+v2.108.0](https://github.com/dcos/dcos-ui/releases/tag/master+v2.108.0)
 
+* Updated to [Metronome 0.6.23](https://github.com/dcos/metronome/tree/be50099).
+
 ### Breaking changes
 
 Admin Router now requires a CPU with SSE4.2 support.
@@ -26,3 +28,7 @@ The following parameters have been removed from the DC/OS installer:
 * --install-prereqs
 * --deploy
 * --postflight
+
+### Fixed and improved
+
+* [Metronome] Improve secrets validation to only point out unprovided secrets. (DCOS_OSS-5019)
