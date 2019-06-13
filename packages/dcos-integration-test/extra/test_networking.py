@@ -30,11 +30,15 @@ class Container(enum.Enum):
 
 
 class MarathonApp:
-    def __init__(self, container, network, host, vip=None, ipv6=False, app_name_fmt=None):
+    def __init__(self, container, network, host,
+                 vip=None, network_name=None,
+                 app_name_fmt=None, host_port=None):
+        if host_port is None:
+            host_port = unused_port()
         args = {
             'app_name_fmt': app_name_fmt,
             'network': network,
-            'host_port': unused_port(),
+            'host_port': host_port,
             'host_constraint': host,
             'vip': vip,
             'container_type': container,
@@ -42,8 +46,8 @@ class MarathonApp:
         }
         if network == marathon.Network.USER:
             args['container_port'] = unused_port()
-            if ipv6:
-                args['network_name'] = 'dcos6'
+            if network_name is not None:
+                args['network_name'] = network_name
             if vip is not None:
                 del args['host_port']
         self.app, self.uuid = test_helpers.marathon_test_app(**args)
@@ -80,7 +84,7 @@ class MarathonApp:
         task = info['app']['tasks'][0]
         if 'networks' in self.app and \
                 self.app['networks'][0]['mode'] == 'container' and \
-                self.app['networks'][0]['name'] != 'dcos6':
+                self.app['networks'][0]['name'] == 'dcos':
             host = task['ipAddresses'][0]['ipAddress']
             port = self.app['container']['portMappings'][0]['containerPort']
         else:
@@ -212,9 +216,9 @@ def generate_vip_app_permutations():
 
 
 def workload_test(dcos_api_session, container, app_net, proxy_net, ipv6, same_host):
-    (vip, hosts, cmd, origin_app, proxy_app) = \
+    (vip, hosts, cmd, origin_app, proxy_app, _pm_app) = \
         vip_workload_test(dcos_api_session, container,
-                          app_net, proxy_net, ipv6, True, same_host)
+                          app_net, proxy_net, ipv6, True, same_host, False)
     return (hosts, origin_app, proxy_app)
 
 
@@ -272,39 +276,9 @@ def test_vip_ipv6(dcos_api_session):
     list(marathon.Container))
 def test_vip_port_mapping(dcos_api_session,
                           container: marathon.Container,
-                          network: marathon.Network=marathon.Network.HOST,
-                          ipv6: bool=False):
-    errors = []
-    tests = setup_vip_workload_tests(dcos_api_session, container, network, network, ipv6)
-    for vip, hosts, cmd, origin_app, proxy_app in tests:
-        log.info("Testing :: VIP: {}, Hosts: {}".format(vip, hosts))
-        log.info("Remote command: {}".format(cmd))
-        proxy_host, proxy_port = proxy_app.hostport(dcos_api_session)
-
-        # Deploying application with a port mapping on proxy app host.
-        # This application has the same port mapping host port as VIP label.
-        pm_app = MarathonApp(container, marathon.Network.BRIDGE, proxy_host,
-                             app_name_fmt=proxy_app.id.replace('proxy', 'pm'))
-        pm_app.app['container']['portMappings'][0]['hostPort'] = int(vip.rsplit(':', 1)[1])
-        log.info("Port mapping app: {}".format(pm_app))
-        pm_app.deploy(dcos_api_session)
-        log.info('Deploying port mapping app: {}'.format(pm_app.id))
-        pm_app.wait(dcos_api_session)
-        log.info('Port mapping app is ready')
-
-        try:
-            assert ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
-        except Exception as e:
-            log.error('Exception: {}'.format(e))
-            errors.append(e)
-        finally:
-            log.info('Purging application: {}'.format(origin_app.id))
-            origin_app.purge(dcos_api_session)
-            log.info('Purging application: {}'.format(proxy_app.id))
-            proxy_app.purge(dcos_api_session)
-            log.info('Purging application: {}'.format(pm_app.id))
-            pm_app.purge(dcos_api_session)
-    assert not errors
+                          vip_net: marathon.Network=marathon.Network.HOST,
+                          proxy_net: marathon.Network=marathon.Network.HOST):
+    return test_vip(dcos_api_session, container, vip_net, proxy_net, with_port_mapping_app=True)
 
 
 @pytest.mark.slow
@@ -315,7 +289,8 @@ def test_vip(dcos_api_session,
              container: marathon.Container,
              vip_net: marathon.Network,
              proxy_net: marathon.Network,
-             ipv6: bool=False):
+             ipv6: bool=False,
+             with_port_mapping_app=False):
     '''Test VIPs between the following source and destination configurations:
         * containers: DOCKER, UCR and NONE
         * networks: USER, BRIDGE, HOST
@@ -332,8 +307,8 @@ def test_vip(dcos_api_session,
         pytest.skip('Load Balancer disabled')
 
     errors = []
-    tests = setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6)
-    for vip, hosts, cmd, origin_app, proxy_app in tests:
+    tests = setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6, with_port_mapping_app)
+    for vip, hosts, cmd, origin_app, proxy_app, pm_app in tests:
         log.info("Testing :: VIP: {}, Hosts: {}".format(vip, hosts))
         log.info("Remote command: {}".format(cmd))
         proxy_host, proxy_port = proxy_app.hostport(dcos_api_session)
@@ -347,32 +322,43 @@ def test_vip(dcos_api_session,
             origin_app.purge(dcos_api_session)
             log.info('Purging application: {}'.format(proxy_app.id))
             proxy_app.purge(dcos_api_session)
+            if pm_app is not None:
+                log.info('Purging application: {}'.format(pm_app.id))
+                pm_app.purge(dcos_api_session)
     assert not errors
 
 
-def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6):
+def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net, ipv6, with_port_mapping_app=False):
     same_hosts = [True, False] if len(dcos_api_session.all_slaves) > 1 else [True]
-    tests = [vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, named_vip, same_host)
+    tests = [vip_workload_test(dcos_api_session, container, vip_net, proxy_net,
+                               ipv6, named_vip, same_host, with_port_mapping_app)
              for named_vip in [True, False]
              for same_host in same_hosts]
-    for vip, hosts, cmd, origin_app, proxy_app in tests:
+    for vip, hosts, cmd, origin_app, proxy_app, pm_app in tests:
         # We do not need the service endpoints because we have deterministically assigned them
         log.info('Starting apps :: VIP: {}, Hosts: {}'.format(vip, hosts))
         log.info("Origin app: {}".format(origin_app))
         origin_app.deploy(dcos_api_session)
         log.info("Proxy app: {}".format(proxy_app))
         proxy_app.deploy(dcos_api_session)
-    for vip, hosts, cmd, origin_app, proxy_app in tests:
+        if pm_app is not None:
+            log.info("Port Mapping app: {}".format(pm_app))
+            pm_app.deploy(dcos_api_session)
+    for vip, hosts, cmd, origin_app, proxy_app, pm_app in tests:
         log.info("Deploying apps :: VIP: {}, Hosts: {}".format(vip, hosts))
         log.info('Deploying origin app: {}'.format(origin_app.id))
         origin_app.wait(dcos_api_session)
         log.info('Deploying proxy app: {}'.format(proxy_app.id))
         proxy_app.wait(dcos_api_session)
+        if pm_app is not None:
+            log.info("Deploying port mapping app: {}".format(pm_app))
+            pm_app.wait(dcos_api_session)
         log.info('Apps are ready')
     return tests
 
 
-def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, named_vip, same_host):
+def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6,
+                      named_vip, same_host, with_port_mapping_app):
     slaves = dcos_api_session.slaves + dcos_api_session.public_slaves
     vip_port = unused_port()
     origin_host = slaves[0]
@@ -399,14 +385,25 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6, nam
         'local' if same_host else 'remote')
     origin_fmt = '{}/app-{}'.format(path_id, test_case_id)
     proxy_fmt = '{}/proxy-{}'.format(path_id, test_case_id)
+    network_name = 'dcos6' if ipv6 else 'dcos'  # it is used for user network mode only
     if container == Container.POD:
         origin_app = MarathonPod(vip_net, origin_host, vip, pod_name_fmt=origin_fmt)
         proxy_app = MarathonPod(proxy_net, proxy_host, pod_name_fmt=proxy_fmt)
     else:
-        origin_app = MarathonApp(container, vip_net, origin_host, vip, ipv6=ipv6, app_name_fmt=origin_fmt)
-        proxy_app = MarathonApp(container, proxy_net, proxy_host, ipv6=ipv6, app_name_fmt=proxy_fmt)
+        origin_app = MarathonApp(container, vip_net, origin_host, vip,
+                                 network_name=network_name, app_name_fmt=origin_fmt)
+        proxy_app = MarathonApp(container, proxy_net, proxy_host,
+                                network_name=network_name, app_name_fmt=proxy_fmt)
+    # Port mappiong application runs on `proxy_host` and has the `host_port` same as `vip_port`.
+    pm_fmt = '{}/pm-{}'.format(path_id, test_case_id)
+    pm_fmt = pm_fmt + '-{{:.{}}}'.format(63 - len(pm_fmt))
+    if with_port_mapping_app:
+        pm_container = Container.MESOS if container == Container.POD else container
+        pm_app = MarathonApp(pm_container, marathon.Network.BRIDGE, proxy_host, host_port=vip_port, app_name_fmt=pm_fmt)
+    else:
+        pm_app = None
     hosts = list(set([origin_host, proxy_host]))
-    return (vip, hosts, cmd, origin_app, proxy_app)
+    return (vip, hosts, cmd, origin_app, proxy_app, pm_app)
 
 
 @retrying.retry(wait_fixed=2000,
@@ -620,6 +617,9 @@ def test_dcos_cni_l4lb(dcos_api_session):
     if expanded_config.get('security') == 'strict':
         pytest.skip('Cannot setup CNI config with EE strict mode enabled')
 
+    # Run all the test application on the first agent node
+    host = dcos_api_session.slaves[0]
+
     # CNI configuration of `spartan-net`.
     spartan_net = {
         'cniVersion': '0.2.0',
@@ -656,83 +656,65 @@ def test_dcos_cni_l4lb(dcos_api_session):
     log.info("spartan-net config:{}".format(json.dumps(spartan_net)))
 
     # Application to deploy CNI configuration.
-    cni_config_app, config_uuid = test_helpers.marathon_test_app()
+    cni_config_app = MarathonApp(
+        marathon.Container.NONE, marathon.Network.HOST, host,
+        app_name_fmt='/integration-test/cni-l4lb/config-{}')
 
     # Override the default test app command with a command to write the CNI
     # configuration.
     #
-    # NOTE: We add the sleep at the end of this command so that the task stays
-    # alive for the test harness to make sure that the task got deployed.
+    # NOTE: We add the original command at the end of this command so that the task
+    # stays alive for the test harness to make sure that the task got deployed.
     # Ideally we should be able to deploy one of tasks using the test harness
     # but that doesn't seem to be the case here.
-    cni_config_app['cmd'] = 'echo \'{}\' > /opt/mesosphere/etc/dcos/network/cni/spartan.cni && sleep 10000'.format(
-        json.dumps(spartan_net))
-    del cni_config_app['healthChecks']
+    cni_config_app.app['cmd'] = \
+        "echo '{}' > {} && {}".format(
+            json.dumps(spartan_net),
+            '/opt/mesosphere/etc/dcos/network/cni/spartan.cni',
+            cni_config_app.app['cmd'])
 
-    log.info("App for setting CNI config: {}".format(json.dumps(cni_config_app)))
-
+    log.info("CNI Config application: {}".format(cni_config_app.app))
     try:
-        dcos_api_session.marathon.deploy_app(cni_config_app, check_health=False)
-    except Exception as ex:
-        raise AssertionError("Couldn't install CNI config for `spartan-net`".format(json.dumps(cni_config_app))) from ex
+        cni_config_app.deploy(dcos_api_session)
+        cni_config_app.wait(dcos_api_session)
+    finally:
+        cni_config_app.purge(dcos_api_session)
+    log.info("CNI Config has been deployed on {}".format(host))
 
     # Get the host on which the `spartan-net` was installed.
-    cni_config_app_service = None
-    try:
-        cni_config_app_service = dcos_api_session.marathon.get_app_service_endpoints(cni_config_app['id'])
-    except Exception as ex:
-        raise AssertionError("Couldn't retrieve the host on which `spartan-net` was installed.") from ex
-
-    # We only have one instance of `cni_config_app_service`.
-    spartan_net_host = cni_config_app_service[0].host
-
     # Launch the test-app on DC/OS overlay, with a VIP.
-    server_vip_port = unused_port()
-    server_vip = '/spartanvip:{}'.format(server_vip_port)
-    server_vip_addr = 'spartanvip.marathon.l4lb.thisdcos.directory:{}'.format(server_vip_port)
+    server_vip_label = '/spartanvip:10000'
+    server_vip_addr = 'spartanvip.marathon.l4lb.thisdcos.directory:10000'
 
     # Launch the test_server in ip-per-container mode (user network)
-    server, test_uuid = test_helpers.marathon_test_app(
-        container_type=marathon.Container.MESOS,
-        healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
-        network=marathon.Network.USER,
-        host_port=9080,
-        vip=server_vip)
-
-    # Launch the server on the DC/OS overlay
-    log.info("Launching server with VIP:{} on network {}".format(server_vip_addr, server['networks'][0]['name']))
-
-    try:
-        dcos_api_session.marathon.deploy_app(server, check_health=False)
-    except Exception as ex:
-        raise AssertionError(
-            "Couldn't launch server on 'dcos':{}".format(server['networks'][0]['name'])) from ex
+    server_app = MarathonApp(
+        marathon.Container.MESOS, marathon.Network.USER, host,
+        vip=server_vip_label, app_name_fmt='/integration-test/cni-l4lb/server-{}')
+    log.info("Server application: {}".format(server_app.app))
 
     # Get the client app on the 'spartan-net' network.
-    client_port = 9081
-    client, test_uuid = test_helpers.marathon_test_app(
-        container_type=marathon.Container.MESOS,
-        healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
-        network=marathon.Network.USER,
-        host_port=client_port,
-        container_port=client_port,
-        vip=server_vip,
-        host_constraint=spartan_net_host,
-        network_name='spartan-net')
+    client_app = MarathonApp(
+        marathon.Container.MESOS, marathon.Network.USER, host,
+        network_name='spartan-net', app_name_fmt='/integration-test/cni-l4lb/client-{}')
+    log.info("Client application: {}".format(client_app.app))
 
     try:
-        dcos_api_session.marathon.deploy_app(client, check_health=False)
-    except Exception as ex:
-        raise AssertionError("Couldn't launch client on 'spartan-net':{}".format(client)) from ex
+        # Launch the test application
+        client_app.deploy(dcos_api_session)
+        server_app.deploy(dcos_api_session)
 
-    # Change the client command task to do a curl on the server we just deployed.
-    cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/ping'.format(server_vip_addr)
+        # Wait for the test application
+        server_app.wait(dcos_api_session)
+        client_app.wait(dcos_api_session)
 
-    try:
-        response = ensure_routable(cmd, spartan_net_host, client_port)
-        log.info("Received a response from {}: {}".format(server_vip_addr, response))
-    except Exception as ex:
-        raise AssertionError("Unable to query VIP: {}".format(server_vip_addr)) from ex
+        # Change the client command task to do a curl on the server we just deployed.
+        cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(server_vip_addr)
+
+        client_host, client_port = client_app.hostport(dcos_api_session)
+        assert ensure_routable(cmd, client_host, client_port)['test_uuid'] == server_app.uuid
+    finally:
+        server_app.purge(dcos_api_session)
+        client_app.purge(dcos_api_session)
 
 
 def enum2str(value):

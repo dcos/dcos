@@ -286,11 +286,6 @@ def test_service_discovery_docker_overlay_port_mapping(dcos_api_session):
 
 
 def test_service_discovery_docker_bridged_network(dcos_api_session):
-    expanded_config = test_helpers.get_expanded_config()
-    if expanded_config.get('security') == 'permissive':
-        pytest.skip("""DCOS-54432 - Test Skip due to resource clean up issues.
-        DCOS-49805 test_networking.test_dcos_cni_l4lb fails on universal installer provisioned cluster
-        DCOS-45746 - tests: autouse=True Marathon fixture breaks module-scoped Marathon app fixtures.""")
     return _service_discovery_test(dcos_api_session, docker_network_bridge=True)
 
 
