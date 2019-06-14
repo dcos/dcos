@@ -1,0 +1,47 @@
+From 30e461a7afbf24be681f10dd3148d3eca3538d8a Mon Sep 17 00:00:00 2001
+From: Benno Evers <bevers@mesosphere.com>
+Date: Mon, 17 Jun 2019 13:27:46 +0200
+Subject: [PATCH 1/2] Override source address for executors.
+
+Ignore an executor's reported IP address and enforce the hostname
+"localhost" instead.
+
+This is intended to enable TLS connections to executors running
+in bridge-mode or virtual-mode docker containers, which can not
+present a valid certificate containing their source IP which is
+dynamically generated and not known until the executor connects.
+
+NOTE: This change is for illustration purposes only, and is not
+intended to be upstreamed.
+
+Review: https://reviews.apache.org/r/70886
+---
+ src/slave/slave.cpp | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
+index 30039b085..78f4d886f 100644
+--- a/src/slave/slave.cpp
++++ b/src/slave/slave.cpp
+@@ -5067,13 +5067,16 @@ void Slave::subscribe(
+ 
+ 
+ void Slave::registerExecutor(
+-    const UPID& from,
++    const UPID& from_,
+     const FrameworkID& frameworkId,
+     const ExecutorID& executorId)
+ {
+   LOG(INFO) << "Got registration for executor '" << executorId
+             << "' of framework " << frameworkId << " from "
+-            << stringify(from);
++            << stringify(from_);
++
++  UPID from(from_);
++  from.host = "localhost";
+ 
+   CHECK(state == RECOVERING || state == DISCONNECTED ||
+         state == RUNNING || state == TERMINATING)
+-- 
+2.17.1
+
