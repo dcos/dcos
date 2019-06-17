@@ -16,6 +16,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Optimized memory and cpu usage in dcos-net (DCOS_OSS-5269, DCOS_OSS-5268)
 
+* Upgraded OTP version to 22.0.3 (DCOS_OSS-5276)
+
 ### Breaking changes
 
 Admin Router now requires a CPU with SSE4.2 support.
