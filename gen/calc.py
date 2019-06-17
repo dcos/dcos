@@ -386,6 +386,20 @@ def calculate_dcos_overlay_network_json(dcos_overlay_network, enable_ipv6):
     return json.dumps(overlay_network)
 
 
+def calculate_dcos_dns_store_modes_term(dcos_dns_store_modes):
+    modes = json.loads(dcos_dns_store_modes)
+    return '[' + ', '.join(modes) + ']'
+
+
+def validate_dcos_dns_store_modes(dcos_dns_store_modes):
+    modes = json.loads(dcos_dns_store_modes)
+    assert isinstance(modes, list), "Must be a list"
+    for mode in modes:
+        assert mode in ['lww', 'set'], "Must be either lww or set"
+    assert 0 < len(modes), "Must not be empty"
+    assert len(modes) == len(set(modes)), "Must be unique"
+
+
 def validate_num_masters(num_masters):
     assert int(num_masters) in [1, 3, 5, 7, 9], "Must have 1, 3, 5, 7, or 9 masters. Found {}".format(num_masters)
 
@@ -1077,6 +1091,7 @@ entry = {
         validate_dcos_l4lb_enable_ipv6,
         lambda dcos_l4lb_enable_ipset: validate_true_false(dcos_l4lb_enable_ipset),
         lambda dcos_dns_push_ops_timeout: validate_int_in_range(dcos_dns_push_ops_timeout, 50, 120000),
+        validate_dcos_dns_store_modes,
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
         lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
@@ -1205,6 +1220,7 @@ entry = {
         'dcos_l4lb_enable_ipv6': 'true',
         'dcos_l4lb_enable_ipset': 'true',
         'dcos_dns_push_ops_timeout': '1000',
+        'dcos_dns_store_modes': json.dumps(['lww', 'set']),
         'no_proxy': '',
         'rexray_config_preset': '',
         'rexray_config': json.dumps({
@@ -1276,6 +1292,7 @@ entry = {
         'dcos_l4lb_max_named_ip_erltuple': calculate_dcos_l4lb_max_named_ip_erltuple,
         'dcos_l4lb_min_named_ip6_erltuple': calculate_dcos_l4lb_min_named_ip6_erltuple,
         'dcos_l4lb_max_named_ip6_erltuple': calculate_dcos_l4lb_max_named_ip6_erltuple,
+        'dcos_dns_store_modes_term': calculate_dcos_dns_store_modes_term,
         'mesos_isolation': calculate_mesos_isolation,
         'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
         'has_mesos_seccomp_profile_name':
