@@ -12,6 +12,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated DC/OS UI to [master+v2.108.0](https://github.com/dcos/dcos-ui/releases/tag/master+v2.108.0)
 
+* Fixed performance degradation in Lashup. As of now, dcos-dns uses a new LWW mode to gossip dns zone updates. (DCOS_OSS-4240)
+
+* Optimized memory and cpu usage in dcos-net (DCOS_OSS-5269, DCOS_OSS-5268)
+
 ### Breaking changes
 
 Admin Router now requires a CPU with SSE4.2 support.
