@@ -262,14 +262,12 @@ def _zk_lock(zk: KazooClient, lock_path: str, contender_id: str, timeout: int) -
     log.info("ZooKeeper lock released.")
 
 
-def _init_cockroachdb_cluster(
-        ip: str,
-        ) -> None:
+def _init_cockroachdb_cluster(ip: str) -> None:
     """
-    Starts CockroachDB listening on `ip`. It waits until the PID file
-    appears, signalling that the instance has started successfully
-    and is serving requests. Thereafter it shuts down the bootstrap
-    instance again.
+    Starts CockroachDB listening on `ip`. It waits until the cluster ID is
+    published via the local gossip endpoint, signalling that the instance has
+    successfully initialized the cluster. Thereafter it shuts down the
+    bootstrap CockroachDB instance again.
 
     Args:
         ip:
@@ -278,20 +276,68 @@ def _init_cockroachdb_cluster(
     """
     @retrying.retry(
         wait_fixed=1000,
-        stop_max_attempt_number=10,
+        stop_max_attempt_number=60,
         retry_on_result=lambda x: x is False,
-        )
-    def _wait_for_pidfile(pid: int) -> bool:
+    )
+    def _wait_for_cluster_init() -> bool:
         """
-        Try and read the PID from `PID_FILE_PATH` and match it to the given `pid`.
-        If, after 10 seconds, the PIDs don't match, raise an exception.
+        CockroachDB Cluster initialization takes a certain amount of time
+        while the cluster ID and and node ID are written to the storage.
+
+        We wait 1 second to avoid having a huge amount of logs in the journal.
+        We retry for up to 60 attempts because, waiting an extra minute is not
+        a big deal and we have never seen this take longer than that.
+
+        If after 60 attempts the cluster ID is not available raise an exception.
         """
+        gossip_url = 'http://localhost:8090/_status/gossip/local'
         try:
-            with open(PID_FILE_PATH) as f:
-                pid_in_file = int(f.read())
-            return pid == pid_in_file
-        except FileNotFoundError:
+            response = requests.get(
+                gossip_url,
+                # We expect this request to get a response very quickly
+                # since it is a request to localhost.
+                timeout=1,
+            )
+        except (ConnectionError, Timeout) as exc:
+            message = (
+                'Retrying GET request to {url} as error {exc} was given.'
+            ).format(url=gossip_url, exc=exc)
+            log.info(message)
             return False
+
+        try:
+            response.raise_for_status()
+        except HTTPError as exc:
+            # 150 bytes was chosen arbitrarily as it might not be so long as to
+            # cause annoyance in a console, but it might be long enough to show
+            # some useful data.
+            first_150_bytes = response.content[:150]
+            decoded_first_150_bytes = first_150_bytes.decode(
+                encoding='ascii',
+                errors='backslashreplace',
+            )
+            message = (
+                'Retrying GET request to {url} as status code {status_code} was given.'
+                'The first 150 bytes of the HTTP response, '
+                'decoded with the ASCII character encoding: '
+                '"{resp_text}".'
+            ).format(
+                url=gossip_url,
+                status_code=response.status_code,
+                resp_text=decoded_first_150_bytes,
+            )
+            log.info(message)
+            return False
+
+        output = json.loads(response.text)
+        try:
+            cluster_id_bytes = output['infos']['cluster-id']['value']['rawBytes']
+        except KeyError:
+            return False
+        log.info((
+            'Cluster ID bytes {} present in local gossip endpoint. '
+        ).format(cluster_id_bytes))
+        return True
 
     # By default cockroachdb grows the cache to 25% of available
     # memory. This makes no sense given our comparatively tiny amount
