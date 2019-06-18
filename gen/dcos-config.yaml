@@ -157,6 +157,11 @@ package:
             {dist_port, 62501}
           ]
         },
+        {dcos_dns,
+          [
+            {store_modes, {{ dcos_dns_store_modes_term }}}
+          ]
+        },
         {dcos_l4lb,
           [
             {enable_lb, {{ enable_lb }}},
