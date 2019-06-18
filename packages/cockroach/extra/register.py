@@ -104,6 +104,7 @@ import subprocess
 from contextlib import contextmanager
 from typing import Any, Generator, List, Optional
 
+import requests
 import retrying
 
 from kazoo.client import KazooClient
@@ -114,6 +115,7 @@ from kazoo.exceptions import (
 )
 from kazoo.retry import KazooRetry
 from kazoo.security import make_digest_acl
+from requests import ConnectionError, HTTPError, Timeout
 
 from dcos_internal_utils import utils
 
@@ -383,10 +385,13 @@ def _init_cockroachdb_cluster(ip: str) -> None:
     proc = subprocess.Popen(
         cockroach_args,
         preexec_fn=run_as_dcos_cockroach,
-        )
+    )
+
     log.info("Waiting for CockroachDB to become ready.")
-    _wait_for_pidfile(proc.pid)
+    _wait_for_cluster_init()
     log.info("CockroachDB cluster has been initialized.")
+
+    # Terminate CockroachDB instance to start it via systemd unit again later.
     log.info("Terminating CockroachDB bootstrap instance.")
     # Send SIGTERM to the cockroach process to trigger a graceful shutdown.
     proc.terminate()
