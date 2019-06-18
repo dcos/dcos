@@ -18,6 +18,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Upgraded OTP version to 22.0.3 (DCOS_OSS-5276)
 
+* Telegraf now supports specyfying port names for task-label based Prometheus
+  endpoints discovery (DCOS-55100)
+
 ### Breaking changes
 
 Admin Router now requires a CPU with SSE4.2 support.
