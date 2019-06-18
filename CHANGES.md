@@ -21,6 +21,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Telegraf now supports specyfying port names for task-label based Prometheus
   endpoints discovery (DCOS-55100)
 
+* Enabled Mesos IPC namespace isolator for configurable IPC namespace and /dev/shm (DCOS-54618)
+
 ### Breaking changes
 
 Admin Router now requires a CPU with SSE4.2 support.
