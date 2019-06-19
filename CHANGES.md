@@ -38,6 +38,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* DC/OS Net: consolidated writing `resolv.conf`, addressing a rare race condition. (DCOS-47608)
+
 * Added Fluent Bit metrics to the pipeline (DCOS-54425)
 
 * Fixed Telegraf configuration error that dropped task metrics with certain names or tags. (DCOS_OSS-5032)
