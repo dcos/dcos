@@ -5,7 +5,7 @@ Tests for the ZooKeeper backup/restore via `dcos-zk`.
 import logging
 import uuid
 from pathlib import Path
-from typing import Set
+from typing import Iterator, Set
 
 import pytest
 from _pytest.fixtures import SubRequest
@@ -31,7 +31,7 @@ def three_master_cluster(
     docker_backend: Docker,
     request: SubRequest,
     log_dir: Path,
-) -> Cluster:
+) -> Iterator[Cluster]:
     """
     Spin up a highly-available DC/OS cluster with three master nodes.
     """
