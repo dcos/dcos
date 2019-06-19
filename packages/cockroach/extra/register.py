@@ -149,7 +149,7 @@ def zk_connect(zk_user: Optional[str] = None, zk_secret: Optional[str] = None) -
         max_jitter=1,
         max_delay=3,
         ignore_expire=True,
-        )
+    )
     # Retry commands every 0.3 seconds, for a total of <1s (usually 0.9)
     cmd_retry_policy = KazooRetry(
         max_tries=3,
@@ -276,30 +276,63 @@ def _init_cockroachdb_cluster(ip: str) -> None:
             The IP that CockroachDB should listen on.
             This should be the internal IP of the current host.
     """
+    # We chose 1 second as a time to wait between retries.
+    # If we chose a value longer than this, we could wait for up to <chosen
+    # value> too long between retries, delaying the cluster start by up to that
+    # value.
+    #
+    # The more often we run this function, the more logs we generate.
+    # If we chose a value smaller than 1 second, we would therefore generate more logs.
+    # We consider 1 second to be a reasonable maximum delay and in our
+    # experience the log size has not been an issue.
+    wait_fixed_ms = 1000
+
+    # In our experience, the cluster is always initialized within one minute.
+    # The downside of having a timeout which is too short is that we may crash
+    # when the cluster was on track to becoming healthy.
+    #
+    # The downside of having a timeout which is too long is that we may wait up
+    # to that timeout to see an error.
+    #
+    # We chose 5 minutes as trade-off between these two, as we think that it
+    # is extremely unlikely that a successful initialization will take more
+    # than 5 minutes, and we think that waiting up to 5 minutes "too long"
+    # for an error (and accumulating 5 minutes of logs) is not so bad.
+    stop_max_delay_ms = 5 * 60 * 1000
+
     @retrying.retry(
-        wait_fixed=1000,
-        stop_max_attempt_number=60,
+        wait_fixed=wait_fixed_ms,
+        stop_max_delay=stop_max_delay_ms,
         retry_on_result=lambda x: x is False,
     )
     def _wait_for_cluster_init() -> bool:
         """
         CockroachDB Cluster initialization takes a certain amount of time
-        while the cluster ID and and node ID are written to the storage.
+        while the cluster ID and node ID are written to the storage.
 
-        We wait 1 second to avoid having a huge amount of logs in the journal.
-        We retry for up to 60 attempts because, waiting an extra minute is not
-        a big deal and we have never seen this take longer than that.
-
-        If after 60 attempts the cluster ID is not available raise an exception.
+        If after 5 minutes of attempts the cluster ID is not available raise an
+        exception.
         """
         gossip_url = 'http://localhost:8090/_status/gossip/local'
+
+        # 3.05 is a magic number for the HTTP ConnectTimeout.
+        # http://docs.python-requests.org/en/master/user/advanced/#timeouts
+        # The rationale is to set connect timeouts to slightly larger than a multiple of 3,
+        # which is the default TCP packet retransmission window.
+        # 27 is the ReadTimeout, taken from the same example.
+        connect_timeout_seconds = 3.05
+
+        # In our experience, we have not seen a read timeout of > 1 second.
+        # If this were extremely long, we may have to wait up to that amount of time to see an error.
+        # If this were too short, and for example CockroachDB were spending a long time to respond
+        # because it is busy or on slow hardware, we may retry this function
+        # even when the cluster is initialized.
+        # Therefore we choose a long timeout which is not expected uncomfortably long for operators.
+        read_timeout_seconds = 30
+        request_timeout = (connect_timeout_seconds, read_timeout_seconds)
+
         try:
-            response = requests.get(
-                gossip_url,
-                # We expect this request to get a response very quickly
-                # since it is a request to localhost.
-                timeout=1,
-            )
+            response = requests.get(gossip_url, timeout=request_timeout)
         except (ConnectionError, Timeout) as exc:
             message = (
                 'Retrying GET request to {url} as error {exc} was given.'
@@ -337,7 +370,7 @@ def _init_cockroachdb_cluster(ip: str) -> None:
         except KeyError:
             return False
         log.info((
-            'Cluster ID bytes {} present in local gossip endpoint. '
+            'Cluster ID bytes {} present in local gossip endpoint.'
         ).format(cluster_id_bytes))
         return True
 
