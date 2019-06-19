@@ -32,6 +32,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
+* Updated to [Mesos 1.8.1-dev](https://github.com/apache/mesos/blob/f5770dcf322bd8a88e6c88041364a4089d92be90/CHANGELOG).
+
 * ZooKeeper instances on master nodes can now be backed up and restored via a dedicated command line script `dcos-zk` that is shipped with DC/OS. (DCOS_OSS-5186)
 
 * Updated DC/OS UI to [1.13+v2.82.6](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.6)
@@ -56,7 +58,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fixed a number of issues that caused some DC/OS components to crash when `/tmp` is mounted with the `noexec` option. (DCOS-53077)
 
-* Support large uploads for Admin Router service endpoint. (DCOS-52768)
+* Support large uploads for Admin Router service endpoint. (DCOS-52768, COPS-4651)
 
 * Added Round-Robin DNS support. (DCOS_OSS-5118)
 
