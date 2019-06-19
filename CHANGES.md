@@ -58,6 +58,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Added Round-Robin DNS support. (DCOS_OSS-5118)
 
+* Ensure the DC/OS IAM (Bouncer) uses the configured web proxy details. (DCOS_OSS-5167)
+
 * [Marathon] Fix restarting resident apps and pods. (DCOS_OSS-5212)
 
 * [Marathon] Only match disk with profile if that profile is needed. (DCOS_OSS-5211)
@@ -71,8 +73,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * [Marathon] Prevent instance leak. (DCOS-51375)
 
 * [Marathon] Introduce new exit error code when the framework was removed from Mesos.
-
-* Ensure Bouncer uses configured web proxy. (DCOS_OSS-5167)
 
 
 ### Security updates
