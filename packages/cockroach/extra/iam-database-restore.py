@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 import argparse
-import sys
 import logging
 import subprocess
+import sys
 from datetime import datetime
 from subprocess import CalledProcessError
 
@@ -40,7 +40,25 @@ def recover_database(my_internal_ip: str, backup_file_path: str, db_suffix: str)
         my_internal_ip: The internal IP of the current host.
         backup_file_path: A path to a local file containing the SQL backup.
         db_suffix: a date-time (to second) string used to rename databases.
-"""
+    """
+    def _lookup_database(dbname: str) -> None:
+        command = [
+            '/opt/mesosphere/active/cockroach/bin/cockroach',
+            'sql',
+            '--insecure',
+            '--host={}'.format(my_internal_ip),
+            '-e',
+            'SHOW TABLES FROM {}'.format(dbname),
+            ]
+        msg = 'Looking up tables of database `{}` via command `{}`'.format(
+            dbname, ' '.join(command))
+        log.info(msg)
+        try:
+            subprocess.run(command, check=True)
+            log.info('Database `{}` is present.'.format(dbname))
+        except CalledProcessError:
+            log.error('Database `{}` is not present.'.format(dbname))
+            raise
 
     def _create_database(dbname: str) -> None:
         command = [
@@ -121,46 +139,53 @@ def recover_database(my_internal_ip: str, backup_file_path: str, db_suffix: str)
 
     # We add the current date and time as suffix to the database names so this
     # script can be run multiple times.
-    newdbname = 'iam_new_{}'.format(db_suffix)
-    curdbname = 'iam'
-    olddbname = 'iam_old_{}'.format(db_suffix)
+    iam_new = 'iam_new_{}'.format(db_suffix)
+    iam = 'iam'
+    iam_old = 'iam_old_{}'.format(db_suffix)
 
-    # 1. Use `cockroach sql` to create a temporary database called `iam_new`.
-    _create_database(dbname=newdbname)
-
-    # 2. Then use `cockroach sql` to load the backup of the IAM database from
-    #    `backup_file_path` into the new database.
+    restore_from_scratch = False
     try:
-        _load_data(dbname=newdbname, backup_file_path=backup_file_path)
+        _lookup_database(dbname=iam)
     except CalledProcessError:
-        # Loading the data failed, so remove the 'iam_new' database
-        _drop_database(newdbname)
+        log.info('Restoring from scratch (no prior `{}` database)'.format(iam))
+        restore_from_scratch = True
+
+    _create_database(dbname=iam_new)
+    try:
+        _load_data(dbname=iam_new, backup_file_path=backup_file_path)
+    except CalledProcessError:
+        _drop_database(iam_new)
         raise
 
-    # 3. Then rename the active `iam` database to `iam_old`.
+    if restore_from_scratch:
+        try:
+            _rename_database(oldname=iam_new, newname=iam)
+        except CalledProcessError:
+            _drop_database(iam_new)
+            raise
+        return
+
     try:
-        _rename_database(oldname=curdbname, newname=olddbname)
+        _rename_database(oldname=iam, newname=iam_old)
     except CalledProcessError:
-        # Renaming the existing database failed, so remove the 'iam_new' database
-        _drop_database(newdbname)
+        _drop_database(iam_new)
         raise
 
-    # 4. Finally, rename the `iam_new` database to `iam`.
     try:
-        _rename_database(oldname=newdbname, newname=curdbname)
+        _rename_database(oldname=iam_new, newname=iam)
     except CalledProcessError:
-        # Renaming the new database failed, so rename the old one back and
-        # remove the 'iam_new' database
-        _rename_database(oldname=olddbname, newname=curdbname)
-        _drop_database(newdbname)
+        try:
+            _rename_database(oldname=iam_old, newname=iam)
+        except CalledProcessError:
+            pass
+        _drop_database(iam_new)
         raise
 
-    # 5. Remove the original (old) database that isn't used anymore
     try:
-        _drop_database(olddbname)
+        _drop_database(iam_old)
     except CalledProcessError:
-        # Don't fail on failure here as the restore was successful
-        log.error('Failed to remove original (old) database `%s`', olddbname)
+        # Don't raise on failure here as the restore was successful
+        log.warning('Failed to remove original (old) database `%s`.', iam_old)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -180,6 +205,7 @@ def main() -> None:
     args = _parse_args()
     log.info('Backup filepath: {}'.format(args.backup_file_path))
 
+    log.info('Begin IAM database restore procedure.')
     # Add sub-second timestamp resolution to the suffix so that this script can
     # be run twice within a second.
     # See https://jira.mesosphere.com/browse/DCOS-42407
@@ -192,6 +218,8 @@ def main() -> None:
     except subprocess.CalledProcessError:
         log.error("Failed to restore IAM database.")
         sys.exit(1)
+
+    log.info('IAM database restored successfully.')
 
 
 if __name__ == '__main__':

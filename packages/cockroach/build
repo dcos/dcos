@@ -63,8 +63,8 @@ install -m 755 /pkg/extra/cockroach.sh $PKG_PATH/bin/cockroach.sh
 install -m 755 /pkg/extra/cockroachdb-change-config.py $PKG_PATH/bin/cockroachdb-change-config.py
 
 # Copy the IAM database backup/restore scripts to the package bin directory.
-install -m 755 /pkg/extra/iam-database-backup $PKG_PATH/bin/iam-database-backup
-install -m 755 /pkg/extra/iam-database-restore $PKG_PATH/bin/iam-database-restore
+install -m 755 /pkg/extra/iam-database-backup.py $PKG_PATH/bin/iam-database-backup
+install -m 755 /pkg/extra/iam-database-restore.py $PKG_PATH/bin/iam-database-restore
 
 # Auto-start the dcos-cockroach service on the masters.
 mkdir -p "$PKG_PATH/dcos.target.wants_master"
