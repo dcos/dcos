@@ -24,7 +24,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * ZooKeeper instances on master nodes can now be backed up and restored via a dedicated command line script `dcos-zk` that is shipped with DC/OS. (DCOS_OSS-5186)
 
-* Updated DC/OS UI to [1.13+v2.82.5](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.5)
+* Updated DC/OS UI to [1.13+v2.82.6](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.6)
 
 ### Fixed and improved
 
