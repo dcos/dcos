@@ -23,6 +23,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Telegraf now supports specyfying port names for task-label based Prometheus
   endpoints discovery (DCOS-55100)
 
+* Metronome post-install configuration can be added to `/var/lib/dcos/metronome/environment`
+
 ### Breaking changes
 
 Admin Router now requires a CPU with SSE4.2 support.
