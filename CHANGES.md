@@ -12,7 +12,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated ref of dvdcli to fix dvdcli package build (DCOS-53581)
 
-* Updated DC/OS UI to [master+v2.108.0](https://github.com/dcos/dcos-ui/releases/tag/master+v2.108.0)
+* Updated DC/OS UI to [master+v2.109.9](https://github.com/dcos/dcos-ui/releases/tag/master+v2.109.9)
 
 * Fixed performance degradation in Lashup. As of now, dcos-dns uses a new LWW mode to gossip dns zone updates. (DCOS_OSS-4240)
 
