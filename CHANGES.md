@@ -20,6 +20,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Telegraf reports procstat metrics only for DC/OS systemd services, instead of all processes. (DCOS-53589)
 
+* Telegraf now supports specyfying port names for task-label based Prometheus
+  endpoints discovery (DCOS-55100)
+
 ### Security updates
 
 
