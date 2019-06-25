@@ -176,7 +176,7 @@ local function resolve_via_mesos_dns(service_name)
     --    or not, `nil` if there was an error.
     --  - err_code, err_text - if an error occurred these will be HTTP status
     --    and error text that should be sent to the client. `nil` otherwise
-    upstream_scheme, upstream_url, err_code, err_text = upstream_url_from_srv_query(
+    local upstream_scheme, upstream_url, err_code, err_text = upstream_url_from_srv_query(
         service_name)
 
     if err_code ~= nil then
@@ -273,7 +273,7 @@ local function resolve(service_name, mesos_cache, marathon_cache)
     -- Metronome does not prevent `/service` endpoint to route to the healthy
     -- leader running on some other hosts (provided that there is a leader).
     if service_name ~= 'marathon' and service_name ~= 'metronome' then
-        res, err_code, err_text = resolve_via_marathon_apps_state(
+        local res, err_code, err_text = resolve_via_marathon_apps_state(
             service_name, marathon_cache)
 
         if err_code ~= nil then
@@ -282,7 +282,7 @@ local function resolve(service_name, mesos_cache, marathon_cache)
     end
 
     if res == false then
-        res, err_code, err_text = resolve_via_mesos_state(
+        local res, err_code, err_text = resolve_via_mesos_state(
             service_name, mesos_cache)
     end
 
