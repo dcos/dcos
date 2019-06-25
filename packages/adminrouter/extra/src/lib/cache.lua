@@ -254,10 +254,11 @@ local function fetch_and_store_marathon_apps(auth_token)
        -- in that case.
        -- In "container/bridge" and "host" networking modes we need to use the
        -- host port for routing (available via task's ports array)
+       local port
        if is_container_network(app) and app["container"]["portMappings"][portIdx]["containerPort"] ~= 0 then
-         local port = app["container"]["portMappings"][portIdx]["containerPort"]
+         port = app["container"]["portMappings"][portIdx]["containerPort"]
        else
-         local port = task["ports"][portIdx]
+         port = task["ports"][portIdx]
        end
 
        if not port then
@@ -322,15 +323,18 @@ local function fetch_and_store_marathon_apps(auth_token)
 end
 
 function store_leader_data(leader_name, leader_ip)
+
+    local mleader
+
     if HOST_IP == 'unknown' or leader_ip == 'unknown' then
         ngx.log(ngx.ERR,
         "Private IP address of the host is unknown, aborting cache-entry creation for ".. leader_name .. " leader")
-        local mleader = '{"is_local": "unknown", "leader_ip": null}'
+        mleader = '{"is_local": "unknown", "leader_ip": null}'
     elseif leader_ip == HOST_IP then
-        local mleader = '{"is_local": "yes", "leader_ip": "'.. HOST_IP ..'"}'
+        leader = '{"is_local": "yes", "leader_ip": "'.. HOST_IP ..'"}'
         ngx.log(ngx.INFO, leader_name .. " leader is local")
     else
-        local mleader = '{"is_local": "no", "leader_ip": "'.. leader_ip ..'"}'
+        mleader = '{"is_local": "no", "leader_ip": "'.. leader_ip ..'"}'
         ngx.log(ngx.INFO, leader_name .. " leader is non-local: `" .. leader_ip .. "`")
     end
 
