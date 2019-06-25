@@ -265,6 +265,8 @@ local function resolve(service_name, mesos_cache, marathon_cache)
     ngx.log(ngx.DEBUG, "Trying to resolve service name `".. service_name .. "`")
 
     local res = false
+    local err_code
+    local err
 
     -- `marathon` and `metronome` service names belong to the Root Marathon and
     -- Root Metronome respectively. They will never be present in Root
@@ -273,7 +275,7 @@ local function resolve(service_name, mesos_cache, marathon_cache)
     -- Metronome does not prevent `/service` endpoint to route to the healthy
     -- leader running on some other hosts (provided that there is a leader).
     if service_name ~= 'marathon' and service_name ~= 'metronome' then
-        local res, err_code, err_text = resolve_via_marathon_apps_state(
+        res, err_code, err_text = resolve_via_marathon_apps_state(
             service_name, marathon_cache)
 
         if err_code ~= nil then
@@ -282,7 +284,7 @@ local function resolve(service_name, mesos_cache, marathon_cache)
     end
 
     if res == false then
-        local res, err_code, err_text = resolve_via_mesos_state(
+        res, err_code, err_text = resolve_via_mesos_state(
             service_name, mesos_cache)
     end
 
