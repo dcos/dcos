@@ -264,7 +264,7 @@ local function resolve(service_name, mesos_cache, marathon_cache)
     --    and error text that should be sent to the client. `nil` otherwise
     ngx.log(ngx.DEBUG, "Trying to resolve service name `".. service_name .. "`")
 
-    res = false
+    local res = false
 
     -- `marathon` and `metronome` service names belong to the Root Marathon and
     -- Root Metronome respectively. They will never be present in Root

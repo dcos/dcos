@@ -11,7 +11,7 @@ if key_file_path == nil then
     ngx.log(ngx.WARN, "AUTH_TOKEN_VERIFICATION_KEY_FILE_PATH not set.")
 else
     ngx.log(ngx.NOTICE, "Reading auth token verification key from `" .. key_file_path .. "`.")
-    AUTH_TOKEN_VERIFICATION_KEY = util.get_file_content(key_file_path)
+    local AUTH_TOKEN_VERIFICATION_KEY = util.get_file_content(key_file_path)
     if (AUTH_TOKEN_VERIFICATION_KEY == nil or AUTH_TOKEN_VERIFICATION_KEY == '') then
         -- Normalize to nil, for simplified subsequent per-request check.
         AUTH_TOKEN_VERIFICATION_KEY = nil
@@ -23,7 +23,7 @@ end
 
 
 local function validate_jwt_or_exit()
-    uid, err = authcommon.validate_jwt(AUTH_TOKEN_VERIFICATION_KEY)
+    local uid, err = authcommon.validate_jwt(AUTH_TOKEN_VERIFICATION_KEY)
     if err ~= nil then
         if err == 401 then
             return authcommon.exit_401("oauthjwt")

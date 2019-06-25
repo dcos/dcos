@@ -503,7 +503,7 @@ end
 
 
 local function fetch_and_store_mesos_leader()
-    leader_ip = fetch_mesos_leader_state()
+    local leader_ip = fetch_mesos_leader_state()
 
     if leader_ip ~= nil then
         store_leader_data("mesos", leader_ip)
