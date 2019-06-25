@@ -258,9 +258,9 @@ function util.extract_service_path_component(service_path, fieldsLimit)
         end
     end
 
-    plain_name = table.concat(tmpTbl, "/")
+    local plain_name = table.concat(tmpTbl, "/")
     util.reverse(tmpTbl)
-    normalised_name = table.concat(tmpTbl, ".")
+    local normalised_name = table.concat(tmpTbl, ".")
 
     return normalised_name, plain_name, moreSegments
 end
@@ -279,7 +279,7 @@ function util.normalize_service_name(serviceName, fieldsLimit)
     -- For the convienience we use MesosDNS notation (dots+reversing) in favour
     -- of Marathon&Mesos(just path) as it simplifies the code a bit.
 
-    ret, _, _ = util.extract_service_path_component(serviceName, nil)
+    local ret, _, _ = util.extract_service_path_component(serviceName, nil)
 
     return ret
 end

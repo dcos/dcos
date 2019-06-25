@@ -255,9 +255,9 @@ local function fetch_and_store_marathon_apps(auth_token)
        -- In "container/bridge" and "host" networking modes we need to use the
        -- host port for routing (available via task's ports array)
        if is_container_network(app) and app["container"]["portMappings"][portIdx]["containerPort"] ~= 0 then
-         port = app["container"]["portMappings"][portIdx]["containerPort"]
+         local port = app["container"]["portMappings"][portIdx]["containerPort"]
        else
-         port = task["ports"][portIdx]
+         local port = task["ports"][portIdx]
        end
 
        if not port then
@@ -304,7 +304,7 @@ local function fetch_and_store_marathon_apps(auth_token)
        ::continue::
     end
 
-    svcApps_json = cjson_safe.encode(svcApps)
+    local svcApps_json = cjson_safe.encode(svcApps)
 
     ngx.log(ngx.DEBUG, "Storing Marathon apps data to SHM.")
     if not cache_data("svcapps", svcApps_json) then
@@ -325,12 +325,12 @@ function store_leader_data(leader_name, leader_ip)
     if HOST_IP == 'unknown' or leader_ip == 'unknown' then
         ngx.log(ngx.ERR,
         "Private IP address of the host is unknown, aborting cache-entry creation for ".. leader_name .. " leader")
-        mleader = '{"is_local": "unknown", "leader_ip": null}'
+        local mleader = '{"is_local": "unknown", "leader_ip": null}'
     elseif leader_ip == HOST_IP then
-        mleader = '{"is_local": "yes", "leader_ip": "'.. HOST_IP ..'"}'
+        local mleader = '{"is_local": "yes", "leader_ip": "'.. HOST_IP ..'"}'
         ngx.log(ngx.INFO, leader_name .. " leader is local")
     else
-        mleader = '{"is_local": "no", "leader_ip": "'.. leader_ip ..'"}'
+        local mleader = '{"is_local": "no", "leader_ip": "'.. leader_ip ..'"}'
         ngx.log(ngx.INFO, leader_name .. " leader is non-local: `" .. leader_ip .. "`")
     end
 
@@ -383,7 +383,7 @@ end
 
 
 local function fetch_and_store_marathon_leader(auth_token)
-    leader_ip = fetch_generic_leader(
+    local leader_ip = fetch_generic_leader(
         UPSTREAM_MARATHON .. "/v2/leader", "marathon", auth_token)
 
     if leader_ip ~= nil then
@@ -427,7 +427,7 @@ local function fetch_and_store_state_mesos(auth_token)
     end
 
     for _, agent in ipairs(raw_state_summary["slaves"]) do
-        a_id = agent["id"]
+        local a_id = agent["id"]
         parsed_state_summary['agent_pids'][a_id] = agent["pid"]
     end
 
