@@ -6,6 +6,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Change `iam-database-restore` to work when no database exists. (DCOS_OSS-5317)
+
 ### Security updates
 
 
