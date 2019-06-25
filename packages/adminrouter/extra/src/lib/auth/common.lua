@@ -104,7 +104,7 @@ local function validate_jwt(auth_token_verification_key)
     local token = nil
     if auth_header ~= nil then
         ngx.log(ngx.DEBUG, "Authorization header found. Attempt to extract token.")
-        local _, _, token = string.find(auth_header, "token=(.+)")
+        _, _, token = string.find(auth_header, "token=(.+)")
         -- Implement Bearer fall-back method.
         if token == nil then
             _, _, token = string.find(auth_header, "Bearer (.+)")
@@ -116,7 +116,7 @@ local function validate_jwt(auth_token_verification_key)
         -- Read cookie. Note(JP): ngx.var.cookie_* cannot access a cookie with a
         -- dash in its name.
         local cookie, err = cookiejar:new()
-        local token = cookie:get("dcos-acs-auth-cookie")
+        token = cookie:get("dcos-acs-auth-cookie")
         if token == nil then
             ngx.log(ngx.DEBUG, "dcos-acs-auth-cookie not found.")
         else
