@@ -2,56 +2,11 @@
 
 set -ex
 
-# Support https sources in apt
-apt-get -y update
-apt-get -y install apt-transport-https software-properties-common
-
-# CockroachDB requires node and yarn to build UI
-# https://github.com/cockroachdb/cockroach/blob/v2.0.7/build/bootstrap/bootstrap-debian.sh#L8-L12
-curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
-echo "deb https://deb.nodesource.com/node_6.x xenial main" | tee /etc/apt/sources.list.d/nodesource.list
-
-curl -fsSL https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
-echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-
-add-apt-repository ppa:ubuntu-toolchain-r/test
-
-# cockroachdb requires gcc 6.0+
-apt-get -y update
-apt-get install -y gcc-6 g++-6 cpp-6 \
-    nodejs yarn
-
-update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 40
-update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-6 40
-update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 40
-
-GOLANG_VERSION=1.11.5
-GOLANG_DOWNLOAD_URL=https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
-GOLANG_DOWNLOAD_SHA256=ff54aafedff961eb94792487e827515da683d61a5f9482f668008832631e5d25
-
-rm -rf /usr/local/go
-curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz
-echo "$GOLANG_DOWNLOAD_SHA256  golang.tar.gz" | sha256sum -c -
-tar -C /usr/local -xzf golang.tar.gz
-rm golang.tar.gz
-
 cd /pkg/src/cockroach
-
-# go-libedit requries `ncurses` library. We need to replace `cgo` flags so that
-# go compiler passes path to DCOS included ncurses library.
-sed -i 's/LDFLAGS: -lncurses/LDFLAGS: -L\/opt\/mesosphere\/active\/ncurses\/lib -ltinfo -lncurses/g' src/github.com/cockroachdb/cockroach/vendor/github.com/knz/go-libedit/unix/editline_unix.go
-sed -i 's/CFLAGS: -Wno-unused-result/CFLAGS: -Wno-unused-result -I\/opt\/mesosphere\/active\/ncurses\/include -I\/opt\/mesosphere\/active\/ncurses\/include\/ncurses/g' src/github.com/cockroachdb/cockroach/vendor/github.com/knz/go-libedit/unix/editline_unix.go
-
-# Build the cockroach binary.
-# We need to set CC_PATH and CXX_PATH because the build in the teamcity is not
-# recognizing paths correctly
-export CC=/usr/bin/gcc
-export CXX=/usr/bin/g++
-make build TYPE=release-linux-gnu CC_PATH=/usr/bin/gcc  CXX_PATH=/usr/bin/g++
 
 # Copy the cockroach binary to the the package bin directory.
 mkdir -p $PKG_PATH/bin
-install -m 755 /pkg/src/cockroach/src/github.com/cockroachdb/cockroach/cockroach-linux-2.6.32-gnu-amd64 $PKG_PATH/bin/cockroach
+install -m 755 /pkg/src/cockroach/cockroach $PKG_PATH/bin/cockroach
 
 # Copy the registration script to the package bin directory.
 install -m 755 /pkg/extra/register.py $PKG_PATH/bin/register.py
@@ -63,8 +18,8 @@ install -m 755 /pkg/extra/cockroach.sh $PKG_PATH/bin/cockroach.sh
 install -m 755 /pkg/extra/cockroachdb-change-config.py $PKG_PATH/bin/cockroachdb-change-config.py
 
 # Copy the IAM database backup/restore scripts to the package bin directory.
-install -m 755 /pkg/extra/iam-database-backup $PKG_PATH/bin/iam-database-backup
-install -m 755 /pkg/extra/iam-database-restore $PKG_PATH/bin/iam-database-restore
+install -m 755 /pkg/extra/iam-database-backup.py $PKG_PATH/bin/iam-database-backup
+install -m 755 /pkg/extra/iam-database-restore.py $PKG_PATH/bin/iam-database-restore
 
 # Auto-start the dcos-cockroach service on the masters.
 mkdir -p "$PKG_PATH/dcos.target.wants_master"

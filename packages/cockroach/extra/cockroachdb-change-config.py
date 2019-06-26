@@ -20,63 +20,69 @@ log = logging.getLogger(__name__)
 logging.basicConfig(format='[%(levelname)s] %(message)s', level='INFO')
 
 
-def set_cluster_version(my_internal_ip: str, version: str) -> None:
-    """
-    Use `cockroach sql` to set the cluster-wide configuration setting
-    version to `version`. This requires that all nodes are running the
-    given version of CockroachDB and are operating successfully.
-
-    Relevant JIRA ticket: https://jira.mesosphere.com/browse/DCOS-19427
-
-    Args:
-        my_internal_ip: The internal IP of the current host.
-        version: The current 'major.minor' version of CockroachDB.
-    """
-    command = [
-        '/opt/mesosphere/active/cockroach/bin/cockroach',
-        'sql',
-        '--insecure',
-        '--host={}'.format(my_internal_ip),
-        '-e',
-        "SET CLUSTER SETTING version = '{}';".format(version),
-        ]
-    config_text = 'version: {}'.format(version)
-    log.info('Set `%s` via command `%s`', config_text, ' '.join(command))
-    subprocess.run(command, input=config_text.encode('ascii'))
-    log.info('Command returned')
-
-
 def set_num_replicas(my_internal_ip: str, num_replicas: int) -> None:
     """
-    Use `cockroach zone set` to set the cluster-wide configuration setting
-    num_replicas to `num_replicas`. This does not matter on a 3-master
-    DC/OS cluster because the CockroachDB default for num_replicas is 3.
-    This however ensures that num_replicas is set to 5 on a 5-master DC/OS
-    cluster. Feed the configuration key/value pair to the `cockroach` program
-    via stdin.
+    CockroachDB version 2.1.7 sets the internal system range replication
+    factor to `5` by default:
+    https://www.cockroachlabs.com/docs/stable/configure-replication-zones.html#view-all-replication-zones
 
+    In order to adjust this to the maximum replication factor possible for a
+    given DC/OS cluster and to provide maximum fault-tolerance we set the
+    cluster-wide configuration setting `num_replicas` for any database entity
+    to the given `num_replicas` count which equals the number of DC/OS master
+    nodes.
     Relevant JIRA ticket: https://jira.mesosphere.com/browse/DCOS-20352
     """
+    zone_config = 'num_replicas = {}'.format(num_replicas)
 
-    def _set_replicas_for_zone(zone: str) -> None:
-        command = [
-            '/opt/mesosphere/active/cockroach/bin/cockroach',
-            'zone',
-            'set',
-            zone,
-            '--insecure',
-            '--host={}'.format(my_internal_ip),
-            '-f',
-            '-'
-            ]
-        config_text = 'num_replicas: %s' % (num_replicas, )
-        log.info('Set `%s` via command `%s`', config_text, ' '.join(command))
-        subprocess.run(command, input=config_text.encode('ascii'))
+    # If more entities that must have their `num_replicas` setting adjusted are
+    # added to CockroachDB, a DC/OS check will fail on all clusters (DC/OS OSS
+    # 1.13+, DC/OS Enterprise 1.12+).
+    # describing that there are "underreplicated ranges".
+    # The DC/OS check is named "cockroachdb_replication".
+    #
+    # To resolve this, add more items to the following list.
+    # To display CockroachDB entities that must have their `num_replicas` setting
+    # adjusted, issue the following SQL command: `SHOW ALL ZONE CONFIGURATIONS;`
+    #
+    # One option is to parse the output of the above SQL command.
+    # However, there is a plan for CockroachDB that all replication will be
+    # derived from ``.default``.
+    # See https://forum.cockroachlabs.com/t/change-replication-factor/2052/3.
+    # Should this happen, we can replace the following loop initialisation with:
+    # zone = '.default'
+    # db_entity = 'RANGE default'
+    for zone, db_entity in [
+        ('.default', 'RANGE default'),
+        ('system', 'DATABASE system'),
+        ('system.jobs', 'TABLE system.public.jobs'),
+        ('.meta', 'RANGE meta'),
+        ('.system', 'RANGE system'),
+        ('.liveness', 'RANGE liveness'),
+    ]:
+        sql_command = (
+            'ALTER {db_entity} CONFIGURE ZONE USING {zone_config};'
+        ).format(
+            db_entity=db_entity,
+            zone_config=zone_config,
+        )
+        command = (
+            '/opt/mesosphere/active/cockroach/bin/cockroach '
+            'sql -e "{sql_command}" --insecure --host={host}'
+        ).format(
+            sql_command=sql_command,
+            host=my_internal_ip,
+        )
+        message = (
+            'Set `{zone_config}` for `{zone}` via command `{command}`'
+        ).format(
+            zone_config=repr(zone_config),
+            zone=repr(zone),
+            command=repr(command),
+        )
+        log.info(message)
+        subprocess.run(command, shell=True)
         log.info('Command returned')
-
-    zones = ['.default', '.liveness', '.meta']
-    for zone in zones:
-        _set_replicas_for_zone(zone=zone)
 
 
 def get_expected_master_node_count() -> int:
@@ -106,9 +112,6 @@ def main() -> None:
     log.info('Expected number of DC/OS master nodes: %s', master_node_count)
 
     set_num_replicas(my_internal_ip, master_node_count)
-
-    # We are running CockroachDB v2.0.x so pass '2.0'.
-    set_cluster_version(my_internal_ip, '2.0')
 
 
 if __name__ == '__main__':

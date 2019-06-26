@@ -5,6 +5,8 @@ local jwt_validators = require "resty.jwt-validators"
 
 local util = require "util"
 
+local BODY_403_ERROR_RESPONSE
+local BODY_401_ERROR_RESPONSE
 
 local errorpages_dir_path = os.getenv("AUTH_ERROR_PAGE_DIR_PATH")
 if errorpages_dir_path == nil then
@@ -102,6 +104,7 @@ local function validate_jwt(auth_token_verification_key)
 
     local auth_header = ngx.var.http_Authorization
     local token = nil
+    local _
     if auth_header ~= nil then
         ngx.log(ngx.DEBUG, "Authorization header found. Attempt to extract token.")
         _, _, token = string.find(auth_header, "token=(.+)")

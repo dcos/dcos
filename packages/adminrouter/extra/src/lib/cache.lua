@@ -254,6 +254,7 @@ local function fetch_and_store_marathon_apps(auth_token)
        -- in that case.
        -- In "container/bridge" and "host" networking modes we need to use the
        -- host port for routing (available via task's ports array)
+       local port
        if is_container_network(app) and app["container"]["portMappings"][portIdx]["containerPort"] ~= 0 then
          port = app["container"]["portMappings"][portIdx]["containerPort"]
        else
@@ -304,7 +305,7 @@ local function fetch_and_store_marathon_apps(auth_token)
        ::continue::
     end
 
-    svcApps_json = cjson_safe.encode(svcApps)
+    local svcApps_json = cjson_safe.encode(svcApps)
 
     ngx.log(ngx.DEBUG, "Storing Marathon apps data to SHM.")
     if not cache_data("svcapps", svcApps_json) then
@@ -322,6 +323,9 @@ local function fetch_and_store_marathon_apps(auth_token)
 end
 
 function store_leader_data(leader_name, leader_ip)
+
+    local mleader
+
     if HOST_IP == 'unknown' or leader_ip == 'unknown' then
         ngx.log(ngx.ERR,
         "Private IP address of the host is unknown, aborting cache-entry creation for ".. leader_name .. " leader")
@@ -383,7 +387,7 @@ end
 
 
 local function fetch_and_store_marathon_leader(auth_token)
-    leader_ip = fetch_generic_leader(
+    local leader_ip = fetch_generic_leader(
         UPSTREAM_MARATHON .. "/v2/leader", "marathon", auth_token)
 
     if leader_ip ~= nil then
@@ -427,7 +431,7 @@ local function fetch_and_store_state_mesos(auth_token)
     end
 
     for _, agent in ipairs(raw_state_summary["slaves"]) do
-        a_id = agent["id"]
+        local a_id = agent["id"]
         parsed_state_summary['agent_pids'][a_id] = agent["pid"]
     end
 
@@ -503,7 +507,7 @@ end
 
 
 local function fetch_and_store_mesos_leader()
-    leader_ip = fetch_mesos_leader_state()
+    local leader_ip = fetch_mesos_leader_state()
 
     if leader_ip ~= nil then
         store_leader_data("mesos", leader_ip)
