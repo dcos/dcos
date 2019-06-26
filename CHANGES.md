@@ -25,6 +25,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Telegraf now supports specyfying port names for task-label based Prometheus
   endpoints discovery (DCOS-55100)
 
+* Upgraded platform curl from 7.59.0 to 7.65.1. (DCOS_OSS-5319)
+
 ### Breaking changes
 
 Admin Router now requires a CPU with SSE4.2 support.
