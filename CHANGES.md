@@ -19,7 +19,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## Notable changes
 
-* Updated DC/OS UI to [1.13+v2.82.6](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.6)
+* Updated to [Mesos 1.8.1-dev](https://github.com/apache/mesos/blob/fca89344aff96a8e2ec1b5b70f4a3cb0e899c352/CHANGELOG).
 
 * Updated to [Metronome 0.6.27](https://github.com/dcos/metronome/tree/b8a73dd).
 
@@ -31,7 +31,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
-* Mesos task logs are sent to Fluent Bit with task metadata included. (DCOS-53834)
+* Mesos task logs are now sent to Fluent Bit with task metadata included. (DCOS-53834)
 
 * Telegraf reports procstat metrics only for DC/OS systemd services, instead of all processes. (DCOS-53589)
 
