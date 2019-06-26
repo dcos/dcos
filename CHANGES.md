@@ -37,9 +37,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Telegraf now supports specyfying port names for task-label based Prometheus endpoints discovery. (DCOS-55100)
 
+* Fixed Telegraf configuration error that dropped task metrics with certain names or tags. (DCOS_OSS-5032)
+
 * Added Fluent Bit metrics to the pipeline. (DCOS-54425)
 
-* [Metronome] Improved validation of secrets. (DCOS_OSS-5019 )
+* [Metronome] Improved validation of secrets. (DCOS_OSS-5019)
 
 * [Metronome] The task ID is now included in finished job runs. (DCOS_OSS-5273)
 
@@ -48,8 +50,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * [Cosmos] Consolidated fetching artifacts from the Internet. (DCOS-54077)
 
 * [Cosmos] Restored old behavior of the `describe` command. (DCOS-44111)
-
-
 
 ### Security updates
 
@@ -65,8 +65,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ### Fixed and improved
 
 * DC/OS Net: consolidated writing `resolv.conf`, addressing a rare race condition. (DCOS-47608)
-
-* Fixed Telegraf configuration error that dropped task metrics with certain names or tags. (DCOS_OSS-5032)
 
 * `dcos_generate_config[ee].sh --validate-config` doesn't complain about missing deprecated `ssh_*` options anymore. (DCOS_OSS-5152)
 
