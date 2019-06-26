@@ -6,7 +6,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
-* Change `iam-database-restore` to work when no database exists. (DCOS_OSS-5317)
+* Changed `iam-database-restore` to work when no database exists. (DCOS_OSS-5317)
 
 
 ### Security updates
@@ -54,7 +54,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ### Security updates
 
 
-## DC/OS 1.13.0 (2019-05-31)
+## DC/OS 1.13.1 (2019-05-31)
 
 ### Notable changes
 
