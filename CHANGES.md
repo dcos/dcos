@@ -8,6 +8,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Change `iam-database-restore` to work when no database exists. (DCOS_OSS-5317)
 
+
 ### Security updates
 
 
@@ -28,8 +29,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Telegraf reports procstat metrics only for DC/OS systemd services, instead of all processes. (DCOS-53589)
 
-* Telegraf now supports specyfying port names for task-label based Prometheus
-  endpoints discovery (DCOS-55100)
+* Telegraf now supports specyfying port names for task-label based Prometheus endpoints discovery. (DCOS-55100)
+
+* [Metronome] Improved validation of secrets. (DCOS_OSS-5019 )
+
+* [Metronome] The task ID is now included in finished job runs. (DCOS_OSS-5273)
 
 ### Security updates
 
