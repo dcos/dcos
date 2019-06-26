@@ -325,14 +325,13 @@ end
 function store_leader_data(leader_name, leader_ip)
 
     local mleader
-    local leader
 
     if HOST_IP == 'unknown' or leader_ip == 'unknown' then
         ngx.log(ngx.ERR,
         "Private IP address of the host is unknown, aborting cache-entry creation for ".. leader_name .. " leader")
         mleader = '{"is_local": "unknown", "leader_ip": null}'
     elseif leader_ip == HOST_IP then
-        leader = '{"is_local": "yes", "leader_ip": "'.. HOST_IP ..'"}'
+        mleader = '{"is_local": "yes", "leader_ip": "'.. HOST_IP ..'"}'
         ngx.log(ngx.INFO, leader_name .. " leader is local")
     else
         mleader = '{"is_local": "no", "leader_ip": "'.. leader_ip ..'"}'
