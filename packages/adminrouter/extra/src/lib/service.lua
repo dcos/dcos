@@ -357,8 +357,8 @@ local function recursive_resolve(auth, path, marathon_cache, mesos_cache)
         return ngx.exit(err_code)
     end
     if do_req_url_rewriting then
-      prefix = "/service/" .. service_realpath
-      adjusted_prefix = string.sub(ngx.var.uri, string.len(prefix) + 1)
+      local prefix = "/service/" .. service_realpath
+      local adjusted_prefix = string.sub(ngx.var.uri, string.len(prefix) + 1)
       if adjusted_prefix == "" then
           adjusted_prefix = "/"
       end
