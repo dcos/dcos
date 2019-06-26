@@ -54,7 +54,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ### Security updates
 
 
-## DC/OS 1.13.1
+## DC/OS 1.13.0 (2019-05-31)
 
 ### Notable changes
 
