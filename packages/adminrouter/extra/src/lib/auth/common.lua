@@ -5,6 +5,8 @@ local jwt_validators = require "resty.jwt-validators"
 
 local util = require "util"
 
+local BODY_403_ERROR_RESPONSE
+local BODY_401_ERROR_RESPONSE
 
 local errorpages_dir_path = os.getenv("AUTH_ERROR_PAGE_DIR_PATH")
 if errorpages_dir_path == nil then
@@ -12,7 +14,7 @@ if errorpages_dir_path == nil then
 else
     local p = errorpages_dir_path .. "/401.html"
     ngx.log(ngx.NOTICE, "Reading 401 response from `" .. p .. "`.")
-    local BODY_401_ERROR_RESPONSE = util.get_file_content(p)
+    BODY_401_ERROR_RESPONSE = util.get_file_content(p)
     if (BODY_401_ERROR_RESPONSE == nil or BODY_401_ERROR_RESPONSE == '') then
         -- Normalize to '', for sending empty response bodies.
         BODY_401_ERROR_RESPONSE = ''
@@ -20,7 +22,7 @@ else
     end
     local p = errorpages_dir_path .. "/403.html"
     ngx.log(ngx.NOTICE, "Reading 403 response from `" .. p .. "`.")
-    local BODY_403_ERROR_RESPONSE = util.get_file_content(p)
+    BODY_403_ERROR_RESPONSE = util.get_file_content(p)
     if (BODY_403_ERROR_RESPONSE == nil or BODY_403_ERROR_RESPONSE == '') then
         -- Normalize to '', for sending empty response bodies.
         BODY_403_ERROR_RESPONSE = ''
