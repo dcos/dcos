@@ -25,6 +25,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to [Marathon 1.8.204](https://github.com/mesosphere/marathon/tree/5209e3183).
 
+* Updated DC/OS UI to [1.13+v2.82.6](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.6)
+
+* ZooKeeper instances on master nodes can now be backed up and restored via a dedicated command line script `dcos-zk` that is shipped with DC/OS. (DCOS_OSS-5186)
+
 ### Fixed and improved
 
 * Mesos task logs are sent to Fluent Bit with task metadata included. (DCOS-53834)
@@ -32,6 +36,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Telegraf reports procstat metrics only for DC/OS systemd services, instead of all processes. (DCOS-53589)
 
 * Telegraf now supports specyfying port names for task-label based Prometheus endpoints discovery. (DCOS-55100)
+
+* Added Fluent Bit metrics to the pipeline. (DCOS-54425)
 
 * [Metronome] Improved validation of secrets. (DCOS_OSS-5019 )
 
@@ -54,15 +60,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to [Mesos 1.8.1-dev](https://github.com/apache/mesos/blob/f5770dcf322bd8a88e6c88041364a4089d92be90/CHANGELOG).
 
-* ZooKeeper instances on master nodes can now be backed up and restored via a dedicated command line script `dcos-zk` that is shipped with DC/OS. (DCOS_OSS-5186)
-
 * Updated DC/OS UI to [1.13+v2.82.3](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.3)
 
 ### Fixed and improved
 
 * DC/OS Net: consolidated writing `resolv.conf`, addressing a rare race condition. (DCOS-47608)
-
-* Added Fluent Bit metrics to the pipeline (DCOS-54425)
 
 * Fixed Telegraf configuration error that dropped task metrics with certain names or tags. (DCOS_OSS-5032)
 
