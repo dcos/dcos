@@ -739,13 +739,13 @@ def calculate_check_config_contents(check_config, custom_checks, check_search_pa
 
 def calculate_check_config(check_time):
     # We consider only two timeouts:
-    # * 1s for immediate checks (such as checking for the presence of CLI utilities).
+    # * 5s for immediate checks (such as checking for the presence of CLI utilities).
     # * 30s for any check which is expected to take more than 1s.
     #
     # The 30s value was chosen arbitrarily. It may be increased in the future as required.
     # We chose not to use a value greater than 1min, as the checks are automatically executed
     # in parallel every minute.
-    instant_check_timeout = "1s"
+    instant_check_timeout = "5s"
     normal_check_timeout = "30s"
     check_config = {
         'node_checks': {
