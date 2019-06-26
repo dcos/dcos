@@ -134,7 +134,7 @@ function util.set_leader_host(leader_name, local_upstream, skip_prefix_iflocal)
         -- Let's adjust the URI we send to the upstream service/remove the
         -- `/dcos-history-service` prefix:
         if skip_prefix_iflocal ~= nil then
-            next_char = string.len(skip_prefix_iflocal) + 1
+            local next_char = string.len(skip_prefix_iflocal) + 1
             ngx.req.set_uri(string.sub(ngx.var.uri, next_char))
         end
         ngx.var.leader_host = local_upstream
