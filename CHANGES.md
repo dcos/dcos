@@ -23,6 +23,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to [Metronome 0.6.27](https://github.com/dcos/metronome/tree/b8a73dd).
 
+* Updated to [Marathon 1.8.204](https://github.com/mesosphere/marathon/tree/5209e3183).
+
 ### Fixed and improved
 
 * Mesos task logs are sent to Fluent Bit with task metadata included. (DCOS-53834)
@@ -34,6 +36,14 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * [Metronome] Improved validation of secrets. (DCOS_OSS-5019 )
 
 * [Metronome] The task ID is now included in finished job runs. (DCOS_OSS-5273)
+
+* [Marathon ] Fixed an issue where two independent deployments could interfere with each other resulting in too many tasks launched and/or possibly a stuck deployment. (DCOS-54927, DCOS_OSS-5260)
+
+* [Cosmos] Consolidated fetching artifacts from the Internet. (DCOS-54077)
+
+* [Cosmos] Restored old behavior of the `describe` command. (DCOS-44111)
+
+
 
 ### Security updates
 
