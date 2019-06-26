@@ -325,6 +325,7 @@ end
 function store_leader_data(leader_name, leader_ip)
 
     local mleader
+    local leader
 
     if HOST_IP == 'unknown' or leader_ip == 'unknown' then
         ngx.log(ngx.ERR,

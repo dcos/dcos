@@ -266,7 +266,7 @@ local function resolve(service_name, mesos_cache, marathon_cache)
 
     local res = false
     local err_code
-    local err
+    local err_text
 
     -- `marathon` and `metronome` service names belong to the Root Marathon and
     -- Root Metronome respectively. They will never be present in Root
