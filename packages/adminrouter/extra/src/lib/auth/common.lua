@@ -104,6 +104,7 @@ local function validate_jwt(auth_token_verification_key)
 
     local auth_header = ngx.var.http_Authorization
     local token = nil
+    local _
     if auth_header ~= nil then
         ngx.log(ngx.DEBUG, "Authorization header found. Attempt to extract token.")
         _, _, token = string.find(auth_header, "token=(.+)")
