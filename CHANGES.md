@@ -14,8 +14,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Optimized memory and cpu usage in dcos-net. (DCOS_OSS-5269, DCOS_OSS-5268)
 
-* Telegraf now supports specyfying port names for task-label based Prometheus
-  endpoints discovery (DCOS-55100)
+* Telegraf now supports specyfying port names for task-label based Prometheus endpoints discovery. (DCOS-55100)
 
 * Enabled Mesos IPC namespace isolator for configurable IPC namespace and /dev/shm. (DCOS-54618)
 
@@ -31,6 +30,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Upgraded platform curl from 7.59.0 to 7.65.1. (DCOS_OSS-5319)
 
+* Upgraded from platform OpenSSL 1.0.2x to release 1.1.1x. (DCOS-54108)
 
 
 ### Breaking changes
