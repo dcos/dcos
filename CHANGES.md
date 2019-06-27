@@ -30,7 +30,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Upgraded platform curl from 7.59.0 to 7.65.1. (DCOS_OSS-5319)
 
-* Upgraded from platform OpenSSL 1.0.2x to release 1.1.1x. (DCOS-54108)
+* Upgraded platform OpenSSL from 1.0.2x to release 1.1.1x. (DCOS-54108)
 
 
 ### Breaking changes
