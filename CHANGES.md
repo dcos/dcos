@@ -19,6 +19,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Enabled Mesos IPC namespace isolator for configurable IPC namespace and /dev/shm. (DCOS-54618)
 
+* Enhanced compatibility of `gen/build_deploy/bash.py` with Oracle Linux (Thanks to Michal Jakobczyk for the patch).
+
 * Upgraded Admin Router's underlying OpenResty/nginx from 1.13.x to 1.15.x. (DCOS_OSS-5320)
 
 * Upgraded Erlang OTP to release 22.0.3. (DCOS_OSS-5276)
