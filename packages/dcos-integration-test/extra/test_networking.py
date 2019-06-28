@@ -2,6 +2,7 @@
 
 import contextlib
 import enum
+import itertools
 import json
 import logging
 import subprocess
@@ -24,6 +25,7 @@ __contact__ = 'dcos-networking@mesosphere.io'
 log = logging.getLogger(__name__)
 
 GLOBAL_PORT_POOL = iter(range(10000, 32000))
+GLOBAL_OCTET_POOL = itertools.cycle(range(254, 10, -1))
 
 
 class Container(enum.Enum):
@@ -188,6 +190,11 @@ def unused_port():
     return next(GLOBAL_PORT_POOL)
 
 
+def unused_octet():
+    global GLOBAL_OCTET_POOL
+    return next(GLOBAL_OCTET_POOL)
+
+
 def lb_enabled():
     expanded_config = test_helpers.get_expanded_config()
     return expanded_config['enable_lb'] == 'true'
@@ -196,14 +203,14 @@ def lb_enabled():
 @retrying.retry(wait_fixed=2000,
                 stop_max_delay=5 * 60 * 1000,
                 retry_on_result=lambda ret: ret is None)
-def ensure_routable(cmd, host, port):
+def ensure_routable(cmd, host, port, json_output=True):
     proxy_uri = 'http://{}:{}/run_cmd'.format(host, port)
     log.info('Sending {} data: {}'.format(proxy_uri, cmd))
     response = requests.post(proxy_uri, data=cmd, timeout=5).json()
     log.info('Requests Response: {}'.format(repr(response)))
     if response['status'] != 0:
         return None
-    return json.loads(response['output'])
+    return json.loads(response['output']) if json_output else response['output']
 
 
 def generate_vip_app_permutations():
@@ -370,13 +377,15 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6,
     origin_host = slaves[0]
     proxy_host = slaves[0] if same_host else slaves[1]
     if named_vip:
-        vip = '/namedvip:{}'.format(vip_port)
-        vipaddr = 'namedvip.marathon.l4lb.thisdcos.directory:{}'.format(vip_port)
+        label = str(uuid.uuid4())
+        vip = '/{}:{}'.format(label, vip_port)
+        vipaddr = '{}.marathon.l4lb.thisdcos.directory:{}'.format(label, vip_port)
     elif ipv6:
-        vip = 'fd01:c::1:{}'.format(vip_port)
-        vipaddr = '[fd01:c::1]:{}'.format(vip_port)
+        vip_ip = 'fd01:c::{}'.format(unused_octet())
+        vip = '{}:{}'.format(vip_ip, vip_port)
+        vipaddr = '[{}]:{}'.format(vip_ip, vip_port)
     else:
-        vip = '1.1.1.7:{}'.format(vip_port)
+        vip = '198.51.100.{}:{}'.format(unused_octet(), vip_port)
         vipaddr = vip
     cmd = '{} {} http://{}/test_uuid'.format(
         '/opt/mesosphere/bin/curl -s -f -m 5',
@@ -724,10 +733,16 @@ def test_dcos_cni_l4lb(dcos_api_session):
         server_app.wait(dcos_api_session)
         client_app.wait(dcos_api_session)
 
+        client_host, client_port = client_app.hostport(dcos_api_session)
+
+        # Check linux kernel version
+        uname = ensure_routable('uname -r', client_host, client_port, json_output=False)
+        if '3.10.0-862' <= uname < '3.10.0-898':
+            return pytest.skip('See https://bugzilla.redhat.com/show_bug.cgi?id=1572983')
+
         # Change the client command task to do a curl on the server we just deployed.
         cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(server_vip_addr)
 
-        client_host, client_port = client_app.hostport(dcos_api_session)
         assert ensure_routable(cmd, client_host, client_port)['test_uuid'] == server_app.uuid
     finally:
         server_app.purge(dcos_api_session)
