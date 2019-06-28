@@ -1,5 +1,6 @@
 import contextlib
 import enum
+import itertools
 import json
 import logging
 import subprocess
@@ -18,6 +19,7 @@ from dcos_test_utils import marathon
 log = logging.getLogger(__name__)
 
 GLOBAL_PORT_POOL = iter(range(10000, 32000))
+GLOBAL_OCTET_POOL = itertools.cycle(range(254, 10, -1))
 
 
 pytestmark = [pytest.mark.usefixtures('marathon_groups_reset')]
@@ -197,6 +199,11 @@ def unused_port():
     return next(GLOBAL_PORT_POOL)
 
 
+def unused_octet():
+    global GLOBAL_OCTET_POOL
+    return next(GLOBAL_OCTET_POOL)
+
+
 def lb_enabled():
     expanded_config = test_helpers.get_expanded_config()
     return expanded_config['enable_lb'] == 'true'
@@ -374,13 +381,15 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6,
     origin_host = slaves[0]
     proxy_host = slaves[0] if same_host else slaves[1]
     if named_vip:
-        vip = '/namedvip:{}'.format(vip_port)
-        vipaddr = 'namedvip.marathon.l4lb.thisdcos.directory:{}'.format(vip_port)
+        label = str(uuid.uuid4())
+        vip = '/{}:{}'.format(label, vip_port)
+        vipaddr = '{}.marathon.l4lb.thisdcos.directory:{}'.format(label, vip_port)
     elif ipv6:
-        vip = 'fd01:c::1:{}'.format(vip_port)
-        vipaddr = vip
+        vip_ip = 'fd01:c::{}'.format(unused_octet())
+        vip = '{}:{}'.format(vip_ip, vip_port)
+        vipaddr = '[{}]:{}'.format(vip_ip, vip_port)
     else:
-        vip = '1.1.1.7:{}'.format(vip_port)
+        vip = '198.51.100.{}:{}'.format(unused_octet(), vip_port)
         vipaddr = vip
     cmd = '{} {} http://{}/test_uuid'.format(
         '/opt/mesosphere/bin/curl -s -f -m 5',
