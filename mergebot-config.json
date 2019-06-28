@@ -39,7 +39,8 @@
         "jira_regex": "((?:DCOS|DCOS_OSS|COPS|MARATHON)-\\d+)"
     },
     "required statuses": {
-        "master": ["mergebot/enterprise/build-status/aggregate",
+        "master": [
+                    "mergebot/enterprise/build-status/aggregate",
                     "mergebot/enterprise/has_ship-it",
                     "mergebot/enterprise/review/approved/min_2",
                     "mergebot/has_ship-it",
@@ -52,8 +53,13 @@
                     "teamcity/dcos/test/aws/onprem/static/group2",
                     "teamcity/dcos/test/aws/onprem/static/group3",
                     "teamcity/dcos/test/aws/onprem/static/group4",
-                    "teamcity/dcos/test/test-e2e/group1"],
-        "1.13.2" : ["mergebot/enterprise/build-status/aggregate",
+                    "teamcity/dcos/test/test-e2e/group1",
+                    "teamcity/dcos/test/terraform/aws/onprem/static/group1",
+                    "teamcity/dcos/test/terraform/aws/onprem/static/group2",
+                    "teamcity/dcos/test/terraform/aws/onprem/static/group4"
+        ],
+        "1.13.2" : [
+                    "mergebot/enterprise/build-status/aggregate",
                     "mergebot/enterprise/has_ship-it",
                     "mergebot/enterprise/review/approved/min_2",
                     "mergebot/has_ship-it",
@@ -66,8 +72,13 @@
                     "teamcity/dcos/test/aws/onprem/static/group2",
                     "teamcity/dcos/test/aws/onprem/static/group3",
                     "teamcity/dcos/test/aws/onprem/static/group4",
-                    "teamcity/dcos/test/test-e2e/group1"],
-        "1.13" : ["mergebot/enterprise/build-status/aggregate",
+                    "teamcity/dcos/test/test-e2e/group1",
+                    "teamcity/dcos/test/terraform/aws/onprem/static/group1",
+                    "teamcity/dcos/test/terraform/aws/onprem/static/group2",
+                    "teamcity/dcos/test/terraform/aws/onprem/static/group4"
+        ],
+        "1.13" : [
+                    "mergebot/enterprise/build-status/aggregate",
                     "mergebot/enterprise/has_ship-it",
                     "mergebot/enterprise/review/approved/min_2",
                     "mergebot/has_ship-it",
@@ -80,8 +91,13 @@
                     "teamcity/dcos/test/aws/onprem/static/group2",
                     "teamcity/dcos/test/aws/onprem/static/group3",
                     "teamcity/dcos/test/aws/onprem/static/group4",
-                    "teamcity/dcos/test/test-e2e/group1"],
-        "1.12.5" : ["mergebot/enterprise/build-status/aggregate",
+                    "teamcity/dcos/test/test-e2e/group1",
+                    "teamcity/dcos/test/terraform/aws/onprem/static/group1",
+                    "teamcity/dcos/test/terraform/aws/onprem/static/group2",
+                    "teamcity/dcos/test/terraform/aws/onprem/static/group4"
+        ],
+        "1.12.5" : [
+                  "mergebot/enterprise/build-status/aggregate",
                   "mergebot/enterprise/has_ship-it",
                   "mergebot/enterprise/review/approved/min_2",
                   "mergebot/has_ship-it",
@@ -94,8 +110,13 @@
                   "teamcity/dcos/test/aws/onprem/static/group2",
                   "teamcity/dcos/test/aws/onprem/static/group3",
                   "teamcity/dcos/test/aws/onprem/static/group4",
-                  "teamcity/dcos/test/test-e2e/group1"],
-        "1.12" : ["mergebot/enterprise/build-status/aggregate",
+                  "teamcity/dcos/test/test-e2e/group1",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group1",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group2",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group4"
+        ],
+        "1.12" : [
+                  "mergebot/enterprise/build-status/aggregate",
                   "mergebot/enterprise/has_ship-it",
                   "mergebot/enterprise/review/approved/min_2",
                   "mergebot/has_ship-it",
@@ -108,8 +129,13 @@
                   "teamcity/dcos/test/aws/onprem/static/group2",
                   "teamcity/dcos/test/aws/onprem/static/group3",
                   "teamcity/dcos/test/aws/onprem/static/group4",
-                  "teamcity/dcos/test/test-e2e/group1"],
-        "1.11" : ["mergebot/enterprise/build-status/aggregate",
+                  "teamcity/dcos/test/test-e2e/group1",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group1",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group2",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group4"
+        ],
+        "1.11" : [
+                  "mergebot/enterprise/build-status/aggregate",
                   "mergebot/enterprise/has_ship-it",
                   "mergebot/enterprise/review/approved/min_2",
                   "mergebot/has_ship-it",
@@ -122,8 +148,13 @@
                   "teamcity/dcos/test/aws/onprem/static/group2",
                   "teamcity/dcos/test/aws/onprem/static/group3",
                   "teamcity/dcos/test/aws/onprem/static/group4",
-                  "teamcity/dcos/test/test-e2e/group1"],
-        "1.10" : ["mergebot/enterprise/build-status/aggregate",
+                  "teamcity/dcos/test/test-e2e/group1",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group1",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group2",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group4"
+        ],
+        "1.10" : [
+                  "mergebot/enterprise/build-status/aggregate",
                   "mergebot/enterprise/has_ship-it",
                   "mergebot/enterprise/review/approved/min_2",
                   "mergebot/has_ship-it",
@@ -136,6 +167,10 @@
                   "teamcity/dcos/test/aws/onprem/static/group2",
                   "teamcity/dcos/test/aws/onprem/static/group3",
                   "teamcity/dcos/test/aws/onprem/static/group4",
-                  "teamcity/dcos/test/test-e2e/group1"]
+                  "teamcity/dcos/test/test-e2e/group1",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group1",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group2",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group4"
+        ]
     }
 }
