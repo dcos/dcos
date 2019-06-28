@@ -203,14 +203,14 @@ def lb_enabled():
 @retrying.retry(wait_fixed=2000,
                 stop_max_delay=5 * 60 * 1000,
                 retry_on_result=lambda ret: ret is None)
-def ensure_routable(cmd, host, port):
+def ensure_routable(cmd, host, port, json_output=True):
     proxy_uri = 'http://{}:{}/run_cmd'.format(host, port)
     log.info('Sending {} data: {}'.format(proxy_uri, cmd))
     response = requests.post(proxy_uri, data=cmd, timeout=5).json()
     log.info('Requests Response: {}'.format(repr(response)))
     if response['status'] != 0:
         return None
-    return json.loads(response['output'])
+    return json.loads(response['output']) if json_output else response['output']
 
 
 def generate_vip_app_permutations():
@@ -733,10 +733,16 @@ def test_dcos_cni_l4lb(dcos_api_session):
         server_app.wait(dcos_api_session)
         client_app.wait(dcos_api_session)
 
+        client_host, client_port = client_app.hostport(dcos_api_session)
+
+        # Check linux kernel version
+        uname = ensure_routable('uname -r', client_host, client_port, json_output=False)
+        if '3.10.0-862' <= uname < '3.10.0-898':
+            return pytest.skip('See https://bugzilla.redhat.com/show_bug.cgi?id=1572983')
+
         # Change the client command task to do a curl on the server we just deployed.
         cmd = '/opt/mesosphere/bin/curl -s -f -m 5 http://{}/test_uuid'.format(server_vip_addr)
 
-        client_host, client_port = client_app.hostport(dcos_api_session)
         assert ensure_routable(cmd, client_host, client_port)['test_uuid'] == server_app.uuid
     finally:
         server_app.purge(dcos_api_session)
