@@ -38,6 +38,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated DC/OS UI to [master+v2.117.0](https://github.com/dcos/dcos-ui/releases/tag/master+v2.117.0)
 
+* Added L4LB metrics in DC/OS Net. (DCOS_OSS-5011)
+
 
 ### Breaking changes
 
