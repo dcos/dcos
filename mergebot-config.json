@@ -49,10 +49,10 @@
                     "teamcity/dcos/build/tox",
                     "continuous-integration/jenkins/pr-head",
                     "teamcity/dcos/test/aws/cloudformation/simple",
-                    "teamcity/dcos/test/aws/onprem/static/group3",
                     "teamcity/dcos/test/test-e2e/group1",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group1",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group2",
+                    "teamcity/dcos/test/terraform/aws/onprem/static/group3",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group4"
         ],
         "1.13.2" : [
@@ -65,10 +65,10 @@
                     "teamcity/dcos/build/tox",
                     "continuous-integration/jenkins/pr-head",
                     "teamcity/dcos/test/aws/cloudformation/simple",
-                    "teamcity/dcos/test/aws/onprem/static/group3",
                     "teamcity/dcos/test/test-e2e/group1",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group1",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group2",
+                    "teamcity/dcos/test/terraform/aws/onprem/static/group3",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group4"
         ],
         "1.13" : [
@@ -81,10 +81,10 @@
                     "teamcity/dcos/build/tox",
                     "continuous-integration/jenkins/pr-head",
                     "teamcity/dcos/test/aws/cloudformation/simple",
-                    "teamcity/dcos/test/aws/onprem/static/group3",
                     "teamcity/dcos/test/test-e2e/group1",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group1",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group2",
+                    "teamcity/dcos/test/terraform/aws/onprem/static/group3",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group4"
         ],
         "1.12.5" : [
@@ -97,10 +97,10 @@
                   "teamcity/dcos/build/tox",
                   "continuous-integration/jenkins/pr-head",
                   "teamcity/dcos/test/aws/cloudformation/simple",
-                  "teamcity/dcos/test/aws/onprem/static/group3",
                   "teamcity/dcos/test/test-e2e/group1",
                   "teamcity/dcos/test/terraform/aws/onprem/static/group1",
                   "teamcity/dcos/test/terraform/aws/onprem/static/group2",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group3",
                   "teamcity/dcos/test/terraform/aws/onprem/static/group4"
         ],
         "1.12" : [
@@ -113,10 +113,10 @@
                   "teamcity/dcos/build/tox",
                   "continuous-integration/jenkins/pr-head",
                   "teamcity/dcos/test/aws/cloudformation/simple",
-                  "teamcity/dcos/test/aws/onprem/static/group3",
                   "teamcity/dcos/test/test-e2e/group1",
                   "teamcity/dcos/test/terraform/aws/onprem/static/group1",
                   "teamcity/dcos/test/terraform/aws/onprem/static/group2",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group3",
                   "teamcity/dcos/test/terraform/aws/onprem/static/group4"
         ],
         "1.11" : [
@@ -129,10 +129,10 @@
                   "teamcity/dcos/build/tox",
                   "continuous-integration/jenkins/pr-head",
                   "teamcity/dcos/test/aws/cloudformation/simple",
-                  "teamcity/dcos/test/aws/onprem/static/group3",
                   "teamcity/dcos/test/test-e2e/group1",
                   "teamcity/dcos/test/terraform/aws/onprem/static/group1",
                   "teamcity/dcos/test/terraform/aws/onprem/static/group2",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group3",
                   "teamcity/dcos/test/terraform/aws/onprem/static/group4"
         ],
         "1.10" : [
@@ -145,10 +145,10 @@
                   "teamcity/dcos/build/tox",
                   "continuous-integration/jenkins/pr-head",
                   "teamcity/dcos/test/aws/cloudformation/simple",
-                  "teamcity/dcos/test/aws/onprem/static/group3",
                   "teamcity/dcos/test/test-e2e/group1",
                   "teamcity/dcos/test/terraform/aws/onprem/static/group1",
                   "teamcity/dcos/test/terraform/aws/onprem/static/group2",
+                  "teamcity/dcos/test/terraform/aws/onprem/static/group3",
                   "teamcity/dcos/test/terraform/aws/onprem/static/group4"
         ]
     }
