@@ -3,8 +3,8 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/telegraf.git",
-    "ref": "e93be33110ad063592450a46f382389ecfe380ad",
-    "ref_origin": "mesos-operations-metrics"
+    "ref": "25a378fbbec6acbe081dd53a4c2631ff9f1f3413",
+    "ref_origin": "1.9.4-dcos"
   },
   "environment": {
     "STATSD_UDP_HOST": "localhost",
