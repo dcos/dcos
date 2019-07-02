@@ -23,7 +23,7 @@ end
 
 
 local function validate_jwt_or_exit()
-    uid, err = authcommon.validate_jwt(AUTH_TOKEN_VERIFICATION_KEY)
+    local uid, err = authcommon.validate_jwt(AUTH_TOKEN_VERIFICATION_KEY)
     if err ~= nil then
         if err == 401 then
             return authcommon.exit_401("oauthjwt")
