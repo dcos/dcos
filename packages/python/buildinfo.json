@@ -7,8 +7,8 @@
   "sources": {
     "python": {
       "kind": "url_extract",
-      "url": "https://www.python.org/ftp/python/3.6.6/Python-3.6.6.tar.xz",
-      "sha1": "5731cf379838023fc8c55491b4068c4404d0e34f"
+      "url": "https://www.python.org/ftp/python/3.6.8/Python-3.6.8.tgz",
+      "sha1": "09fcc4edaef0915b4dedbfb462f1cd15f82d3a6f"
     },
     "cython": {
       "kind": "url_extract",
