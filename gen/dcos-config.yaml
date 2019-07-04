@@ -1805,6 +1805,9 @@ package:
                   "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/metrics/mesos_listener"]
               },
               {
+                  "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/metrics/l4lb"]
+              },
+              {
                   "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/metrics/lashup"]
               },
               {
@@ -2345,6 +2348,16 @@ package:
         ## Specify timeout duration for slower prometheus clients (default is 3s)
         response_timeout = "30s"
         name_prefix = "mesos_listener_"
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Net"
+      # Read metrics from DC/OS Net Prometheus endpoint l4lb registry.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://127.0.0.1:62080/v1/metrics/l4lb"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "30s"
+        name_prefix = "l4lb_"
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "DC/OS Net"
