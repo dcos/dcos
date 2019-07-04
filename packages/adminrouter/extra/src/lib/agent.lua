@@ -7,7 +7,7 @@ local function resolve()
         return ngx.exit(ngx.HTTP_SERVICE_UNAVAILABLE)
     end
 
-    agent_pid = state['agent_pids'][ngx.var.agentid]
+    local agent_pid = state['agent_pids'][ngx.var.agentid]
     if agent_pid ~= nil then
         local split_pid = agent_pid:split("@")
         local host_port = split_pid[2]:split(":")

@@ -22,6 +22,8 @@ EnvironmentFile=/opt/mesosphere/etc/check_time.env
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/metronome
 EnvironmentFile=-/run/dcos/etc/metronome/service.env
+# The env file in /var/lib/dcos is for post-install configuration via environment variables, and persists with upgrades.
+EnvironmentFile=-/var/lib/dcos/metronome/environment
 ExecStartPre=/opt/mesosphere/bin/check-time
 ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-metronome

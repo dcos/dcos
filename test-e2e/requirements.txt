@@ -1,4 +1,4 @@
-git+https://github.com/dcos/dcos-e2e.git@2019.06.03.0
+git+https://github.com/dcos/dcos-e2e.git@2019.06.19.0
 cryptography==2.5
 docker==3.7.0
 jwt==0.5.4

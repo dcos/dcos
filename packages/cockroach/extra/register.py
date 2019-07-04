@@ -104,6 +104,7 @@ import subprocess
 from contextlib import contextmanager
 from typing import Any, Generator, List, Optional
 
+import requests
 import retrying
 
 from kazoo.client import KazooClient
@@ -114,6 +115,7 @@ from kazoo.exceptions import (
 )
 from kazoo.retry import KazooRetry
 from kazoo.security import make_digest_acl
+from requests import ConnectionError, HTTPError, Timeout
 
 from dcos_internal_utils import utils
 
@@ -147,7 +149,7 @@ def zk_connect(zk_user: Optional[str] = None, zk_secret: Optional[str] = None) -
         max_jitter=1,
         max_delay=3,
         ignore_expire=True,
-        )
+    )
     # Retry commands every 0.3 seconds, for a total of <1s (usually 0.9)
     cmd_retry_policy = KazooRetry(
         max_tries=3,
@@ -262,36 +264,115 @@ def _zk_lock(zk: KazooClient, lock_path: str, contender_id: str, timeout: int) -
     log.info("ZooKeeper lock released.")
 
 
-def _init_cockroachdb_cluster(
-        ip: str,
-        ) -> None:
+def _init_cockroachdb_cluster(ip: str) -> None:
     """
-    Starts CockroachDB listening on `ip`. It waits until the PID file
-    appears, signalling that the instance has started successfully
-    and is serving requests. Thereafter it shuts down the bootstrap
-    instance again.
+    Starts CockroachDB listening on `ip`. It waits until the cluster ID is
+    published via the local gossip endpoint, signalling that the instance has
+    successfully initialized the cluster. Thereafter it shuts down the
+    bootstrap CockroachDB instance again.
 
     Args:
         ip:
             The IP that CockroachDB should listen on.
             This should be the internal IP of the current host.
     """
+    # We chose 1 second as a time to wait between retries.
+    # If we chose a value longer than this, we could wait for up to <chosen
+    # value> too long between retries, delaying the cluster start by up to that
+    # value.
+    #
+    # The more often we run this function, the more logs we generate.
+    # If we chose a value smaller than 1 second, we would therefore generate more logs.
+    # We consider 1 second to be a reasonable maximum delay and in our
+    # experience the log size has not been an issue.
+    wait_fixed_ms = 1000
+
+    # In our experience, the cluster is always initialized within one minute.
+    # The downside of having a timeout which is too short is that we may crash
+    # when the cluster was on track to becoming healthy.
+    #
+    # The downside of having a timeout which is too long is that we may wait up
+    # to that timeout to see an error.
+    #
+    # We chose 5 minutes as trade-off between these two, as we think that it
+    # is extremely unlikely that a successful initialization will take more
+    # than 5 minutes, and we think that waiting up to 5 minutes "too long"
+    # for an error (and accumulating 5 minutes of logs) is not so bad.
+    stop_max_delay_ms = 5 * 60 * 1000
+
     @retrying.retry(
-        wait_fixed=1000,
-        stop_max_attempt_number=10,
+        wait_fixed=wait_fixed_ms,
+        stop_max_delay=stop_max_delay_ms,
         retry_on_result=lambda x: x is False,
-        )
-    def _wait_for_pidfile(pid: int) -> bool:
+    )
+    def _wait_for_cluster_init() -> bool:
         """
-        Try and read the PID from `PID_FILE_PATH` and match it to the given `pid`.
-        If, after 10 seconds, the PIDs don't match, raise an exception.
+        CockroachDB Cluster initialization takes a certain amount of time
+        while the cluster ID and node ID are written to the storage.
+
+        If after 5 minutes of attempts the cluster ID is not available raise an
+        exception.
         """
+        gossip_url = 'http://localhost:8090/_status/gossip/local'
+
+        # 3.05 is a magic number for the HTTP ConnectTimeout.
+        # http://docs.python-requests.org/en/master/user/advanced/#timeouts
+        # The rationale is to set connect timeouts to slightly larger than a multiple of 3,
+        # which is the default TCP packet retransmission window.
+        # 27 is the ReadTimeout, taken from the same example.
+        connect_timeout_seconds = 3.05
+
+        # In our experience, we have not seen a read timeout of > 1 second.
+        # If this were extremely long, we may have to wait up to that amount of time to see an error.
+        # If this were too short, and for example CockroachDB were spending a long time to respond
+        # because it is busy or on slow hardware, we may retry this function
+        # even when the cluster is initialized.
+        # Therefore we choose a long timeout which is not expected uncomfortably long for operators.
+        read_timeout_seconds = 30
+        request_timeout = (connect_timeout_seconds, read_timeout_seconds)
+
         try:
-            with open(PID_FILE_PATH) as f:
-                pid_in_file = int(f.read())
-            return pid == pid_in_file
-        except FileNotFoundError:
+            response = requests.get(gossip_url, timeout=request_timeout)
+        except (ConnectionError, Timeout) as exc:
+            message = (
+                'Retrying GET request to {url} as error {exc} was given.'
+            ).format(url=gossip_url, exc=exc)
+            log.info(message)
             return False
+
+        try:
+            response.raise_for_status()
+        except HTTPError as exc:
+            # 150 bytes was chosen arbitrarily as it might not be so long as to
+            # cause annoyance in a console, but it might be long enough to show
+            # some useful data.
+            first_150_bytes = response.content[:150]
+            decoded_first_150_bytes = first_150_bytes.decode(
+                encoding='ascii',
+                errors='backslashreplace',
+            )
+            message = (
+                'Retrying GET request to {url} as status code {status_code} was given.'
+                'The first 150 bytes of the HTTP response, '
+                'decoded with the ASCII character encoding: '
+                '"{resp_text}".'
+            ).format(
+                url=gossip_url,
+                status_code=response.status_code,
+                resp_text=decoded_first_150_bytes,
+            )
+            log.info(message)
+            return False
+
+        output = json.loads(response.text)
+        try:
+            cluster_id_bytes = output['infos']['cluster-id']['value']['rawBytes']
+        except KeyError:
+            return False
+        log.info((
+            'Cluster ID bytes {} present in local gossip endpoint.'
+        ).format(cluster_id_bytes))
+        return True
 
     # By default cockroachdb grows the cache to 25% of available
     # memory. This makes no sense given our comparatively tiny amount
@@ -337,10 +418,13 @@ def _init_cockroachdb_cluster(
     proc = subprocess.Popen(
         cockroach_args,
         preexec_fn=run_as_dcos_cockroach,
-        )
+    )
+
     log.info("Waiting for CockroachDB to become ready.")
-    _wait_for_pidfile(proc.pid)
+    _wait_for_cluster_init()
     log.info("CockroachDB cluster has been initialized.")
+
+    # Terminate CockroachDB instance to start it via systemd unit again later.
     log.info("Terminating CockroachDB bootstrap instance.")
     # Send SIGTERM to the cockroach process to trigger a graceful shutdown.
     proc.terminate()

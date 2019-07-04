@@ -176,7 +176,7 @@ local function resolve_via_mesos_dns(service_name)
     --    or not, `nil` if there was an error.
     --  - err_code, err_text - if an error occurred these will be HTTP status
     --    and error text that should be sent to the client. `nil` otherwise
-    upstream_scheme, upstream_url, err_code, err_text = upstream_url_from_srv_query(
+    local upstream_scheme, upstream_url, err_code, err_text = upstream_url_from_srv_query(
         service_name)
 
     if err_code ~= nil then
@@ -264,7 +264,9 @@ local function resolve(service_name, mesos_cache, marathon_cache)
     --    and error text that should be sent to the client. `nil` otherwise
     ngx.log(ngx.DEBUG, "Trying to resolve service name `".. service_name .. "`")
 
-    res = false
+    local res = false
+    local err_code
+    local err_text
 
     -- `marathon` and `metronome` service names belong to the Root Marathon and
     -- Root Metronome respectively. They will never be present in Root
@@ -355,8 +357,8 @@ local function recursive_resolve(auth, path, marathon_cache, mesos_cache)
         return ngx.exit(err_code)
     end
     if do_req_url_rewriting then
-      prefix = "/service/" .. service_realpath
-      adjusted_prefix = string.sub(ngx.var.uri, string.len(prefix) + 1)
+      local prefix = "/service/" .. service_realpath
+      local adjusted_prefix = string.sub(ngx.var.uri, string.len(prefix) + 1)
       if adjusted_prefix == "" then
           adjusted_prefix = "/"
       end

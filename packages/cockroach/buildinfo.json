@@ -1,9 +1,8 @@
 {
-  "requires": ["ncurses"],
   "single_source" : {
       "kind": "url_extract",
-      "url": "https://binaries.cockroachdb.com/cockroach-v2.0.7.src.tgz",
-      "sha1": "8b3940ef9ab46646b4178bc93c9904b57d9f3c50"
+      "url": "https://binaries.cockroachdb.com/cockroach-v2.1.7.linux-amd64.tgz",
+      "sha1": "68021a4779a5df27dfd8a8e72dbd20599018623d"
   },
   "username": "dcos_cockroach",
   "state_directory": true
