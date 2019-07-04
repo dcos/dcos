@@ -2,6 +2,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 1.13.3 (in development)
 
+* Updated DC/OS UI to [1.13+v2.82.6](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.6)
+
 ### Notable changes
 
 ### Fixed and improved
