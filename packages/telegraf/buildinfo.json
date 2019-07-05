@@ -3,8 +3,8 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/telegraf.git",
-    "ref": "4af92b507da53dd1d06a6637544b97b04724e5f0",
-    "ref_origin": "1.9.4-dcos"
+    "ref": "808537d69a4e5426705a5cdb87f46cdc769c8ba0",
+    "ref_origin": "prom-network-scope"
   },
   "environment": {
     "STATSD_UDP_HOST": "localhost",
