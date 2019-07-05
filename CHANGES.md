@@ -42,6 +42,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Added L4LB metrics in DC/OS Net. (DCOS_OSS-5011)
 
+* Bumped Mesos to upstream commit '1a6760c60dc823b088ffbcf48909cf3e371570f3'. (DCOS_OSS-5342)
+
 
 ### Breaking changes
 
