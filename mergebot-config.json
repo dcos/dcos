@@ -40,6 +40,8 @@
     },
     "required statuses": {
         "master": [
+                    "mergebot/changes_md",
+                    "mergebot/enterprise/changes_md",
                     "mergebot/enterprise/build-status/aggregate",
                     "mergebot/enterprise/has_ship-it",
                     "mergebot/enterprise/review/approved/min_2",
@@ -56,6 +58,8 @@
                     "teamcity/dcos/test/terraform/aws/onprem/static/group4"
         ],
         "1.13" : [
+                    "mergebot/changes_md",
+                    "mergebot/enterprise/changes_md",
                     "mergebot/enterprise/build-status/aggregate",
                     "mergebot/enterprise/has_ship-it",
                     "mergebot/enterprise/review/approved/min_2",
@@ -72,6 +76,8 @@
                     "teamcity/dcos/test/terraform/aws/onprem/static/group4"
         ],
         "1.12" : [
+                  "mergebot/changes_md",
+                  "mergebot/enterprise/changes_md",
                   "mergebot/enterprise/build-status/aggregate",
                   "mergebot/enterprise/has_ship-it",
                   "mergebot/enterprise/review/approved/min_2",
@@ -88,6 +94,8 @@
                   "teamcity/dcos/test/terraform/aws/onprem/static/group4"
         ],
         "1.11" : [
+                  "mergebot/changes_md",
+                  "mergebot/enterprise/changes_md",
                   "mergebot/enterprise/build-status/aggregate",
                   "mergebot/enterprise/has_ship-it",
                   "mergebot/enterprise/review/approved/min_2",
@@ -104,6 +112,8 @@
                   "teamcity/dcos/test/terraform/aws/onprem/static/group4"
         ],
         "1.10" : [
+                  "mergebot/changes_md",
+                  "mergebot/enterprise/changes_md",
                   "mergebot/enterprise/build-status/aggregate",
                   "mergebot/enterprise/has_ship-it",
                   "mergebot/enterprise/review/approved/min_2",
