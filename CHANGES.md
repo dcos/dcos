@@ -2,6 +2,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 1.13.3 (in development)
 
+* Updated DC/OS UI to [1.13+v2.82.7](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.7)
+
 ### Notable changes
 
 * Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/tree/b8a73dd)
