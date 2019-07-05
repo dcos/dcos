@@ -14,6 +14,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * [Metronome] Updates to fix daylight saving issues.
 
+* Changed `dcos-zk backup` and `dcos-zk restore` to exit early if ZooKeeper is running. (DCOS_OSS-5353)
+
 ### Security updates
 
 
