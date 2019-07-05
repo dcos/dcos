@@ -2436,6 +2436,7 @@ package:
           "frameworks",
           "framework_offers",
           "tasks",
+          "operations",
           "messages",
           "evqueue",
           "registrar",
