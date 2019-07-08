@@ -13,6 +13,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Changed `iam-database-restore` to work when no database exists. (DCOS_OSS-5317)
 
+* Changed `iam-database-backup` to exit early if ZooKeeper is not running. (DCOS_OSS-5353)
+
 * [Marathon] Marathon will not get stuck anymore when trying to kill an unreachable instance. (MARATHON-8422)
 
 * [Marathon] Persistent volumes with profile now default to `DiskType.Mount`. (MARATHON-8631)
