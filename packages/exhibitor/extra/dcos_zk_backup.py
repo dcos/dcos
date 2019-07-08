@@ -41,12 +41,15 @@ def run_command(cmd: str, verbose: bool) -> None:
 
 def _is_zookeeper_running(verbose: bool) -> bool:
     """
-    Exhibitor and therefore ZooKeeper is in active state (running).
+    Returns whether the ZooKeeper process that Exhibitor controls is running.
     """
+    zk_pid_file = Path('/var/lib/dcos/exhibitor/zk.pid')
+    zk_pid = int(zk_pid_file.read_text())
     try:
-        run_command('systemctl is-active --quiet dcos-exhibitor', verbose)
+        # Check whether the ZooKeeper that Exhibitor controls is running.
+        run_command('kill -0 {zk_pid}'.format(zk_pid=zk_pid), verbose)
     except subprocess.CalledProcessError:
-        # Non-zero exit code indicates Exhibitor + ZooKeeper are dead.
+        # Exit code 1 indicates that ZooKeeper is dead.
         return False
     return True
 
@@ -90,7 +93,7 @@ def backup_zookeeper(
 
     print('Validate that ZooKeeper is not running')
     if _is_zookeeper_running(verbose):
-        sys.stderr.write('dcos-exhibitor must not be running. Aborting.\n')
+        sys.stderr.write('ZooKeeper must not be running. Aborting.\n')
         sys.exit(1)
 
     print('Copying ZooKeeper files to {tmp_zookeeper_dir}'.format(
@@ -155,7 +158,20 @@ def restore_zookeeper(backup: Path, tmp_dir: Path, verbose: bool) -> None:
 
     print('Validate that ZooKeeper is not running')
     if _is_zookeeper_running(verbose):
-        sys.stderr.write('dcos-exhibitor must not be running. Aborting.\n')
+        # We believe that this may be hit during tests when ZooKeeper is not running.
+        # If the case ever appears where Exhibitor is not running but ZooKeeper is
+        # we must reconsider our assumptions about Exhibitor properly controlling
+        # the ZooKeeper process.
+        #
+        # The test in question is
+        # `TestZooKeeperBackup.test_transaction_log_backup_and_restore` and
+        # this test stops the Exhibitor process.  We assume in that test that
+        # by the time `systemctl stop` returns, ZooKeeper is stopped. However,
+        # we suspect that this may not be the case every single time. If it is
+        # not the case we will get here in that test.
+        #
+        # See https://jira.mesosphere.com/browse/DCOS-55827 for details.
+        sys.stderr.write('ZooKeeper must not be running. Aborting.\n')
         sys.exit(1)
 
     print('Moving ZooKeeper files temporarily to {tmp_zookeeper_dir}'.format(
