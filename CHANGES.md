@@ -7,6 +7,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ### What's new
 
 * Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0)
+* Updated to Metronome 0.6.33 which has the following benefits: When querying run detail with embed=history, successfulFinishedRuns and failedFinishedRuns contains new field tasks which is an array of taskIds of that finished run. This will allow people to query task ids even for finished job runs.  Updated to the latest version of cron-utils 9.0.0 and removed threeten-backport. This fixes a number of cron related issues in the underlying dependencies.  Fixed a bug when task status was not updated after the task turned running (when querying embed=activeRuns).  Fixes DCOS_OSS-5166 where metronome did not use the revive operation
 
 * Metronome post-install configuration can be added to `/var/lib/dcos/metronome/environment`. (DCOS_OSS-5309)
 * Updated telegraf to process mesos operations metrics (DCOS_OSS-5023)
