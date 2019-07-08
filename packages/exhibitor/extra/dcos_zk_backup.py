@@ -47,6 +47,10 @@ def _is_zookeeper_running(verbose: bool) -> bool:
     zk_pid = int(zk_pid_file.read_text())
     try:
         # Check whether the ZooKeeper that Exhibitor controls is running.
+        #
+        # From the man page:
+        # If  signal  is  0, then no actual signal is sent, but error checking
+        # is still performed.
         run_command('kill -0 {zk_pid}'.format(zk_pid=zk_pid), verbose)
     except subprocess.CalledProcessError:
         # Exit code 1 indicates that ZooKeeper is dead.
