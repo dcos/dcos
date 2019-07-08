@@ -4,7 +4,7 @@
     "bouncer": {
       "kind": "git",
       "git": "git@github.com:dcos/bouncer.git",
-      "ref": "aa4f6a5f0e81497d4f0ab5818d56d8105579eaa3",
+      "ref": "550a15514aec371c04eebb7421371f855ebbc23e",
       "ref_origin": "jongiddy/check-sender"
     }
   },
