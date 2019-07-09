@@ -13,7 +13,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Changed `iam-database-restore` to work when no database exists. (DCOS_OSS-5317)
 
-* Changed `iam-database-backup` to exit early if ZooKeeper is not running. (DCOS_OSS-5353)
+* Changed `dcos-zk backup` and `dcos-zk restore` to exit early if ZooKeeper is running. (DCOS_OSS-5353)
 
 * [Marathon] Marathon will not get stuck anymore when trying to kill an unreachable instance. (MARATHON-8422)
 
