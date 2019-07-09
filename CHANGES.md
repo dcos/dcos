@@ -4,6 +4,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
+* Updated DC/OS UI to [1.12+v2.26.16](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.26.16)
+
 * Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/tree/b8a73dd)
 
 ### Fixed and improved
