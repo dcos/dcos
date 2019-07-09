@@ -33,8 +33,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Updated ref of dvdcli to fix dvdcli package build (DCOS-53581)
 
 * Updated urllib3 version to 1.24.2 due to: https://nvd.nist.gov/vuln/detail/CVE-2019-11324. (DCOS-52210)
-* Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/tree/b8a73dd)
-* Updated to [Marathon 1.8.207](https://github.com/mesosphere/marathon/tree/9f3550487).
 
 ### Fixed and improved
 
