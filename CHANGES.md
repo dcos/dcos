@@ -8,7 +8,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/tree/b8a73dd)
 * Updated to [Marathon 1.8.207](https://github.com/mesosphere/marathon/tree/9f3550487).
-* Updated to [Mesos 1.8.x](https://github.com/apache/mesos/tree/07d053f68b75505a4386913f05d521fa5e36373d)
+* Updated to [Mesos 1.8.x](https://github.com/apache/mesos/blob/07d053f68b75505a4386913f05d521fa5e36373d/CHANGELOG)
 
 ### Fixed and improved
 
