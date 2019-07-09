@@ -16,8 +16,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated ref of dvdcli to fix dvdcli package build (DCOS-53581)
 
-* Updated DC/OS UI to [master+v2.111.1](https://github.com/dcos/dcos-ui/releases/tag/master+v2.111.1)
-
 * Fixed performance degradation in Lashup. As of now, dcos-dns uses a new LWW mode to gossip dns zone updates. (DCOS_OSS-4240)
 
 * Optimized memory and cpu usage in dcos-net. (DCOS_OSS-5269, DCOS_OSS-5268)
@@ -40,7 +38,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Upgraded platform OpenSSL from 1.0.2x to release 1.1.1x. (DCOS-54108)
 
-* Updated DC/OS UI to [master+v2.117.0](https://github.com/dcos/dcos-ui/releases/tag/master+v2.117.0)
+* Updated DC/OS UI to [master+v2.119.1](https://github.com/dcos/dcos-ui/releases/tag/master+v2.119.1)
 
 * Added L4LB metrics in DC/OS Net. (DCOS_OSS-5011)
 
