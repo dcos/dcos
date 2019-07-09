@@ -29,6 +29,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Updated ZooKeeper to release [3.4.14](https://zookeeper.apache.org/doc/r3.4.14/releasenotes.html). (DCOS_OSS-5002)
 
 * Updated ref of dvdcli and zookeeper to get uncached build jobs passing (DCOS-52092)
+* Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0)
+* Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/tree/b8a73dd)
+* Updated to [Marathon 1.8.207](https://github.com/mesosphere/marathon/tree/9f3550487).
 
 ### Fixed and improved
 
