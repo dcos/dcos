@@ -112,6 +112,35 @@ def test_metrics_master_mesos(dcos_api_session):
     check_mesos_metrics()
 
 
+def test_metrics_agents_mesos_overlay(dcos_api_session):
+    """Assert that mesos overlay module metrics on agents are present."""
+    nodes = get_agents(dcos_api_session)
+
+    for node in nodes:
+        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+        def check_mesos_metrics():
+            response = get_metrics_prom(dcos_api_session, node)
+            for family in text_string_to_metric_families(response.text):
+                for sample in family.samples:
+                    if sample[0] == 'mesos_overlay_slave_registering':
+                        return
+            raise Exception('Expected Mesos mesos_overlay_slave_registering metric not found')
+        check_mesos_metrics()
+
+
+def test_metrics_master_mesos_overlay(dcos_api_session):
+    """Assert that mesos overlay module metrics on master are present."""
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+    def check_mesos_metrics():
+        response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                if sample[0] == 'mesos_overlay_master_process_restarts':
+                    return
+        raise Exception('Expected Mesos mesos_overlay_master_process_restarts metric not found')
+    check_mesos_metrics()
+
+
 def test_metrics_master_zookeeper(dcos_api_session):
     """Assert that ZooKeeper metrics on master are present."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
