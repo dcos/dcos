@@ -31,8 +31,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ### Security updates
 
 
-### Notable changes
-
 
 ## DC/OS 1.13.2
 
