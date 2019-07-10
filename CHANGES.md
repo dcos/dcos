@@ -25,6 +25,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * [Metronome] Updates to fix daylight saving issues.
 
+* [Telegraf] Prometheus metrics can be collected from tasks in container networking mode. (DCOS-56018)
+
 ### Security updates
 
 
