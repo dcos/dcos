@@ -75,7 +75,7 @@
                     "teamcity/dcos/test/terraform/aws/onprem/static/group3",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group4"
         ],
-        "1.13.4" : [
+        "1.13.3" : [
                     "mergebot/changes_md",
                     "mergebot/enterprise/changes_md",
                     "mergebot/enterprise/build-status/aggregate",
