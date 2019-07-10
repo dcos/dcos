@@ -21,11 +21,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Changed `dcos-zk backup` and `dcos-zk restore` to exit early if ZooKeeper is running. (DCOS_OSS-5353)
 
+* DC/OS Metrics: Prometheus metrics can now be collected from Mesos tasks in the `container` networking mode. (DCOS-56018, COPS-5040)
+
 * [Marathon] Marathon will not get stuck anymore when trying to kill an unreachable instance. (MARATHON-8422)
 
 * [Marathon] Persistent volumes tagged with a profile name now default to `DiskType.Mount`. (MARATHON-8631)
-
-* [Telegraf] Prometheus metrics can be collected from tasks in container networking mode. (DCOS-56018)
 
 
 ### Security updates
