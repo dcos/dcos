@@ -23,6 +23,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * DC/OS Metrics: Prometheus metrics can now be collected from Mesos tasks in the `container` networking mode. (DCOS-56018, COPS-5040)
 
+* DC/OS Checks: made false negative results less likely by changing a timeout constant. (DCOS-53742, COPS-5041)
+
 * [Marathon] Marathon will not get stuck anymore when trying to kill an unreachable instance. (MARATHON-8422)
 
 * [Marathon] Persistent volumes tagged with a profile name now default to `DiskType.Mount`. (MARATHON-8631)
