@@ -4,7 +4,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
-* Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/tree/b8a73dd)
+* Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/releases/tag/v0.6.33)
 
 * Updated to [Marathon 1.8.207](https://github.com/mesosphere/marathon/tree/9f3550487).
 
@@ -24,12 +24,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * [Marathon] Marathon will not get stuck anymore when trying to kill an unreachable instance. (MARATHON-8422)
 
 * [Marathon] Persistent volumes tagged with a profile name now default to `DiskType.Mount`. (MARATHON-8631)
-
-* [Metronome] Querying a job run detail with the arguments `embed=history`, `successfulFinishedRuns` and `failedFinishedRuns` now yields a field `tasks` which is an array of task IDs. This allows to query task IDs for finished job runs.
-
-* [Metronome] Fixes metronome where it did not use the revive operation.
-
-* [Metronome] Updates to fix daylight saving issues.
 
 * [Telegraf] Prometheus metrics can be collected from tasks in container networking mode. (DCOS-56018)
 
