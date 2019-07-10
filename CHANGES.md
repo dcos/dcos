@@ -30,9 +30,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Security updates
 
+N/A
 
-
-## DC/OS 1.13.2
+## DC/OS 1.13.2 (2019-07-03)
 
 ## Notable changes
 
