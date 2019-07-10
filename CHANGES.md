@@ -25,13 +25,14 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * [Marathon] Persistent volumes tagged with a profile name now default to `DiskType.Mount`. (MARATHON-8631)
 
-* [Metronome] Querying run detail with embed=history, successfulFinishedRuns and failedFinishedRuns contains new field tasks which is an array of taskIds of that finished run. This will allow people to query task ids even for finished job runs.
+* [Metronome] Querying a job run detail with the arguments `embed=history`, `successfulFinishedRuns` and `failedFinishedRuns` now yields a field `tasks` which is an array of task IDs. This allows to query task IDs for finished job runs.
 
 * [Metronome] Fixes metronome where it did not use the revive operation.
 
 * [Metronome] Updates to fix daylight saving issues.
 
 * [Telegraf] Prometheus metrics can be collected from tasks in container networking mode. (DCOS-56018)
+
 
 ### Security updates
 
