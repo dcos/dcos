@@ -23,7 +23,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * [Marathon] Marathon will not get stuck anymore when trying to kill an unreachable instance. (MARATHON-8422)
 
-* [Marathon] Persistent volumes with profile now default to `DiskType.Mount`. (MARATHON-8631)
+* [Marathon] Persistent volumes tagged with a profile name now default to `DiskType.Mount`. (MARATHON-8631)
 
 * [Metronome] Querying run detail with embed=history, successfulFinishedRuns and failedFinishedRuns contains new field tasks which is an array of taskIds of that finished run. This will allow people to query task ids even for finished job runs.
 
