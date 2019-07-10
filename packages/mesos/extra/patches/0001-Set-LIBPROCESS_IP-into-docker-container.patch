@@ -20,9 +20,9 @@ index 9ebb5f2..3c81d03 100644
 +    options.env["LIBPROCESS_IP"] = libprocessIP.get();
 +  }
 +
-   Option<string> volumeDriver;
-   foreach (const Volume& volume, containerInfo.volumes()) {
-     // The 'container_path' can be either an absolute path or a
+   if (resources.isSome()) {
+     // Set the `MESOS_ALLOCATION_ROLE` environment variable. Please note
+     // that tasks and executors are not allowed to mix resources allocated
 -- 
 2.5.1
 
