@@ -7,8 +7,8 @@ master_ip=$(./terraform output --json masters-ips |jq -r '.value[0]')
 master_fqdn=$(./terraform output --json cluster-address |jq -r '.value')
 ssh_user=$(./terraform output --json -module dcos.dcos-infrastructure masters.os_user |jq -r '.value')
 
-ssh -i id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${ssh_user}@$master_ip -- "ls pytest_output || exit 0; cat pytest_output | tail -n 10 | grep -q xfailed"
-if [[ ( $? != 0 ) && ( -f all_tests_passed ) ]]; then
+# Exit early if all tests passed.
+if [[ -f all_tests_passed ]]; then
   exit 0
 fi
 
