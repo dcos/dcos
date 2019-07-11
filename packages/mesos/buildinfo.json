@@ -9,8 +9,8 @@
   "single_source": {
     "kind": "git",
     "git": "https://github.com/mesosphere/mesos",
-    "ref": "cb0836495ee0e7e8174bfbd9e3d49502de3900fa",
-    "ref_origin": "master"
+    "ref": "bc119ca94dc21ece46b2074ebeb630fef7b20ae4",
+    "ref_origin": "greg/agent-draining"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
