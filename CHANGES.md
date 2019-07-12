@@ -48,6 +48,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Bumped Mesos modules to have overlay metrics exposed. (DCOS_OSS-5322)
 
+* Bumped Telegraf to have Mesos overlay module metrics collected. (DCOS_OSS-5323)
+
 
 ### Breaking changes
 

@@ -113,8 +113,8 @@ def test_metrics_master_mesos(dcos_api_session):
 
 
 def test_metrics_agents_mesos_overlay(dcos_api_session):
-    """Assert that mesos overlay module metrics on agents are present."""
-    nodes = get_agents(dcos_api_session)
+    """Assert that mesos agent overlay module metrics on master and agents are present."""
+    nodes = get_master_and_agents(dcos_api_session)
 
     for node in nodes:
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
