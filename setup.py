@@ -73,6 +73,7 @@ setup(
         'checksumdir',
         'coloredlogs',
         'docopt',
+        'execnet',
         'passlib',
         'py',
         'pytest',
