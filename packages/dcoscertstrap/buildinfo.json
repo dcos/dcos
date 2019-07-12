@@ -1,0 +1,8 @@
+{
+  "single_source" : {
+      "kind": "url_extract",
+      "url": "https://github.com/jr0d/dcoscertstrap/releases/download/v0.0.2/dcoscertstrap_0.0.2_linux_amd64.tar.gz",
+      "sha1": "37e4d0be13df7799769c86ee6065d4cd828c9c46"
+  },
+  "state_directory": true
+}
