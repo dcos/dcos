@@ -133,8 +133,11 @@ def test_metrics_mesos_master_overlay(dcos_api_session):
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
     def check_mesos_metrics():
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
+        logging.info("response.text: %s", response.text)
         for family in text_string_to_metric_families(response.text):
+            logging.info("family: %s", family)
             for sample in family.samples:
+                logging.info("sample: %s", sample)
                 if sample[0] == 'mesos_overlay_master_process_restarts':
                     return
         raise Exception('Expected Mesos mesos_overlay_master_process_restarts metric not found')
