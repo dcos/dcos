@@ -1,0 +1,9 @@
+ #!/bin/bash
+
+set -ex
+
+cd /pkg/src/dcoscertstrap
+
+# Copy the cockroach binary to the the package bin directory.
+mkdir -p $PKG_PATH/bin
+install -m 755 /pkg/src/dcoscertstrap/dcoscertstrap $PKG_PATH/bin/dcoscertstrap
