@@ -9,7 +9,7 @@
   "single_source": {
     "kind": "git",
     "git": "https://github.com/mesosphere/mesos",
-    "ref": "bc119ca94dc21ece46b2074ebeb630fef7b20ae4",
+    "ref": "3ef64030d7f76da28dcb9bb58377043ff4fdeea1",
     "ref_origin": "greg/agent-draining"
   },
   "environment": {
