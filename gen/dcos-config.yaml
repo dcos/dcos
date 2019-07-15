@@ -2441,6 +2441,7 @@ package:
           "evqueue",
           "registrar",
           "allocator",
+          "overlay",
         ]
         ## The user agent to send with requests
         user_agent = "Telegraf-mesos"
@@ -2631,6 +2632,7 @@ package:
           "executors",
           "tasks",
           "messages",
+          "overlay",
         ]
         ## The user agent to send with requests
         user_agent = "Telegraf-mesos"
@@ -2780,6 +2782,7 @@ package:
           "executors",
           "tasks",
           "messages",
+          "overlay",
         ]
         ## The user agent to send with requests
         user_agent = "Telegraf-mesos"
