@@ -31,7 +31,7 @@ def watchdog(ns):
     except dns.exception.Timeout:
         logging.error('DNS Server Timeout')
     except:
-        logging.erorr('Exception: {}'.sys.exc_info()[1])
+        logging.error('Exception: {}'.sys.exc_info()[1])
     return False
 
 
