@@ -56,6 +56,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Introduced a new DC/OS configuration parameter `mesos_default_container_shm_size`. This parameter can be used to specify the default size of the /dev/shm for the Mesos container which has its own /dev/shm. The format is `[number][unit]`, `number` must be a positive integer and `unit` can be B (bytes), KB (kilobytes), MB (megabytes), GB (gigabytes) or TB (terabytes). (DCOS-56619)
 
+* Add dcos-net overlay metrics. (DCOS_OSS-5324)
+
 
 ### Breaking changes
 
