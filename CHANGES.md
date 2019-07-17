@@ -50,6 +50,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Bumped Telegraf to have Mesos overlay module metrics collected. (DCOS_OSS-5323)
 
+* Add more vm metrics to dcos-net. (DCOS_OSS-5335)
+
 
 ### Breaking changes
 
