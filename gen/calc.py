@@ -719,6 +719,22 @@ def validate_mesos_recovery_timeout(mesos_recovery_timeout):
     assert unit in units, "Unit '{}' not in {}.".format(unit, units)
 
 
+def validate_mesos_default_container_shm_size(
+        mesos_default_container_shm_size, has_mesos_default_container_shm_size):
+    if has_mesos_default_container_shm_size == 'true':
+        units = ['B', 'KB', 'MB', 'GB', 'TB']
+
+        match = re.match("([\d\.]+)(\w+)", mesos_default_container_shm_size)
+        assert match is not None, "Error parsing 'mesos_default_container_shm_size' value: {}.".format(
+            mesos_default_container_shm_size)
+
+        value = match.group(1)
+        unit = match.group(2).upper()
+
+        assert value.count('.') == 0, "Fractional bytes: {}.".format(value)
+        assert unit in units, "Unit '{}' not in {}.".format(unit, units)
+
+
 def calculate_check_config_contents(check_config, custom_checks, check_search_path, check_ld_library_path):
 
     def merged_check_config(config_a, config_b):
@@ -1111,6 +1127,9 @@ entry = {
         validate_mesos_recovery_timeout,
         validate_metronome_gpu_scheduling_behavior,
         lambda mesos_seccomp_enabled: validate_true_false(mesos_seccomp_enabled),
+        lambda mesos_disallow_sharing_agent_ipc_namespace:
+            validate_true_false(mesos_disallow_sharing_agent_ipc_namespace),
+        validate_mesos_default_container_shm_size,
         lambda check_config: validate_check_config(check_config),
         lambda custom_checks: validate_check_config(custom_checks),
         lambda custom_checks, check_config: validate_custom_checks(custom_checks, check_config),
@@ -1169,6 +1188,8 @@ entry = {
         'mesos_recovery_timeout': '24hrs',
         'mesos_seccomp_enabled': 'true',
         'mesos_seccomp_profile_name': 'default.json',
+        'mesos_disallow_sharing_agent_ipc_namespace': 'false',
+        'mesos_default_container_shm_size': '',
         'metronome_gpu_scheduling_behavior': 'restricted',
         'marathon_gpu_scheduling_behavior': 'restricted',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
@@ -1297,6 +1318,8 @@ entry = {
         'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
         'has_mesos_seccomp_profile_name':
             lambda mesos_seccomp_profile_name: calculate_set(mesos_seccomp_profile_name),
+        'has_mesos_default_container_shm_size':
+            lambda mesos_default_container_shm_size: calculate_set(mesos_default_container_shm_size),
         'mesos_hooks': calculate_mesos_hooks,
         'use_mesos_hooks': calculate_use_mesos_hooks,
         'rexray_config_contents': calculate_rexray_config_contents,

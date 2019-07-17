@@ -853,3 +853,25 @@ def test_edited_ip_detect_script_yields_new_packages():
 
         # Running genconf with an edited IP detect script yields a new set of packages.
         assert initial_cluster_packages != edited_cluster_packages
+
+
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
+def test_validate_mesos_default_container_shm_size():
+    validate_success({'mesos_default_container_shm_size': '64MB'})
+
+    validate_success({'mesos_default_container_shm_size': '1gb'})
+
+    validate_error_multikey(
+        {'mesos_default_container_shm_size': '64.5MB'},
+        ['mesos_default_container_shm_size', 'has_mesos_default_container_shm_size'],
+        "Fractional bytes: 64.5.")
+
+    validate_error_multikey(
+        {'mesos_default_container_shm_size': 'asdf'},
+        ['mesos_default_container_shm_size', 'has_mesos_default_container_shm_size'],
+        "Error parsing 'mesos_default_container_shm_size' value: asdf.")
+
+    validate_error_multikey(
+        {'mesos_default_container_shm_size': '64PB'},
+        ['mesos_default_container_shm_size', 'has_mesos_default_container_shm_size'],
+        "Unit 'PB' not in ['B', 'KB', 'MB', 'GB', 'TB'].")
