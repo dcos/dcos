@@ -34,7 +34,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Upgraded platform CPython to release 3.6.8. (DCOS_OSS-5318)
 
-* Upgraded CockroachDB to release [2.1.7](https://www.cockroachlabs.com/docs/releases/v2.1.7.html). (DCOS_OSS-5262)
+* Upgraded CockroachDB to release [2.1.8](https://www.cockroachlabs.com/docs/releases/v2.1.8.html). (DCOS_OSS-5360)
 
 * Upgraded platform curl from 7.59.0 to 7.65.1. (DCOS_OSS-5319)
 
