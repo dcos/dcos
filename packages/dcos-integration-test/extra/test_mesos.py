@@ -14,6 +14,10 @@ from dcos_test_utils import marathon, recordio
 __maintainer__ = 'Gilbert88'
 __contact__ = 'core-team@mesosphere.io'
 
+# Apply fixture(s) in this list to all tests in this module.
+# From pytest docs: "Note that the assigned variable must be called pytestmark"
+pytestmark = [pytest.mark.usefixtures("clean_marathon_state")]
+
 
 # Creates and yields the initial ATTACH_CONTAINER_INPUT message, then a data message,
 # then an empty data chunk to indicate end-of-stream.

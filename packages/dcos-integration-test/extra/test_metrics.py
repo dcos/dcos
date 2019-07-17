@@ -23,6 +23,10 @@ STD_INTERVAL = 5 * 1000
 # tags added if a fault domain is present
 FAULT_DOMAIN_TAGS = {'fault_domain_zone', 'fault_domain_region'}
 
+# Apply fixture(s) in this list to all tests in this module.
+# From pytest docs: "Note that the assigned variable must be called pytestmark"
+pytestmark = [pytest.mark.usefixtures("clean_marathon_state")]
+
 
 def check_tags(tags: dict, required_tag_names: set, optional_tag_names: set = set()):
     """Assert that tags contains only expected keys with nonempty values."""

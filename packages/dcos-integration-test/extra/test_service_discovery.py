@@ -14,6 +14,10 @@ __contact__ = 'dcos-networking@mesosphere.io'
 
 DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 
+# Apply fixture(s) in this list to all tests in this module.
+# From pytest docs: "Note that the assigned variable must be called pytestmark"
+pytestmark = [pytest.mark.usefixtures("clean_marathon_state")]
+
 
 def _service_discovery_test(dcos_api_session, docker_network_bridge):
     """Service discovery integration test

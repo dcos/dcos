@@ -12,6 +12,10 @@ __contact__ = 'orchestration-team@mesosphere.io'
 
 log = logging.getLogger(__name__)
 
+# apply fixture(s) in this list to all tests in this module.
+# from pytest docs: "note that the assigned variable must be called pytestmark"
+pytestmark = [pytest.mark.usefixtures("clean_marathon_state")]
+
 
 def deploy_test_app_and_check(dcos_api_session, app: dict, test_uuid: str):
     """This method deploys the test server app and then

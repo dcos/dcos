@@ -9,6 +9,10 @@ from test_helpers import get_expanded_config
 __maintainer__ = 'gpaul'
 __contact__ = 'dcos-security@mesosphere.io'
 
+# Apply fixture(s) in this list to all tests in this module.
+# From pytest docs: "Note that the assigned variable must be called pytestmark"
+pytestmark = [pytest.mark.usefixtures("clean_marathon_state")]
+
 
 @pytest.mark.supportedwindows
 def test_move_external_volume_to_new_agent(dcos_api_session):

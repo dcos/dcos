@@ -19,6 +19,10 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 # another minute to allow for check-time to settle. See: DCOS_OSS-988
 LATENCY = 120
 
+# Apply fixture(s) in this list to all tests in this module.
+# From pytest docs: "Note that the assigned variable must be called pytestmark"
+pytestmark = [pytest.mark.usefixtures("clean_marathon_state")]
+
 
 @pytest.mark.supportedwindows
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)

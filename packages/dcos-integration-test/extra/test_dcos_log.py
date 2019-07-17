@@ -16,6 +16,10 @@ NEW_ENTRY_PATTERN = "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}: "
 
 log = logging.getLogger(__name__)
 
+# Apply fixture(s) in this list to all tests in this module.
+# From pytest docs: "Note that the assigned variable must be called pytestmark"
+pytestmark = [pytest.mark.usefixtures("clean_marathon_state")]
+
 
 def skip_test_if_dcos_journald_log_disabled(dcos_api_session):
     response = dcos_api_session.get('/dcos-metadata/ui-config.json').json()

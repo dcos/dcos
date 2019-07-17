@@ -9,6 +9,10 @@ __contact__ = 'orchestration-team@mesosphere.io'
 
 log = logging.getLogger(__name__)
 
+# Apply fixture(s) in this list to all tests in this module.
+# From pytest docs: "Note that the assigned variable must be called pytestmark"
+pytestmark = [pytest.mark.usefixtures("clean_marathon_state")]
+
 
 def test_pkgpanda_api(dcos_api_session):
 

@@ -67,10 +67,12 @@ def pytest_collection_modifyitems(session, config, items):
 # Note(JP): Attempt to reset Marathon state before and after every test run in
 # this test suite. This is a brute force approach but we found that the problem
 # of side effects as of too careless test isolation and resource cleanup became
-# too large. If this test suite ever introduces a session- or module-scoped
-# fixture providing a Marathon app then the `autouse=True` approach will need to
-# be relaxed.
-@pytest.fixture(autouse=True)
+# too large.
+#
+# Note: We do not use "autouse=True" on this fixture because that is
+# incompatible with fixtures which use Marathon resources and are not
+# function-scoped.
+@pytest.fixture()
 def clean_marathon_state(dcos_api_session):
     """
     Attempt to clean up Marathon state before entering the test and when leaving
