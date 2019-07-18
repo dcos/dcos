@@ -7,6 +7,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ### What's new
 
 * Marathon 1.9 brings support for multirole, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
+* Updated to [ZooKeeper 3.5](https://zookeeper.apache.org/releases.html). (DCOS_OSS-5277)
 
 * Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0)
 
