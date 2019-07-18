@@ -1,4 +1,4 @@
-From d2ee1b4542232042dd6fa532484f2082f96c0163 Mon Sep 17 00:00:00 2001
+From 6deaa039c220862f6a57db92149ae08476d82d41 Mon Sep 17 00:00:00 2001
 From: Gilbert Song <songzihao1990@gmail.com>
 Date: Fri, 23 Nov 2018 10:54:58 +0800
 Subject: [PATCH] Changed sandbox mode to 0755 in docker containerizer
@@ -13,15 +13,17 @@ for details.
 This commit is used to patch DC/OS and allows DC/OS users to have a
 deprecation cycle for this semantic change. This commit should be
 removed in DC/OS 1.15.
+
+Signed-off-by: Gilbert Song <songzihao1990@gmail.com>
 ---
  src/slave/containerizer/docker.cpp | 12 ++++++++++++
  1 file changed, 12 insertions(+)
 
 diff --git a/src/slave/containerizer/docker.cpp b/src/slave/containerizer/docker.cpp
-index fc29e20..6f52150 100644
+index e4ad945..30d39c6 100644
 --- a/src/slave/containerizer/docker.cpp
 +++ b/src/slave/containerizer/docker.cpp
-@@ -1167,6 +1167,18 @@ Future<Containerizer::LaunchResult> DockerContainerizerProcess::launch(
+@@ -1152,6 +1152,18 @@ Future<Containerizer::LaunchResult> DockerContainerizerProcess::launch(
      return Containerizer::LaunchResult::NOT_SUPPORTED;
    }
  
