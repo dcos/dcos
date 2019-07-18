@@ -4,6 +4,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0)
 
+* Updated DC/OS UI to [1.12+v2.26.16](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.26.16).
+
 ### Notable changes
 
 * Updated DC/OS UI to [1.12+v2.26.16](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.26.16)
