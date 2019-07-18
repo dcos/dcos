@@ -1,6 +1,8 @@
 #!/bin/bash
 set -o errexit -o nounset -o pipefail
 
+set -x
+
 # Zookeeper
 
 mkdir -p "$PKG_PATH/usr"
