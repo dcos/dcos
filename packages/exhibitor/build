@@ -9,6 +9,14 @@ mkdir -p "$PKG_PATH/usr"
 cp -rp "/pkg/src/zookeeper" "$PKG_PATH/usr"
 rm -rf "$PKG_PATH/usr/zookeeper/"{src,docs,contrib}
 
+# Note(JP): the ZK 3.4 binary distribution had the zookeeper-3.4.x.jar
+# file placed in the root of the archive, whereas the 3.5 binary
+# distribution has this file in the lib/ directory in the archive.
+# Exhibitor seems to expect the former, though, otherwise erroring
+# out with ` java.io.IOException: Could not find zookeeper.* jar`.
+# Create a symbolic link for Exhibitor to be able to discover the file.
+ln -s "$PKG_PATH/usr/zookeeper/lib/zookeeper-3*.jar" "$PKG_PATH/usr/zookeeper"
+
 mkdir -p "$PKG_PATH/bin"
 ln -s "$PKG_PATH/usr/zookeeper/bin/zkCli.sh" "$PKG_PATH/bin/zkCli.sh"
 # zkCli.sh expects zkEnv.sh to be in the same directory.
