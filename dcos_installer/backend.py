@@ -14,7 +14,7 @@ import gen.calc
 import release
 import release.storage.aws
 import release.storage.local
-from dcos_installer import config_util, upgrade
+from dcos_installer import certificate_bootstrap, config_util, upgrade
 from dcos_installer.config import (
     Config,
     normalize_config_validation,
@@ -47,7 +47,7 @@ def do_configure(config_path=CONFIG_PATH):
         return 1
 
     config_util.make_serve_dir(gen_out)
-
+    certificate_bootstrap.initialize_exhibitor_ca(config, gen_out)
     return 0
 
 
