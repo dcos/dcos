@@ -112,7 +112,7 @@ The tests can be run via Pytest while SSH'd as root into a master node of the cl
 1. Add the test user
 
     ```
-    dcos-shell python /opt/mesosphere/active/dcos-oauth/bin/dcos_add_user.py albert@bekstil.net
+    dcos-shell python /opt/mesosphere/bin/dcos_add_user.py albert@bekstil.net
     ```
 
     Running the above mentioned command will result in an output
