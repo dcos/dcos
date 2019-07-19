@@ -58,8 +58,11 @@ if [ -d genconf/ca ]; then
     if [ -z "$psk" ]; then
         echo "WARNING: Bootstrap CA service PSK is unset"
     fi
+
+    # kill any existing services
+    kill $(pidof dcoscertstrap) 2>/dev/null
     echo "Starting bootstrap CA service in the background"
-    genconf/bin/dcoscertstrap -d genconf/ca/ serve --address :443 --psk ${psk} &
+    genconf/bin/dcoscertstrap -d genconf/ca/ serve --address :443 --psk "$psk" &
     echo
 fi
 
