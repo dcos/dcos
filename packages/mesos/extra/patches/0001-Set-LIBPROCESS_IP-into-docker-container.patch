@@ -1,14 +1,15 @@
-From 4f836121f505c803bb478d3eb1c794ee5a46ebc0 Mon Sep 17 00:00:00 2001
+From 9b8d1bd6c76302fae637ad93fa6b703966fcdcda Mon Sep 17 00:00:00 2001
 From: Michael Park <mpark@apache.org>
 Date: Thu, 15 Oct 2015 19:54:02 -0700
 Subject: [PATCH] Set LIBPROCESS_IP into docker container.
 
+Signed-off-by: Gilbert Song <songzihao1990@gmail.com>
 ---
  src/docker/docker.cpp | 5 +++++
  1 file changed, 5 insertions(+)
 
 diff --git a/src/docker/docker.cpp b/src/docker/docker.cpp
-index 9ebb5f2..3c81d03 100644
+index d13869d..d24f506 100644
 --- a/src/docker/docker.cpp
 +++ b/src/docker/docker.cpp
 @@ -681,6 +681,11 @@ Try<Docker::RunOptions> Docker::RunOptions::create(
