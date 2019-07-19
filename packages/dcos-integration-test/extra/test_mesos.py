@@ -199,6 +199,14 @@ def test_memory_profiling(dcos_api_session):
     assert r2.status_code == 200, r2.text
 
 
+def test_containerizer_debug_endpoint(dcos_api_session):
+    # Test that we can poll `/containerizer/debug` endpoint exposed by the agent.
+    agent = dcos_api_session.slaves[0]
+    r = dcos_api_session.get('/containerizer/debug', host=agent, port=5051)
+    assert r.status_code == 200
+    assert r.json() == {'pending': []}
+
+
 def test_blkio_stats(dcos_api_session):
     expanded_config = test_helpers.get_expanded_config()
     if expanded_config['provider'] == 'azure' or expanded_config['platform'] == 'azure':
