@@ -63,33 +63,54 @@ def pytest_collection_modifyitems(session, config, items):
     items[:] = new_items + last_items
 
 
-# Note(JP): Attempt to reset Marathon state before and after every test run in
-# this test suite. This is a brute force approach but we found that the problem
-# of side effects as of too careless test isolation and resource cleanup became
-# too large. If this test suite ever introduces a session- or module-scoped
-# fixture providing a Marathon app then the `autouse=True` approach will need to
-# be relaxed.
-@pytest.fixture(autouse=True)
+def _purge_marathon_nofail(session):
+    """
+    Try to clean Marathon.
+    Do not error if there is a problem.
+    """
+    try:
+        session.marathon.purge()
+    except Exception as exc:
+        log.exception('Ignoring exception during marathon.purge(): %s', exc)
+        if isinstance(exc, requests.exceptions.HTTPError):
+            log.error('exc.response.text: %s', exc.response.text)
+
+
+# Note(JP): Attempt to reset Marathon state before and after every test module
+# run in this test suite. This is a brute force approach but we found that the
+# problem of side effects as of too careless test isolation and resource
+# cleanup became too large.
+#
+# Note: This is module-scoped so that we can have module- and class-scoped
+# fixtures which create Marathon resources.
+# The trade-off here is that tests, in particular failing tests, can leak
+# resources within a module.
+@pytest.fixture(autouse=True, scope='module')
 def clean_marathon_state(dcos_api_session):
     """
-    Attempt to clean up Marathon state before entering the test and when leaving
-    the test. Especially attempt to clean up when the test code failed. When the
-    cleanup fails do not fail the test but log relevant information.
+    Attempt to clean up Marathon state before entering the test module and when
+    leaving the test module. Especially attempt to clean up when the test code
+    failed. When the cleanup fails do not fail the test but log relevant
+    information.
     """
-
-    def _purge_nofail():
-        try:
-            dcos_api_session.marathon.purge()
-        except Exception as exc:
-            log.exception('Ignoring exception during marathon.purge(): %s', exc)
-            if isinstance(exc, requests.exceptions.HTTPError):
-                log.error('exc.response.text: %s', exc.response.text)
-
-    _purge_nofail()
+    _purge_marathon_nofail(session=dcos_api_session)
     try:
         yield
     finally:
-        _purge_nofail()
+        _purge_marathon_nofail(session=dcos_api_session)
+
+
+@pytest.fixture(autouse=False, scope='function')
+def clean_marathon_state_function_scoped(dcos_api_session):
+    """
+    See ``clean_marathon_state`` - this is function scoped as some test modules
+    require cleanup after every test.
+    """
+    _purge_marathon_nofail(session=dcos_api_session)
+    try:
+        yield
+    finally:
+        _purge_marathon_nofail(session=dcos_api_session)
 
 
 @pytest.fixture(scope='session')
