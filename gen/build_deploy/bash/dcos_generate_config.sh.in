@@ -51,7 +51,10 @@ else
     docker run --rm --name=$DCOS_INSTALLER_CONTAINER_NAME -i -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
 fi
 
-docker_return=$?
+if [ $? -ne 0 ]; then
+    echo "Problems running installer"
+    exit $?
+fi
 
 if [ -d genconf/ca ]; then
     psk=$(cat genconf/ca/psk 2>/dev/null || echo "")
@@ -60,10 +63,10 @@ if [ -d genconf/ca ]; then
     fi
 
     # kill any existing services
-    kill $(pidof dcoscertstrap) 2>/dev/null
+    kill $(pidof dcoscertstrap || true) 2>/dev/null || true
     echo "Starting bootstrap CA service in the background"
     genconf/bin/dcoscertstrap -d genconf/ca/ serve --address :443 --psk "$psk" &
     echo
 fi
 
-exit $docker_return
+exit 0
