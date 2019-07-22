@@ -42,7 +42,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Upgraded platform OpenSSL from 1.0.2x to release 1.1.1x. (DCOS-54108)
 
-* Updated DC/OS UI to [master+v2.126.1](https://github.com/dcos/dcos-ui/releases/tag/master+v2.126.1).
+* Updated DC/OS UI to [master+v2.127.1](https://github.com/dcos/dcos-ui/releases/tag/master+v2.127.1).
 
 * Added L4LB metrics in DC/OS Net. (DCOS_OSS-5011)
 
