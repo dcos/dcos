@@ -4,6 +4,8 @@ import shutil
 import subprocess
 import tempfile
 
+from typing import Any, Dict, List
+
 from urllib.parse import urlparse
 
 from dcos_installer.config import Config
@@ -15,7 +17,7 @@ CA_PATH = '/genconf/ca'
 INSTALLER_PATH = '/genconf/serve/dcos_install.sh'
 
 
-def _extract_package(package_path):
+def _extract_package(package_path: str):
     os.makedirs(BINARY_PATH, exist_ok=True)
     with tempfile.TemporaryDirectory() as td:
         subprocess.run(['tar', '-xJf', package_path, '-C', td])
@@ -25,7 +27,7 @@ def _extract_package(package_path):
             pathlib.Path(BINARY_PATH) / PACKAGE_NAME)
 
 
-def _init_ca(alt_names):
+def _init_ca(alt_names: List[str]):
     os.makedirs(CA_PATH, mode=0o0700, exist_ok=True)
     cmd_path = pathlib.Path(BINARY_PATH) / PACKAGE_NAME
     subprocess.run([
@@ -33,13 +35,13 @@ def _init_ca(alt_names):
     ])
 
 
-def _read_certificate():
+def _read_certificate() -> str:
     with open(pathlib.Path(CA_PATH) / 'root-cert.pem') as fp:
         return fp.read()
 
 
 # This seemed simpler than figuring out how to hook the dcos_install.sh template renderer
-def _mangle_installer(certificate, path):
+def _mangle_installer(certificate: str, path: str):
     script = """\
 # Bootstrap CA certificate
 read -d '' ca_data << EOF || true
@@ -65,14 +67,18 @@ main
                 script_fp.write(line)
 
 
+def _get_ca_alt_name(config: Dict[str, Any]) -> str:
+    return urlparse(
+        config.get('exhibitor_bootstrap_ca_url', config['bootstrap_url'])
+    ).hostname or ""
+
+
 def initialize_exhibitor_ca(config: Config, gen: Bunch):
+    conf = config.config
+
     package_path = pathlib.Path(
         '/genconf/serve') / gen.cluster_packages[PACKAGE_NAME]['filename']
-    ca_alternative_names = [
-        '127.0.0.1', 'localhost',
-        urlparse(gen.arguments['bootstrap_url']).hostname
-    ]
-    conf = config.config
+    ca_alternative_names = ['127.0.0.1', 'localhost', _get_ca_alt_name(conf)]
 
     # Only perform action for enterprise clusters when not explicitly disabled
     if not (gen.arguments['dcos_variant'] == "enterprise"
