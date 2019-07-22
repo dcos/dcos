@@ -9,7 +9,7 @@ for patch in /pkg/extra/patches/*; do
   git -c user.name="Mesosphere CI" -c user.email="mesosphere-ci@users.noreply.github.com" am $patch
 done
 
-ls -la /opt/mesosphere/active/libevent/
+ls -la /opt/mesosphere/active/libevent/include/
 
 ./bootstrap
 
