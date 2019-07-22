@@ -8,9 +8,9 @@
   ],
   "single_source": {
     "kind": "git",
-    "git": "https://github.com/apache/mesos",
-    "ref": "f3b827fa0206715ea1242ab839c3f7c0d7f685f4",
-    "ref_origin": "master"
+    "git": "https://github.com/mesosphere/mesos",
+    "ref": "7618c524b29092b81a45395f77f9d57d22eed9cd",
+    "ref_origin": "till/mesos-configure-fixup"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
