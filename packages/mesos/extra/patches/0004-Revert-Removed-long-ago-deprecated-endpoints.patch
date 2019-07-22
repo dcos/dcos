@@ -1,4 +1,4 @@
-From 458f4916a40c311c85ac56f429640a0ad570f6dd Mon Sep 17 00:00:00 2001
+From 11130b14371f9ee0de6a203802a6499eed5b6571 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Tue, 21 Aug 2018 17:59:27 +0200
 Subject: [PATCH] Revert "Removed long ago deprecated endpoints.".
@@ -11,6 +11,8 @@ prevent people from adjusting their tooling on time.
 
 The deprecated endpoints are restored in 1.7.x only, Mesos master
 aka 1.8.0-dev will not have deprecated endpoints.
+
+Signed-off-by: Gilbert Song <songzihao1990@gmail.com>
 ---
  src/files/files.cpp   | 19 +++++++++++++++++++
  src/master/master.cpp | 33 +++++++++++++++++++++++++++++++++
@@ -48,10 +50,10 @@ index f200d5e..a64613c 100644
            authenticationRealm,
            FilesProcess::BROWSE_HELP,
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index b4b02d8..1e9ddde 100644
+index fbde112..60487be 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
-@@ -948,6 +948,16 @@ void Master::initialize()
+@@ -966,6 +966,16 @@ void Master::initialize()
            logRequest(request);
            return http.reserve(request, principal);
          });
@@ -68,7 +70,7 @@ index b4b02d8..1e9ddde 100644
    route("/roles",
          READONLY_HTTP_AUTHENTICATION_REALM,
          Http::ROLES_HELP(),
-@@ -975,6 +985,19 @@ void Master::initialize()
+@@ -993,6 +1003,19 @@ void Master::initialize()
                logResponse(request, response);
              });
          });
@@ -88,7 +90,7 @@ index b4b02d8..1e9ddde 100644
    route("/state",
          READONLY_HTTP_AUTHENTICATION_REALM,
          Http::STATE_HELP(),
-@@ -997,6 +1020,16 @@ void Master::initialize()
+@@ -1015,6 +1038,16 @@ void Master::initialize()
                logResponse(request, response);
              });
          });
@@ -106,10 +108,10 @@ index b4b02d8..1e9ddde 100644
          READONLY_HTTP_AUTHENTICATION_REALM,
          Http::TASKS_HELP(),
 diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
-index 858b786..d32f74b 100644
+index 9c14784..426c389 100644
 --- a/src/slave/slave.cpp
 +++ b/src/slave/slave.cpp
-@@ -793,6 +793,17 @@ void Slave::initialize()
+@@ -795,6 +795,17 @@ void Slave::initialize()
  
          return resourceProviderManager->api(request, principal);
        });
@@ -127,7 +129,7 @@ index 858b786..d32f74b 100644
    route("/state",
          READONLY_HTTP_AUTHENTICATION_REALM,
          Http::STATE_HELP(),
-@@ -825,6 +836,16 @@ void Slave::initialize()
+@@ -827,6 +838,16 @@ void Slave::initialize()
            logRequest(request);
            return http.statistics(request, principal);
          });

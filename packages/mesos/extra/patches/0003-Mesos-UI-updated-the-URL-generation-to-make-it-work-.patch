@@ -1,4 +1,4 @@
-From df7c7325d5d0f7480083fd7354cd927ef99bebd6 Mon Sep 17 00:00:00 2001
+From 893b6a40e1112cfafd47d13c057c7cffac1cae5b Mon Sep 17 00:00:00 2001
 From: Armand Grillet <armand.grillet@outlook.com>
 Date: Wed, 28 Feb 2018 21:00:24 +0100
 Subject: [PATCH] Mesos UI: updated the URL generation to make it work with
@@ -8,12 +8,14 @@ Subject: [PATCH] Mesos UI: updated the URL generation to make it work with
 - Use /mesos/agent/{agent_id}/{process_name} as the agent URL prefix.
 - Redirect from Mesos webui location (host:5050) to adminrouter
   (host/mesos).
+
+Signed-off-by: Gilbert Song <songzihao1990@gmail.com>
 ---
  src/webui/app/controllers.js | 21 +++++++++++----------
  1 file changed, 11 insertions(+), 10 deletions(-)
 
 diff --git a/src/webui/app/controllers.js b/src/webui/app/controllers.js
-index 8049cf6..74f65f5 100644
+index 66cd32e..80bd35a 100644
 --- a/src/webui/app/controllers.js
 +++ b/src/webui/app/controllers.js
 @@ -51,10 +51,10 @@

@@ -40,17 +40,23 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Upgraded platform OpenSSL from 1.0.2x to release 1.1.1x. (DCOS-54108)
 
-* Updated DC/OS UI to [master+v2.119.1](https://github.com/dcos/dcos-ui/releases/tag/master+v2.119.1)
+* Updated DC/OS UI to [master+v2.126.1](https://github.com/dcos/dcos-ui/releases/tag/master+v2.126.1).
 
 * Added L4LB metrics in DC/OS Net. (DCOS_OSS-5011)
 
-* Updated to [Mesos 1.9.x](https://github.com/apache/mesos/blob/9932550e9632e7fbb9a45b217793c7f508f57001/CHANGELOG). (DCOS_OSS-5342)
+* Updated to [Mesos 1.9.x](https://github.com/apache/mesos/blob/f3b827fa0206715ea1242ab839c3f7c0d7f685f4/CHANGELOG). (DCOS_OSS-5342)
 
 * Bumped Mesos modules to have overlay metrics exposed. (DCOS_OSS-5322)
 
 * Bumped Telegraf to have Mesos overlay module metrics collected. (DCOS_OSS-5323)
 
 * Add more vm metrics to dcos-net. (DCOS_OSS-5335)
+
+* Introduced a new DC/OS configuration parameter `mesos_disallow_sharing_agent_ipc_namespace`, defaulting to `false`. This parameter can be used to control whether the top-level Mesos container is allowed to share Mesos agent host's IPC namespace and /dev/shm. (DCOS-56619)
+
+* Introduced a new DC/OS configuration parameter `mesos_default_container_shm_size`. This parameter can be used to specify the default size of the /dev/shm for the Mesos container which has its own /dev/shm. The format is `[number][unit]`, `number` must be a positive integer and `unit` can be B (bytes), KB (kilobytes), MB (megabytes), GB (gigabytes) or TB (terabytes). (DCOS-56619)
+
+* Add dcos-net overlay metrics. (DCOS_OSS-5324)
 
 
 ### Breaking changes

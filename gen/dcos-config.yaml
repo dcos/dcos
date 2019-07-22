@@ -1388,6 +1388,12 @@ package:
       MESOS_SECCOMP_PROFILE_NAME={{ mesos_seccomp_profile_name }}
 {% case "false" %}
 {% endswitch %}
+      MESOS_DISALLOW_SHARING_AGENT_IPC_NAMESPACE={{ mesos_disallow_sharing_agent_ipc_namespace }}
+{% switch has_mesos_default_container_shm_size %}
+{% case "true" %}
+      MESOS_DEFAULT_CONTAINER_SHM_SIZE={{ mesos_default_container_shm_size }}
+{% case "false" %}
+{% endswitch %}
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
       MESOS_WORK_DIR={{ mesos_agent_work_dir }}
 {% switch use_mesos_hooks %}
@@ -1809,6 +1815,9 @@ package:
               },
               {
                   "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/metrics/lashup"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/metrics/overlay"]
               },
               {
                   "Command": ["timedatectl"]
@@ -2358,6 +2367,16 @@ package:
         ## Specify timeout duration for slower prometheus clients (default is 3s)
         response_timeout = "30s"
         name_prefix = "l4lb_"
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Net"
+      # Read metrics from DC/OS Net Prometheus endpoint overlay registry.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://127.0.0.1:62080/v1/metrics/overlay"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "30s"
+        name_prefix = "overlay_"
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "DC/OS Net"
