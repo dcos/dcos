@@ -1,0 +1,6 @@
+[Unit]
+Description=Timer for triggering Mesos state
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=3600
