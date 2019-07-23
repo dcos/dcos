@@ -4,6 +4,8 @@ DC/OS is tested in TeamCity by several groups of integration tests using dcos-te
 
 Once the TeamCity job has completed, the DC/OS cluster that was created will be deleted. However, if the job is still running, you can connect to the cluster.
 
+If `terraform apply` has not yet completed, you can find the SSH key in the build log and node IP addresses in the Terraform output.
+
 Once `terraform apply` has completed, the job outputs to the job log the generated SSH key, cluster address, and node IP addresses as well as a bash one liner to write the SSH key to disk and SSH into the master node.
 
 # Creating a Terraform cluster

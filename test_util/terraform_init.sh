@@ -71,6 +71,7 @@ fetch "$URL_terraform_provider_aws" "$CHECKSUM_terraform_provider_aws"
 
 if [ ! -f ./id_rsa ]; then
     ssh-keygen -t rsa -f id_rsa
+    cat id_rsa
 fi
 
 if [ -f main.tf ]; then
