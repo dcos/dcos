@@ -521,14 +521,6 @@ def _tar_filter(tar_info: tarfile.TarInfo) -> tarfile.TarInfo:
 
 
 def make_tar(result_filename, change_folder):
-<<<<<<< HEAD
-    # In the past we used bzip2 on Windows here. At the time of writing there is no
-    # test which fails on Windows. If this fails due to lzma not being
-    # available check liblzma linking on the DC/OS python package or consider
-    # using bzip2 instead.
-    with tarfile.open(name=str(result_filename), mode='w:xz') as tar:
-        tar.add(name=str(change_folder), arcname='./', filter=_tar_filter)
-=======
     # TODO(klueska): We need to revisit the logic below. It seems very
     # brittle and hard to follow.
     if is_windows:
@@ -567,14 +559,12 @@ def make_tar(result_filename, change_folder):
                 os.remove(tar_filename)
 
     else:
-        tar_cmd = ["tar", "--numeric-owner", "--owner=0", "--group=0"]
-        if which("pxz"):
-            tar_cmd += ["--use-compress-program=pxz", "-cf"]
-        else:
-            tar_cmd += ["-cJf"]
-        tar_cmd += [result_filename, "-C", change_folder, "."]
-        check_call(tar_cmd)
->>>>>>> Updated tar/zip related functions for pkgpanda on windows to use 7zip.
+        # In the past we used bzip2 on Windows here. At the time of writing there is no
+        # test which fails on Windows. If this fails due to lzma not being
+        # available check liblzma linking on the DC/OS python package or consider
+        # using bzip2 instead.
+        with tarfile.open(name=str(result_filename), mode='w:xz') as tar:
+            tar.add(name=str(change_folder), arcname='./', filter=_tar_filter)
 
 
 def rewrite_symlinks(root, old_prefix, new_prefix):
