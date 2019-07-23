@@ -1,15 +1,10 @@
-
-
-import contextlib
 import enum
 import itertools
 import json
 import logging
 import subprocess
-import threading
 import time
 import uuid
-from collections import deque
 
 import pytest
 import requests
@@ -33,8 +28,8 @@ class Container(enum.Enum):
 
 
 class MarathonApp:
-    def __init__(self, container, network, host,
-                 vip=None, network_name=None,
+    def __init__(self, container, network,
+                 host=None, vip=None, network_name=None,
                  app_name_fmt=None, host_port=None):
         if host_port is None:
             host_port = unused_port()
@@ -42,11 +37,12 @@ class MarathonApp:
             'app_name_fmt': app_name_fmt,
             'network': network,
             'host_port': host_port,
-            'host_constraint': host,
             'vip': vip,
             'container_type': container,
             'healthcheck_protocol': marathon.Healthcheck.MESOS_HTTP
         }
+        if host is not None:
+            args['host_constraint'] = host
         if network == marathon.Network.USER:
             args['container_port'] = unused_port()
             if network_name is not None:
@@ -540,69 +536,56 @@ def test_app_networking_mode_with_defined_container_port(dcos_api_session, netwo
         assert 'pong' in r.json()
 
 
-@retrying.retry(wait_fixed=2000,
-                stop_max_delay=100 * 2000,
-                retry_on_exception=lambda x: True)
-def geturl(url):
-    rs = requests.get(url)
-    assert rs.status_code == 200
-    r = rs.json()
-    log.info('geturl {} -> {}'.format(url, r))
-    return r
-
-
 def test_l4lb(dcos_api_session):
     '''Test l4lb is load balancing between all the backends
        * create 5 apps using the same VIP
-       * get uuid from the VIP in parallel from many threads
+       * get uuid from the VIP
        * verify that 5 uuids have been returned
        * only testing if all 5 are hit at least once
     '''
-    if not lb_enabled():
-        pytest.skip('Load Balancer disabled')
+    @retrying.retry(wait_fixed=2000,
+                    stop_max_delay=100 * 2000,
+                    retry_on_exception=lambda x: True)
+    def getjson(url):
+        r = requests.get(url)
+        r.raise_for_status()
+        return r.json()
+
     numapps = 5
-    numthreads = numapps * 4
     apps = []
-    rvs = deque()
-    backends = []
-    dnsname = 'l4lbtest.marathon.l4lb.thisdcos.directory:5000'
-    with contextlib.ExitStack() as stack:
-        for _ in range(numapps):
-            origin_app, origin_uuid = \
-                test_helpers.marathon_test_app(
-                    healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP)
-            # same vip for all the apps
-            origin_app['portDefinitions'][0]['labels'] = {'VIP_0': '/l4lbtest:5000'}
-            apps.append(origin_app)
-            stack.enter_context(dcos_api_session.marathon.deploy_and_cleanup(origin_app))
-            sp = dcos_api_session.marathon.get_app_service_endpoints(origin_app['id'])
-            backends.append({'port': sp[0].port, 'ip': sp[0].host})
-            # make sure that the service point responds
-            geturl('http://{}:{}/ping'.format(sp[0].host, sp[0].port))
-            # make sure that the VIP is responding too
-            geturl('http://{}/ping'.format(dnsname))
-        vips = geturl("http://localhost:62080/v1/vips")
-        [vip] = [vip for vip in vips if vip['vip'] == dnsname and vip['protocol'] == 'tcp']
-        for backend in vip['backend']:
-            backends.remove(backend)
+    try:
+        for i in range(numapps):
+            app = MarathonApp(marathon.Container.MESOS, marathon.Network.HOST, vip='/l4lbtest:5000',
+                              app_name_fmt='/integration-test/l4lb/app-{}')
+            app.app['portDefinitions'][0]['labels']['VIP_1'] = '/app-{}:80'.format(i)
+            log.info('App: {}'.format(app))
+            app.deploy(dcos_api_session)
+            apps.append(app)
+        for app in apps:
+            log.info('Deploying app: {}'.format(app.id))
+            app.wait(dcos_api_session)
+        log.info('Apps are ready')
+
+        for i in range(numapps):
+            getjson('http://app-{}.marathon.l4lb.thisdcos.directory/ping'.format(i))
+        log.info('L4LB is ready')
+
+        vip = 'l4lbtest.marathon.l4lb.thisdcos.directory:5000'
+        vips = getjson("http://localhost:62080/v1/vips")
+        log.info('VIPs: {}'.format(vips))
+
+        backends = [app.hostport(dcos_api_session) for app in apps]
+        for backend in [b for v in vips if v['vip'] == vip for b in v['backend']]:
+            backends.remove((backend['ip'], backend['port']))
         assert backends == []
 
-        # do many requests in parallel.
-        def thread_request():
-            # deque is thread safe
-            rvs.append(geturl('http://l4lbtest.marathon.l4lb.thisdcos.directory:5000/test_uuid'))
-
-        threads = [threading.Thread(target=thread_request) for i in range(0, numthreads)]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
-
-    expected_uuids = [a['id'].split('-')[2] for a in apps]
-    received_uuids = [r['test_uuid'] for r in rvs if r is not None]
-    assert len(set(expected_uuids)) == numapps
-    assert len(set(received_uuids)) == numapps
-    assert set(expected_uuids) == set(received_uuids)
+        vipurl = 'http://{}/test_uuid'.format(vip)
+        uuids = set([(getjson(vipurl))['test_uuid'] for _ in range(numapps * numapps)])
+        assert uuids == set([app.uuid for app in apps])
+    finally:
+        for app in apps:
+            log.info('Purging app: {}'.format(app.id))
+            app.purge(dcos_api_session)
 
 
 def test_dcos_cni_l4lb(dcos_api_session):
