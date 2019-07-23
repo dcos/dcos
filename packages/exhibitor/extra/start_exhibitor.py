@@ -120,7 +120,7 @@ auto-manage-instances-fixed-ensemble-size={zookeeper_cluster_size}
 ))
 
 write_str('/var/lib/dcos/exhibitor/conf/log4j.properties', """
-log4j.rootLogger=INFO, journal
+log4j.rootLogger=TRACE, journal
 
 log4j.appender.journal=de.bwaldvogel.log4j.SystemdJournalAppenderWithLayout
 log4j.appender.journal.logStacktrace=true
