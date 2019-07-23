@@ -1,3 +1,4 @@
+import logging
 import os
 import pathlib
 import shutil
@@ -5,16 +6,36 @@ import subprocess
 import tempfile
 
 from typing import Any, Dict, List
-
 from urllib.parse import urlparse
 
 from dcos_installer.config import Config
 from gen import Bunch
 
+LOG = logging.getLogger(__name__)
 PACKAGE_NAME = 'dcoscertstrap'
 BINARY_PATH = '/genconf/bin'
 CA_PATH = '/genconf/ca'
 INSTALLER_PATH = '/genconf/serve/dcos_install.sh'
+
+
+def _check(config: Dict[str, Any], varient: str) -> List[str]:
+    checks = [
+        (lambda: config.get('exhibitor_security', True),
+         'Exhibitor security is disabled'),
+        (lambda: config['exhibitor_storage_backend'] == 'static',
+         'Only static exhibitor backends are supported'),
+        (lambda: varient == 'enterprise',
+         'Exhibitor security is an enterprise feature'),
+        (lambda: urlparse(config['bootstrap_url']).scheme != 'file',
+         'Blackbox exhibitor security is only supported when using a remote bootstrap node'),
+    ]
+
+    reasons = []
+    for check in checks:
+        if not check[0]():
+            reasons.append(check[1])
+
+    return reasons
 
 
 def _extract_package(package_path: str):
@@ -69,21 +90,22 @@ main
 
 def _get_ca_alt_name(config: Dict[str, Any]) -> str:
     return urlparse(
-        config.get('exhibitor_bootstrap_ca_url', config['bootstrap_url'])
-    ).hostname or ""
+        config.get('exhibitor_bootstrap_ca_url',
+                   config['bootstrap_url'])).hostname or ""
 
 
+# noinspection PyUnresolvedReferences
 def initialize_exhibitor_ca(config: Config, gen: Bunch):
     conf = config.config
+
+    reasons = _check(conf, gen.arguments['dcos_variant'])
+    if reasons:
+        LOG.info('Not bootstrapping exhibitor CA: %s', '\n'.join(reasons))
+        return
 
     package_path = pathlib.Path(
         '/genconf/serve') / gen.cluster_packages[PACKAGE_NAME]['filename']
     ca_alternative_names = ['127.0.0.1', 'localhost', _get_ca_alt_name(conf)]
-
-    # Only perform action for enterprise clusters when not explicitly disabled
-    if not (gen.arguments['dcos_variant'] == "enterprise"
-            and conf.get('exhibitor_security_enabled', True)):
-        return
 
     _extract_package(package_path)
     _init_ca(ca_alternative_names)
