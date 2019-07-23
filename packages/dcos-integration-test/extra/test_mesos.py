@@ -457,3 +457,116 @@ def reserved_disk(dcos_api_session):
                 'unreserve_resources': resources}
             r = dcos_api_session.post('/mesos/api/v1', json=request)
             assert r.status_code == 202, r.text
+
+
+def reactivate_agent(dcos_api_session, agent_id):
+    request = {
+        'type': 'REACTIVATE_AGENT',
+        'reactivate_agent': {
+            'agent_id': {
+                'value': agent_id
+            }
+        }
+    }
+
+    r = dcos_api_session.post('/mesos/api/v1', json=request)
+    assert r.status_code == 200, r.text
+
+
+def test_node_drain_and_reactivate(dcos_api_session):
+    app, test_uuid = test_helpers.marathon_test_app()
+    app_id = 'integration-test-{}'.format(test_uuid)
+
+    with dcos_api_session.marathon.deploy_and_cleanup(app):
+        # Fetch the mesos master state once the task is running
+        master_ip = dcos_api_session.masters[0]
+        r = dcos_api_session.get('/state', host=master_ip, port=5050)
+        assert r.status_code == 200
+        state = r.json()
+
+        # Find the agent ID from master state
+        agent_id = None
+        for framework in state['frameworks']:
+            for task in framework['tasks']:
+                if app_id in task['id']:
+                    agent_id = task['slave_id']
+        assert agent_id is not None, 'Agent ID not found for instance of app_id {}'.format(app_id)
+
+        # Drain the agent
+        request = {
+            'type': 'DRAIN_AGENT',
+            'drain_agent': {
+                'agent_id': {'value': agent_id}
+            }
+        }
+
+        r = dcos_api_session.post('/mesos/api/v1', json=request)
+        assert r.status_code == 200, r.text
+
+        try:
+            # Verify that the agent is drained. The agent will not transition to
+            # DRAINED immediately, so we retry
+            @retrying.retry(wait_fixed=1000, stop_max_delay=10000)
+            def get_state_and_verify_drained():
+                r = dcos_api_session.get('/state', host=master_ip, port=5050)
+                assert r.status_code == 200
+                state = r.json()
+
+                agent_found = False
+                for agent in state['slaves']:
+                    if agent['id'] == agent_id:
+                        agent_found = True
+                        assert 'drain_info' in agent, 'Agent {} does not include drain info'.format(agent_id)
+                        assert agent['drain_info']['state'] == 'DRAINED'
+
+                assert agent_found
+
+            get_state_and_verify_drained()
+        except Exception as ex:
+            reactivate_agent(dcos_api_session, agent_id)
+            raise ex
+
+        reactivate_agent(dcos_api_session, agent_id)
+
+
+def test_node_deactivate_and_reactivate(dcos_api_session):
+    # Fetch the mesos master state to find an agent ID
+    master_ip = dcos_api_session.masters[0]
+    r = dcos_api_session.get('/state', host=master_ip, port=5050)
+    assert r.status_code == 200
+    state = r.json()
+
+    assert 'slaves' in state and len(state['slaves']) > 0, 'No agents found in master state'
+    assert 'id' in state['slaves'][0], 'Agent in master state does not have an ID'
+    agent_id = state['slaves'][0]['id']
+
+    # Deactivate the agent
+    request = {
+        'type': 'DEACTIVATE_AGENT',
+        'deactivate_agent': {
+            'agent_id': {'value': agent_id}
+        }
+    }
+
+    r = dcos_api_session.post('/mesos/api/v1', json=request)
+    assert r.status_code == 200, r.text
+
+    try:
+        # Verify that the agent is deactivated
+        r = dcos_api_session.get('/state', host=master_ip, port=5050)
+        assert r.status_code == 200
+        state = r.json()
+
+        agent_found = False
+        for agent in state['slaves']:
+            if agent['id'] == agent_id:
+                agent_found = True
+                assert 'deactivated' in agent, 'Agent {} does not include deactivation state'.format(agent_id)
+                assert agent['deactivated'], 'Agent {} was not successfully deactivated'
+
+        assert agent_found, 'Agent {} was not found in master state'.format(agent_id)
+    except Exception as ex:
+        reactivate_agent(dcos_api_session, agent_id)
+        raise ex
+
+    reactivate_agent(dcos_api_session, agent_id)
