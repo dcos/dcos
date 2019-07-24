@@ -1,5 +1,5 @@
 [Unit]
-Description=Triggers DC/OS Diagnostics to query Mesos state and appends the results to an archive
+Description=Diagnostics Mesos state query: Triggers DC/OS Diagnostics to query Mesos state and appends the results to an archive
 
 [Service]
 EnvironmentFile=/opt/mesosphere/environment

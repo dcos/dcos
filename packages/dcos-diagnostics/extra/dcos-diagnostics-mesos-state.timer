@@ -1,5 +1,5 @@
 [Unit]
-Description=Timer for triggering Mesos state
+Description=Diagnostics Mesos state timer: Timer for triggering Mesos state
 
 [Timer]
 OnCalendar=daily
