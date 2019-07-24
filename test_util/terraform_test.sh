@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euxo pipefail
+set -exo pipefail
 
 if [ $# -lt 1 ]; then
     echo "Usage: $0 <test group>"
@@ -41,7 +41,7 @@ export SSH_KEY_PATH=id_rsa
 
 cd packages/dcos-integration-test/extra
 pytest ${EXTRA_PYTEST_ARGS} ${TEST_NAMES}
-  
+
 # if the last return code is zero, we create a file to indicate all tests passed. The existence of this
 # file will be checked in the next build step to determine if log collection can be skipped.
 return_code=$?
