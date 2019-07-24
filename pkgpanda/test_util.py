@@ -476,12 +476,12 @@ def test_write_string(tmpdir):
     pkgpanda.util.write_string(filename=filename, data='foo_contents_2')
     with open(filename) as f:
         assert f.read() == 'foo_contents_2'
+
     if not pkgpanda.util.is_windows:
         st_mode = os.stat(filename).st_mode
         expected_permission = 0o644
         assert (st_mode & 0o777) == expected_permission
 
-    if not pkgpanda.util.is_windows:
         os.chmod(filename, 0o777)
         pkgpanda.util.write_string(filename=filename, data='foo_contents_3')
         with open(filename) as f:
@@ -489,18 +489,6 @@ def test_write_string(tmpdir):
         st_mode = os.stat(filename).st_mode
         expected_permission = 0o777
         assert (st_mode & 0o777) == expected_permission
-
-    st_mode = os.stat(filename).st_mode
-    expected_permission = 0o644
-    assert (st_mode & 0o777) == expected_permission
-
-    os.chmod(filename, 0o777)
-    pkgpanda.util.write_string(filename=filename, data='foo_contents_3')
-    with open(filename) as f:
-        assert f.read() == 'foo_contents_3'
-    st_mode = os.stat(filename).st_mode
-    expected_permission = 0o777
-    assert (st_mode & 0o777) == expected_permission
 
 
 class MockDownloadServerRequestHandler(BaseHTTPRequestHandler):
