@@ -11,13 +11,6 @@ fi
 MASTER_IP=$(./terraform output --json masters-ips |jq -r '.value[0]')
 ssh_user=$(./terraform output --json -module dcos.dcos-infrastructure masters.os_user |jq -r '.value')
 ssh_user=${ssh_user:-$(./terraform output --json -module dcos.dcos-infrastructure masters.admin_username |jq -r '.value')}
-
-SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ./id_rsa ${ssh_user}@$MASTER_IP"
-
-function run_ssh_cmd {
-     $SSH -- dcos-shell $@
-}
-
 MASTER_HOSTS=$(./terraform output --json -module dcos.dcos-infrastructure masters.private_ips |jq -r '.value[0]')
 MASTER_PUBLIC_IPS=$(./terraform output --json -module dcos.dcos-infrastructure masters.public_ips |jq -r '.value[0]')
 
@@ -27,10 +20,12 @@ if [ "$2" == "enterprise" ]; then
 fi
 
 PYTEST_LOCALE=${PYTEST_LOCALE:-en_US.utf8}
-TEST_NAMES=$(run_ssh_cmd LC_ALL=$PYTEST_LOCALE LANG=$PYTEST_LOCALE python "$TEST_GROUPS_PATH" group_$1)
+SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ./id_rsa ${ssh_user}@$MASTER_IP"
+TEST_DIR="'$(find /opt/mesosphere/active/ -name dcos-integration-test* | sort | tail -n 1)'"
+TEST_NAMES=$($SSH -- LC_ALL=$PYTEST_LOCALE LANG=$PYTEST_LOCALE cd $TEST_DIR && dcos-shell python "$TEST_GROUPS_PATH" group_$1)
 
-export PUBLIC_SLAVE_HOSTS="$(./terraform output --json -module dcos.dcos-infrastructure public_agents.private_ips |jq -r '.value |join(",")')" \
-export SLAVE_HOSTS="$(./terraform output --json -module dcos.dcos-infrastructure private_agents.private_ips |jq -r '.value |join(",")')" \
+export PUBLIC_SLAVE_HOSTS="$(./terraform output --json -module dcos.dcos-infrastructure public_agents.private_ips |jq -r '.value |join(",")')"
+export SLAVE_HOSTS="$(./terraform output --json -module dcos.dcos-infrastructure private_agents.private_ips |jq -r '.value |join(",")')"
 export MASTER_HOSTS
 export MASTER_PUBLIC_IPS
 export DCOS_LOGIN_UNAME=testadmin
