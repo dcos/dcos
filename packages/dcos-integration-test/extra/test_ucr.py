@@ -348,3 +348,44 @@ def test_if_ucr_pods_can_be_deployed_with_non_root_user_ephemeral_volume(dcos_ap
     with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
         # Trivial app if it deploys, there is nothing else to check
         pass
+
+
+def test_if_ucr_pods_can_share_shm_with_childs(dcos_api_session):
+    """Marathon pods inside ucr deployment integration test.
+
+    This test launches a marathon ucr pod with a specified size (1234MB)
+    of private /dev/shm and share it with one of its child containers but
+    not the other one, and then verifies the size of one child container's
+    /dev/shm is 1234MB and the other's is not.
+    """
+    test_uuid = uuid.uuid4().hex
+    pod_definition = {
+        'id': '/integration-test-pods-{}'.format(test_uuid),
+        'scaling': {'kind': 'fixed', 'instances': 1},
+        'environment': {'PING': 'PONG'},
+        'containers': [
+            {
+                'name': 'container1',
+                'resources': {'cpus': 0.1, 'mem': 32},
+                'image': {'kind': 'DOCKER', 'id': 'library/alpine'},
+                'exec': {'command': {'shell': 'df -m /dev/shm | grep -w 1234'}},
+                'linuxInfo': {'ipcInfo': {'mode': 'SHARE_PARENT'}}
+            },
+            {
+                'name': 'container2',
+                'resources': {'cpus': 0.1, 'mem': 32},
+                'exec': {
+                    'command': {
+                        'shell': 'test -z $(df -m /dev/shm | grep -w 1234) && '
+                                 'echo $PING > foo; while true; do sleep 1; done'
+                    }
+                },
+                'healthcheck': {'command': {'shell': 'test $PING = `cat foo`'}}
+            }
+        ],
+        'networks': [{'mode': 'host'}],
+        'linuxInfo': {'ipcInfo': {'mode': 'PRIVATE', 'shmSize': 1234}}
+    }
+    with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
+        # Trivial app if it deploys, there is nothing else to check
+        pass
