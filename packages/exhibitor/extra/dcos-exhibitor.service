@@ -18,7 +18,7 @@ Environment=SERVER_JVMFLAGS=-Djna.tmpdir=/var/lib/dcos/exhibitor/tmp
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dns_config
 EnvironmentFile=/opt/mesosphere/etc/exhibitor
-EnvironmentFile=-/opt/mesosphere/etc/exhibitor-extras
+EnvironmentFile=/opt/mesosphere/etc/exhibitor-extras
 # Execute ExecStartPre directives as root
 PermissionsStartOnly=true
 
@@ -31,7 +31,5 @@ ExecStartPre=/opt/mesosphere/bin/check-time
 
 # Execute a python script, as root, that sets file permissions to some exact set if those files exist.
 ExecStartPre=$PKG_PATH/bin/set_exhibitor_file_permissions.py
-# Setup Exhibitor TLS depending on DC/OS configuration parameters.
-ExecStartPre=$PKG_PATH/usr/exhibitor/setup_exhibitor_tls.py
 # Start Exhibitor
 ExecStart=$PKG_PATH/usr/exhibitor/start_exhibitor.py

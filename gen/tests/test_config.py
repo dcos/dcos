@@ -236,6 +236,35 @@ def test_exhibitor_storage_master_discovery():
         unset={'exhibitor_address', 'num_masters'})
 
 
+def test_exhibitor_tls_enabled():
+    validate_success({'exhibitor_tls_enabled': 'false'})
+    validate_success({'exhibitor_tls_enabled': 'true'})
+    validate_error(
+        {'exhibitor_tls_enabled': 'foo'},
+        'exhibitor_tls_enabled',
+        true_false_msg)
+
+
+def test_exhibitor_bootstrap_ca_url():
+    validate_success({'exhibitor_bootstrap_ca_url': ''})
+    validate_success({'exhibitor_bootstrap_ca_url': 'http://hello.com'})
+    validate_success({'exhibitor_bootstrap_ca_url': 'http://1.2.3.4'})
+    validate_success({'exhibitor_bootstrap_ca_url': 'http://hello.com:443'})
+    validate_success({'exhibitor_bootstrap_ca_url': 'http://1.2.3.4:443'})
+    validate_error(
+        {'exhibitor_bootstrap_ca_url': 'http://hello.com/'},
+        'exhibitor_bootstrap_ca_url',
+        "Must not end in a '/'")
+    validate_error(
+        {'exhibitor_bootstrap_ca_url': 'http://hello.com://there'},
+        'exhibitor_bootstrap_ca_url',
+        'Failed to determine `exhibitor_bootstrap_ca_url` protocol.')
+    validate_error(
+        {'exhibitor_bootstrap_ca_url': 'file://hello.com'},
+        'exhibitor_bootstrap_ca_url',
+        'Expected `http://` or `https://` as `exhibitor_bootstrap_ca_url` protocol.')
+
+
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_validate_s3_prefix():
     validate_error({
