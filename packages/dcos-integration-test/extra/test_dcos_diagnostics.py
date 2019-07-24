@@ -478,6 +478,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
 
     expected_agent_common_files = [
         '5051-containers.json',
+        '5051-containerizer_debug.json',
         '5051-overlay-agent_overlay.json',
         'var/log/mesos/mesos-agent.log.gz',
         'docker_--version.output.gz',

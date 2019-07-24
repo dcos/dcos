@@ -60,6 +60,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Add dcos-net overlay metrics. (DCOS_OSS-5324)
 
+* Added containerizer debug endpoint into the diagnostic bundle. This endpoint is used for tracking data for stuck tasks. (DCOS-55383)
+
 
 ### Breaking changes
 
