@@ -3,8 +3,8 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-diagnostics.git",
-    "ref": "4aab9290456cc15eb2309f6a584b99ed0dcd29bc",
-    "ref_origin": "DCOS-56380/add_mesos_state_cmd"
+    "ref": "d31bb5788361e5e7ae1571c4f1409fa12ce09b5c",
+    "ref_origin": "master"
   },
   "username": "dcos_diagnostics",
   "group": "systemd-journal",
