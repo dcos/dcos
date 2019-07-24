@@ -3,7 +3,8 @@ Description=Timer for triggering Mesos state
 
 [Timer]
 OnCalendar=daily
-RandomizedDelaySec=3600
+OnBootSec=5min
+RandomizedDelaySec=60min
 
 [Install]
 WantedBy=timers.target
