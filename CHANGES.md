@@ -8,6 +8,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/tree/b8a73dd)
 
+* Updated DC/OS UI to [1.11+v1.26.8](https://github.com/dcos/dcos-ui/releases/tag/1.11+v1.26.8).
+
 ### Fixed and improved
 
 * [Metronome] Querying run detail with embed=history, successfulFinishedRuns and failedFinishedRuns contains new field tasks which is an array of taskIds of that finished run. This will allow people to query task ids even for finished job runs.
