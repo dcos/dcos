@@ -10,6 +10,88 @@ ZK_VAR_DIR = '/var/lib/dcos/exhibitor/zookeeper'
 ZK_SNAPSHOTS = os.path.join(ZK_VAR_DIR, 'snapshot')
 ZK_TRANSACTIONS = os.path.join(ZK_VAR_DIR, 'transactions')
 
+TLS_ARTIFACT_LOCATION = '/var/lib/dcos/exhibitor-tls-artifacts'
+PRESHAREDKEY_LOCATION = '/dcoscertstrap.psk'
+
+
+def get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url) -> str:
+    if exhibitor_bootstrap_ca_url:
+        return exhibitor_bootstrap_ca_url
+    else:
+        try:
+            protocol, url = bootstrap_url.split('://')
+        except ValueError as exc:
+            message = (
+                'Failed to calculate `exhibitor_bootstrap_ca_url` from '
+                '`bootstrap_url` {bootstrap_url}. Could not determine '
+                '`bootstrap_url` protocol.'
+            ).format(bootstrap_url=bootstrap_url)
+            raise ValueError(message) from exc
+
+        if protocol == 'http' or protocol == 'https':
+            bootstrap_host = url.split(':')[0]
+            return '{host}:{port}'.format(host=bootstrap_host, port=443)
+
+        message = (
+            'Failed to calculcate `exhibitor_bootstrap_ca_url` from `bootstrap_url`. '
+            '`bootstrap_url` {bootstrap_url} does not point to an HTTP web server. '
+            'Consider setting parameter `exhibitor_bootstrap_ca_url` explicitly.'
+        ).format(bootstrap_url=bootstrap_url)
+        raise ValueError(message)
+
+
+def gen_tls_artifacts(ca_url, artifacts_path) -> None:
+    """
+    Contact the CA service to sign the generated TLS artifacts.
+    Write the signed Exhibitor TLS artifacts to the file system.
+    """
+    print('Generating TLS artifacts via CA service: `{}`'.format(ca_url))
+
+    # Fail early if IP detect script does not properly resolve yet.
+    ip = invoke_detect_ip()
+
+    psk_path = Path(PRESHAREDKEY_LOCATION)
+    if psk_path.exists():
+        psk = psk_path.read_text()
+    else:
+        # Empty PSK results in any CSR being signed by the CA service.
+        psk = ''
+
+    print('Initiating CA service client structure')
+    result = subprocess.check_output(
+        args=['/opt/mesosphere/bin/dcoscertstrap', 'init-client'],
+        stderr=subprocess.STDOUT,
+    )
+    print(result.stdout.decode())
+
+    print('Making Certificate Signing Request with IP {}'.format(ip))
+    result = subprocess.check_output(
+        args=[
+            '/opt/mesosphere/bin/dcoscertstrap', 'csr',
+            '--url', '',
+            '--psk', '',
+            '--common-name', 'client',
+            '--country', 'US',
+            '--state', 'CA',
+            '--locality', 'San Francisco',
+            '--email-addresses', 'security@mesosphere.com',
+            '--sans', '{},exhibitor,localhost,127.0.0.1'.format(ip),
+        ],
+        stderr=subprocess.STDOUT,
+    )
+    print(result.stdout.decode())
+
+    print('Writing TLS artifacts to {}'.format(artifacts_path))
+    result = subprocess.check_output(
+        args=[
+            '/opt/mesosphere/bin/dcoscertstrap', 'out',
+            '--all',
+            '--path', '{}'.format(artifacts_path),
+        ],
+        stderr=subprocess.STDOUT,
+    )
+    print(result.stdout.decode())
+
 
 def get_var_assert_set(name):
     if name not in os.environ:
@@ -208,6 +290,71 @@ elif exhibitor_backend == 'SHARED_FS':
 else:
     print("ERROR: No known exhibitor backend:", exhibitor_backend)
     sys.exit(1)
+
+
+
+# Exhibitor TLS settings
+
+# Where exhibitor is pointed to use TLS artifacts
+TLS_ARTIFACT_LOCATION = '/var/lib/dcos/exhibitor-tls-artifacts'
+
+# Flags to append to java command for exhibitor to read tls artifacts
+tls_java_flags = TLS_ARTIFACT_LOCATION
+
+if exhibitor_security == True:
+    # We can have artifacts in TLS_ARTIFACT_LOCATION
+    if valid_files(TLS_ARTIFACT_LOCATION):
+        return
+
+    # Dynamically generated
+    ca_url = (exhibitor_bootstrap_ca_url or  bootstrap_url)
+    if not valid_url(ca_url):
+        raise "Asked for secure exhibitor but cannot get CA URL"
+
+    ca = CAService(ca_url)
+    artifacts = ca.get_tls_artifacts()
+    # Copy to TLS_ARTIFACT_LOCATION
+else:
+    # Run without TLS
+    tls_java_flags = []
+    logger.log('exhibitor tls security disabled explicitly')
+
+
+exhibitor_env = os.environ.copy()
+
+if exhibitor_env['EXHIBITOR_TLS_ENABLED'] == 'false':
+    print('Exhibitor TLS explicitly disabled')
+else:
+    artifacts_path = Path(TLS_ARTIFACT_LOCATION)
+    truststore_path = Path(artifacts_path / 'truststore.jks')
+    clientstore_path = Path(artifacts_path / 'clientstore.jks')
+    serverstore_path = Path(artifacts_path / 'serverstore.jks')
+
+    if not truststore_path.exists() or \
+       not clientstore_path.exists() or \
+       not serverstore_path.exists():
+
+        print('WARNING: Not all Exhibitor TLS artifacts found in `{path}`'.format(
+            path=artifacts_path))
+
+        exhibitor_bootstrap_ca_url = exhibitor_env['EXHIBITOR_BOOTSTRAP_CA_URL']
+        bootstrap_url = exhibitor_env['BOOTSTRAP_URL']
+        try:
+            ca_url = get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url)
+        except ValueError as exc:
+            print(str(exc))
+            sys.exit(1)
+        else:
+            gen_tls_artifacts(ca_url, artifacts_path)
+
+    exhibitor_env['EXHIBITOR_TLS_TRUSTSTORE_PATH'] = truststore_path
+    exhibitor_env['EXHIBITOR_TLS_TRUSTSTORE_PASSWORD'] = 'not-relevant-for-security'
+    exhibitor_env['EXHIBITOR_TLS_CLIENT_KEYSTORE_PATH'] = clientstore_path
+    exhibitor_env['EXHIBITOR_TLS_CLIENT_KEYSTORE_PASSWORD'] = 'not-relevant-for-security'
+    exhibitor_env['EXHIBITOR_TLS_SERVER_KEYSTORE_PATH'] = serverstore_path
+    exhibitor_env['EXHIBITOR_TLS_SERVER_KEYSTORE_PASSWORD'] = 'not-relevant-for-security'
+    exhibitor_env['EXHIBITOR_TLS_REQUIRE_CLIENT_CERT'] = 'true'
+    exhibitor_env['EXHIBITOR_TLS_VERIFY_PEER_CERT'] = 'true'
 
 # Start exhibitor
 print("Running exhibitor as command:", exhibitor_cmdline)
