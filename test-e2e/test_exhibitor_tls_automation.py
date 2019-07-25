@@ -15,7 +15,46 @@ from dcos_e2e.node import Output
 
 class TestExhibitorTLSAutomation:
 
-    def test_superuser_service_account_login(
+    def test_exhibitor_tls_disabled(
+        self,
+        docker_backend: ClusterBackend,
+        artifact_path: Path,
+        request: SubRequest,
+        log_dir: Path,
+    ) -> None:
+        """
+        Test disabling Exhibitor TLS.
+        """
+        with Cluster(
+            cluster_backend=docker_backend,
+            masters=1,
+            agents=0,
+            public_agents=0,
+        ) as cluster:
+            cluster.install_dcos_from_path(
+                dcos_installer=artifact_path,
+                dcos_config={
+                    **cluster.base_config,
+                    **{'exhibitor_tls_enabled': 'false'},
+                },
+                output=Output.LOG_AND_CAPTURE,
+                ip_detect_path=docker_backend.ip_detect_path,
+            )
+            wait_for_dcos_oss(
+                cluster=cluster,
+                request=request,
+                log_dir=log_dir,
+            )
+            master = next(iter(cluster.masters))
+            master.run(
+                ['curl',
+                 '-fsSL',
+                 'http://$(/opt/mesosphere/bin/detect_ip):8181/exhibitor/v1/cluster/status'],
+                output=Output.LOG_AND_CAPTURE,
+                shell=True,
+            )
+
+    def test_exhibitor_existing_partial_tls_artifacts(
         self,
         docker_backend: ClusterBackend,
         artifact_path: Path,
