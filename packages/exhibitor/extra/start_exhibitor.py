@@ -33,7 +33,11 @@ def get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url) -> str:
 
         if protocol == 'http' or protocol == 'https':
             bootstrap_host = url.split(':')[0]
-            return '{host}:{port}'.format(host=bootstrap_host, port=443)
+            return '{protocol}://{host}:{port}'.format(
+                protocol=protocol,
+                host=bootstrap_host,
+                port=443,
+            )
 
         message = (
             'Failed to calculcate `exhibitor_bootstrap_ca_url` from `bootstrap_url`. '
@@ -60,7 +64,7 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
 
     print('Initiating CA service client structure')
     result = subprocess.check_output(
-        args=['/opt/mesosphere/bin/dcoscertstrap', 'init-client'],
+        args=['/opt/mesosphere/bin/dcoscertstrap', 'init-entity'],
         stderr=subprocess.STDOUT,
     )
     print(result.stdout.decode())
@@ -69,7 +73,7 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
     result = subprocess.check_output(
         args=[
             '/opt/mesosphere/bin/dcoscertstrap', 'csr',
-            '--url', '""',
+            '--url', ca_url,
             '--psk', psk,
             '--common-name', 'client',
             '--country', 'US',
@@ -85,9 +89,9 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
     print('Writing TLS artifacts to {}'.format(artifacts_path))
     result = subprocess.check_output(
         args=[
-            '/opt/mesosphere/bin/dcoscertstrap', 'out',
-            '--all',
-            '--path', '{}'.format(artifacts_path),
+            '/opt/mesosphere/bin/dcoscertstrap', 'create-exhibitor-artifacts',
+            '--ca', '""',
+            '--artifacts-directory', '{}'.format(artifacts_path),
         ],
         stderr=subprocess.STDOUT,
     )
