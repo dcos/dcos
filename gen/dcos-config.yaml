@@ -1780,6 +1780,11 @@ package:
                   "Location": "{{ mesos_master_log_file }}.3.gz",
                   "Role": ["master"],
                   "Optional": true
+              },
+              {
+                  "Location": "/var/log/mesos-state.tar.gz",
+                  "Role": ["master"],
+                  "Optional": true
               }
           ],
           "LocalCommands": [

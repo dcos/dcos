@@ -1,0 +1,10 @@
+[Unit]
+Description=Diagnostics Mesos state query: Triggers DC/OS Diagnostics to query Mesos state and appends the results to an archive
+
+[Service]
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/dcos-diagnostics.env
+EnvironmentFile=-/opt/mesosphere/etc/dcos-diagnostics-extra.env
+
+Type=oneshot
+ExecStart=/bin/sh -c 'OUT=/tmp/mesos-state-$(date +%%s).log && dcos-diagnostics mesos-state --config ${DCOS_DIAGNOSTICS_CONFIG_PATH} > $${OUT} 2>&1  || true && if [[ -f /var/log/mesos-state.tar.gz ]] ; then gzip -d /var/log/mesos-state.tar.gz ; fi && tar rvf /var/log/mesos-state.tar --remove-files $${OUT} && tar --delete -vf /var/log/mesos-state.tar $(tar -tf /var/log/mesos-state.tar | sort -n | head -n -90) && gzip -9 /var/log/mesos-state.tar'
