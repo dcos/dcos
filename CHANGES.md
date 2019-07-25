@@ -4,7 +4,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
-* Updated DC/OS UI to [1.13+v2.82.7](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.7).
+* Updated DC/OS UI to [1.13+v2.82.8](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.8).
 
 ### Fixed and improved
 
