@@ -423,9 +423,9 @@ def validate_exhibitor_bootstrap_ca_url(exhibitor_bootstrap_ca_url):
         )
         raise AssertionError(message) from exc
 
-    if protocol != 'http' and protocol != 'https':
+    if protocol != 'https':
         message = (
-            'Expected `http://` or `https://` as `exhibitor_bootstrap_ca_url` '
+            'Expected `https://` as `exhibitor_bootstrap_ca_url` '
             'protocol.'
         )
         raise AssertionError(message)
