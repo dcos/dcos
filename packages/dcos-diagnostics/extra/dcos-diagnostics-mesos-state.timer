@@ -1,0 +1,10 @@
+[Unit]
+Description=Diagnostics Mesos state timer: Timer for triggering Mesos state
+
+[Timer]
+OnCalendar=daily
+OnBootSec=5min
+RandomizedDelaySec=60min
+
+[Install]
+WantedBy=timers.target
