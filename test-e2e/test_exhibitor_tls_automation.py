@@ -107,7 +107,6 @@ class TestExhibitorTLSAutomation:
                     output=Output.LOG_AND_CAPTURE,
                     shell=True,
                 )
-            import pdb; pdb.set_trace()
             assert exc.value.message == '<some cURL TLS error>'
 
     def test_exhibitor_existing_partial_tls_artifacts(
