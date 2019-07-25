@@ -247,22 +247,26 @@ def test_exhibitor_tls_enabled():
 
 def test_exhibitor_bootstrap_ca_url():
     validate_success({'exhibitor_bootstrap_ca_url': ''})
-    validate_success({'exhibitor_bootstrap_ca_url': 'http://hello.com'})
-    validate_success({'exhibitor_bootstrap_ca_url': 'http://1.2.3.4'})
-    validate_success({'exhibitor_bootstrap_ca_url': 'http://hello.com:443'})
-    validate_success({'exhibitor_bootstrap_ca_url': 'http://1.2.3.4:443'})
+    validate_success({'exhibitor_bootstrap_ca_url': 'https://hello.com'})
+    validate_success({'exhibitor_bootstrap_ca_url': 'https://1.2.3.4'})
+    validate_success({'exhibitor_bootstrap_ca_url': 'https://hello.com:443'})
+    validate_success({'exhibitor_bootstrap_ca_url': 'https://1.2.3.4:443'})
     validate_error(
-        {'exhibitor_bootstrap_ca_url': 'http://hello.com/'},
+        {'exhibitor_bootstrap_ca_url': 'https://hello.com/'},
         'exhibitor_bootstrap_ca_url',
         "Must not end in a '/'")
     validate_error(
-        {'exhibitor_bootstrap_ca_url': 'http://hello.com://there'},
+        {'exhibitor_bootstrap_ca_url': 'https://hello.com://there'},
         'exhibitor_bootstrap_ca_url',
         'Failed to determine `exhibitor_bootstrap_ca_url` protocol.')
     validate_error(
+        {'exhibitor_bootstrap_ca_url': 'http://hello.com'},
+        'exhibitor_bootstrap_ca_url',
+        'Expected `https://` as `exhibitor_bootstrap_ca_url` protocol.')
+    validate_error(
         {'exhibitor_bootstrap_ca_url': 'file://hello.com'},
         'exhibitor_bootstrap_ca_url',
-        'Expected `http://` or `https://` as `exhibitor_bootstrap_ca_url` protocol.')
+        'Expected `https://` as `exhibitor_bootstrap_ca_url` protocol.')
 
 
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")

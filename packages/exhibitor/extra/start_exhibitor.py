@@ -12,6 +12,7 @@ ZK_SNAPSHOTS = os.path.join(ZK_VAR_DIR, 'snapshot')
 ZK_TRANSACTIONS = os.path.join(ZK_VAR_DIR, 'transactions')
 
 TLS_ARTIFACT_LOCATION = '/var/lib/dcos/exhibitor-tls-artifacts'
+CSR_SERVICE_CERT_PATH = '/dcoscertstrap-root-cert.pem'
 PRESHAREDKEY_LOCATION = '/dcoscertstrap.psk'
 
 
@@ -33,11 +34,7 @@ def get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url) -> str:
 
         if protocol == 'http' or protocol == 'https':
             bootstrap_host = url.split(':')[0]
-            return '{protocol}://{host}:{port}'.format(
-                protocol=protocol,
-                host=bootstrap_host,
-                port=443,
-            )
+            return 'https://{host}:{port}'.format(host=bootstrap_host, port=443)
 
         message = (
             'Failed to calculcate `exhibitor_bootstrap_ca_url` from `bootstrap_url`. '
@@ -62,25 +59,45 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
         # Empty PSK results in any CSR being signed by the CA service.
         psk = '""'
 
+    server_entity = 'exhibitor-server'
+
     print('Initiating CA service client structure')
     result = subprocess.check_output(
-        args=['/opt/mesosphere/bin/dcoscertstrap', 'init-entity'],
+        args=['/opt/mesosphere/bin/dcoscertstrap', 'init-entity', server_entity],
         stderr=subprocess.STDOUT,
     )
     print(result.stdout.decode())
 
-    print('Making Certificate Signing Request with IP {}'.format(ip))
+    print('Making CSR for {} with IP {}'.format(server_entity, ip))
     result = subprocess.check_output(
         args=[
-            '/opt/mesosphere/bin/dcoscertstrap', 'csr',
+            '/opt/mesosphere/bin/dcoscertstrap', 'csr', server_entity,
             '--url', ca_url,
+            '--ca', CSR_SERVICE_CERT_PATH,
             '--psk', psk,
-            '--common-name', 'client',
-            '--country', 'US',
-            '--state', 'CA',
-            '--locality', '"San Francisco"',
-            '--email-addresses', 'security@mesosphere.com',
-            '--sans', '{},exhibitor,localhost,127.0.0.1'.format(ip),
+            '--sans', '{},localhost,127.0.0.1'.format(ip),
+        ],
+        stderr=subprocess.STDOUT,
+    )
+    print(result.stdout.decode())
+
+    client_entity = 'exhibitor-client'
+
+    print('Initiating CA service client structure')
+    result = subprocess.check_output(
+        args=['/opt/mesosphere/bin/dcoscertstrap', 'init-entity', client_entity],
+        stderr=subprocess.STDOUT,
+    )
+    print(result.stdout.decode())
+
+    print('Making CSR for {} with IP {}'.format(client_entity, ip))
+    result = subprocess.check_output(
+        args=[
+            '/opt/mesosphere/bin/dcoscertstrap', 'csr', client_entity,
+            '--url', ca_url,
+            '--ca', CSR_SERVICE_CERT_PATH,
+            '--psk', psk,
+            '--sans', '{},localhost,127.0.0.1'.format(ip),
         ],
         stderr=subprocess.STDOUT,
     )
@@ -90,7 +107,9 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
     result = subprocess.check_output(
         args=[
             '/opt/mesosphere/bin/dcoscertstrap', 'create-exhibitor-artifacts',
-            '--ca', '""',
+            '--ca', CSR_SERVICE_CERT_PATH,
+            '--client-entity', client_entity,
+            '--server-entity', server_entity,
             '--artifacts-directory', '{}'.format(artifacts_path),
         ],
         stderr=subprocess.STDOUT,

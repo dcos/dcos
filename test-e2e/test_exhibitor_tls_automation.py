@@ -71,6 +71,8 @@ class TestExhibitorTLSAutomation:
         """
         # TODO(tweidner):
         # Start initialized `dcoscertstrap` Docker container on host network.
+        # $ ./dcoscertstrap init-ca --sans 172.17.0.1
+        # $ ./dcoscertstrap serve
         # Point `exhibitor_bootstrap_ca_url` URL to it.
         with Cluster(
             cluster_backend=docker_backend,
@@ -78,11 +80,16 @@ class TestExhibitorTLSAutomation:
             agents=0,
             public_agents=0,
         ) as cluster:
+            master = next(iter(cluster.masters))
+            master.send_file(
+                local_path=Path('/home/tim/Downloads/dcoscertstrap_0.0.2_linux_amd64/.dcos-pki/root-cert.pem'),
+                remote_path=Path('/dcoscertstrap-root-cert.pem'),
+            )
             cluster.install_dcos_from_path(
                 dcos_installer=artifact_path,
                 dcos_config={
                     **cluster.base_config,
-                    **{'exhibitor_bootstrap_ca_url': 'http://127.0.0.1:8080'},
+                    **{'exhibitor_bootstrap_ca_url': 'http://172.17.0.1:8443'},
                 },
                 output=Output.LOG_AND_CAPTURE,
                 ip_detect_path=docker_backend.ip_detect_path,
@@ -92,7 +99,6 @@ class TestExhibitorTLSAutomation:
                 request=request,
                 log_dir=log_dir,
             )
-            master = next(iter(cluster.masters))
             with pytest.raises(CalledProcessError) as exc:
                 master.run(
                     ['curl',
