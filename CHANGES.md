@@ -6,7 +6,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### What's new
 
-* Marathon 1.9 brings support for multirole, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
+* Upgraded Marathon to 1.9.30. Marathon 1.9 brings support for multirole, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
 
 * Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0)
 
@@ -42,11 +42,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Upgraded platform OpenSSL from 1.0.2x to release 1.1.1x. (DCOS-54108)
 
-* Updated DC/OS UI to [master+v2.127.1](https://github.com/dcos/dcos-ui/releases/tag/master+v2.127.1).
+* Updated DC/OS UI to [master+v2.128.1](https://github.com/dcos/dcos-ui/releases/tag/master+v2.128.1).
 
 * Added L4LB metrics in DC/OS Net. (DCOS_OSS-5011)
 
-* Updated to [Mesos 1.9.x](https://github.com/apache/mesos/blob/dfcd31fab6a99940fe1e33c3c6ba780f6b88b29d/CHANGELOG). (DCOS_OSS-5342)
+* Updated to [Mesos 1.9.x](https://github.com/apache/mesos/blob/ff8c9a96be6ae1ee47faf9d5b80a518dfb4a3db0/CHANGELOG). (DCOS_OSS-5342)
 
 * Bumped Mesos modules to have overlay metrics exposed. (DCOS_OSS-5322)
 
