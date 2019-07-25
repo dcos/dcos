@@ -597,6 +597,12 @@ def test_l4lb(dcos_api_session):
             app.purge(dcos_api_session)
 
 
+@pytest.mark.xfailflake(
+    jira='DCOS-53659',
+    reason='Update universal installer default range'
+           'DCOS-49805 - test_dcos_cni_l4lb fails on universal installer provisioned cluster',
+    since='2019-07-24'
+)
 def test_dcos_cni_l4lb(dcos_api_session):
     '''
     This tests the `dcos - l4lb` CNI plugins:
