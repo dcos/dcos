@@ -17,8 +17,10 @@ PRESHAREDKEY_LOCATION = '/dcoscertstrap.psk'
 
 def get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url) -> str:
     if exhibitor_bootstrap_ca_url:
+        print('Using `exhibitor_bootstrap_ca_url` config parameter.')
         return exhibitor_bootstrap_ca_url
     else:
+        print('Inferring `exhibitor_bootstrap_ca_url` from `bootstrap_url`.')
         try:
             protocol, url = bootstrap_url.split('://')
         except ValueError as exc:
