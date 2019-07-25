@@ -82,14 +82,27 @@ class TestExhibitorTLSAutomation:
         ) as cluster:
             master = next(iter(cluster.masters))
             master.send_file(
-                local_path=Path('/home/tim/Downloads/dcoscertstrap_0.0.2_linux_amd64/.dcos-pki/root-cert.pem'),
-                remote_path=Path('/dcoscertstrap-root-cert.pem'),
+                local_path=Path('/home/tim/Downloads/dcoscertstrap_0.0.2_linux_amd64/dcoscertstrap'),
+                remote_path=Path('/dcoscertstrap'),
             )
+            master.run(
+                args=['/dcoscertstrap', 'init-ca', '--sans', 'localhost'],
+                output=Output.LOG_AND_CAPTURE,
+            )
+            master.run(
+                args=['/dcoscertstrap', 'serve', '--address', 'localhost:7019'],
+                output=Output.LOG_AND_CAPTURE,
+            )
+            master.run(
+                args=['cp', '/.dcos-pki/root-cert.pem', '/dcoscertstrap-root-cert.pem'],
+                output=Output.LOG_AND_CAPTURE,
+            )
+            import pdb; pdb.set_trace()
             cluster.install_dcos_from_path(
                 dcos_installer=artifact_path,
                 dcos_config={
                     **cluster.base_config,
-                    **{'exhibitor_bootstrap_ca_url': 'https://172.17.0.1:8443'},
+                    **{'exhibitor_bootstrap_ca_url': 'https://localhost:7019'},
                 },
                 output=Output.LOG_AND_CAPTURE,
                 ip_detect_path=docker_backend.ip_detect_path,
