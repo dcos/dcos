@@ -1,8 +1,10 @@
 from contextlib import contextmanager
 from pathlib import Path
+from subprocess import CalledProcessError
 from time import sleep
 from typing import Iterable, Iterator
 
+import pytest
 from _pytest.fixtures import SubRequest
 from cluster_helpers import (
     wait_for_dcos_oss,
@@ -14,6 +16,9 @@ from dcos_e2e.node import Output
 
 
 class TestExhibitorTLSAutomation:
+    """
+    Test automated Exhibitor TLS feature.
+    """
 
     def test_exhibitor_tls_disabled(
         self,
@@ -53,6 +58,50 @@ class TestExhibitorTLSAutomation:
                 output=Output.LOG_AND_CAPTURE,
                 shell=True,
             )
+
+    def test_exhibitor_tls_custom_ca_url(
+        self,
+        docker_backend: ClusterBackend,
+        artifact_path: Path,
+        request: SubRequest,
+        log_dir: Path,
+    ) -> None:
+        """
+        Test Exhibitor TLS with custom CSR service URL.
+        """
+        # TODO(tweidner):
+        # Start initialized `dcoscertstrap` Docker container on host network.
+        # Point `exhibitor_bootstrap_ca_url` URL to it.
+        with Cluster(
+            cluster_backend=docker_backend,
+            masters=1,
+            agents=0,
+            public_agents=0,
+        ) as cluster:
+            cluster.install_dcos_from_path(
+                dcos_installer=artifact_path,
+                dcos_config={
+                    **cluster.base_config,
+                    **{'exhibitor_bootstrap_ca_url': 'http://127.0.0.1:8080'},
+                },
+                output=Output.LOG_AND_CAPTURE,
+                ip_detect_path=docker_backend.ip_detect_path,
+            )
+            wait_for_dcos_oss(
+                cluster=cluster,
+                request=request,
+                log_dir=log_dir,
+            )
+            master = next(iter(cluster.masters))
+            with pytest.raises(CalledProcessError) as exc:
+                master.run(
+                    ['curl',
+                     '-fsSL',
+                     'http://$(/opt/mesosphere/bin/detect_ip):8181/exhibitor/v1/cluster/status'],
+                    output=Output.LOG_AND_CAPTURE,
+                    shell=True,
+                )
+            assert exc.value.message == '<some cURL TLS error>'
 
     def test_exhibitor_existing_partial_tls_artifacts(
         self,
