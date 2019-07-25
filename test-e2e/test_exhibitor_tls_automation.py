@@ -73,7 +73,8 @@ class TestExhibitorTLSAutomation:
         # Start initialized `dcoscertstrap` Docker container on host network.
         # $ ./dcoscertstrap init-ca --sans 172.17.0.1
         # $ ./dcoscertstrap serve
-        # Point `exhibitor_bootstrap_ca_url` URL to it.
+        # Point `exhibitor_bootstrap_ca_url` URL to it similar to the ZooKeeper container
+        # in the `test_dynamic_master_node_replacement` in DC/OS Enterprise.
         with Cluster(
             cluster_backend=docker_backend,
             masters=1,
@@ -90,10 +91,6 @@ class TestExhibitorTLSAutomation:
                 output=Output.LOG_AND_CAPTURE,
             )
             master.run(
-                args=['/dcoscertstrap', 'serve', '--address', 'localhost:7019'],
-                output=Output.LOG_AND_CAPTURE,
-            )
-            master.run(
                 args=['cp', '/.dcos-pki/root-cert.pem', '/dcoscertstrap-root-cert.pem'],
                 output=Output.LOG_AND_CAPTURE,
             )
@@ -106,6 +103,28 @@ class TestExhibitorTLSAutomation:
                 output=Output.LOG_AND_CAPTURE,
                 ip_detect_path=docker_backend.ip_detect_path,
             )
+            sleep(2 * 60)
+            master.run(
+                args=['mkdir', '-p', '/var/lib/dcos/exhibitor-tls-artifacts'],
+                output=Output.LOG_AND_CAPTURE,
+            )
+            master.run(
+                args=['chown', 'dcos_exhibitor', '/var/lib/dcos/exhibitor-tls-artifacts'],
+                output=Output.LOG_AND_CAPTURE,
+            )
+            # Replace this with actual dcoscertstrap package.
+            master.run(
+                args=['cp', '/dcoscertstrap', '/opt/mesosphere/bin/dcoscertstrap'],
+                output=Output.LOG_AND_CAPTURE,
+            )
+            master.run(
+                args=['/dcoscertstrap', 'serve', '--address', 'localhost:7019'],
+                output=Output.LOG_AND_CAPTURE,
+                shell=True,
+            )
+            # Exhibitor JAVA error
+
+            # Don't get here yet
             wait_for_dcos_oss(
                 cluster=cluster,
                 request=request,

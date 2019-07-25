@@ -58,7 +58,7 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
         psk = psk_path.read_text()
     else:
         # Empty PSK outputs in any CSR being signed by the CA service.
-        psk = '""'
+        psk = ''
 
     server_entity = 'exhibitor-server'
     client_entity = 'exhibitor-client'
