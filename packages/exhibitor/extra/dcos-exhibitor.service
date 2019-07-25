@@ -18,7 +18,7 @@ Environment=SERVER_JVMFLAGS=-Djna.tmpdir=/var/lib/dcos/exhibitor/tmp
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dns_config
 EnvironmentFile=/opt/mesosphere/etc/exhibitor
-EnvironmentFile=/opt/mesosphere/etc/exhibitor-extras
+EnvironmentFile=-/opt/mesosphere/etc/exhibitor-extras
 # Execute ExecStartPre directives as root
 PermissionsStartOnly=true
 
