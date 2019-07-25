@@ -1,12 +1,12 @@
 from contextlib import contextmanager
 from pathlib import Path
-from subprocess import CalledProcessError
 from time import sleep
-from typing import Iterator, List
+from typing import Iterable, Iterator
 
-import requests
-from retrying import retry
 from _pytest.fixtures import SubRequest
+from cluster_helpers import (
+    wait_for_dcos_oss,
+)
 
 from dcos_e2e.base_classes import ClusterBackend
 from dcos_e2e.cluster import Cluster, Node
@@ -37,6 +37,11 @@ class TestExhibitorTLSAutomation:
                 output=Output.LOG_AND_CAPTURE,
                 ip_detect_path=docker_backend.ip_detect_path,
             )
+            wait_for_dcos_oss(
+                cluster=cluster,
+                request=request,
+                log_dir=log_dir,
+            )
             master = next(iter(cluster.masters))
 
             tls_artifacts_path = Path('/var/lib/dcos/exhibitor-tls-artifacts')
@@ -55,7 +60,7 @@ class TestExhibitorTLSAutomation:
             import itertools
             singles = set(itertools.combinations(iterable=all_paths, r=1))
             pairs = set(itertools.combinations(iterable=all_paths, r=2))
-            incomplete_path_sets = set(singles + pairs)
+            incomplete_path_sets = singles.union(pairs)
 
             for path_set in incomplete_path_sets:
 
@@ -76,7 +81,7 @@ class TestExhibitorTLSAutomation:
 
 
 @contextmanager
-def _temporary_remote_files(node: Node, paths: List[Path]) -> Iterator[None]:
+def _temporary_remote_files(node: Node, paths: Iterable[Path]) -> Iterator[None]:
     """
     Create empty files temporarily on the remote node.
     """
