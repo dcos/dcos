@@ -22,6 +22,10 @@ log = logging.getLogger(__name__)
 GLOBAL_PORT_POOL = iter(range(10000, 32000))
 GLOBAL_OCTET_POOL = itertools.cycle(range(254, 10, -1))
 
+# Apply fixture(s) in this list to all tests in this module. From
+# pytest docs: "Note that the assigned variable must be called pytestmark"
+pytestmark = [pytest.mark.usefixtures("clean_marathon_state_function_scoped")]
+
 
 class Container(enum.Enum):
     POD = 'POD'
