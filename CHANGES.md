@@ -8,6 +8,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* The content of `/var/log/mesos-state.tar.gz` is now included in the diagnostics bundle. (DCOS-56403)
+
 ### Security updates
 
 ## DC/OS 1.13.3 (CF - 2019-07-10)
