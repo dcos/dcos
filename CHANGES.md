@@ -22,6 +22,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Changed `dcos-zk backup` and `dcos-zk restore` to exit early if ZooKeeper is running. (DCOS_OSS-5353)
 
+* The content of `/var/log/mesos-state.tar.gz` is now included in the diagnostics bundle. (DCOS-56403)
+
 ### Security updates
 
 
