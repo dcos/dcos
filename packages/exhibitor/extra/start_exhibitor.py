@@ -73,7 +73,7 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
         args=[
             '/opt/mesosphere/bin/dcoscertstrap', 'csr', server_entity,
             '--url', ca_url,
-            '--ca', CSR_SERVICE_CERT_PATH,
+            '--ca', str(CSR_SERVICE_CERT_PATH),
             '--psk', psk,
             '--sans', '{},localhost,127.0.0.1'.format(ip),
         ],
@@ -95,7 +95,7 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
         args=[
             '/opt/mesosphere/bin/dcoscertstrap', 'csr', client_entity,
             '--url', ca_url,
-            '--ca', CSR_SERVICE_CERT_PATH,
+            '--ca', str(CSR_SERVICE_CERT_PATH),
             '--psk', psk,
             '--sans', '{},localhost,127.0.0.1'.format(ip),
         ],
@@ -107,7 +107,7 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
     result = subprocess.check_output(
         args=[
             '/opt/mesosphere/bin/dcoscertstrap', 'create-exhibitor-artifacts',
-            '--ca', CSR_SERVICE_CERT_PATH,
+            '--ca', str(CSR_SERVICE_CERT_PATH),
             '--client-entity', client_entity,
             '--server-entity', server_entity,
             '--artifacts-directory', '{}'.format(artifacts_path),
