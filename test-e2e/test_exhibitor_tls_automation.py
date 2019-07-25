@@ -89,7 +89,7 @@ class TestExhibitorTLSAutomation:
                 dcos_installer=artifact_path,
                 dcos_config={
                     **cluster.base_config,
-                    **{'exhibitor_bootstrap_ca_url': 'http://172.17.0.1:8443'},
+                    **{'exhibitor_bootstrap_ca_url': 'https://172.17.0.1:8443'},
                 },
                 output=Output.LOG_AND_CAPTURE,
                 ip_detect_path=docker_backend.ip_detect_path,
