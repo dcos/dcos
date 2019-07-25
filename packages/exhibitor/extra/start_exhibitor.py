@@ -60,10 +60,18 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
         psk = '""'
 
     server_entity = 'exhibitor-server'
+    client_entity = 'exhibitor-client'
 
-    print('Initiating CA service client structure')
+    print('Initiating {} end entity.'.format(server_entity))
     result = subprocess.check_output(
         args=['/opt/mesosphere/bin/dcoscertstrap', 'init-entity', server_entity],
+        stderr=subprocess.STDOUT,
+    )
+    print(result.stdout.decode())
+
+    print('Initiating {} end entity.'.format(client_entity))
+    result = subprocess.check_output(
+        args=['/opt/mesosphere/bin/dcoscertstrap', 'init-entity', client_entity],
         stderr=subprocess.STDOUT,
     )
     print(result.stdout.decode())
@@ -77,15 +85,6 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
             '--psk', psk,
             '--sans', '{},localhost,127.0.0.1'.format(ip),
         ],
-        stderr=subprocess.STDOUT,
-    )
-    print(result.stdout.decode())
-
-    client_entity = 'exhibitor-client'
-
-    print('Initiating CA service client structure')
-    result = subprocess.check_output(
-        args=['/opt/mesosphere/bin/dcoscertstrap', 'init-entity', client_entity],
         stderr=subprocess.STDOUT,
     )
     print(result.stdout.decode())
