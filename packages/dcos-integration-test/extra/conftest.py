@@ -39,7 +39,7 @@ def pytest_cmdline_main(config):
         print(env_helper.HELP_MESSAGE)
         sys.exit()
 
-    if not config.option.help and not config.option.collectonly and not config.option.run_local:
+    if not config.option.help and not config.option.collectonly:
         ssh_user, leader_ip, env_vars = env_helper.get_env_vars()
         if config.option.dist == 'no':
             config.option.dist = 'load'
@@ -63,8 +63,6 @@ def pytest_addoption(parser):
                      help="run only Windows tests")
     parser.addoption("--env-help", action="store_true",
                      help="show which environment variables must be set for DC/OS integration tests")
-    parser.addoption("--run-local", action="store_true",
-                     help="run the tests without using pytest-xdist")
 
 
 def pytest_configure(config):
