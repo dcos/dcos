@@ -69,12 +69,12 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
     result = subprocess.check_output(
         args=[
             '/opt/mesosphere/bin/dcoscertstrap', 'csr',
-            '--url', '',
+            '--url', '""',
             '--psk', psk,
             '--common-name', 'client',
             '--country', 'US',
             '--state', 'CA',
-            '--locality', 'San Francisco',
+            '--locality', '"San Francisco"',
             '--email-addresses', 'security@mesosphere.com',
             '--sans', '{},exhibitor,localhost,127.0.0.1'.format(ip),
         ],
