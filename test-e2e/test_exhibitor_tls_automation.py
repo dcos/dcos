@@ -97,7 +97,6 @@ class TestExhibitorTLSAutomation:
                 args=['cp', '/.dcos-pki/root-cert.pem', '/dcoscertstrap-root-cert.pem'],
                 output=Output.LOG_AND_CAPTURE,
             )
-            import pdb; pdb.set_trace()
             cluster.install_dcos_from_path(
                 dcos_installer=artifact_path,
                 dcos_config={
