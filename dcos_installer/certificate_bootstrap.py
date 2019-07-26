@@ -18,16 +18,27 @@ CA_PATH = '/genconf/ca'
 INSTALLER_PATH = '/genconf/serve/dcos_install.sh'
 
 
-def _check(config: Dict[str, Any], varient: str) -> List[str]:
+def _check(config: Dict[str, Any], variant: str) -> List[str]:
+    """
+    Current constraints are:
+        config.yaml:
+            exhibitor_tls_enabled == True,
+            bootstrap_url must not be a local path
+                This is necessary to prevent this orchestration
+                from running when gen is not executed on a proper
+                bootstrap node.
+         DC/OS variant must be enterprise
+    """
     checks = [
-        (lambda: config.get('exhibitor_security', True),
+        (lambda: config.get('exhibitor_tls_enabled', True),
          'Exhibitor security is disabled'),
         (lambda: config['exhibitor_storage_backend'] == 'static',
          'Only static exhibitor backends are supported'),
-        (lambda: varient == 'enterprise',
+        (lambda: variant == 'enterprise',
          'Exhibitor security is an enterprise feature'),
         (lambda: urlparse(config['bootstrap_url']).scheme != 'file',
-         'Blackbox exhibitor security is only supported when using a remote bootstrap node'),
+         'Blackbox exhibitor security is only supported when using a remote'
+         ' bootstrap node'),
     ]
 
     reasons = []
@@ -39,6 +50,8 @@ def _check(config: Dict[str, Any], varient: str) -> List[str]:
 
 
 def _extract_package(package_path: str):
+    """ Extracts the dcoscertstrap package from the local pkgpanda
+    repository """
     os.makedirs(BINARY_PATH, exist_ok=True)
     with tempfile.TemporaryDirectory() as td:
         subprocess.run(['tar', '-xJf', package_path, '-C', td])
@@ -49,6 +62,8 @@ def _extract_package(package_path: str):
 
 
 def _init_ca(alt_names: List[str]):
+    """ Initializes the CA (generates a private key and self signed
+    certificate CA extensions) """
     os.makedirs(CA_PATH, mode=0o0700, exist_ok=True)
     cmd_path = pathlib.Path(BINARY_PATH) / PACKAGE_NAME
     subprocess.run([
@@ -61,8 +76,11 @@ def _read_certificate() -> str:
         return fp.read()
 
 
-# This seemed simpler than figuring out how to hook the dcos_install.sh template renderer
 def _mangle_installer(certificate: str, path: str):
+    """ Modifies the installation script as a means of transferring the CA
+     certificate to dcos nodes. This certificate is needed to validate the
+     connection to the dcoscertstrap CSR service.
+     """
     script = """\
 # Bootstrap CA certificate
 read -d '' ca_data << EOF || true
@@ -89,6 +107,8 @@ main
 
 
 def _get_ca_alt_name(config: Dict[str, Any]) -> str:
+    """ Gets the bootstrap url hostname. Used to populate the CA SAN
+    extension """
     return urlparse(
         config.get('exhibitor_bootstrap_ca_url',
                    config['bootstrap_url'])).hostname or ""
@@ -96,6 +116,7 @@ def _get_ca_alt_name(config: Dict[str, Any]) -> str:
 
 # noinspection PyUnresolvedReferences
 def initialize_exhibitor_ca(config: Config, gen: Bunch):
+    """ This is executed from backend.py after onprem_generate is called """
     conf = config.config
 
     reasons = _check(conf, gen.arguments['dcos_variant'])
