@@ -8,8 +8,8 @@
     },
     "pluggy": {
       "kind": "url_extract",
-      "url": "https://files.pythonhosted.org/packages/a1/83/ef7d976c12d67a5c7a5bc2a47f0501c926cabae9d9fcfdc26d72abc9ba15/pluggy-0.7.1.tar.gz",
-      "sha1": "a07fa8187288cc4099b91dd59b0df18ba3dc19b1"
+      "url": "https://files.pythonhosted.org/packages/a7/8c/55c629849c64e665258d8976322dfdad171fa2f57117590662d8a67618a4/pluggy-0.9.0.tar.gz",
+      "sha1": "6bdadc9a082d2d83b780bea66ec55517454bb2d0"
     },
     "py": {
       "kind": "url_extract",
