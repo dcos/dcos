@@ -1,4 +1,3 @@
-import logging
 import os
 import pathlib
 import shutil
@@ -11,7 +10,6 @@ from urllib.parse import urlparse
 from dcos_installer.config import Config
 from gen import Bunch
 
-LOG = logging.getLogger(__name__)
 PACKAGE_NAME = 'dcoscertstrap'
 BINARY_PATH = '/genconf/bin'
 CA_PATH = '/genconf/ca'
@@ -63,12 +61,17 @@ def _extract_package(package_path: str):
 
 def _init_ca(alt_names: List[str]):
     """ Initializes the CA (generates a private key and self signed
-    certificate CA extensions) """
-    os.makedirs(CA_PATH, mode=0o0700, exist_ok=True)
-    cmd_path = pathlib.Path(BINARY_PATH) / PACKAGE_NAME
-    subprocess.run([
-        str(cmd_path), '-d', CA_PATH, 'init-ca', '--sans', ','.join(alt_names)
-    ])
+    certificate CA extensions) if the resulting files do not already exist """
+    if not all(map(os.path.exists, [
+            pathlib.Path(CA_PATH) / 'root-cert.pem',
+            pathlib.Path(CA_PATH) / 'root-key.pem'])):
+        os.makedirs(CA_PATH, mode=0o0700, exist_ok=True)
+        cmd_path = pathlib.Path(BINARY_PATH) / PACKAGE_NAME
+        subprocess.run([
+            str(cmd_path), '-d', CA_PATH, 'init-ca', '--sans', ','.join(alt_names)
+        ])
+    else:
+        print('[{}] CA files already exist'.format(__name__))
 
 
 def _read_certificate() -> str:
@@ -121,7 +124,8 @@ def initialize_exhibitor_ca(config: Config, gen: Bunch):
 
     reasons = _check(conf, gen.arguments['dcos_variant'])
     if reasons:
-        LOG.info('Not bootstrapping exhibitor CA: %s', '\n'.join(reasons))
+        print('[{}] not bootstrapping exhibitor CA: {}'.format(
+            __name__, '\n'.join(reasons)))
         return
 
     package_path = pathlib.Path(

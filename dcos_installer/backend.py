@@ -69,7 +69,7 @@ def generate_node_upgrade_script(installed_cluster_version, config_path=CONFIG_P
 
     # generate the upgrade script
     upgrade.generate_node_upgrade_script(gen_out, installed_cluster_version)
-
+    certificate_bootstrap.initialize_exhibitor_ca(config, gen_out)
     return 0
 
 
