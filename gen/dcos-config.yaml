@@ -1704,6 +1704,11 @@ package:
                   "Role": ["agent", "agent_public"]
               },
               {
+                  "Port": {{ mesos_agent_port }},
+                  "Uri": "/containerizer/debug",
+                  "Role": ["agent", "agent_public"]
+              },
+              {
                   "Port": {{ metronome_port }},
                   "Uri": "/v1/jobs",
                   "Role": ["master"]
