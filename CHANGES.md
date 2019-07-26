@@ -62,6 +62,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Added containerizer debug endpoint into the diagnostic bundle. This endpoint is used for tracking data for stuck tasks. (DCOS-55383)
 
+* Prune VIPs with no backends in order to avoid unbounded growth of state and messages exchanged among `dcos-net` processes. (DCOS_OSS-5356)
+
 
 ### Breaking changes
 
