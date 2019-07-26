@@ -3,8 +3,8 @@
   "sources": {
     "pytest": {
       "kind": "url_extract",
-      "url": "https://files.pythonhosted.org/packages/5f/d2/7f77f406ac505abda02ab4afb50d06ebf304f6ea42fca34f8f37529106b2/pytest-3.8.2.tar.gz",
-      "sha1": "6e28889174cfec8ca42bd470fe6168ca19aa58f9"
+      "url": "https://files.pythonhosted.org/packages/f2/a9/fc3a4fb6959eb88d1151149c7ba27f96b389a123ada2d961a016bbdff641/pytest-4.4.0.tar.gz",
+      "sha1": "17a5267b86b2103cc9c47e6598be2f9a477eba17"
     },
     "pluggy": {
       "kind": "url_extract",
