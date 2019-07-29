@@ -12,7 +12,7 @@ ZK_SNAPSHOTS = os.path.join(ZK_VAR_DIR, 'snapshot')
 ZK_TRANSACTIONS = os.path.join(ZK_VAR_DIR, 'transactions')
 
 TLS_ARTIFACT_LOCATION = '/var/lib/dcos/exhibitor-tls-artifacts'
-CSR_SERVICE_CERT_PATH = '/dcoscertstrap-root-cert.pem'
+CSR_SERVICE_CERT_PATH = '/tmp/.root-cert.pem'
 PRESHAREDKEY_LOCATION = '/dcoscertstrap.psk'
 EXHIBITOR_TLS_TMP_DIR = '/var/lib/dcos/exhibitor'
 

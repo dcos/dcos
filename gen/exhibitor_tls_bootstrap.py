@@ -1,22 +1,19 @@
+import json
 import os
 import pathlib
+import tempfile
 import shutil
 import subprocess
-import tempfile
 
 from typing import Any, Dict, List
 from urllib.parse import urlparse
 
-from dcos_installer.config import Config
-from gen import Bunch
-
 PACKAGE_NAME = 'dcoscertstrap'
 BINARY_PATH = '/genconf/bin'
 CA_PATH = '/genconf/ca'
-INSTALLER_PATH = '/genconf/serve/dcos_install.sh'
 
 
-def _check(config: Dict[str, Any], variant: str) -> List[str]:
+def _check(config: Dict[str, Any]) -> List[str]:
     """
     Current constraints are:
         config.yaml:
@@ -28,11 +25,11 @@ def _check(config: Dict[str, Any], variant: str) -> List[str]:
          DC/OS variant must be enterprise
     """
     checks = [
-        (lambda: config.get('exhibitor_tls_enabled', True),
+        (lambda: config['exhibitor_tls_enabled'] == 'true',
          'Exhibitor security is disabled'),
         (lambda: config['exhibitor_storage_backend'] == 'static',
          'Only static exhibitor backends are supported'),
-        (lambda: variant == 'enterprise',
+        (lambda: config['dcos_variant'] == 'enterprise',
          'Exhibitor security is an enterprise feature'),
         (lambda: urlparse(config['bootstrap_url']).scheme != 'file',
          'Blackbox exhibitor security is only supported when using a remote'
@@ -45,6 +42,14 @@ def _check(config: Dict[str, Any], variant: str) -> List[str]:
             reasons.append(check[1])
 
     return reasons
+
+
+def find_package(packages_json: str) -> str:
+    packages = json.loads(packages_json)
+    for package in packages:
+        if package.startswith(PACKAGE_NAME):
+            return package
+    raise Exception('dcoscertstrap package is not present')
 
 
 def _extract_package(package_path: str):
@@ -79,59 +84,31 @@ def _read_certificate() -> str:
         return fp.read()
 
 
-def _mangle_installer(certificate: str, path: str):
-    """ Modifies the installation script as a means of transferring the CA
-     certificate to dcos nodes. This certificate is needed to validate the
-     connection to the dcoscertstrap CSR service.
-     """
-    script = """\
-# Bootstrap CA certificate
-read -d '' ca_data << EOF || true
-{}
-EOF
-echo "$ca_data" > {}
-
-# Run it all
-main
-"""
-    needle = "# Run it all"
-    with tempfile.TemporaryFile() as tmp_fp:
-        with open(INSTALLER_PATH) as script_fp:
-            for line in script_fp:
-                if line.strip() == needle:
-                    tmp_fp.write(script.format(certificate, path).encode())
-                    tmp_fp.seek(0)
-                    break
-                else:
-                    tmp_fp.write(line.encode())
-        with open(INSTALLER_PATH, 'wb') as script_fp:
-            for line in tmp_fp:
-                script_fp.write(line)
-
-
 def _get_ca_alt_name(config: Dict[str, Any]) -> str:
     """ Gets the bootstrap url hostname. Used to populate the CA SAN
     extension """
-    return urlparse(
-        config.get('exhibitor_bootstrap_ca_url',
-                   config['bootstrap_url'])).hostname or ""
+    url = config['exhibitor_bootstrap_ca_url'] or config['bootstrap_url']
+    return urlparse(url).hostname or ""
 
 
-# noinspection PyUnresolvedReferences
-def initialize_exhibitor_ca(config: Config, gen: Bunch):
-    """ This is executed from backend.py after onprem_generate is called """
-    conf = config.config
-
-    reasons = _check(conf, gen.arguments['dcos_variant'])
+def initialize_exhibitor_ca(final_arguments: Dict[str, Any]):
+    reasons = _check(final_arguments)
     if reasons:
         print('[{}] not bootstrapping exhibitor CA: {}'.format(
             __name__, '\n'.join(reasons)))
+        final_arguments['exhibitor_ca_certificate'] = ""
+        final_arguments['exhibitor_ca_certificate_path'] = "/dev/null"
         return
 
-    package_path = pathlib.Path(
-        '/genconf/serve') / gen.cluster_packages[PACKAGE_NAME]['filename']
-    ca_alternative_names = ['127.0.0.1', 'localhost', _get_ca_alt_name(conf)]
+    package_path = (
+        pathlib.Path('/artifacts/packages/dcoscertstrap')
+        / (find_package(final_arguments['cluster_packages']) + '.tar.xz'))
+
+    ca_alternative_names = ['127.0.0.1', 'localhost', _get_ca_alt_name(final_arguments)]
 
     _extract_package(package_path)
     _init_ca(ca_alternative_names)
-    _mangle_installer(_read_certificate(), '/tmp/.root-cert.pem')
+
+    # inject
+    final_arguments['exhibitor_ca_certificate'] = _read_certificate()
+    final_arguments['exhibitor_ca_certificate_path'] = '/tmp/.root-cert.pem'

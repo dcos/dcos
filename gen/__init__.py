@@ -24,6 +24,7 @@ from typing import List
 import yaml
 
 import gen.calc
+import gen.exhibitor_tls_bootstrap
 import gen.internals
 import gen.template
 import gen.util
@@ -676,6 +677,9 @@ def generate(
         })
     )
 
+    # Initialize CA and add arguments (exhibitor_ca_certificate and exhibitor_ca_certificate_path
+    # init_exhibitor_ca_bootstrap(argument_dict)
+    gen.exhibitor_tls_bootstrap.initialize_exhibitor_ca(argument_dict)
     # Fill in the template parameters
     # TODO(cmaloney): render_templates should ideally take the template targets.
     rendered_templates = render_templates(templates, argument_dict)
