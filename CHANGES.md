@@ -24,6 +24,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * The content of `/var/log/mesos-state.tar.gz` is now included in the diagnostics bundle. (DCOS-56403)
 
+* Prune VIPs with no backends in order to avoid unbounded growth of state and messages exchanged among `dcos-net` processes. (DCOS_OSS-5356)
+
 ### Security updates
 
 
