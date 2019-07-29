@@ -3,7 +3,7 @@ mv /pkg/src/dcos-signal /
 cd /dcos-signal
 
 # Use the local Makefile which include ldflag overrides for version and revision
-make install VARIANT=open
+make install
 
 # Copy the build from the bin to the correct place
 cp -r /pkg/bin/ "$PKG_PATH"
