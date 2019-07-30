@@ -1,9 +1,9 @@
 import json
 import os
 import pathlib
-import tempfile
 import shutil
 import subprocess
+import tempfile
 
 from typing import Any, Dict, List
 from urllib.parse import urlparse
@@ -100,9 +100,11 @@ def initialize_exhibitor_ca(final_arguments: Dict[str, Any]):
         final_arguments['exhibitor_ca_certificate_path'] = "/dev/null"
         return
 
+    package_filename = find_package(
+        final_arguments['cluster_packages']) + '.tar.xz'
     package_path = (
-        pathlib.Path('/artifacts/packages/dcoscertstrap')
-        / (find_package(final_arguments['cluster_packages']) + '.tar.xz'))
+        pathlib.Path(
+            '/artifacts/packages/dcoscertstrap') / package_filename)
 
     ca_alternative_names = ['127.0.0.1', 'localhost', _get_ca_alt_name(final_arguments)]
 

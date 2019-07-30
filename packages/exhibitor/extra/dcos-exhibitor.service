@@ -30,6 +30,7 @@ EnvironmentFile=/opt/mesosphere/etc/check_time.env
 ExecStartPre=/opt/mesosphere/bin/check-time
 
 # Execute a python script, as root, that sets file permissions to some exact set if those files exist.
+ExecStartPre=$PKG_PATH/bin/bootstrap_exhibitor_tls.py
 ExecStartPre=$PKG_PATH/bin/set_exhibitor_file_permissions.py
 # Start Exhibitor
 ExecStart=$PKG_PATH/usr/exhibitor/start_exhibitor.py

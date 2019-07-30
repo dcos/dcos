@@ -1286,7 +1286,7 @@ entry = {
         'superuser_service_account_uid': '',
         'superuser_service_account_public_key': '',
         '_superuser_service_account_public_key_json': calculate__superuser_service_account_public_key_json,
-        'exhibitor_tls_enabled': 'true',
+        'exhibitor_tls_enabled': 'false',
         'exhibitor_bootstrap_ca_url': '',
         'enable_gpu_isolation': 'true',
         'cluster_docker_registry_url': '',

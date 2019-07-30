@@ -1,131 +1,12 @@
 #!/opt/mesosphere/bin/python
 import os
 import socket
-import subprocess
 import sys
-from pathlib import Path
 from subprocess import CalledProcessError, check_call, check_output
-
 
 ZK_VAR_DIR = '/var/lib/dcos/exhibitor/zookeeper'
 ZK_SNAPSHOTS = os.path.join(ZK_VAR_DIR, 'snapshot')
 ZK_TRANSACTIONS = os.path.join(ZK_VAR_DIR, 'transactions')
-
-TLS_ARTIFACT_LOCATION = '/var/lib/dcos/exhibitor-tls-artifacts'
-CSR_SERVICE_CERT_PATH = '/tmp/.root-cert.pem'
-PRESHAREDKEY_LOCATION = '/dcoscertstrap.psk'
-EXHIBITOR_TLS_TMP_DIR = '/var/lib/dcos/exhibitor'
-
-
-def get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url) -> str:
-    if exhibitor_bootstrap_ca_url:
-        print('Using `exhibitor_bootstrap_ca_url` config parameter.')
-        return exhibitor_bootstrap_ca_url
-    else:
-        print('Inferring `exhibitor_bootstrap_ca_url` from `bootstrap_url`.')
-        try:
-            protocol, url = bootstrap_url.split('://')
-        except ValueError as exc:
-            message = (
-                'Failed to calculate `exhibitor_bootstrap_ca_url` from '
-                '`bootstrap_url` {bootstrap_url}. Could not determine '
-                '`bootstrap_url` protocol.'
-            ).format(bootstrap_url=bootstrap_url)
-            raise ValueError(message) from exc
-
-        if protocol == 'http' or protocol == 'https':
-            bootstrap_host = url.split(':')[0]
-            return 'https://{host}:{port}'.format(host=bootstrap_host, port=443)
-
-        message = (
-            'Failed to calculcate `exhibitor_bootstrap_ca_url` from `bootstrap_url`. '
-            '`bootstrap_url` {bootstrap_url} does not point to an HTTP web server. '
-            'Consider setting parameter `exhibitor_bootstrap_ca_url` explicitly.'
-        ).format(bootstrap_url=bootstrap_url)
-        raise ValueError(message)
-
-
-def gen_tls_artifacts(ca_url, artifacts_path) -> None:
-    """
-    Contact the CA service to sign the generated TLS artifacts.
-    Write the signed Exhibitor TLS artifacts to the file system.
-    """
-    # Fail early if IP detect script does not properly resolve yet.
-    ip = invoke_detect_ip()
-
-    psk_path = Path(PRESHAREDKEY_LOCATION)
-    if psk_path.exists():
-        psk = psk_path.read_text()
-    else:
-        # Empty PSK outputs in any CSR being signed by the CA service.
-        psk = ''
-
-    server_entity = 'exhibitor-server'
-    client_entity = 'exhibitor-client'
-
-    print('Initiating {} end entity.'.format(server_entity))
-    output = subprocess.check_output(
-        args=[
-            '/opt/mesosphere/bin/dcoscertstrap',
-            '--output-dir', str(EXHIBITOR_TLS_TMP_DIR),
-            'init-entity', server_entity,
-        ],
-        stderr=subprocess.STDOUT,
-    )
-    print(output.decode())
-
-    print('Initiating {} end entity.'.format(client_entity))
-    output = subprocess.check_output(
-        args=[
-            '/opt/mesosphere/bin/dcoscertstrap',
-            '--output-dir', str(EXHIBITOR_TLS_TMP_DIR),
-            'init-entity', client_entity,
-        ],
-        stderr=subprocess.STDOUT,
-    )
-    print(output.decode())
-
-    print('Making CSR for {} with IP {}'.format(server_entity, ip))
-    output = subprocess.check_output(
-        args=[
-            '/opt/mesosphere/bin/dcoscertstrap', 'csr', server_entity,
-            '--output-dir', str(EXHIBITOR_TLS_TMP_DIR),
-            '--url', ca_url,
-            '--ca', str(CSR_SERVICE_CERT_PATH),
-            '--psk', psk,
-            '--sans', '{},localhost,127.0.0.1'.format(ip),
-        ],
-        stderr=subprocess.STDOUT,
-    )
-    print(output.decode())
-
-    print('Making CSR for {} with IP {}'.format(client_entity, ip))
-    output = subprocess.check_output(
-        args=[
-            '/opt/mesosphere/bin/dcoscertstrap', 'csr', client_entity,
-            '--output-dir', str(EXHIBITOR_TLS_TMP_DIR),
-            '--url', ca_url,
-            '--ca', str(CSR_SERVICE_CERT_PATH),
-            '--psk', psk,
-            '--sans', '{},localhost,127.0.0.1'.format(ip),
-        ],
-        stderr=subprocess.STDOUT,
-    )
-    print(output.decode())
-
-    print('Writing TLS artifacts to {}'.format(artifacts_path))
-    output = subprocess.check_output(
-        args=[
-            '/opt/mesosphere/bin/dcoscertstrap', 'create-exhibitor-artifacts',
-            '--output-dir', str(EXHIBITOR_TLS_TMP_DIR),
-            '--ca', str(CSR_SERVICE_CERT_PATH),
-            '--client-entity', client_entity,
-            '--server-entity', server_entity,
-            '--artifacts-directory', '{}'.format(artifacts_path),
-        ],
-        stderr=subprocess.STDOUT,
-    )
-    print(output.decode())
 
 
 def get_var_assert_set(name):
@@ -273,7 +154,7 @@ if exhibitor_backend == 'STATIC':
 elif zookeeper_cluster_size == 1:
     print("Exhibitor configured for single master/static backend")
     # A Zookeeper cluster size of 1 is a special case regarding the Exhibitor backend.
-    # It will always output in a static backend independent of the DC/OS configuration.
+    # It will always result in a static backend independent of the DC/OS configuration.
     # This allows for skipping exhibitor.wait() logic that is responsible for waiting
     # for Exhibitor configuration change from standalone mode to ensemble mode.
     # https://jira.mesosphere.com/browse/DCOS-6147
@@ -326,45 +207,14 @@ else:
     print("ERROR: No known exhibitor backend:", exhibitor_backend)
     sys.exit(1)
 
+truststore_path = '/var/lib/dcos/exhibitor-tls-artifacts/truststore.jks'
+clientstore_path = '/var/lib/dcos/exhibitor-tls-artifacts/clientstore.jks'
+serverstore_path = '/var/lib/dcos/exhibitor-tls-artifacts/serverstore.jks'
 
 exhibitor_env = os.environ.copy()
-
-if exhibitor_env['EXHIBITOR_TLS_ENABLED'] == 'false':
-    print('Exhibitor TLS explicitly disabled')
-else:
-    print('Enabling Exhibitor TLS')
-    artifacts_path = Path(TLS_ARTIFACT_LOCATION)
-    truststore_path = Path(artifacts_path / 'truststore.jks')
-    clientstore_path = Path(artifacts_path / 'clientstore.jks')
-    serverstore_path = Path(artifacts_path / 'serverstore.jks')
-
-    def _exists(artifact_path: Path):
-        exists = artifact_path.exists()
-        if not exists:
-            print('{} not found.'.format(artifact_path))
-        return exists
-
-    artifacts = list(map(_exists, [truststore_path, serverstore_path, clientstore_path]))
-
-    if not all(artifacts):
-        print('WARNING: Not all Exhibitor TLS artifacts found in `{path}`.'.format(
-            path=artifacts_path))
-
-        if any(artifacts):
-            print('ERROR: Invalid configuration, partial Exhibitor TLS artifacts found.')
-            sys.exit(1)
-
-        exhibitor_bootstrap_ca_url = exhibitor_env['EXHIBITOR_BOOTSTRAP_CA_URL']
-        bootstrap_url = exhibitor_env['BOOTSTRAP_URL']
-        try:
-            ca_url = get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url)
-        except ValueError as exc:
-            print(str(exc))
-            sys.exit(1)
-
-        print('Generating TLS artifacts via CSR service: `{}`'.format(ca_url))
-        gen_tls_artifacts(ca_url, artifacts_path)
-
+if os.path.exists(truststore_path) and \
+   os.path.exists(clientstore_path) and \
+   os.path.exists(serverstore_path):
     exhibitor_env['EXHIBITOR_TLS_TRUSTSTORE_PATH'] = truststore_path
     exhibitor_env['EXHIBITOR_TLS_TRUSTSTORE_PASSWORD'] = 'not-relevant-for-security'
     exhibitor_env['EXHIBITOR_TLS_CLIENT_KEYSTORE_PATH'] = clientstore_path
