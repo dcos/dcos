@@ -106,7 +106,8 @@ def initialize_exhibitor_ca(final_arguments: Dict[str, Any]):
         pathlib.Path(
             '/artifacts/packages/dcoscertstrap') / package_filename)
 
-    ca_alternative_names = ['127.0.0.1', 'localhost', _get_ca_alt_name(final_arguments)]
+    ca_alternative_names = ['127.0.0.1', 'localhost',
+                            'exhibitor', _get_ca_alt_name(final_arguments)]
 
     _extract_package(package_path)
     _init_ca(ca_alternative_names)

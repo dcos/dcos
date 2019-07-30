@@ -104,7 +104,7 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
             '--url', ca_url,
             '--ca', str(CSR_SERVICE_CERT_PATH),
             '--psk', psk,
-            '--sans', '{},localhost,127.0.0.1'.format(ip),
+            '--sans', '{},localhost,127.0.0.1,exhibitor'.format(ip),
         ],
         stderr=subprocess.STDOUT,
     )
@@ -118,7 +118,7 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
             '--url', ca_url,
             '--ca', str(CSR_SERVICE_CERT_PATH),
             '--psk', psk,
-            '--sans', '{},localhost,127.0.0.1'.format(ip),
+            '--sans', '{},localhost,127.0.0.1,exhibitor'.format(ip),
         ],
         stderr=subprocess.STDOUT,
     )
