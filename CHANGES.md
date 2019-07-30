@@ -13,6 +13,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
+
 * Fixed a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
 
 * [MARATHON-8493](https://jira.mesosphere.com/browse/MARATHON-8493) Fixed precision bug associated with summing pod resources.
