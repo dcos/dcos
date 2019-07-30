@@ -6,7 +6,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### What's new
 
-* Upgraded Marathon to 1.9.30. Marathon 1.9 brings support for multirole, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
+* Upgraded Marathon to 1.9.34. Marathon 1.9 brings support for multirole, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
 
 * Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0)
 
@@ -61,6 +61,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Add dcos-net overlay metrics. (DCOS_OSS-5324)
 
 * Added containerizer debug endpoint into the diagnostic bundle. This endpoint is used for tracking data for stuck tasks. (DCOS-55383)
+
+* Prune VIPs with no backends in order to avoid unbounded growth of state and messages exchanged among `dcos-net` processes. (DCOS_OSS-5356)
 
 
 ### Breaking changes
