@@ -63,6 +63,12 @@ def set_required_env_var(dcos_env_vars, env_var_name):
     env_var = os.getenv(env_var_name)
     if env_var is None:
         print_red("ERROR: required environment variable '{}' is not set!".format(env_var_name))
+        if not dcos_env_vars:
+            print_red('No dcos-test-utils variables were detected in your environment.')
+        else:
+            print('Current dcos-test-utils variables detected in your environment:')
+            for k, v in dcos_env_vars.items():
+                print('{}={}'.format(k, v))
         print_red("Run 'pytest --env-help' to see all environment variables to set.")
         sys.exit(1)
     dcos_env_vars[env_var_name] = env_var
@@ -75,14 +81,16 @@ def load_env_vars():
     wait_for_hosts = os.getenv('WAIT_FOR_HOSTS', 'true')
     if wait_for_hosts == 'true':
         required_env_vars += ['PUBLIC_SLAVE_HOSTS', 'SLAVE_HOSTS', 'MASTER_HOSTS']
-
-    for e in required_env_vars:
-        set_required_env_var(dcos_env_vars, e)
+    else:
+        dcos_env_vars['WAIT_FOR_HOSTS'] = 'false'
 
     for e in non_required_env_vars:
         v = os.getenv(e)
         if v:
             dcos_env_vars[e] = v
+
+    for e in required_env_vars:
+        set_required_env_var(dcos_env_vars, e)
 
     return dcos_env_vars
 
