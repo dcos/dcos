@@ -25,7 +25,7 @@ def _check(config: Dict[str, Any]) -> List[str]:
          DC/OS variant must be enterprise
     """
     checks = [
-        (lambda: config['exhibitor_tls_enabled'] == 'true',
+        (lambda: config.get('exhibitor_tls_enabled', False) == 'true',
          'Exhibitor security is disabled'),
         (lambda: config['exhibitor_storage_backend'] == 'static',
          'Only static exhibitor backends are supported'),
@@ -92,6 +92,9 @@ def _get_ca_alt_name(config: Dict[str, Any]) -> str:
 
 
 def initialize_exhibitor_ca(final_arguments: Dict[str, Any]):
+    if final_arguments['platform'] != 'onprem':
+        return
+
     reasons = _check(final_arguments)
     if reasons:
         print('[{}] not bootstrapping exhibitor CA: {}'.format(

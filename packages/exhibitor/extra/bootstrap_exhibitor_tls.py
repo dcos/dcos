@@ -142,7 +142,7 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
 def main():
     exhibitor_env = os.environ.copy()
 
-    if exhibitor_env['EXHIBITOR_TLS_ENABLED'] == 'false':
+    if exhibitor_env.get('EXHIBITOR_TLS_ENABLED', 'false') == 'false':
         return
 
     if os.path.exists(TLS_ARTIFACT_LOCATION):
