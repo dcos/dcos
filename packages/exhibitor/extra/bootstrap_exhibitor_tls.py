@@ -1,3 +1,4 @@
+#!/opt/mesosphere/bin/python
 import os
 import socket
 import subprocess
@@ -6,7 +7,7 @@ import sys
 from pathlib import Path
 
 TLS_ARTIFACT_LOCATION = '/var/lib/dcos/exhibitor-tls-artifacts'
-CSR_SERVICE_CERT_PATH = '/tmp/.root-cert.pem'
+CSR_SERVICE_CERT_PATH = '/tmp/root-cert.pem'
 PRESHAREDKEY_LOCATION = '/root/.dcoscertstrap_psk'
 EXHIBITOR_TLS_TMP_DIR = '/var/lib/dcos/exhibitor/.pki'
 
@@ -70,8 +71,8 @@ def gen_tls_artifacts(ca_url, artifacts_path) -> None:
         # Empty PSK outputs in any CSR being signed by the CA service.
         psk = ''
 
-    server_entity = 'exhibitor-server'
-    client_entity = 'exhibitor-client'
+    server_entity = 'server'
+    client_entity = 'client'
 
     print('Initiating {} end entity.'.format(server_entity))
     output = subprocess.check_output(
@@ -158,3 +159,8 @@ def main():
         sys.exit(1)
 
     gen_tls_artifacts(ca_url, Path(TLS_ARTIFACT_LOCATION))
+    sys.stdout.flush()
+
+
+if __name__ == '__main__':
+    main()

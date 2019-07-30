@@ -113,4 +113,4 @@ def initialize_exhibitor_ca(final_arguments: Dict[str, Any]):
 
     # inject
     final_arguments['exhibitor_ca_certificate'] = _read_certificate()
-    final_arguments['exhibitor_ca_certificate_path'] = '/tmp/.root-cert.pem'
+    final_arguments['exhibitor_ca_certificate_path'] = '/tmp/root-cert.pem'
