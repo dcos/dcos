@@ -47,10 +47,12 @@ def do_configure(config_path=CONFIG_PATH):
         return 1
 
     config_util.make_serve_dir(gen_out)
+
     return 0
 
 
 def generate_node_upgrade_script(installed_cluster_version, config_path=CONFIG_PATH):
+
     if installed_cluster_version is None:
         print('Must provide the version of the cluster upgrading from')
         return 1
@@ -67,6 +69,7 @@ def generate_node_upgrade_script(installed_cluster_version, config_path=CONFIG_P
 
     # generate the upgrade script
     upgrade.generate_node_upgrade_script(gen_out, installed_cluster_version)
+
     return 0
 
 
