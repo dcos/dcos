@@ -73,3 +73,7 @@ The following parameters have been removed from the DC/OS installer:
 * --install-prereqs
 * --deploy
 * --postflight
+
+### Fixed and improved
+
+* Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
