@@ -30,7 +30,7 @@ def invoke_detect_ip():
         sys.exit(1)
 
 
-def get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url) -> str:
+def get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url):
     if exhibitor_bootstrap_ca_url:
         print('Using `exhibitor_bootstrap_ca_url` config parameter.')
         return exhibitor_bootstrap_ca_url
@@ -46,7 +46,26 @@ def get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url) -> str:
         return ""
 
 
-def gen_tls_artifacts(ca_url, artifacts_path) -> None:
+def test_connection(ca_url):
+    s = socket.socket()
+    s.settimeout(5)
+    netloc = urlparse(ca_url).netloc.split(':', 1)
+    if len(netloc) == 2:
+        host, port = netloc
+    else:
+        host, port = netloc[0], '443'
+
+    try:
+        s.connect((host, int(port)))
+    except Exception as e:
+        print('could not connect to bootstrap node: {}'.format(e))
+        return False
+    finally:
+        s.close()
+    return True
+
+
+def gen_tls_artifacts(ca_url, artifacts_path):
     """
     Contact the CA service to sign the generated TLS artifacts.
     Write the signed Exhibitor TLS artifacts to the file system.
@@ -138,13 +157,17 @@ def main():
     if os.path.exists(TLS_ARTIFACT_LOCATION):
         return
 
-    print('Bootstrapping exhibitor TLS')
     exhibitor_bootstrap_ca_url = exhibitor_env['EXHIBITOR_BOOTSTRAP_CA_URL']
     bootstrap_url = exhibitor_env['BOOTSTRAP_URL']
 
     ca_url = get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url)
     if not ca_url:
         return
+
+    if not test_connection(ca_url):
+        return
+
+    print('Bootstrapping exhibitor TLS')
 
     gen_tls_artifacts(ca_url, Path(TLS_ARTIFACT_LOCATION))
     sys.stdout.flush()
