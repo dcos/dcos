@@ -5,6 +5,8 @@ import subprocess
 import sys
 
 from pathlib import Path
+from urllib.parse import urlparse
+
 
 TLS_ARTIFACT_LOCATION = '/var/lib/dcos/exhibitor-tls-artifacts'
 CSR_SERVICE_CERT_PATH = '/tmp/root-cert.pem'
@@ -34,26 +36,14 @@ def get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url) -> str:
         return exhibitor_bootstrap_ca_url
     else:
         print('Inferring `exhibitor_bootstrap_ca_url` from `bootstrap_url`.')
-        try:
-            protocol, url = bootstrap_url.split('://')
-        except ValueError as exc:
-            message = (
-                'Failed to calculate `exhibitor_bootstrap_ca_url` from '
-                '`bootstrap_url` {bootstrap_url}. Could not determine '
-                '`bootstrap_url` protocol.'
-            ).format(bootstrap_url=bootstrap_url)
-            raise ValueError(message) from exc
+        result = urlparse(bootstrap_url)
 
-        if protocol == 'http' or protocol == 'https':
-            bootstrap_host = url.split(':')[0]
-            return 'https://{host}:{port}'.format(host=bootstrap_host, port=443)
+        if result.scheme == 'http':
+            return 'https://{}'.format(result.netloc)
+        elif result.scheme == 'file':
+            print('bootstrap url references a local file')
 
-        message = (
-            'Failed to calculcate `exhibitor_bootstrap_ca_url` from `bootstrap_url`. '
-            '`bootstrap_url` {bootstrap_url} does not point to an HTTP web server. '
-            'Consider setting parameter `exhibitor_bootstrap_ca_url` explicitly.'
-        ).format(bootstrap_url=bootstrap_url)
-        raise ValueError(message)
+        return ""
 
 
 def gen_tls_artifacts(ca_url, artifacts_path) -> None:
@@ -152,11 +142,9 @@ def main():
     exhibitor_bootstrap_ca_url = exhibitor_env['EXHIBITOR_BOOTSTRAP_CA_URL']
     bootstrap_url = exhibitor_env['BOOTSTRAP_URL']
 
-    try:
-        ca_url = get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url)
-    except ValueError as exc:
-        print(str(exc))
-        sys.exit(1)
+    ca_url = get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url)
+    if not ca_url:
+        return
 
     gen_tls_artifacts(ca_url, Path(TLS_ARTIFACT_LOCATION))
     sys.stdout.flush()
