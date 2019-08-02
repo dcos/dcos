@@ -22,13 +22,14 @@ def _check(config: Dict[str, Any]) -> List[str]:
                 This is necessary to prevent this orchestration
                 from running when gen is not executed on a proper
                 bootstrap node.
+            master_discovery must be static
          DC/OS variant must be enterprise
     """
     checks = [
         (lambda: config.get('exhibitor_tls_enabled', False) == 'true',
          'Exhibitor security is disabled'),
-        (lambda: config['exhibitor_storage_backend'] == 'static',
-         'Only static exhibitor backends are supported'),
+        (lambda: config['master_discovery'] == 'static',
+         'Only static master discovery is supported'),
         (lambda: config['dcos_variant'] == 'enterprise',
          'Exhibitor security is an enterprise feature'),
         (lambda: urlparse(config['bootstrap_url']).scheme != 'file',

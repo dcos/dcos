@@ -159,6 +159,10 @@ def main():
     if os.path.exists(TLS_ARTIFACT_LOCATION):
         return
 
+    if not os.path.exists(CSR_SERVICE_CERT_PATH):
+        print('root CA certificate does not exist')
+        return
+
     exhibitor_bootstrap_ca_url = exhibitor_env['EXHIBITOR_BOOTSTRAP_CA_URL']
     bootstrap_url = exhibitor_env['BOOTSTRAP_URL']
 
@@ -173,6 +177,10 @@ def main():
     print('Bootstrapping exhibitor TLS')
 
     gen_tls_artifacts(ca_url, Path(TLS_ARTIFACT_LOCATION))
+
+    # remove file from temporary location
+    Path(CSR_SERVICE_CERT_PATH).unlink()
+
     sys.stdout.flush()
 
 
