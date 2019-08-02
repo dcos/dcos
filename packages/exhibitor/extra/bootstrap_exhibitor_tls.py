@@ -55,6 +55,7 @@ def test_connection(ca_url):
     else:
         host, port = netloc[0], '443'
 
+    print('testing connection to {}:{}'.format(host, port))
     try:
         s.connect((host, int(port)))
     except Exception as e:
@@ -152,6 +153,7 @@ def main():
     exhibitor_env = os.environ.copy()
 
     if exhibitor_env.get('EXHIBITOR_TLS_ENABLED', 'false') == 'false':
+        print('exhibitor TLS is disabled')
         return
 
     if os.path.exists(TLS_ARTIFACT_LOCATION):
@@ -165,6 +167,7 @@ def main():
         return
 
     if not test_connection(ca_url):
+        print('connection failed, launching exhibitor in insecure mode')
         return
 
     print('Bootstrapping exhibitor TLS')
