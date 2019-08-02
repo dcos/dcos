@@ -64,6 +64,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Prune VIPs with no backends in order to avoid unbounded growth of state and messages exchanged among `dcos-net` processes. (DCOS_OSS-5356)
 
+* DC/OS no longer increases the rate limit for journald logging. (DCOS-53763)
+
 
 ### Breaking changes
 
