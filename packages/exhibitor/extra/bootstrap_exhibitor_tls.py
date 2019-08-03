@@ -39,10 +39,12 @@ def get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url):
         result = urlparse(bootstrap_url)
 
         if result.scheme == 'http':
-            return 'https://{}'.format(result.netloc)
+            netloc = result.netloc.split(':', 1)  # strip port
+            return 'https://{}:443'.format(netloc[0])
         elif result.scheme == 'file':
             print('bootstrap url references a local file')
-
+        else:
+            print('bootstrap url is using an unsupported scheme: {}'.format(result.scheme))
         return ""
 
 
@@ -58,12 +60,12 @@ def test_connection(ca_url):
     print('testing connection to {}:{}'.format(host, port))
     try:
         s.connect((host, int(port)))
+        return True
     except Exception as e:
         print('could not connect to bootstrap node: {}'.format(e))
         return False
     finally:
         s.close()
-    return True
 
 
 def gen_tls_artifacts(ca_url, artifacts_path):
