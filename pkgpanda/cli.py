@@ -138,6 +138,7 @@ def main():
     )
     umask(0o022)
 
+    import pdb; pdb.set_trace()
     # NOTE: Changing root or repository will likely break actually running packages.
     install = Install(
         os.path.abspath(arguments['--root']),
