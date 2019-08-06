@@ -1,7 +1,7 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
 
-## DC/OS 1.14.0 (in development)
+## DC/OS 1.14.0-alpha (2019-08-05)
 
 
 ### What's new
