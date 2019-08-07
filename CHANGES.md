@@ -6,6 +6,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated DC/OS UI to [1.12+v2.26.16](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.26.16).
 
+* Updated to Mesos [1.7.x](https://github.com/apache/mesos/blob/ccecf11e250621aad286564ecc1e98c307777277/CHANGELOG).
+
 ### Notable changes
 
 * Updated DC/OS UI to [1.12+v2.26.16](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.26.16)
