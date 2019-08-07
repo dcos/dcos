@@ -182,7 +182,7 @@ def install_dcos_cli(tmpdir_factory: TempdirFactory):
     cli = dcos_cli.DcosCli.new_cli(
         download_url='https://downloads.dcos.io/binaries/cli/linux/x86-64/dcos-1.13/dcos',
         core_plugin_url='https://downloads.dcos.io/cli/releases/plugins/dcos-core-cli/linux/x86-64/dcos-core-cli-1.13-patch.5.zip',  # noqa: E501
-        ee_plugin_url='https://downloads.dcos.io/cli/releases/plugins/dcos-enterprise-cli/linux/x86-64/dcos-enterprise-cli-1.13-patch.1.zip',  # noqa: E501
+        ee_plugin_url='https://downloads.mesosphere.io/cli/releases/plugins/dcos-enterprise-cli/linux/x86-64/dcos-enterprise-cli-1.13-patch.1.zip',  # noqa: E501
         tmpdir=str(tmpdir)
     )
     yield cli
