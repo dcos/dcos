@@ -4,6 +4,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0)
 
+* Updated to Mesos [1.5.x](https://github.com/apache/mesos/blob/14904009a193636bb715115419bfa2f235beb33f/CHANGELOG)
+
 ### Notable changes
 
 * Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/tree/b8a73dd)
