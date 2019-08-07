@@ -1,7 +1,7 @@
-From 98f906e25b1363ec6e9c1eec0fd8ffa99ce87451 Mon Sep 17 00:00:00 2001
+From 74a7fd63298ec92598427ffce2fd8c1cdd93aeb8 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Thu, 11 Oct 2018 15:58:41 +0200
-Subject: [PATCH] Logged request processing time for some endpoints.
+Subject: [PATCH 07/16] Logged request processing time for some endpoints.
 
 This patch leverages `logResponse()` function to print response status
 code together with the request processing time for some endpoints on
@@ -21,7 +21,7 @@ Review: https://reviews.apache.org/r/68994
  2 files changed, 28 insertions(+), 7 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index ed072d39b..0c60f819f 100644
+index 3f0c8c0ce..392057583 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -929,7 +929,10 @@ void Master::initialize()
@@ -85,7 +85,7 @@ index ed072d39b..0c60f819f 100644
    route("/maintenance/schedule",
          READWRITE_HTTP_AUTHENTICATION_REALM,
 diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
-index c0b538852..60f870820 100644
+index f8aa7db2c..97bb48f64 100644
 --- a/src/slave/slave.cpp
 +++ b/src/slave/slave.cpp
 @@ -803,7 +803,10 @@ void Slave::initialize()

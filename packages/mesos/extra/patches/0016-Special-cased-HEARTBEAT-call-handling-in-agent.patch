@@ -1,7 +1,7 @@
-From f44285d563733a752983af1238c77feff31bb8d6 Mon Sep 17 00:00:00 2001
+From 7be30368232c5fc727ac51070ff3389b832b6a67 Mon Sep 17 00:00:00 2001
 From: Joseph Wu <josephwu@apache.org>
 Date: Wed, 10 Apr 2019 16:39:08 -0700
-Subject: [PATCH] Special cased HEARTBEAT call handling in agent.
+Subject: [PATCH 16/16] Special cased HEARTBEAT call handling in agent.
 
 This silences a '400 Bad Request' response by the agent whenever an
 executor sends a HEARTBEAT call.  These HEARTBEATs do not include a

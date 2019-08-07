@@ -1,7 +1,8 @@
-From ad521092a2da381c6307d0c9aabec38d2bea3b5c Mon Sep 17 00:00:00 2001
+From 67cd7e51dde46ae95f11cc5a3db071bbf48f8430 Mon Sep 17 00:00:00 2001
 From: Joseph Wu <joseph@mesosphere.io>
 Date: Thu, 13 Dec 2018 16:35:12 -0800
-Subject: [PATCH] Added gauge metric for operator event stream subscribers.
+Subject: [PATCH 14/16] Added gauge metric for operator event stream
+ subscribers.
 
 This metric "master/operator_event_stream_subscribers" returns
 the total number of subscribers to the master's operator event stream.
@@ -51,10 +52,10 @@ index 6edf36104..2d4a9b66e 100644
          "name": "master/frameworks_active",
          "value": 0.0
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 21e7937cd..354a97cc2 100644
+index eb23cb33e..c29a19668 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
-@@ -12212,6 +12212,9 @@ void Master::exited(const id::UUID& id)
+@@ -12258,6 +12258,9 @@ void Master::exited(const id::UUID& id)
              << " from the list of active subscribers";
  
    subscribers.subscribed.erase(id);
@@ -64,7 +65,7 @@ index 21e7937cd..354a97cc2 100644
  }
  
  
-@@ -12241,6 +12244,9 @@ void Master::subscribe(
+@@ -12287,6 +12290,9 @@ void Master::subscribe(
        http.streamId,
        Owned<Subscribers::Subscriber>(
            new Subscribers::Subscriber{http, principal}));
@@ -119,10 +120,10 @@ index a8055159b..1cf03301e 100644
    process::metrics::PullGauge tasks_staging;
    process::metrics::PullGauge tasks_starting;
 diff --git a/src/tests/api_tests.cpp b/src/tests/api_tests.cpp
-index 9d61ff59d..00c2ce77f 100644
+index 0230c29e0..3a8251a59 100644
 --- a/src/tests/api_tests.cpp
 +++ b/src/tests/api_tests.cpp
-@@ -3527,6 +3527,7 @@ TEST_P(MasterAPITest, MaxEventStreamSubscribers)
+@@ -3542,6 +3542,7 @@ TEST_P(MasterAPITest, MaxEventStreamSubscribers)
    Clock::pause();
  
    ContentType contentType = GetParam();
@@ -130,7 +131,7 @@ index 9d61ff59d..00c2ce77f 100644
  
    // Lower the max number of connections for this test.
    master::Flags masterFlags = CreateMasterFlags();
-@@ -3592,6 +3593,10 @@ TEST_P(MasterAPITest, MaxEventStreamSubscribers)
+@@ -3607,6 +3608,10 @@ TEST_P(MasterAPITest, MaxEventStreamSubscribers)
    AWAIT_READY(event);
    ASSERT_EQ(v1::master::Event::HEARTBEAT, event->get().type());
  
@@ -141,7 +142,7 @@ index 9d61ff59d..00c2ce77f 100644
    // Start a third connection.
    {
      // This is basically `http::streaming::post` unwrapped inside the
-@@ -3651,6 +3656,10 @@ TEST_P(MasterAPITest, MaxEventStreamSubscribers)
+@@ -3666,6 +3671,10 @@ TEST_P(MasterAPITest, MaxEventStreamSubscribers)
    ASSERT_TRUE(event->isSome());
    ASSERT_EQ(v1::master::Event::HEARTBEAT, event->get().type());
  

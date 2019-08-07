@@ -1,7 +1,7 @@
-From 6ff9adaec89066c8022ad8201524fb39743bed32 Mon Sep 17 00:00:00 2001
+From d7dbe9885b9bf360353b14da53239fc0784f4a04 Mon Sep 17 00:00:00 2001
 From: Joseph Wu <joseph@mesosphere.io>
 Date: Thu, 13 Dec 2018 16:34:24 -0800
-Subject: [PATCH] Refactored master and agent streaming connections.
+Subject: [PATCH 10/16] Refactored master and agent streaming connections.
 
 This moves the very similar `HttpConnection` classes inside the
 master and agent into a common header.  The refactored
@@ -31,10 +31,10 @@ Review: https://reviews.apache.org/r/69472/
  create mode 100644 src/common/heartbeater.hpp
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index aa343ab68..2f8cb0129 100644
+index fb2a27e28..d4f28adb8 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -989,6 +989,7 @@ libmesos_no_3rdparty_la_SOURCES +=					\
+@@ -995,6 +995,7 @@ libmesos_no_3rdparty_la_SOURCES +=					\
    checks/health_checker.cpp						\
    common/attributes.cpp							\
    common/command_utils.cpp						\
@@ -371,7 +371,7 @@ index e2773ed78..0e2c2bb78 100644
  
      return ok;
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 0c60f819f..588f4219d 100644
+index 392057583..a9dc4fc42 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -1276,7 +1276,9 @@ void Master::finalize()
@@ -412,7 +412,7 @@ index 0c60f819f..588f4219d 100644
      const FrameworkInfo& frameworkInfo,
      bool force,
      const set<string>& suppressedRoles,
-@@ -10032,7 +10034,8 @@ void Master::addFramework(
+@@ -10060,7 +10062,8 @@ void Master::addFramework(
      } else {
        CHECK_SOME(framework->http);
  
@@ -422,7 +422,7 @@ index 0c60f819f..588f4219d 100644
  
        http.closed()
          .onAny(defer(self(), &Self::exited, framework->id(), http));
-@@ -10122,7 +10125,7 @@ Try<Nothing> Master::activateRecoveredFramework(
+@@ -10157,7 +10160,7 @@ Try<Nothing> Master::activateRecoveredFramework(
      Framework* framework,
      const FrameworkInfo& frameworkInfo,
      const Option<UPID>& pid,
@@ -431,7 +431,7 @@ index 0c60f819f..588f4219d 100644
      const set<string>& suppressedRoles)
  {
    // Exactly one of `pid` or `http` must be provided.
-@@ -10200,7 +10203,9 @@ Try<Nothing> Master::activateRecoveredFramework(
+@@ -10235,7 +10238,9 @@ Try<Nothing> Master::activateRecoveredFramework(
  }
  
  
@@ -442,7 +442,7 @@ index 0c60f819f..588f4219d 100644
  {
    CHECK_NOTNULL(framework);
  
-@@ -12084,7 +12089,7 @@ void Master::Subscribers::Subscriber::send(
+@@ -12130,7 +12135,7 @@ void Master::Subscribers::Subscriber::send(
        if (approvers->approved<VIEW_TASK>(
                event->task_added().task(), *frameworkInfo) &&
            approvers->approved<VIEW_FRAMEWORK>(*frameworkInfo)) {
@@ -451,7 +451,7 @@ index 0c60f819f..588f4219d 100644
        }
        break;
      }
-@@ -12094,7 +12099,7 @@ void Master::Subscribers::Subscriber::send(
+@@ -12140,7 +12145,7 @@ void Master::Subscribers::Subscriber::send(
  
        if (approvers->approved<VIEW_TASK>(*task, *frameworkInfo) &&
            approvers->approved<VIEW_FRAMEWORK>(*frameworkInfo)) {
@@ -460,7 +460,7 @@ index 0c60f819f..588f4219d 100644
        }
        break;
      }
-@@ -12125,7 +12130,7 @@ void Master::Subscribers::Subscriber::send(
+@@ -12171,7 +12176,7 @@ void Master::Subscribers::Subscriber::send(
            }
          }
  
@@ -469,7 +469,7 @@ index 0c60f819f..588f4219d 100644
        }
        break;
      }
-@@ -12156,14 +12161,14 @@ void Master::Subscribers::Subscriber::send(
+@@ -12202,14 +12207,14 @@ void Master::Subscribers::Subscriber::send(
            }
          }
  
@@ -486,7 +486,7 @@ index 0c60f819f..588f4219d 100644
        }
        break;
      }
-@@ -12181,14 +12186,14 @@ void Master::Subscribers::Subscriber::send(
+@@ -12227,14 +12232,14 @@ void Master::Subscribers::Subscriber::send(
          }
        }
  
@@ -503,7 +503,7 @@ index 0c60f819f..588f4219d 100644
        break;
    }
  }
-@@ -12209,7 +12214,7 @@ void Master::exited(const id::UUID& id)
+@@ -12255,7 +12260,7 @@ void Master::exited(const id::UUID& id)
  
  
  void Master::subscribe(
@@ -513,10 +513,10 @@ index 0c60f819f..588f4219d 100644
  {
    LOG(INFO) << "Added subscriber " << http.streamId
 diff --git a/src/master/master.hpp b/src/master/master.hpp
-index 2bfe2557e..2050f054d 100644
+index 6830e3b63..23fb65b48 100644
 --- a/src/master/master.hpp
 +++ b/src/master/master.hpp
-@@ -75,6 +75,7 @@
+@@ -76,6 +76,7 @@
  #include <stout/try.hpp>
  #include <stout/uuid.hpp>
  
@@ -524,7 +524,7 @@ index 2bfe2557e..2050f054d 100644
  #include "common/http.hpp"
  #include "common/resources_utils.hpp"
  
-@@ -336,109 +337,6 @@ inline std::ostream& operator<<(std::ostream& stream, const Slave& slave)
+@@ -337,109 +338,6 @@ inline std::ostream& operator<<(std::ostream& stream, const Slave& slave)
  }
  
  
@@ -634,7 +634,7 @@ index 2bfe2557e..2050f054d 100644
  class Master : public ProtobufProcess<Master>
  {
  public:
-@@ -609,7 +507,10 @@ protected:
+@@ -610,7 +508,10 @@ protected:
    void consume(process::ExitedEvent&& event) override;
  
    void exited(const process::UPID& pid) override;
@@ -646,7 +646,7 @@ index 2bfe2557e..2050f054d 100644
    void _exited(Framework* framework);
  
    // Invoked upon noticing a subscriber disconnection.
-@@ -716,7 +617,7 @@ protected:
+@@ -717,7 +618,7 @@ protected:
        Framework* framework,
        const FrameworkInfo& frameworkInfo,
        const Option<process::UPID>& pid,
@@ -655,7 +655,7 @@ index 2bfe2557e..2050f054d 100644
        const std::set<std::string>& suppressedRoles);
  
    // Replace the scheduler for a framework with a new process ID, in
-@@ -725,7 +626,9 @@ protected:
+@@ -726,7 +627,9 @@ protected:
  
    // Replace the scheduler for a framework with a new HTTP connection,
    // in the event of a scheduler failover.
@@ -666,7 +666,7 @@ index 2bfe2557e..2050f054d 100644
  
    void _failoverFramework(Framework* framework);
  
-@@ -1086,11 +989,11 @@ private:
+@@ -1087,11 +990,11 @@ private:
        scheduler::Call&& call);
  
    void subscribe(
@@ -681,7 +681,7 @@ index 2bfe2557e..2050f054d 100644
        const FrameworkInfo& frameworkInfo,
        bool force,
        const std::set<std::string>& suppressedRoles,
-@@ -1109,7 +1012,7 @@ private:
+@@ -1110,7 +1013,7 @@ private:
  
    // Subscribes a client to the 'api/vX' endpoint.
    void subscribe(
@@ -690,7 +690,7 @@ index 2bfe2557e..2050f054d 100644
        const Option<process::http::authentication::Principal>& principal);
  
    void teardown(Framework* framework);
-@@ -2110,25 +2013,20 @@ private:
+@@ -2111,25 +2014,20 @@ private:
      struct Subscriber
      {
        Subscriber(
@@ -728,7 +728,7 @@ index 2bfe2557e..2050f054d 100644
  
        // Not copyable, not assignable.
        Subscriber(const Subscriber&) = delete;
-@@ -2149,14 +2047,10 @@ private:
+@@ -2156,14 +2054,10 @@ private:
          // after passing ownership to the `Subscriber` object. See MESOS-5843
          // for more details.
          http.close();
@@ -743,9 +743,9 @@ index 2bfe2557e..2050f054d 100644
 +      StreamingHttpConnection<v1::master::Event> http;
 +      ResponseHeartbeater<mesos::master::Event, v1::master::Event> heartbeater;
        const Option<process::http::authentication::Principal> principal;
-     };
  
-@@ -2343,7 +2237,7 @@ struct Framework
+       // We maintain a sequence to coordinate the creation of object approvers
+@@ -2354,7 +2248,7 @@ struct Framework
    Framework(Master* const master,
              const Flags& masterFlags,
              const FrameworkInfo& info,
@@ -754,7 +754,7 @@ index 2bfe2557e..2050f054d 100644
              const process::Time& time = process::Clock::now());
  
    Framework(Master* const master,
-@@ -2412,7 +2306,8 @@ struct Framework
+@@ -2423,7 +2317,8 @@ struct Framework
  
    void updateConnection(const process::UPID& newPid);
  
@@ -764,7 +764,7 @@ index 2bfe2557e..2050f054d 100644
  
    // Closes the HTTP connection and stops the heartbeat.
    //
-@@ -2444,7 +2339,7 @@ struct Framework
+@@ -2455,7 +2350,7 @@ struct Framework
    // (scheduler driver). At most one of `http` and `pid` will be set
    // according to the last connection made by the framework; neither
    // field will be set if the framework is in state `RECOVERED`.
@@ -773,7 +773,7 @@ index 2bfe2557e..2050f054d 100644
    Option<process::UPID> pid;
  
    State state;
-@@ -2525,7 +2420,7 @@ struct Framework
+@@ -2536,7 +2431,7 @@ struct Framework
    hashmap<SlaveID, Resources> offeredResources;
  
    // This is only set for HTTP frameworks.
@@ -798,7 +798,7 @@ index f7be16ebe..94aabba17 100644
  
        return ok;
 diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
-index 60f870820..265deb2bf 100644
+index 97bb48f64..13c5ec6ee 100644
 --- a/src/slave/slave.cpp
 +++ b/src/slave/slave.cpp
 @@ -4627,7 +4627,7 @@ void Slave::operationStatusAcknowledgement(

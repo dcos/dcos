@@ -1,8 +1,8 @@
-From 4bc0c96dbc8352cc418cd587ae103719bb07ecf0 Mon Sep 17 00:00:00 2001
+From 7b9d4889f2788ac5def5e959c4ed703d3b37db2e Mon Sep 17 00:00:00 2001
 From: Gilbert Song <songzihao1990@gmail.com>
 Date: Fri, 25 Jan 2019 10:40:07 -0800
-Subject: [PATCH] Reverted the container sandbox permission from 0750 back to
- 0755.
+Subject: [PATCH 15/16] Reverted the container sandbox permission from 0750
+ back to 0755.
 
 This patch is used to revert the sandbox permission semantic change
 in Mesos 1.6.0 (caused by this commit 04dd7f32). 04dd7f32 caused

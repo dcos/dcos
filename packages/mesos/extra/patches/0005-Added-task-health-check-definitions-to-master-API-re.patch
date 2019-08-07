@@ -1,7 +1,8 @@
-From 227f182d2ce169118d5c4bf4383cbc77fd28ad2c Mon Sep 17 00:00:00 2001
+From e76f55547ee342e7b6f1b052ac2b864ddd593e5a Mon Sep 17 00:00:00 2001
 From: Greg Mann <gregorywmann@gmail.com>
 Date: Mon, 29 Oct 2018 11:25:58 -0700
-Subject: [PATCH] Added task health check definitions to master API responses.
+Subject: [PATCH 05/16] Added task health check definitions to master API
+ responses.
 
 The `Task` protobuf message is updated to include the health check
 definition of a task when it is specified, along with associated
@@ -85,7 +86,7 @@ index 932111dde..81102d845 100644
  
  
 diff --git a/src/common/protobuf_utils.cpp b/src/common/protobuf_utils.cpp
-index b9289a206..fa949cc5e 100644
+index 138bee6bd..f02f4646b 100644
 --- a/src/common/protobuf_utils.cpp
 +++ b/src/common/protobuf_utils.cpp
 @@ -341,6 +341,10 @@ Task createTask(
