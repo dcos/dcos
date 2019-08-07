@@ -1,8 +1,8 @@
-From 6676da9be0ad56064a089a5c91f47a3560f1f38b Mon Sep 17 00:00:00 2001
+From 0d51c40f835b1be0c97e3a63e986f6ff84ef6354 Mon Sep 17 00:00:00 2001
 From: Kevin Klues <klueska@gmail.com>
 Date: Thu, 9 Feb 2017 19:39:42 -0800
-Subject: [PATCH] Updated mesos containerizer to ignore GPU isolator creation
- failure.
+Subject: [PATCH 04/24] Updated mesos containerizer to ignore GPU isolator
+ creation failure.
 
 This cherry-pick will be maintained in DC/OS to avoid the problem of
 requiring NVML to be installed on *every* node in the cluster, even if
@@ -19,10 +19,10 @@ This is a decent compromise.
  1 file changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/src/slave/containerizer/mesos/containerizer.cpp b/src/slave/containerizer/mesos/containerizer.cpp
-index 47f86211b..53899397c 100644
+index fa1473edd..79c5090cd 100644
 --- a/src/slave/containerizer/mesos/containerizer.cpp
 +++ b/src/slave/containerizer/mesos/containerizer.cpp
-@@ -424,8 +424,10 @@ Try<MesosContainerizer*> MesosContainerizer::create(
+@@ -430,8 +430,10 @@ Try<MesosContainerizer*> MesosContainerizer::create(
      {"gpu/nvidia",
        [&nvidia] (const Flags& flags) -> Try<Isolator*> {
          if (!nvml::isAvailable()) {
@@ -35,7 +35,7 @@ index 47f86211b..53899397c 100644
          }
  
          CHECK_SOME(nvidia)
-@@ -489,7 +491,7 @@ Try<MesosContainerizer*> MesosContainerizer::create(
+@@ -495,7 +497,7 @@ Try<MesosContainerizer*> MesosContainerizer::create(
      // prepared filesystem (e.g., any volume mounts are performed).
      if (strings::contains(isolation, "filesystem/")) {
        isolators.insert(isolators.begin(), Owned<Isolator>(isolator.get()));
@@ -45,5 +45,5 @@ index 47f86211b..53899397c 100644
      }
    }
 -- 
-2.14.3
+2.21.0
 

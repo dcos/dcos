@@ -1,7 +1,7 @@
-From a5049d41009c8ca16de1fa2cf77968dfb56f7cc8 Mon Sep 17 00:00:00 2001
+From c99d42b4781ef7a125f3a8d1fe0d4d45a22a2b6d Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:48 -0700
-Subject: [PATCH] Changed the 'capacity_' member of 'BoundedHashMap' to
+Subject: [PATCH 19/24] Changed the 'capacity_' member of 'BoundedHashMap' to
  non-const.
 
 This prevents the assignment operator from being implicitly deleted.
@@ -25,5 +25,5 @@ index 09a9b96f0..f73ec6b66 100644
    map keys_; // Map from key to "pointer" to key's location in list.
  };
 -- 
-2.14.3
+2.21.0
 

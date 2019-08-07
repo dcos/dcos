@@ -1,21 +1,21 @@
-From 95b4a13df1d37dc8903bc138d3f05f277ebe8239 Mon Sep 17 00:00:00 2001
+From 53268d77bf71e669b6fedcfb019d85adb078e726 Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:07:01 -0700
-Subject: [PATCH] Renamed Gauge to PullGauge and documented differences to
- PushGauge.
+Subject: [PATCH 09/24] Renamed Gauge to PullGauge and documented differences
+ to PushGauge.
 
 Given `PushGauge`, it makes sense to explicitly distinguish the two
 gauge types and document the the caveats of `PullGauge`.
 
 Review: https://reviews.apache.org/r/66831/
 ---
- 3rdparty/libprocess/include/Makefile.am            |  2 +-
- .../libprocess/include/process/metrics/gauge.hpp   | 58 ----------------
- .../libprocess/include/process/metrics/metric.hpp  |  2 +-
- .../include/process/metrics/pull_gauge.hpp         | 77 ++++++++++++++++++++++
- 3rdparty/libprocess/include/process/system.hpp     | 14 ++--
- 3rdparty/libprocess/src/tests/metrics_tests.cpp    | 51 +++++++-------
- 3rdparty/libprocess/src/tests/system_tests.cpp     |  2 +-
+ 3rdparty/libprocess/include/Makefile.am       |  2 +-
+ .../include/process/metrics/gauge.hpp         | 58 --------------
+ .../include/process/metrics/metric.hpp        |  2 +-
+ .../include/process/metrics/pull_gauge.hpp    | 77 +++++++++++++++++++
+ .../libprocess/include/process/system.hpp     | 14 ++--
+ .../libprocess/src/tests/metrics_tests.cpp    | 51 ++++++------
+ .../libprocess/src/tests/system_tests.cpp     |  2 +-
  7 files changed, 116 insertions(+), 90 deletions(-)
  delete mode 100644 3rdparty/libprocess/include/process/metrics/gauge.hpp
  create mode 100644 3rdparty/libprocess/include/process/metrics/pull_gauge.hpp
@@ -353,5 +353,5 @@ index 6beb973e0..4a193d778 100644
  // endpoint. This has been observed specifically for the memory
  // metrics. If in the future we put the error message from the Failure
 -- 
-2.14.3
+2.21.0
 

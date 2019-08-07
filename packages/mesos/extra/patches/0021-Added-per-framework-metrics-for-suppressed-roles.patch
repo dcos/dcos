@@ -1,20 +1,20 @@
-From 1304a0d3b5d18c9a5590b0cf0003e8e251982d9e Mon Sep 17 00:00:00 2001
+From aff32bda9922f88a6bed2ae201d2731ceecd5e65 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:59:04 -0700
-Subject: [PATCH] Added per-framework metrics for suppressed roles.
+Subject: [PATCH 21/24] Added per-framework metrics for suppressed roles.
 
 Review: https://reviews.apache.org/r/66870/
 ---
- src/master/allocator/mesos/hierarchical.cpp | 17 ++++++++
- src/master/allocator/mesos/metrics.cpp      | 66 ++++++++++++++++++++++++++++-
- src/master/allocator/mesos/metrics.hpp      | 12 ++++++
- 3 files changed, 93 insertions(+), 2 deletions(-)
+ src/master/allocator/mesos/hierarchical.cpp |  7 +++
+ src/master/allocator/mesos/metrics.cpp      | 66 ++++++++++++++++++++-
+ src/master/allocator/mesos/metrics.hpp      | 12 ++++
+ 3 files changed, 83 insertions(+), 2 deletions(-)
 
 diff --git a/src/master/allocator/mesos/hierarchical.cpp b/src/master/allocator/mesos/hierarchical.cpp
-index 2af633c5c..27fa561c8 100644
+index 91c27f619..982377c5b 100644
 --- a/src/master/allocator/mesos/hierarchical.cpp
 +++ b/src/master/allocator/mesos/hierarchical.cpp
-@@ -285,8 +285,10 @@ void HierarchicalAllocatorProcess::addFramework(
+@@ -319,8 +319,10 @@ void HierarchicalAllocatorProcess::addFramework(
  
      if (suppressedRoles.count(role)) {
        frameworkSorters.at(role)->deactivate(frameworkId.value());
@@ -25,64 +25,39 @@ index 2af633c5c..27fa561c8 100644
      }
    }
  
-@@ -454,6 +456,10 @@ void HierarchicalAllocatorProcess::updateFramework(
-     return result;
-   }();
+@@ -463,6 +465,8 @@ void HierarchicalAllocatorProcess::updateFramework(
+   const set<string> oldSuppressedRoles = framework.suppressedRoles;
  
-+  foreach (const string& role, newSuppressedRoles) {
-+    framework.metrics->suppressRole(role);
-+  }
-+
-   foreach (const string& role, removedRoles | newSuppressedRoles) {
-     CHECK(frameworkSorters.contains(role));
-     frameworkSorters.at(role)->deactivate(frameworkId.value());
-@@ -469,6 +475,8 @@ void HierarchicalAllocatorProcess::updateFramework(
-     if (framework.offerFilters.contains(role)) {
-       framework.offerFilters.erase(role);
-     }
-+
-+    framework.metrics->removeSubscribedRole(role);
-   }
- 
-   const set<string> addedRoles = [&]() {
-@@ -487,7 +495,13 @@ void HierarchicalAllocatorProcess::updateFramework(
-     return result;
-   }();
- 
-+  foreach (const string& role, newRevivedRoles) {
-+    framework.metrics->reviveRole(role);
-+  }
-+
-   foreach (const string& role, addedRoles) {
+   foreach (const string& role, newRoles - oldRoles) {
 +    framework.metrics->addSubscribedRole(role);
 +
      // NOTE: It's possible that we're already tracking this framework
      // under the role because a framework can unsubscribe from a role
      // while it still has resources allocated to the role.
-@@ -752,6 +766,7 @@ void HierarchicalAllocatorProcess::removeFilters(const SlaveID& slaveId)
-       if (erased) {
-         frameworkSorters.at(role)->activate(id.value());
-         framework.suppressedRoles.erase(role);
-+        framework.metrics->reviveRole(role);
-       }
+@@ -486,6 +490,7 @@ void HierarchicalAllocatorProcess::updateFramework(
+       framework.offerFilters.erase(role);
      }
+ 
++    framework.metrics->removeSubscribedRole(role);
+     framework.suppressedRoles.erase(role);
    }
-@@ -1316,6 +1331,7 @@ void HierarchicalAllocatorProcess::suppressOffers(
+ 
+@@ -1282,6 +1287,7 @@ void HierarchicalAllocatorProcess::suppressRoles(
  
      frameworkSorters.at(role)->deactivate(frameworkId.value());
      framework.suppressedRoles.insert(role);
 +    framework.metrics->suppressRole(role);
    }
  
-   LOG(INFO) << "Suppressed offers for roles " << stringify(roles)
-@@ -1344,6 +1360,7 @@ void HierarchicalAllocatorProcess::reviveOffers(
+   // TODO(bmahler): This logs roles that were already suppressed,
+@@ -1322,6 +1328,7 @@ void HierarchicalAllocatorProcess::unsuppressRoles(
  
      frameworkSorters.at(role)->activate(frameworkId.value());
      framework.suppressedRoles.erase(role);
 +    framework.metrics->reviveRole(role);
    }
  
-   // We delete each actual `OfferFilter` when
+   // TODO(bmahler): This logs roles that were already unsuppressed,
 diff --git a/src/master/allocator/mesos/metrics.cpp b/src/master/allocator/mesos/metrics.cpp
 index 7a4b153db..0b5534715 100644
 --- a/src/master/allocator/mesos/metrics.cpp
@@ -210,5 +185,5 @@ index daac93f7e..34cc16b3a 100644
  
  } // namespace internal {
 -- 
-2.14.3
+2.21.0
 

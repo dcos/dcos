@@ -1,7 +1,7 @@
-From 4cdfdb1b6a432298daaf1a34300c9e1f2d014ffe Mon Sep 17 00:00:00 2001
+From 6e5d3e7ee4ed7fc0626109efa78834a3bd489d71 Mon Sep 17 00:00:00 2001
 From: Gilbert Song <songzihao1990@gmail.com>
 Date: Wed, 1 Aug 2018 07:58:06 -0700
-Subject: [PATCH] Added per-framework 'subscribed' metric and helpers.
+Subject: [PATCH 12/24] Added per-framework 'subscribed' metric and helpers.
 
 Review: https://reviews.apache.org/r/66820/
 ---
@@ -12,7 +12,7 @@ Review: https://reviews.apache.org/r/66820/
  4 files changed, 30 insertions(+), 8 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 1e9775122..075c6ad2d 100644
+index e49883e96..5c615cabf 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -455,6 +455,13 @@ void Framework::untrackUnderRole(const string& role)
@@ -29,7 +29,7 @@ index 1e9775122..075c6ad2d 100644
  void Master::initialize()
  {
    LOG(INFO) << "Master " << info_.id() << " (" << info_.hostname() << ")"
-@@ -3229,7 +3236,7 @@ void Master::_subscribe(
+@@ -3244,7 +3251,7 @@ void Master::_subscribe(
        // NOTE: We do this after recovering resources (above) so that
        // the allocator has the correct view of the framework's share.
        if (!framework->active()) {
@@ -38,7 +38,7 @@ index 1e9775122..075c6ad2d 100644
          allocator->activateFramework(framework->id());
        }
  
-@@ -3343,7 +3350,7 @@ void Master::disconnect(Framework* framework)
+@@ -3358,7 +3365,7 @@ void Master::disconnect(Framework* framework)
  
    LOG(INFO) << "Disconnecting framework " << *framework;
  
@@ -47,7 +47,7 @@ index 1e9775122..075c6ad2d 100644
  
    if (framework->pid.isSome()) {
      // Remove the framework from authenticated. This is safe because
-@@ -3366,7 +3373,7 @@ void Master::deactivate(Framework* framework, bool rescind)
+@@ -3381,7 +3388,7 @@ void Master::deactivate(Framework* framework, bool rescind)
  
    LOG(INFO) << "Deactivating framework " << *framework;
  
@@ -56,7 +56,7 @@ index 1e9775122..075c6ad2d 100644
  
    // Tell the allocator to stop allocating resources to this framework.
    allocator->deactivateFramework(framework->id());
-@@ -9396,7 +9403,7 @@ Try<Nothing> Master::activateRecoveredFramework(
+@@ -9436,7 +9443,7 @@ Try<Nothing> Master::activateRecoveredFramework(
    }
  
    // Activate the framework.
@@ -65,7 +65,7 @@ index 1e9775122..075c6ad2d 100644
    allocator->activateFramework(framework->id());
  
    // Export framework metrics if a principal is specified in `FrameworkInfo`.
-@@ -9546,7 +9553,7 @@ void Master::_failoverFramework(Framework* framework)
+@@ -9586,7 +9593,7 @@ void Master::_failoverFramework(Framework* framework)
    // NOTE: We do this after recovering resources (above) so that
    // the allocator has the correct view of the framework's share.
    if (!framework->active()) {
@@ -159,5 +159,5 @@ index 9f10aecba..d3f093f9d 100644
  
  
 -- 
-2.14.3
+2.21.0
 

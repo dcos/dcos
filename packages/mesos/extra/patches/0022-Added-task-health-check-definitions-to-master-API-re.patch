@@ -1,7 +1,8 @@
-From f342d0d485c3cc48c187a2682264aa1828123284 Mon Sep 17 00:00:00 2001
+From bf7a4b4518f66c3a3806c9cc8715810bcf006123 Mon Sep 17 00:00:00 2001
 From: Greg Mann <gregorywmann@gmail.com>
 Date: Fri, 2 Nov 2018 16:13:01 -0700
-Subject: [PATCH] Added task health check definitions to master API responses.
+Subject: [PATCH 22/24] Added task health check definitions to master API
+ responses.
 
 The `Task` protobuf message is updated to include the health check
 definition of a task when it is specified. Associated helpers are
@@ -19,7 +20,7 @@ Review: https://reviews.apache.org/r/69110/
  4 files changed, 20 insertions(+), 4 deletions(-)
 
 diff --git a/include/mesos/mesos.proto b/include/mesos/mesos.proto
-index a147ce291..f9c6e8318 100644
+index 21533286f..070e14d5e 100644
 --- a/include/mesos/mesos.proto
 +++ b/include/mesos/mesos.proto
 @@ -2139,8 +2139,8 @@ message TaskGroupInfo {
@@ -45,7 +46,7 @@ index a147ce291..f9c6e8318 100644
    optional string user = 14;
  }
 diff --git a/include/mesos/v1/mesos.proto b/include/mesos/v1/mesos.proto
-index ce3b31ee3..f46aa343e 100644
+index 9863c3a31..a73c52a7e 100644
 --- a/include/mesos/v1/mesos.proto
 +++ b/include/mesos/v1/mesos.proto
 @@ -2131,8 +2131,8 @@ message TaskGroupInfo {
@@ -101,5 +102,5 @@ index fda130727..5f3c2ae61 100644
    if (task.has_command() && task.command().has_user()) {
      t.set_user(task.command().user());
 -- 
-2.14.3
+2.21.0
 
