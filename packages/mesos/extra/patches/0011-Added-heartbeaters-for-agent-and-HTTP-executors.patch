@@ -1,7 +1,7 @@
-From 2b0793392a16cb0ee1056760e006079cf7a2b6ce Mon Sep 17 00:00:00 2001
+From 4c3533e78bff4e9d18c6982f36ffd5f87b7ce1c2 Mon Sep 17 00:00:00 2001
 From: Joseph Wu <joseph@mesosphere.io>
 Date: Thu, 13 Dec 2018 16:34:36 -0800
-Subject: [PATCH] Added heartbeaters for agent and HTTP executors.
+Subject: [PATCH 11/16] Added heartbeaters for agent and HTTP executors.
 
 This implements two separate heartbeaters for Executor Events (agent
 to executor) and Executor Calls (executor to agent).  Both are set to
@@ -159,7 +159,7 @@ index 94aabba17..aae030469 100644
        LOG(WARNING) << "Received 'UNKNOWN' call";
        return NotImplemented();
 diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
-index 265deb2bf..e58f9f1bb 100644
+index 13c5ec6ee..51c927401 100644
 --- a/src/slave/slave.cpp
 +++ b/src/slave/slave.cpp
 @@ -4688,6 +4688,18 @@ void Slave::subscribe(

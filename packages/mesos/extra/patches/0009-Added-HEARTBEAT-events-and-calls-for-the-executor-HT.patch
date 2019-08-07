@@ -1,7 +1,8 @@
-From a0b9a1fb022eb80768b1130713291573509e04fb Mon Sep 17 00:00:00 2001
+From 41fb2cf00f30ca8f41b8cf4ec0ec418f94ea96dc Mon Sep 17 00:00:00 2001
 From: Joseph Wu <joseph@mesosphere.io>
 Date: Thu, 13 Dec 2018 16:34:21 -0800
-Subject: [PATCH] Added HEARTBEAT events and calls for the executor HTTP API.
+Subject: [PATCH 09/16] Added HEARTBEAT events and calls for the executor HTTP
+ API.
 
 These new messages are meant to be backwards compatible, in that
 they won't cause crashes when new executors send heartbeats to old

@@ -1,7 +1,7 @@
-From e0420b6fb29dadab0fdb5f001b2ad8a80a906b76 Mon Sep 17 00:00:00 2001
+From 8fcf6db6d06c3eb950d62c440786d987558fd2b4 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Mon, 13 Aug 2018 20:05:26 +0200
-Subject: [PATCH] Added 'received' timestamp into `process::Request`.
+Subject: [PATCH 04/16] Added 'received' timestamp into `process::Request`.
 
 This allows us to note when a request comes in and
 hence calculate request processing time.

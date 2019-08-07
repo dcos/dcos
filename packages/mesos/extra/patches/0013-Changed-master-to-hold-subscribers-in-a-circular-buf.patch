@@ -1,7 +1,8 @@
-From 8ef88e8017d238c0a6362e1a143a3fc0263e119a Mon Sep 17 00:00:00 2001
+From c77cce8448058e7732f7ea1418fd94c5fb73e52b Mon Sep 17 00:00:00 2001
 From: Joseph Wu <joseph@mesosphere.io>
 Date: Thu, 13 Dec 2018 16:35:03 -0800
-Subject: [PATCH] Changed master to hold subscribers in a circular buffer.
+Subject: [PATCH 13/16] Changed master to hold subscribers in a circular
+ buffer.
 
 This adds a flag (--max_operator_event_stream_subscribers) to the
 master which controls how many active subscribers on the Master's
@@ -100,7 +101,7 @@ index 4a260155b..c29cebf7b 100644
    size_t max_completed_tasks_per_framework;
    size_t max_unreachable_tasks_per_framework;
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 588f4219d..21e7937cd 100644
+index a9dc4fc42..eb23cb33e 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -326,7 +326,7 @@ Master::Master(
@@ -112,7 +113,7 @@ index 588f4219d..21e7937cd 100644
      authenticator(None()),
      metrics(new Metrics(*this)),
      electedTime(None())
-@@ -12202,7 +12202,9 @@ void Master::Subscribers::Subscriber::send(
+@@ -12248,7 +12248,9 @@ void Master::Subscribers::Subscriber::send(
  void Master::exited(const id::UUID& id)
  {
    if (!subscribers.subscribed.contains(id)) {
@@ -123,7 +124,7 @@ index 588f4219d..21e7937cd 100644
      return;
    }
  
-@@ -12226,7 +12228,16 @@ void Master::subscribe(
+@@ -12272,7 +12274,16 @@ void Master::subscribe(
               exited(http.streamId);
             }));
  
@@ -142,10 +143,10 @@ index 588f4219d..21e7937cd 100644
        Owned<Subscribers::Subscriber>(
            new Subscribers::Subscriber{http, principal}));
 diff --git a/src/master/master.hpp b/src/master/master.hpp
-index 2050f054d..980358e62 100644
+index 23fb65b48..09f3cee2d 100644
 --- a/src/master/master.hpp
 +++ b/src/master/master.hpp
-@@ -2004,7 +2004,9 @@ private:
+@@ -2005,7 +2005,9 @@ private:
  
    struct Subscribers
    {
@@ -156,7 +157,7 @@ index 2050f054d..980358e62 100644
  
      // Represents a client subscribed to the 'api/vX' endpoint.
      //
-@@ -2064,7 +2066,7 @@ private:
+@@ -2075,7 +2077,7 @@ private:
  
      // Active subscribers to the 'api/vX' endpoint keyed by the stream
      // identifier.
@@ -166,7 +167,7 @@ index 2050f054d..980358e62 100644
  
    Subscribers subscribers;
 diff --git a/src/tests/api_tests.cpp b/src/tests/api_tests.cpp
-index b42628ac9..9d61ff59d 100644
+index 0cfc8e3ee..0230c29e0 100644
 --- a/src/tests/api_tests.cpp
 +++ b/src/tests/api_tests.cpp
 @@ -36,6 +36,7 @@
@@ -177,7 +178,7 @@ index b42628ac9..9d61ff59d 100644
  #include <stout/recordio.hpp>
  #include <stout/stringify.hpp>
  #include <stout/try.hpp>
-@@ -3519,6 +3520,172 @@ TEST_P(MasterAPITest, Heartbeat)
+@@ -3534,6 +3535,172 @@ TEST_P(MasterAPITest, Heartbeat)
  }
  
  

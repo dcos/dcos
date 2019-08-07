@@ -1,8 +1,8 @@
-From 2706c5fbddc6fa2baabda8b213c1b59ce7524531 Mon Sep 17 00:00:00 2001
+From cd855187a0d62b8989d6166fdf8dc4e085009413 Mon Sep 17 00:00:00 2001
 From: Armand Grillet <armand.grillet@outlook.com>
 Date: Wed, 28 Feb 2018 21:00:24 +0100
-Subject: [PATCH] Mesos UI: updated the URL generation to make it work with
- adminrouter.
+Subject: [PATCH 03/16] Mesos UI: updated the URL generation to make it work
+ with adminrouter.
 
 - Use /mesos as the leading master URL prefix.
 - Use /mesos/agent/{agent_id}/{process_name} as the agent URL prefix.
