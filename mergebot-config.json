@@ -31,7 +31,6 @@
         "interactive": false,
         "fix_version_map": {
             "master": "DC/OS 1.14.0",
-            "1.14.0-alpha": "DC/OS 1.14.0",
             "1.13": "DC/OS 1.13.4",
             "1.12": "DC/OS 1.12.5",
             "1.11": "DC/OS 1.11.12",
@@ -41,24 +40,6 @@
     },
     "required statuses": {
         "master": [
-                    "mergebot/changes_md",
-                    "mergebot/enterprise/changes_md",
-                    "mergebot/enterprise/build-status/aggregate",
-                    "mergebot/enterprise/has_ship-it",
-                    "mergebot/enterprise/review/approved/min_2",
-                    "mergebot/has_ship-it",
-                    "mergebot/review/approved/min_2",
-                    "teamcity/dcos/build/dcos",
-                    "teamcity/dcos/build/tox",
-                    "continuous-integration/jenkins/pr-head",
-                    "teamcity/dcos/test/aws/cloudformation/simple",
-                    "teamcity/dcos/test/test-e2e/group1",
-                    "teamcity/dcos/test/terraform/aws/onprem/static/group1",
-                    "teamcity/dcos/test/terraform/aws/onprem/static/group2",
-                    "teamcity/dcos/test/terraform/aws/onprem/static/group3",
-                    "teamcity/dcos/test/terraform/aws/onprem/static/group4"
-        ],
-        "1.14.0-alpha": [
                     "mergebot/changes_md",
                     "mergebot/enterprise/changes_md",
                     "mergebot/enterprise/build-status/aggregate",
