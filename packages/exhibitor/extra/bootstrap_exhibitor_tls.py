@@ -60,6 +60,7 @@ def test_connection(ca_url):
     print('testing connection to {}:{}'.format(host, port))
     try:
         s.connect((host, int(port)))
+        print('connection to {}:{} successful'.format(host, port))
         return True
     except Exception as e:
         print('could not connect to bootstrap node: {}'.format(e))
@@ -78,8 +79,10 @@ def gen_tls_artifacts(ca_url, artifacts_path):
 
     psk_path = Path(PRESHAREDKEY_LOCATION)
     if psk_path.exists():
-        psk = psk_path.read_text()
+        psk = psk_path.read_text(encoding='ascii')
+        print('Using preshared key from location `{}`'.format(str(psk_path)))
     else:
+        print('No preshared key found at location `{}`'.format(str(psk_path)))
         # Empty PSK outputs in any CSR being signed by the CA service.
         psk = ''
 
@@ -90,7 +93,7 @@ def gen_tls_artifacts(ca_url, artifacts_path):
     output = subprocess.check_output(
         args=[
             '/opt/mesosphere/bin/dcoscertstrap',
-            '--output-dir', str(EXHIBITOR_TLS_TMP_DIR),
+            '--output-dir', EXHIBITOR_TLS_TMP_DIR,
             'init-entity', server_entity,
         ],
         stderr=subprocess.STDOUT,
@@ -101,18 +104,18 @@ def gen_tls_artifacts(ca_url, artifacts_path):
     output = subprocess.check_output(
         args=[
             '/opt/mesosphere/bin/dcoscertstrap',
-            '--output-dir', str(EXHIBITOR_TLS_TMP_DIR),
+            '--output-dir', EXHIBITOR_TLS_TMP_DIR,
             'init-entity', client_entity,
         ],
         stderr=subprocess.STDOUT,
     )
     print(output.decode())
 
-    print('Making CSR for {} with IP {}'.format(server_entity, ip))
+    print('Making CSR for {} with IP `{}`'.format(server_entity, ip))
     output = subprocess.check_output(
         args=[
             '/opt/mesosphere/bin/dcoscertstrap', 'csr', server_entity,
-            '--output-dir', str(EXHIBITOR_TLS_TMP_DIR),
+            '--output-dir', EXHIBITOR_TLS_TMP_DIR,
             '--url', ca_url,
             '--ca', str(CSR_SERVICE_CERT_PATH),
             '--psk', psk,
@@ -122,11 +125,11 @@ def gen_tls_artifacts(ca_url, artifacts_path):
     )
     print(output.decode())
 
-    print('Making CSR for {} with IP {}'.format(client_entity, ip))
+    print('Making CSR for {} with IP `{}`'.format(client_entity, ip))
     output = subprocess.check_output(
         args=[
             '/opt/mesosphere/bin/dcoscertstrap', 'csr', client_entity,
-            '--output-dir', str(EXHIBITOR_TLS_TMP_DIR),
+            '--output-dir', EXHIBITOR_TLS_TMP_DIR,
             '--url', ca_url,
             '--ca', str(CSR_SERVICE_CERT_PATH),
             '--psk', psk,
@@ -140,7 +143,7 @@ def gen_tls_artifacts(ca_url, artifacts_path):
     output = subprocess.check_output(
         args=[
             '/opt/mesosphere/bin/dcoscertstrap', 'create-exhibitor-artifacts',
-            '--output-dir', str(EXHIBITOR_TLS_TMP_DIR),
+            '--output-dir', EXHIBITOR_TLS_TMP_DIR,
             '--ca', str(CSR_SERVICE_CERT_PATH),
             '--client-entity', client_entity,
             '--server-entity', server_entity,
@@ -183,8 +186,8 @@ def main():
     # remove file from temporary location
     Path(CSR_SERVICE_CERT_PATH).unlink()
 
-    sys.stdout.flush()
-
 
 if __name__ == '__main__':
     main()
+    # Always flush stdout buffer when exiting the script
+    sys.stdout.flush()
