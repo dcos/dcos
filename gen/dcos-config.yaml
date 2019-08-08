@@ -1388,6 +1388,7 @@ package:
       MESOS_SECCOMP_PROFILE_NAME={{ mesos_seccomp_profile_name }}
 {% case "false" %}
 {% endswitch %}
+      MESOS_ALLOW_CHOWN_DOCKER_VOLUME={{ mesos_allow_chown_docker_volume }}
       MESOS_DISALLOW_SHARING_AGENT_IPC_NAMESPACE={{ mesos_disallow_sharing_agent_ipc_namespace }}
 {% switch has_mesos_default_container_shm_size %}
 {% case "true" %}
