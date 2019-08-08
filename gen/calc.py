@@ -1127,6 +1127,8 @@ entry = {
         validate_mesos_recovery_timeout,
         validate_metronome_gpu_scheduling_behavior,
         lambda mesos_seccomp_enabled: validate_true_false(mesos_seccomp_enabled),
+        lambda mesos_allow_chown_docker_volume:
+            validate_true_false(mesos_allow_chown_docker_volume),
         lambda mesos_disallow_sharing_agent_ipc_namespace:
             validate_true_false(mesos_disallow_sharing_agent_ipc_namespace),
         validate_mesos_default_container_shm_size,
@@ -1188,6 +1190,7 @@ entry = {
         'mesos_recovery_timeout': '24hrs',
         'mesos_seccomp_enabled': 'true',
         'mesos_seccomp_profile_name': 'default.json',
+        'mesos_allow_chown_docker_volume': 'false',
         'mesos_disallow_sharing_agent_ipc_namespace': 'false',
         'mesos_default_container_shm_size': '',
         'metronome_gpu_scheduling_behavior': 'restricted',

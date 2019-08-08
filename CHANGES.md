@@ -54,6 +54,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Add more vm metrics to dcos-net. (DCOS_OSS-5335)
 
+* Introduced a new DC/OS configuration parameter `mesos_allow_chown_docker_volume`, by default as `false`. If this parameter is set as `true`, Mesos will change the ownership of a docker volumes to be the task user when launching a container. Please notice that this parameter is NOT recommended to switch on if there is any docker volume shared by multiple non-root users. (DCOS_OSS-5381)
+
 * Introduced a new DC/OS configuration parameter `mesos_disallow_sharing_agent_ipc_namespace`, defaulting to `false`. This parameter can be used to control whether the top-level Mesos container is allowed to share Mesos agent host's IPC namespace and /dev/shm. (DCOS-56619)
 
 * Introduced a new DC/OS configuration parameter `mesos_default_container_shm_size`. This parameter can be used to specify the default size of the /dev/shm for the Mesos container which has its own /dev/shm. The format is `[number][unit]`, `number` must be a positive integer and `unit` can be B (bytes), KB (kilobytes), MB (megabytes), GB (gigabytes) or TB (terabytes). (DCOS-56619)
