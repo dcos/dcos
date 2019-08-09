@@ -22,7 +22,6 @@ import logging
 import uuid
 
 import pytest
-from dcos_test_utils import dcos_cli
 
 from test_helpers import get_expanded_config
 
@@ -189,16 +188,15 @@ def test_dynamic_ui_config(dcos_api_session):
     assert 'uiConfiguration' in data
 
 
-def test_dcos_add_user(dcos_api_session):
+def test_dcos_add_user(dcos_api_session, new_dcos_cli):
     """
     dcos_add_user.py script adds a user to IAM using the
     script dcos_add_user.py.
     """
 
     email_address = uuid.uuid4().hex + '@example.com'
-    cli = dcos_cli.DcosCli('', '', '')
     command = ['python', '/opt/mesosphere/bin/dcos_add_user.py', email_address]
-    cli.exec_command(command)
+    new_dcos_cli.exec_command(command)
 
     try:
         r = dcos_api_session.get('/acs/api/v1/users')
@@ -217,23 +215,22 @@ def test_dcos_add_user(dcos_api_session):
         delete_user(dcos_api_session, email_address)
 
 
-def test_check_message_on_adding_user_twice(dcos_api_session):
+def test_check_message_on_adding_user_twice(dcos_api_session, new_dcos_cli):
     """
     Check that the correct message is emitted on adding the
     same user for the second time.
     """
 
     email_address = uuid.uuid4().hex + '@example.com'
-    cli = dcos_cli.DcosCli('', '', '')
     command = ['python', '/opt/mesosphere/bin/dcos_add_user.py', email_address]
-    stdout, stderr = cli.exec_command(command)
+    stdout, stderr = new_dcos_cli.exec_command(command)
 
     try:
         expected_output = '[INFO] Created IAM user `' + email_address + '`\n'
         assert '' == stdout
         assert expected_output == stderr
 
-        stdout, stderr = cli.exec_command(command)
+        stdout, stderr = new_dcos_cli.exec_command(command)
         expected_error = '[INFO] User `' + email_address + '` already exists\n'
         assert expected_error == stderr
         assert '' == stdout
