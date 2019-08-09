@@ -1,9 +1,13 @@
-pytest==4.2.0
+click==7.0
+cryptography==2.7
+pyjwt==1.7.1
+pytest==4.4.0
+pytest-xdist==1.29.0
 PyYAML==4.2b4
 webtest==2.0.32
 webtest-aiohttp==1.1.0
 schema==0.6.8
-pytest-catchlog==1.2.2
+teamcity-messages==1.25
 
 # The following should be kept in sync with their panda packages. Don't forget to update enterprise as well.
 
