@@ -3,13 +3,13 @@
   "sources": {
     "pytest": {
       "kind": "url_extract",
-      "url": "https://files.pythonhosted.org/packages/5f/d2/7f77f406ac505abda02ab4afb50d06ebf304f6ea42fca34f8f37529106b2/pytest-3.8.2.tar.gz",
-      "sha1": "6e28889174cfec8ca42bd470fe6168ca19aa58f9"
+      "url": "https://files.pythonhosted.org/packages/f2/a9/fc3a4fb6959eb88d1151149c7ba27f96b389a123ada2d961a016bbdff641/pytest-4.4.0.tar.gz",
+      "sha1": "17a5267b86b2103cc9c47e6598be2f9a477eba17"
     },
     "pluggy": {
       "kind": "url_extract",
-      "url": "https://files.pythonhosted.org/packages/a1/83/ef7d976c12d67a5c7a5bc2a47f0501c926cabae9d9fcfdc26d72abc9ba15/pluggy-0.7.1.tar.gz",
-      "sha1": "a07fa8187288cc4099b91dd59b0df18ba3dc19b1"
+      "url": "https://files.pythonhosted.org/packages/a7/8c/55c629849c64e665258d8976322dfdad171fa2f57117590662d8a67618a4/pluggy-0.9.0.tar.gz",
+      "sha1": "6bdadc9a082d2d83b780bea66ec55517454bb2d0"
     },
     "py": {
       "kind": "url_extract",
