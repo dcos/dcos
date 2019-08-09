@@ -4,6 +4,8 @@ import os
 
 import pytest
 import requests
+from _pytest.tmpdir import TempdirFactory
+from dcos_test_utils import dcos_cli
 from dcos_test_utils.diagnostics import Diagnostics
 from test_helpers import get_expanded_config
 
@@ -169,3 +171,28 @@ def _dump_diagnostics(request, dcos_api_session):
         diagnostics.download_diagnostics_reports(diagnostics_bundles=bundles)
     else:
         log.info('\nNot downloading diagnostics bundle for this session.')
+
+
+@pytest.fixture(scope='session')
+def install_dcos_cli(tmpdir_factory: TempdirFactory):
+    """
+    Install the CLI.
+    """
+    tmpdir = tmpdir_factory.mktemp('dcos_cli')
+    cli = dcos_cli.DcosCli.new_cli(
+        download_url='https://downloads.dcos.io/binaries/cli/linux/x86-64/dcos-1.13/dcos',
+        core_plugin_url='https://downloads.dcos.io/cli/releases/plugins/dcos-core-cli/linux/x86-64/dcos-core-cli-1.13-patch.5.zip',  # noqa: E501
+        ee_plugin_url='https://downloads.mesosphere.io/cli/releases/plugins/dcos-enterprise-cli/linux/x86-64/dcos-enterprise-cli-1.13-patch.1.zip',  # noqa: E501
+        tmpdir=str(tmpdir)
+    )
+    yield cli
+    cli.clear_cli_dir()
+
+
+@pytest.fixture
+def new_dcos_cli(install_dcos_cli: dcos_cli.DcosCli) -> dcos_cli.DcosCli:
+    """
+    Ensure there is no CLI state from a previous test.
+    """
+    install_dcos_cli.clear_cli_dir()
+    return install_dcos_cli
