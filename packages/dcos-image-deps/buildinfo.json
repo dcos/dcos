@@ -91,6 +91,11 @@
       "url": "https://pypi.python.org/packages/3.4/d/docutils/docutils-0.12-py3-none-any.whl",
       "sha1": "88749802f8d61883da36a5abfca171a4ae60cc71"
     },
+    "execnet": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/9a/73/5be9d235327b3770c330bed707766c8885e8157577db85f11b874b26da34/execnet-1.6.1-py2.py3-none-any.whl",
+      "sha1": "6e212e61c45486798f7a96040820f3aa2e8b46b6"
+    },
     "humanfriendly": {
       "kind": "url_extract",
       "url": "https://pypi.python.org/packages/source/h/humanfriendly/humanfriendly-1.44.3.tar.gz",
