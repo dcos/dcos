@@ -42,7 +42,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Upgraded platform OpenSSL from 1.0.2x to release 1.1.1x. (DCOS-54108)
 
-* Updated DC/OS UI to [master+v2.136.0](https://github.com/dcos/dcos-ui/releases/tag/master+v2.136.0).
+* Updated DC/OS UI to [master+v2.137.0](https://github.com/dcos/dcos-ui/releases/tag/master+v2.137.0).
 
 * Added L4LB metrics in DC/OS Net. (DCOS_OSS-5011)
 
@@ -53,6 +53,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Bumped Telegraf to have Mesos overlay module metrics collected. (DCOS_OSS-5323)
 
 * Add more vm metrics to dcos-net. (DCOS_OSS-5335)
+
+* Introduced a new DC/OS configuration parameter `mesos_docker_volume_chown`, by default as `false`. If this parameter is set as `true`, Mesos will change the ownership of a docker volumes non-recursively to be the task user when launching a container. Please notice that this parameter is NOT recommended to switch on if there is any docker volume shared by multiple non-root users. (DCOS_OSS-5381)
 
 * Introduced a new DC/OS configuration parameter `mesos_disallow_sharing_agent_ipc_namespace`, defaulting to `false`. This parameter can be used to control whether the top-level Mesos container is allowed to share Mesos agent host's IPC namespace and /dev/shm. (DCOS-56619)
 
