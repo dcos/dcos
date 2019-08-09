@@ -46,7 +46,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Added L4LB metrics in DC/OS Net. (DCOS_OSS-5011)
 
-* Updated to [Mesos 1.9.x](https://github.com/apache/mesos/blob/ff8c9a96be6ae1ee47faf9d5b80a518dfb4a3db0/CHANGELOG). (DCOS_OSS-5342)
+* Updated to [Mesos 1.9.x](https://github.com/apache/mesos/blob/67eda699cb68b2f58aa591e6e8d63682bc3d76d2/CHANGELOG). (DCOS_OSS-5342)
 
 * Bumped Mesos modules to have overlay metrics exposed. (DCOS_OSS-5322)
 
