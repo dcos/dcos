@@ -1,7 +1,8 @@
 {
   "single_source" : {
-      "kind": "url_extract",
-      "url": "https://github.com/mesosphere/dcos-bootstrap-ca/releases/download/v0.1.0/dcos-bootstrap-ca_0.1.0_linux_amd64.tar.gz",
-      "sha1": "d36dbdc6f1875709ad9a6984ab82621a8743e003"
+      "kind": "git",
+      "git": "git@github.com:mesosphere/dcos-bootstrap-ca.git",
+      "ref": "56b76e571c64d9191991bf3a70374fc777a6290b",
+      "ref_origin": "master"
   }
 }
