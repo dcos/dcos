@@ -117,7 +117,7 @@ def gen_tls_artifacts(ca_url, artifacts_path):
             BOOTSTRAP_CA_BINARY, 'csr', server_entity,
             '--output-dir', EXHIBITOR_TLS_TMP_DIR,
             '--url', ca_url,
-            '--ca', str(CSR_SERVICE_CERT_PATH),
+            '--ca', CSR_SERVICE_CERT_PATH,
             '--psk', psk,
             '--sans', '{},localhost,127.0.0.1,exhibitor'.format(ip),
         ],
@@ -131,7 +131,7 @@ def gen_tls_artifacts(ca_url, artifacts_path):
             BOOTSTRAP_CA_BINARY, 'csr', client_entity,
             '--output-dir', EXHIBITOR_TLS_TMP_DIR,
             '--url', ca_url,
-            '--ca', str(CSR_SERVICE_CERT_PATH),
+            '--ca', CSR_SERVICE_CERT_PATH,
             '--psk', psk,
             '--sans', '{},localhost,127.0.0.1,exhibitor'.format(ip),
         ],
@@ -144,7 +144,7 @@ def gen_tls_artifacts(ca_url, artifacts_path):
         args=[
             BOOTSTRAP_CA_BINARY, 'create-exhibitor-artifacts',
             '--output-dir', EXHIBITOR_TLS_TMP_DIR,
-            '--ca', str(CSR_SERVICE_CERT_PATH),
+            '--ca', CSR_SERVICE_CERT_PATH,
             '--client-entity', client_entity,
             '--server-entity', server_entity,
             '--artifacts-directory', '{}'.format(artifacts_path),
@@ -161,10 +161,10 @@ def main():
         print('exhibitor TLS is disabled')
         return
 
-    if os.path.exists(TLS_ARTIFACT_LOCATION):
+    if Path(TLS_ARTIFACT_LOCATION).exists():
         return
 
-    if not os.path.exists(CSR_SERVICE_CERT_PATH):
+    if not Path(CSR_SERVICE_CERT_PATH).exists():
         print('root CA certificate does not exist')
         return
 
