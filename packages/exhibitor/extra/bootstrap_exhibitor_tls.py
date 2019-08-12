@@ -71,7 +71,7 @@ def test_connection(ca_url):
 
 def gen_tls_artifacts(ca_url, artifacts_path):
     """
-    Contact the CA service to sign the generated TLS artifacts.
+    Contact the CA service to sign the generated CSR.
     Write the signed Exhibitor TLS artifacts to the file system.
     """
     # Fail early if IP detect script does not properly resolve yet.
@@ -83,7 +83,7 @@ def gen_tls_artifacts(ca_url, artifacts_path):
         print('Using preshared key from location `{}`'.format(str(psk_path)))
     else:
         print('No preshared key found at location `{}`'.format(str(psk_path)))
-        # Empty PSK outputs in any CSR being signed by the CA service.
+        # Empty PSK results in any CSR being signed by the CA service.
         psk = ''
 
     server_entity = 'server'
