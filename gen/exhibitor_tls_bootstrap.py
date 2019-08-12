@@ -1,10 +1,8 @@
 import json
-import os
-import pathlib
 import shutil
 import subprocess
 import tempfile
-
+from pathlib import Path
 from typing import Any, Dict, List
 from urllib.parse import urlparse
 
@@ -17,13 +15,13 @@ def _check(config: Dict[str, Any]) -> List[str]:
     """
     Current constraints are:
         config.yaml:
-            exhibitor_tls_enabled == True,
-            bootstrap_url must not be a local path
+            - exhibitor_tls_enabled == True,
+            - bootstrap_url must not be a local path
                 This is necessary to prevent this orchestration
                 from running when gen is not executed on a proper
                 bootstrap node.
-            master_discovery must be static
-         DC/OS variant must be enterprise
+            - master_discovery must be static
+            - DC/OS variant must be enterprise
     """
     checks = [
         (lambda: config.get('exhibitor_tls_enabled', False) == 'true',
@@ -45,7 +43,7 @@ def _check(config: Dict[str, Any]) -> List[str]:
     return reasons
 
 
-def find_package(packages_json: str) -> str:
+def _find_package(packages_json: str) -> str:
     packages = json.loads(packages_json)
     for package in packages:
         if package.startswith(PACKAGE_NAME):
@@ -53,36 +51,31 @@ def find_package(packages_json: str) -> str:
     raise Exception('{} package is not present'.format(PACKAGE_NAME))
 
 
-def _extract_package(package_path: str):
+def _extract_package(package_path: str) -> None:
     """ Extracts the dcos-bootstrap-ca package from the local pkgpanda
     repository """
-    os.makedirs(BINARY_PATH, exist_ok=True)
+    Path(BINARY_PATH).mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory() as td:
         subprocess.run(['tar', '-xJf', package_path, '-C', td])
 
         shutil.move(
-            pathlib.Path(td) / 'bin' / PACKAGE_NAME,
-            pathlib.Path(BINARY_PATH) / PACKAGE_NAME)
+            Path(td) / 'bin' / PACKAGE_NAME,
+            Path(BINARY_PATH) / PACKAGE_NAME)
 
 
-def _init_ca(alt_names: List[str]):
+def _init_ca(alt_names: List[str]) -> None:
     """ Initializes the CA (generates a private key and self signed
     certificate CA extensions) if the resulting files do not already exist """
-    if not all(map(os.path.exists, [
-            pathlib.Path(CA_PATH) / 'root-cert.pem',
-            pathlib.Path(CA_PATH) / 'root-key.pem'])):
-        os.makedirs(CA_PATH, mode=0o0700, exist_ok=True)
-        cmd_path = pathlib.Path(BINARY_PATH) / PACKAGE_NAME
+    root_ca_paths = [
+        Path(CA_PATH) / 'root-cert.pem', Path(CA_PATH) / 'root-key.pem']
+    if not all(map(lambda p: p.exists(), root_ca_paths)):
+        Path(CA_PATH).mkdir(mode=0o700, exist_ok=True)
+        cmd_path = Path(BINARY_PATH) / PACKAGE_NAME
         subprocess.run([
             str(cmd_path), '-d', CA_PATH, 'init-ca', '--sans', ','.join(alt_names)
         ])
     else:
         print('[{}] CA files already exist'.format(__name__))
-
-
-def _read_certificate() -> str:
-    with open(pathlib.Path(CA_PATH) / 'root-cert.pem') as fp:
-        return fp.read()
 
 
 def _get_ca_alt_name(config: Dict[str, Any]) -> str:
@@ -92,7 +85,7 @@ def _get_ca_alt_name(config: Dict[str, Any]) -> str:
     return urlparse(url).hostname or ""
 
 
-def initialize_exhibitor_ca(final_arguments: Dict[str, Any]):
+def initialize_exhibitor_ca(final_arguments: Dict[str, Any]) -> None:
     if final_arguments['platform'] != 'onprem':
         return
 
@@ -104,10 +97,9 @@ def initialize_exhibitor_ca(final_arguments: Dict[str, Any]):
         final_arguments['exhibitor_ca_certificate_path'] = "/dev/null"
         return
 
-    package_filename = find_package(
+    package_filename = _find_package(
         final_arguments['cluster_packages']) + '.tar.xz'
-    package_path = (
-        pathlib.Path('/artifacts/packages') / PACKAGE_NAME / package_filename)
+    package_path = Path('/artifacts/packages') / PACKAGE_NAME / package_filename
 
     ca_alternative_names = ['127.0.0.1', 'localhost',
                             'exhibitor', _get_ca_alt_name(final_arguments)]
@@ -116,5 +108,6 @@ def initialize_exhibitor_ca(final_arguments: Dict[str, Any]):
     _init_ca(ca_alternative_names)
 
     # inject
-    final_arguments['exhibitor_ca_certificate'] = _read_certificate()
+    final_arguments['exhibitor_ca_certificate'] = Path(CA_PATH).read_text(
+        encoding='ascii')
     final_arguments['exhibitor_ca_certificate_path'] = '/tmp/root-cert.pem'
