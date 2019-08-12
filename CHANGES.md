@@ -4,13 +4,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0)
 
-* Updated DC/OS UI to [1.12+v2.26.16](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.26.16).
-
 * Updated to Mesos [1.7.x](https://github.com/apache/mesos/blob/ccecf11e250621aad286564ecc1e98c307777277/CHANGELOG).
 
 ### Notable changes
 
-* Updated DC/OS UI to [1.12+v2.26.16](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.26.16)
+* Updated DC/OS UI to [1.12+v2.26.17](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.26.17).
 
 * Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/tree/b8a73dd)
 
