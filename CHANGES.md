@@ -4,7 +4,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
-* Updated DC/OS UI to [1.13+v2.82.8](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.8).
+* Updated DC/OS UI to [1.13+v2.82.9](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.9).
 
 * Updated to [Mesos 1.8.x](https://github.com/apache/mesos/blob/6ecaa5106ffd5b2f712854e97b5386741b1d14a7/CHANGELOG)
 
