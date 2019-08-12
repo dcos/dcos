@@ -8,7 +8,7 @@ import tempfile
 from typing import Any, Dict, List
 from urllib.parse import urlparse
 
-PACKAGE_NAME = 'dcoscertstrap'
+PACKAGE_NAME = 'dcos-bootstrap-ca'
 BINARY_PATH = '/genconf/bin'
 CA_PATH = '/genconf/ca'
 
@@ -50,11 +50,11 @@ def find_package(packages_json: str) -> str:
     for package in packages:
         if package.startswith(PACKAGE_NAME):
             return package
-    raise Exception('dcoscertstrap package is not present')
+    raise Exception('{} package is not present'.format(PACKAGE_NAME))
 
 
 def _extract_package(package_path: str):
-    """ Extracts the dcoscertstrap package from the local pkgpanda
+    """ Extracts the dcos-bootstrap-ca package from the local pkgpanda
     repository """
     os.makedirs(BINARY_PATH, exist_ok=True)
     with tempfile.TemporaryDirectory() as td:
@@ -107,8 +107,7 @@ def initialize_exhibitor_ca(final_arguments: Dict[str, Any]):
     package_filename = find_package(
         final_arguments['cluster_packages']) + '.tar.xz'
     package_path = (
-        pathlib.Path(
-            '/artifacts/packages/dcoscertstrap') / package_filename)
+        pathlib.Path('/artifacts/packages') / PACKAGE_NAME / package_filename)
 
     ca_alternative_names = ['127.0.0.1', 'localhost',
                             'exhibitor', _get_ca_alt_name(final_arguments)]

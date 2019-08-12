@@ -1,0 +1,8 @@
+ #!/bin/bash
+
+set -ex
+
+cd /pkg/src/dcos-bootstrap-ca
+
+mkdir -p $PKG_PATH/bin
+install -m 755 /pkg/src/dcos-bootstrap-ca/dcos-bootstrap-ca $PKG_PATH/bin/dcos-bootstrap-ca

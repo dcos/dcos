@@ -40,8 +40,10 @@ if [ ! -d genconf/state ]; then
     mkdir -p genconf/state
 fi
 
-# kill any existing dcoscertstrap processes before running genconf
-kill $(pidof dcoscertstrap || true) 2>/dev/null || true
+DCOS_BOOTSTRAP_CA=dcos-bootstrap-ca
+
+# kill any existing dcos-boostrap-ca processes before running genconf
+kill $(pidof $DCOS_BOOTSTRAP_CA || true) 2>/dev/null || true
 
 PORT=${{PORT:-9000}}
 DCOS_INSTALLER_DAEMONIZE=${{DCOS_INSTALLER_DAEMONIZE:-false}}
@@ -62,11 +64,11 @@ fi
 if [ -d genconf/ca ]; then
     psk=$(cat genconf/ca/psk 2>/dev/null || echo "")
     if [ -z "$psk" ]; then
-        echo "WARNING: Bootstrap CA service PSK is unset"
+        echo "WARNING: DC/OS Bootstrap CA service PSK is unset"
     fi
 
-    echo "Starting bootstrap CA service in the background"
-    genconf/bin/dcoscertstrap -d genconf/ca/ serve --address :443 --psk "$psk" &
+    echo "Starting DC/OS Bootstrap CA service in the background"
+    genconf/bin/$DCOS_BOOTSTRAP_CA -d genconf/ca/ serve --address :443 --psk "$psk" &
     echo
 fi
 

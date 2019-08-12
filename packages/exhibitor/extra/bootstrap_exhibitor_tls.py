@@ -10,9 +10,9 @@ from urllib.parse import urlparse
 
 TLS_ARTIFACT_LOCATION = '/var/lib/dcos/exhibitor-tls-artifacts'
 CSR_SERVICE_CERT_PATH = '/tmp/root-cert.pem'
-PRESHAREDKEY_LOCATION = '/root/.dcoscertstrap_psk'
+PRESHAREDKEY_LOCATION = '/root/.dcos-bootstrap-ca-psk'
 EXHIBITOR_TLS_TMP_DIR = '/var/lib/dcos/exhibitor/.pki'
-
+BOOTSTRAP_CA_BINARY = '/opt/mesosphere/bin/dcos-bootstrap-ca'
 
 def invoke_detect_ip():
     try:
@@ -92,7 +92,7 @@ def gen_tls_artifacts(ca_url, artifacts_path):
     print('Initiating {} end entity.'.format(server_entity))
     output = subprocess.check_output(
         args=[
-            '/opt/mesosphere/bin/dcoscertstrap',
+            BOOTSTRAP_CA_BINARY,
             '--output-dir', EXHIBITOR_TLS_TMP_DIR,
             'init-entity', server_entity,
         ],
@@ -103,7 +103,7 @@ def gen_tls_artifacts(ca_url, artifacts_path):
     print('Initiating {} end entity.'.format(client_entity))
     output = subprocess.check_output(
         args=[
-            '/opt/mesosphere/bin/dcoscertstrap',
+            BOOTSTRAP_CA_BINARY,
             '--output-dir', EXHIBITOR_TLS_TMP_DIR,
             'init-entity', client_entity,
         ],
@@ -114,7 +114,7 @@ def gen_tls_artifacts(ca_url, artifacts_path):
     print('Making CSR for {} with IP `{}`'.format(server_entity, ip))
     output = subprocess.check_output(
         args=[
-            '/opt/mesosphere/bin/dcoscertstrap', 'csr', server_entity,
+            BOOTSTRAP_CA_BINARY, 'csr', server_entity,
             '--output-dir', EXHIBITOR_TLS_TMP_DIR,
             '--url', ca_url,
             '--ca', str(CSR_SERVICE_CERT_PATH),
@@ -128,7 +128,7 @@ def gen_tls_artifacts(ca_url, artifacts_path):
     print('Making CSR for {} with IP `{}`'.format(client_entity, ip))
     output = subprocess.check_output(
         args=[
-            '/opt/mesosphere/bin/dcoscertstrap', 'csr', client_entity,
+            BOOTSTRAP_CA_BINARY, 'csr', client_entity,
             '--output-dir', EXHIBITOR_TLS_TMP_DIR,
             '--url', ca_url,
             '--ca', str(CSR_SERVICE_CERT_PATH),
@@ -142,7 +142,7 @@ def gen_tls_artifacts(ca_url, artifacts_path):
     print('Writing TLS artifacts to {}'.format(artifacts_path))
     output = subprocess.check_output(
         args=[
-            '/opt/mesosphere/bin/dcoscertstrap', 'create-exhibitor-artifacts',
+            BOOTSTRAP_CA_BINARY, 'create-exhibitor-artifacts',
             '--output-dir', EXHIBITOR_TLS_TMP_DIR,
             '--ca', str(CSR_SERVICE_CERT_PATH),
             '--client-entity', client_entity,
