@@ -31,7 +31,7 @@ def _check(config: Dict[str, Any]) -> List[str]:
         (lambda: config['dcos_variant'] == 'enterprise',
          'Exhibitor security is an enterprise feature'),
         (lambda: urlparse(config['bootstrap_url']).scheme != 'file',
-         'Blackbox exhibitor security is only supported when using a remote'
+         'Exhibitor security is only supported when using a remote'
          ' bootstrap node'),
     ]
 
@@ -108,6 +108,7 @@ def initialize_exhibitor_ca(final_arguments: Dict[str, Any]) -> None:
     _init_ca(ca_alternative_names)
 
     # inject
-    final_arguments['exhibitor_ca_certificate'] = Path(CA_PATH).read_text(
+    root_cert_path = Path(CA_PATH) / 'root-cert.pem'
+    final_arguments['exhibitor_ca_certificate'] = root_cert_path.read_text(
         encoding='ascii')
     final_arguments['exhibitor_ca_certificate_path'] = '/tmp/root-cert.pem'
