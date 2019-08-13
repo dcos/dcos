@@ -14,6 +14,7 @@ PRESHAREDKEY_LOCATION = '/root/.dcos-bootstrap-ca-psk'
 EXHIBITOR_TLS_TMP_DIR = '/var/lib/dcos/exhibitor/.pki'
 BOOTSTRAP_CA_BINARY = '/opt/mesosphere/bin/dcos-bootstrap-ca'
 
+
 def invoke_detect_ip():
     try:
         ip = subprocess.check_output(
