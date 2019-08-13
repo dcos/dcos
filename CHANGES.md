@@ -18,6 +18,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * [Metronome] Updates to fix daylight saving issues.
 
+* DC/OS Net: Fix support for big sets in the ipset manager. (COPS-5229)
+
 ### Security updates
 
 
