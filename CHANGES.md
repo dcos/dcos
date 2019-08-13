@@ -16,6 +16,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Prune VIPs with no backends in order to avoid unbounded growth of state and messages exchanged among `dcos-net` processes. (DCOS_OSS-5356)
 
+* DC/OS Net: Fix support for big sets in the ipset manager. (COPS-5229)
+
 ### Security updates
 
 ## DC/OS 1.13.3 (CF - 2019-07-10)
