@@ -84,4 +84,6 @@ The following parameters have been removed from the DC/OS installer:
 
 ### Fixed and improved
 
+* Added framework ID tags to Mesos framework metrics. (DCOS-53302)
+
 * Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
