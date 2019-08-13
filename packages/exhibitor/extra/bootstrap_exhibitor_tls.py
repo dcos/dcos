@@ -155,35 +155,54 @@ def gen_tls_artifacts(ca_url, artifacts_path):
     print(output.decode())
 
 
-def main():
-    exhibitor_env = os.environ.copy()
+def _fail_and_calculate_status(message):
+    exit_status = 1 if os.environ.get('EXHIBITOR_TLS_REQUIRED') == 'true' else 0
+    if exit_status:
+        print('exhibitor TLS bootstrap failed, but is required')
+    else:
+        print('exhibitor TLS bootstrap failed, launching in insecure mode')
+    print(message)
+    sys.exit(exit_status)
 
-    if exhibitor_env.get('EXHIBITOR_TLS_ENABLED', 'false') == 'false':
-        print('exhibitor TLS is disabled')
-        return
+
+def _remove_artifact_dir():
+    p = Path(TLS_ARTIFACT_LOCATION)
+    if p.is_dir():
+        for f in p.iterdir():
+            f.unlink()
+        p.rmdir()
+
+
+def main():
+    if os.environ.get('EXHIBITOR_TLS_ENABLED', 'false') == 'false':
+        _fail_and_calculate_status('exhibitor TLS is disabled')
 
     if Path(TLS_ARTIFACT_LOCATION).exists():
         return
 
     if not Path(CSR_SERVICE_CERT_PATH).exists():
-        print('root CA certificate does not exist')
-        return
+        _fail_and_calculate_status('root CA certificate does not exist')
 
-    exhibitor_bootstrap_ca_url = exhibitor_env['EXHIBITOR_BOOTSTRAP_CA_URL']
-    bootstrap_url = exhibitor_env['BOOTSTRAP_URL']
+    exhibitor_bootstrap_ca_url = os.environ['EXHIBITOR_BOOTSTRAP_CA_URL']
+    bootstrap_url = os.environ['BOOTSTRAP_URL']
 
     ca_url = get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url)
     if not ca_url:
-        return
+        _fail_and_calculate_status('could not determine ca service url')
 
     if not test_connection(ca_url):
-        print('connection failed, launching exhibitor in insecure mode')
-        return
+        _fail_and_calculate_status('connection failed')
 
     print('Bootstrapping exhibitor TLS')
 
-    gen_tls_artifacts(ca_url, Path(TLS_ARTIFACT_LOCATION))
-
+    try:
+        gen_tls_artifacts(ca_url, Path(TLS_ARTIFACT_LOCATION))
+    except subprocess.CalledProcessError as cpe:
+        # Clean up any partially written artifacts
+        _remove_artifact_dir()
+        _fail_and_calculate_status(
+            'error generating artifacts code: {} stdout: {} stderr: {}'.format(
+                cpe.returncode, cpe.stdout, cpe.stderr))
     # remove file from temporary location
     Path(CSR_SERVICE_CERT_PATH).unlink()
 

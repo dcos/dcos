@@ -1966,6 +1966,7 @@ package:
   - path: /etc/exhibitor
     content: |
       EXHIBITOR_TLS_ENABLED={{ exhibitor_tls_enabled }}
+      EXHIBITOR_TLS_REQUIRED={{ exhibitor_tls_required }}
       EXHIBITOR_BOOTSTRAP_CA_URL={{ exhibitor_bootstrap_ca_url }}
       BOOTSTRAP_URL={{ bootstrap_url }}
       EXHIBITOR_BACKEND=AWS_S3
@@ -1984,6 +1985,7 @@ package:
   - path: /etc/exhibitor
     content: |
       EXHIBITOR_TLS_ENABLED={{ exhibitor_tls_enabled }}
+      EXHIBITOR_TLS_REQUIRED={{ exhibitor_tls_required }}
       EXHIBITOR_BOOTSTRAP_CA_URL={{ exhibitor_bootstrap_ca_url }}
       BOOTSTRAP_URL={{ bootstrap_url }}
       EXHIBITOR_BACKEND=SHARED_FS
@@ -1992,6 +1994,7 @@ package:
   - path: /etc/exhibitor
     content: |
       EXHIBITOR_TLS_ENABLED={{ exhibitor_tls_enabled }}
+      EXHIBITOR_TLS_REQUIRED={{ exhibitor_tls_required }}
       EXHIBITOR_BOOTSTRAP_CA_URL={{ exhibitor_bootstrap_ca_url }}
       BOOTSTRAP_URL={{ bootstrap_url }}
       EXHIBITOR_BACKEND=STATIC
@@ -2000,6 +2003,7 @@ package:
   - path: /etc/exhibitor
     content: |
       EXHIBITOR_TLS_ENABLED={{ exhibitor_tls_enabled }}
+      EXHIBITOR_TLS_REQUIRED={{ exhibitor_tls_required }}
       EXHIBITOR_BOOTSTRAP_CA_URL={{ exhibitor_bootstrap_ca_url }}
       BOOTSTRAP_URL={{ bootstrap_url }}
       EXHIBITOR_BACKEND=ZK
@@ -2009,6 +2013,7 @@ package:
   - path: /etc/exhibitor
     content: |
       EXHIBITOR_TLS_ENABLED={{ exhibitor_tls_enabled }}
+      EXHIBITOR_TLS_REQUIRED={{ exhibitor_tls_required }}
       EXHIBITOR_BOOTSTRAP_CA_URL={{ exhibitor_bootstrap_ca_url }}
       BOOTSTRAP_URL={{ bootstrap_url }}
       EXHIBITOR_BACKEND=AZURE

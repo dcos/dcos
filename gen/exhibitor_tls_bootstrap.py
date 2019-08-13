@@ -6,6 +6,9 @@ from pathlib import Path
 from typing import Any, Dict, List
 from urllib.parse import urlparse
 
+from gen.exceptions import ExhibitorTLSBootstrapError
+
+
 PACKAGE_NAME = 'dcos-bootstrap-ca'
 BINARY_PATH = '/genconf/bin'
 CA_PATH = '/genconf/ca'
@@ -91,6 +94,9 @@ def initialize_exhibitor_ca(final_arguments: Dict[str, Any]) -> None:
 
     reasons = _check(final_arguments)
     if reasons:
+        # Exhibitor TLS is required, fail hard
+        if final_arguments.get('exhibitor_tls_required') == 'true':
+            raise ExhibitorTLSBootstrapError(errors=reasons)
         print('[{}] not bootstrapping exhibitor CA: {}'.format(
             __name__, '\n'.join(reasons)))
         final_arguments['exhibitor_ca_certificate'] = ""
