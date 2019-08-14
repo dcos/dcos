@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -32,9 +33,9 @@ def _check(config: Dict[str, Any]) -> List[str]:
     ]
 
     reasons = []
-    for check in checks:
-        if not check[0]():
-            reasons.append(check[1])
+    for (func, reason) in checks:
+        if not func():
+            reasons.append(reason)
 
     return reasons
 
@@ -65,7 +66,14 @@ def _init_ca(alt_names: List[str]) -> None:
     root_ca_paths = [
         Path(CA_PATH) / 'root-cert.pem', Path(CA_PATH) / 'root-key.pem']
     if not all(map(lambda p: p.exists(), root_ca_paths)):
-        Path(CA_PATH).mkdir(mode=0o700, exist_ok=True)
+        try:
+            Path(CA_PATH).mkdir(mode=0o700)
+        except FileExistsError:
+            if not Path(CA_PATH).is_dir():
+                raise
+            # if the file exist, change permissions and take ownership
+            Path(CA_PATH).chmod(mode=0o700)
+            os.chown(CA_PATH, os.getuid(), os.getgid())
         cmd_path = Path(BINARY_PATH) / PACKAGE_NAME
         subprocess.run([
             str(cmd_path), '-d', CA_PATH, 'init-ca', '--sans', ','.join(alt_names)
@@ -106,7 +114,6 @@ def initialize_exhibitor_ca(final_arguments: Dict[str, Any]) -> None:
     _extract_package(package_path)
     _init_ca(ca_alternative_names)
 
-    # inject
     root_cert_path = Path(CA_PATH) / 'root-cert.pem'
     final_arguments['exhibitor_ca_certificate'] = root_cert_path.read_text(
         encoding='ascii')
