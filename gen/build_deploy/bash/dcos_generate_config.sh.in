@@ -56,10 +56,6 @@ else
     docker run --rm --name=$DCOS_INSTALLER_CONTAINER_NAME -i -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
 fi
 
-if [ $? -ne 0 ]; then
-    exit $?
-fi
-
 if [ -d genconf/ca ]; then
     psk=$(cat genconf/ca/psk 2>/dev/null || echo "")
     if [ -z "$psk" ]; then
@@ -70,5 +66,3 @@ if [ -d genconf/ca ]; then
     genconf/bin/$DCOS_BOOTSTRAP_CA -d genconf/ca/ serve --address :443 --psk "$psk" &
     echo
 fi
-
-exit 0

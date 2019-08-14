@@ -670,8 +670,7 @@ def generate(
     argument_dict['expanded_config_full'] = format_expanded_config(expanded_config_full)
     argument_dict['expanded_config'] = format_expanded_config(expanded_config_scrubbed)
 
-    # Initialize CA and add arguments (exhibitor_ca_certificate and exhibitor_ca_certificate_path
-    # init_exhibitor_ca_bootstrap(argument_dict)
+    # Initialize CA and add arguments (exhibitor_ca_certificate and exhibitor_ca_certificate_path)
     gen.exhibitor_tls_bootstrap.initialize_exhibitor_ca(argument_dict)
 
     log.debug(

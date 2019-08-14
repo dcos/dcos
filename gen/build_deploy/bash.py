@@ -560,7 +560,7 @@ function check_all() {
 
 function setup_exhibitor_tls_bootstrap()
 {
-    read -d '' ca_data << EOF || true
+    read -d '' ca_data << 'EOF' || true
 {{ exhibitor_ca_certificate }}
 EOF
 
