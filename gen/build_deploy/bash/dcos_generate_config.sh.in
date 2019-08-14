@@ -66,3 +66,5 @@ if [ -d genconf/ca ]; then
     genconf/bin/$DCOS_BOOTSTRAP_CA -d genconf/ca/ serve --address :443 --psk "$psk" &
     echo
 fi
+
+exit 0
