@@ -1,11 +1,11 @@
-From 22577ebbce1b65245caafdcf34018fb1eae48527 Mon Sep 17 00:00:00 2001
+From 4943cb2348715086e5ffa322b41012f2a191f628 Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:06:58 -0700
-Subject: [PATCH] Added a test for PushGauge.
+Subject: [PATCH 08/24] Added a test for PushGauge.
 
 Review: https://reviews.apache.org/r/66830/
 ---
- 3rdparty/libprocess/src/tests/metrics_tests.cpp | 32 +++++++++++++++++++++++++
+ .../libprocess/src/tests/metrics_tests.cpp    | 32 +++++++++++++++++++
  1 file changed, 32 insertions(+)
 
 diff --git a/3rdparty/libprocess/src/tests/metrics_tests.cpp b/3rdparty/libprocess/src/tests/metrics_tests.cpp
@@ -66,5 +66,5 @@ index bb7c9e37e..d394a42bf 100644
  {
    Counter counter("test/counter", process::TIME_SERIES_WINDOW);
 -- 
-2.14.3
+2.21.0
 

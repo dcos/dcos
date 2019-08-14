@@ -1,13 +1,13 @@
-From 796760ed0fc41693a790e326377834d9af2c82a5 Mon Sep 17 00:00:00 2001
+From fc45102e925ed56c24ea60d4e87fe827416a7ea5 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:14 -0700
-Subject: [PATCH] Added per-framework metrics for scheduler calls.
+Subject: [PATCH 13/24] Added per-framework metrics for scheduler calls.
 
 Review: https://reviews.apache.org/r/67776/
 ---
  src/master/http.cpp    |  2 ++
  src/master/master.cpp  |  6 ++++++
- src/master/metrics.cpp | 43 ++++++++++++++++++++++++++++++++++++++++++-
+ src/master/metrics.cpp | 43 +++++++++++++++++++++++++++++++++++++++++-
  src/master/metrics.hpp |  7 +++++++
  4 files changed, 57 insertions(+), 1 deletion(-)
 
@@ -25,10 +25,10 @@ index 1f9aac44f..f4cd2dc68 100644
    // into the authorizer. See MESOS-7399.
    if (principal.isSome() && principal != framework->info.principal()) {
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 075c6ad2d..ed827c1b2 100644
+index 5c615cabf..f19a0eeec 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
-@@ -2482,6 +2482,8 @@ void Master::receive(
+@@ -2497,6 +2497,8 @@ void Master::receive(
      return;
    }
  
@@ -37,7 +37,7 @@ index 075c6ad2d..ed827c1b2 100644
    // This is possible when master --> framework link is broken (i.e., one
    // way network partition) and the framework is not aware of it. There
    // is no way for driver based frameworks to detect this in the absence
-@@ -2803,6 +2805,8 @@ void Master::_subscribe(
+@@ -2818,6 +2820,8 @@ void Master::_subscribe(
  
      addFramework(framework, suppressedRoles);
  
@@ -46,7 +46,7 @@ index 075c6ad2d..ed827c1b2 100644
      FrameworkRegisteredMessage message;
      message.mutable_framework_id()->MergeFrom(framework->id());
      message.mutable_master_info()->MergeFrom(info_);
-@@ -2836,6 +2840,8 @@ void Master::_subscribe(
+@@ -2851,6 +2855,8 @@ void Master::_subscribe(
  
    CHECK_NOTNULL(framework);
  
@@ -153,5 +153,5 @@ index d3f093f9d..7a7b3a316 100644
  
  
 -- 
-2.14.3
+2.21.0
 

@@ -1,7 +1,7 @@
-From 194f7fa2730abbfbdcadbe2bc55afc72fb93b0c8 Mon Sep 17 00:00:00 2001
+From d2d9bfdb5a625d5ff3cde4bc5128c15ff68c87e8 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:49 -0700
-Subject: [PATCH] Tracked completed framework metrics in the allocator.
+Subject: [PATCH 20/24] Tracked completed framework metrics in the allocator.
 
 This ensures that per-framework metrics which are tracked in the
 allocator will be retained as long as the per-framework metrics
@@ -9,16 +9,16 @@ which are tracked in the master.
 
 Review: https://reviews.apache.org/r/66856/
 ---
- include/mesos/allocator/allocator.hpp       |  4 +++-
- src/master/allocator/mesos/allocator.hpp    | 12 ++++++----
- src/master/allocator/mesos/hierarchical.cpp | 15 ++++++++++--
- src/master/allocator/mesos/hierarchical.hpp |  8 ++++++-
- src/master/master.cpp                       |  3 ++-
- src/tests/allocator.hpp                     | 11 +++++----
- src/tests/api_tests.cpp                     |  4 ++--
- src/tests/master_allocator_tests.cpp        | 36 ++++++++++++++---------------
- src/tests/master_quota_tests.cpp            | 20 ++++++++--------
- src/tests/reservation_tests.cpp             |  6 ++---
+ include/mesos/allocator/allocator.hpp       |  4 ++-
+ src/master/allocator/mesos/allocator.hpp    | 12 ++++---
+ src/master/allocator/mesos/hierarchical.cpp | 15 +++++++--
+ src/master/allocator/mesos/hierarchical.hpp |  8 ++++-
+ src/master/master.cpp                       |  3 +-
+ src/tests/allocator.hpp                     | 11 ++++---
+ src/tests/api_tests.cpp                     |  4 +--
+ src/tests/master_allocator_tests.cpp        | 36 ++++++++++-----------
+ src/tests/master_quota_tests.cpp            | 20 ++++++------
+ src/tests/reservation_tests.cpp             |  6 ++--
  src/tests/resource_offers_tests.cpp         |  2 +-
  src/tests/slave_recovery_tests.cpp          |  2 +-
  12 files changed, 74 insertions(+), 49 deletions(-)
@@ -83,10 +83,10 @@ index 32dd40cb0..bc35d2fff 100644
  
  
 diff --git a/src/master/allocator/mesos/hierarchical.cpp b/src/master/allocator/mesos/hierarchical.cpp
-index 96671033b..2af633c5c 100644
+index bb36d406a..91c27f619 100644
 --- a/src/master/allocator/mesos/hierarchical.cpp
 +++ b/src/master/allocator/mesos/hierarchical.cpp
-@@ -159,7 +159,8 @@ void HierarchicalAllocatorProcess::initialize(
+@@ -193,7 +193,8 @@ void HierarchicalAllocatorProcess::initialize(
      bool _filterGpuResources,
      const Option<DomainInfo>& _domain,
      const Option<std::vector<mesos::internal::ResourceQuantities>>&
@@ -96,7 +96,7 @@ index 96671033b..2af633c5c 100644
  {
    allocationInterval = _allocationInterval;
    offerCallback = _offerCallback;
-@@ -171,6 +172,10 @@ void HierarchicalAllocatorProcess::initialize(
+@@ -205,6 +206,10 @@ void HierarchicalAllocatorProcess::initialize(
    initialized = true;
    paused = false;
  
@@ -107,7 +107,7 @@ index 96671033b..2af633c5c 100644
    // Resources for quota'ed roles are allocated separately and prior to
    // non-quota'ed roles, hence a dedicated sorter for quota'ed roles is
    // necessary.
-@@ -315,7 +320,7 @@ void HierarchicalAllocatorProcess::removeFramework(
+@@ -349,7 +354,7 @@ void HierarchicalAllocatorProcess::removeFramework(
    CHECK(initialized);
    CHECK(frameworks.contains(frameworkId)) << frameworkId;
  
@@ -116,7 +116,7 @@ index 96671033b..2af633c5c 100644
  
    foreach (const string& role, framework.roles) {
      // Might not be in 'frameworkSorters[role]' because it
-@@ -340,6 +345,12 @@ void HierarchicalAllocatorProcess::removeFramework(
+@@ -374,6 +379,12 @@ void HierarchicalAllocatorProcess::removeFramework(
      untrackFrameworkUnderRole(frameworkId, role);
    }
  
@@ -126,14 +126,14 @@ index 96671033b..2af633c5c 100644
 +      frameworkId,
 +      Owned<FrameworkMetrics>(framework.metrics.release()));
 +
-   // Do not delete the filters contained in this
-   // framework's `offerFilters` hashset yet, see comments in
-   // HierarchicalAllocatorProcess::reviveOffers and
+   frameworks.erase(frameworkId);
+ 
+   LOG(INFO) << "Removed framework " << frameworkId;
 diff --git a/src/master/allocator/mesos/hierarchical.hpp b/src/master/allocator/mesos/hierarchical.hpp
-index ec4d445f5..6baf15add 100644
+index b4594199c..be62158fb 100644
 --- a/src/master/allocator/mesos/hierarchical.hpp
 +++ b/src/master/allocator/mesos/hierarchical.hpp
-@@ -26,6 +26,7 @@
+@@ -27,6 +27,7 @@
  #include <process/id.hpp>
  #include <process/owned.hpp>
  
@@ -159,7 +159,7 @@ index ec4d445f5..6baf15add 100644
  
    void recover(
        const int _expectedAgentCount,
-@@ -356,6 +359,9 @@ protected:
+@@ -360,6 +363,9 @@ protected:
  
    hashmap<FrameworkID, Framework> frameworks;
  
@@ -170,7 +170,7 @@ index ec4d445f5..6baf15add 100644
    {
    public:
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 7f11211df..05b7111e5 100644
+index e26057449..69385a519 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -805,7 +805,8 @@ void Master::initialize()
@@ -416,10 +416,10 @@ index fec69b2f7..10ed36d69 100644
    master::Flags masterFlags = this->CreateMasterFlags();
    Try<Owned<cluster::Master>> master =
 diff --git a/src/tests/master_quota_tests.cpp b/src/tests/master_quota_tests.cpp
-index e49e5cccd..320f3db51 100644
+index 995edb0c5..cd57a43b4 100644
 --- a/src/tests/master_quota_tests.cpp
 +++ b/src/tests/master_quota_tests.cpp
-@@ -424,7 +424,7 @@ TEST_F(MasterQuotaTest, SetExistingQuota)
+@@ -426,7 +426,7 @@ TEST_F(MasterQuotaTest, SetExistingQuota)
  TEST_F(MasterQuotaTest, RemoveSingleQuota)
  {
    TestAllocator<> allocator;
@@ -428,7 +428,7 @@ index e49e5cccd..320f3db51 100644
  
    Try<Owned<cluster::Master>> master = StartMaster(&allocator);
    ASSERT_SOME(master);
-@@ -588,7 +588,7 @@ TEST_F(MasterQuotaTest, Status)
+@@ -649,7 +649,7 @@ TEST_F(MasterQuotaTest, Status)
  TEST_F(MasterQuotaTest, InsufficientResourcesSingleAgent)
  {
    TestAllocator<> allocator;
@@ -437,7 +437,7 @@ index e49e5cccd..320f3db51 100644
  
    Try<Owned<cluster::Master>> master = StartMaster(&allocator);
    ASSERT_SOME(master);
-@@ -648,7 +648,7 @@ TEST_F(MasterQuotaTest, InsufficientResourcesSingleAgent)
+@@ -709,7 +709,7 @@ TEST_F(MasterQuotaTest, InsufficientResourcesSingleAgent)
  TEST_F(MasterQuotaTest, InsufficientResourcesMultipleAgents)
  {
    TestAllocator<> allocator;
@@ -446,7 +446,7 @@ index e49e5cccd..320f3db51 100644
  
    Try<Owned<cluster::Master>> master = StartMaster(&allocator);
    ASSERT_SOME(master);
-@@ -723,7 +723,7 @@ TEST_F(MasterQuotaTest, InsufficientResourcesMultipleAgents)
+@@ -784,7 +784,7 @@ TEST_F(MasterQuotaTest, InsufficientResourcesMultipleAgents)
  TEST_F(MasterQuotaTest, AvailableResourcesSingleAgent)
  {
    TestAllocator<> allocator;
@@ -455,7 +455,7 @@ index e49e5cccd..320f3db51 100644
  
    Try<Owned<cluster::Master>> master = StartMaster(&allocator);
    ASSERT_SOME(master);
-@@ -773,7 +773,7 @@ TEST_F(MasterQuotaTest, AvailableResourcesSingleAgent)
+@@ -834,7 +834,7 @@ TEST_F(MasterQuotaTest, AvailableResourcesSingleAgent)
  TEST_F(MasterQuotaTest, AvailableResourcesMultipleAgents)
  {
    TestAllocator<> allocator;
@@ -464,7 +464,7 @@ index e49e5cccd..320f3db51 100644
  
    Try<Owned<cluster::Master>> master = StartMaster(&allocator);
    ASSERT_SOME(master);
-@@ -842,7 +842,7 @@ TEST_F(MasterQuotaTest, AvailableResourcesMultipleAgents)
+@@ -903,7 +903,7 @@ TEST_F(MasterQuotaTest, AvailableResourcesMultipleAgents)
  TEST_F(MasterQuotaTest, AvailableResourcesAfterRescinding)
  {
    TestAllocator<> allocator;
@@ -473,7 +473,7 @@ index e49e5cccd..320f3db51 100644
  
    Try<Owned<cluster::Master>> master = StartMaster(&allocator);
    ASSERT_SOME(master);
-@@ -1077,7 +1077,7 @@ TEST_F(MasterQuotaTest, RecoverQuotaEmptyCluster)
+@@ -1138,7 +1138,7 @@ TEST_F(MasterQuotaTest, RecoverQuotaEmptyCluster)
    }
  
    TestAllocator<> allocator;
@@ -482,7 +482,7 @@ index e49e5cccd..320f3db51 100644
  
    // Restart the master; configured quota should be recovered from the registry.
    master->reset();
-@@ -1110,7 +1110,7 @@ TEST_F(MasterQuotaTest, RecoverQuotaEmptyCluster)
+@@ -1171,7 +1171,7 @@ TEST_F(MasterQuotaTest, RecoverQuotaEmptyCluster)
  TEST_F(MasterQuotaTest, NoAuthenticationNoAuthorization)
  {
    TestAllocator<> allocator;
@@ -491,7 +491,7 @@ index e49e5cccd..320f3db51 100644
  
    // Disable http_readwrite authentication and authorization.
    // TODO(alexr): Setting master `--acls` flag to `ACLs()` or `None()` seems
-@@ -1216,7 +1216,7 @@ TEST_F(MasterQuotaTest, UnauthenticatedQuotaRequest)
+@@ -1277,7 +1277,7 @@ TEST_F(MasterQuotaTest, UnauthenticatedQuotaRequest)
  TEST_F(MasterQuotaTest, AuthorizeGetUpdateQuotaRequests)
  {
    TestAllocator<> allocator;
@@ -500,7 +500,7 @@ index e49e5cccd..320f3db51 100644
  
    // Setup ACLs so that only the default principal can modify quotas
    // for `ROLE1` and read status.
-@@ -1764,7 +1764,7 @@ TEST_F(MasterQuotaTest, DISABLED_ChildRoleDeleteParentQuota)
+@@ -1825,7 +1825,7 @@ TEST_F(MasterQuotaTest, DISABLED_ChildRoleDeleteParentQuota)
  TEST_F(MasterQuotaTest, DISABLED_ClusterCapacityWithNestedRoles)
  {
    TestAllocator<> allocator;
@@ -567,5 +567,5 @@ index d012d396a..348ad492f 100644
    Try<Owned<cluster::Master>> master = this->StartMaster(&allocator);
    ASSERT_SOME(master);
 -- 
-2.14.3
+2.21.0
 

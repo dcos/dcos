@@ -1,7 +1,7 @@
-From 9a0a7cbaf34995ba72f631836b72fdb0d9a29b9f Mon Sep 17 00:00:00 2001
+From c5cf17c94de6fe0365adee2f970aa922f6a5d917 Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:06:53 -0700
-Subject: [PATCH] Introduced a push-based gauge metric.
+Subject: [PATCH 07/24] Introduced a push-based gauge metric.
 
 A push-based gauge differs from a pull-based gauge in that the
 client is responsible for pushing the latest value into the gauge
@@ -20,8 +20,8 @@ the `Process` pushes new values in.
 
 Review: https://reviews.apache.org/r/66828/
 ---
- 3rdparty/libprocess/include/Makefile.am            |   1 +
- .../include/process/metrics/push_gauge.hpp         | 100 +++++++++++++++++++++
+ 3rdparty/libprocess/include/Makefile.am       |   1 +
+ .../include/process/metrics/push_gauge.hpp    | 100 ++++++++++++++++++
  2 files changed, 101 insertions(+)
  create mode 100644 3rdparty/libprocess/include/process/metrics/push_gauge.hpp
 
@@ -144,5 +144,5 @@ index 000000000..5c3984617
 +
 +#endif // __PROCESS_METRICS_PUSH_GAUGE_HPP__
 -- 
-2.14.3
+2.21.0
 

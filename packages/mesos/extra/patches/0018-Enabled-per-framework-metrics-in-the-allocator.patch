@@ -1,7 +1,7 @@
-From d1e5c97a1f2a4674e63e2d20332097fe1ad9aeab Mon Sep 17 00:00:00 2001
+From 45e3c7d70a04d9e14109963e67f68ba8c4aea213 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:45 -0700
-Subject: [PATCH] Enabled per-framework metrics in the allocator.
+Subject: [PATCH 18/24] Enabled per-framework metrics in the allocator.
 
 The `FrameworkMetrics` struct will hold per-framework metrics tracked
 by the allocator.
@@ -15,10 +15,10 @@ Review: https://reviews.apache.org/r/66843/
  4 files changed, 21 insertions(+), 1 deletion(-)
 
 diff --git a/src/master/allocator/mesos/hierarchical.cpp b/src/master/allocator/mesos/hierarchical.cpp
-index 87e7d536e..96671033b 100644
+index dbfa08a01..bb36d406a 100644
 --- a/src/master/allocator/mesos/hierarchical.cpp
 +++ b/src/master/allocator/mesos/hierarchical.cpp
-@@ -141,7 +141,8 @@ HierarchicalAllocatorProcess::Framework::Framework(
+@@ -175,7 +175,8 @@ HierarchicalAllocatorProcess::Framework::Framework(
    : roles(protobuf::framework::getRoles(frameworkInfo)),
      suppressedRoles(_suppressedRoles),
      capabilities(frameworkInfo.capabilities()),
@@ -29,11 +29,11 @@ index 87e7d536e..96671033b 100644
  
  void HierarchicalAllocatorProcess::initialize(
 diff --git a/src/master/allocator/mesos/hierarchical.hpp b/src/master/allocator/mesos/hierarchical.hpp
-index 4da109709..ec4d445f5 100644
+index 56d1d7d35..b4594199c 100644
 --- a/src/master/allocator/mesos/hierarchical.hpp
 +++ b/src/master/allocator/mesos/hierarchical.hpp
-@@ -332,6 +332,8 @@ protected:
-     hashmap<SlaveID, hashset<InverseOfferFilter*>> inverseOfferFilters;
+@@ -336,6 +336,8 @@ protected:
+       inverseOfferFilters;
  
      bool active;
 +
@@ -81,5 +81,5 @@ index 6d386225c..daac93f7e 100644
  } // namespace allocator {
  } // namespace master {
 -- 
-2.14.3
+2.21.0
 

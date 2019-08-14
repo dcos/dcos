@@ -1,31 +1,31 @@
-From 4f8f62199b35f97617a3095618b6fc8c0141f07b Mon Sep 17 00:00:00 2001
+From 93ea2ab8bb1e70d25fa0f0968d7993e863728942 Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:07:05 -0700
-Subject: [PATCH] Updated mesos source for Gauge -> PullGauge renaming.
+Subject: [PATCH 10/24] Updated mesos source for Gauge -> PullGauge renaming.
 
 Review: https://reviews.apache.org/r/66832/
 ---
- src/examples/balloon_framework.cpp                 |  8 ++--
- src/examples/disk_full_framework.cpp               |  8 ++--
- src/examples/long_lived_framework.cpp              |  8 ++--
- src/log/log.hpp                                    |  2 +-
- src/log/metrics.hpp                                |  6 +--
- src/master/allocator/mesos/metrics.cpp             | 32 ++++++-------
- src/master/allocator/mesos/metrics.hpp             | 26 +++++------
- src/master/allocator/sorter/drf/metrics.cpp        |  6 +--
- src/master/allocator/sorter/drf/metrics.hpp        |  4 +-
- src/master/master.hpp                              |  2 +-
- src/master/metrics.cpp                             | 28 +++++------
- src/master/metrics.hpp                             | 54 +++++++++++-----------
- src/master/registrar.cpp                           | 10 ++--
- src/sched/sched.cpp                                |  6 +--
- src/scheduler/scheduler.cpp                        |  6 +--
- src/slave/containerizer/fetcher_process.hpp        |  6 +--
- .../mesos/isolators/filesystem/linux.hpp           |  4 +-
- src/slave/gc_process.hpp                           |  4 +-
- src/slave/metrics.cpp                              | 28 +++++------
- src/slave/metrics.hpp                              | 36 +++++++--------
- src/slave/slave.hpp                                |  2 +-
+ src/examples/balloon_framework.cpp            |  8 +--
+ src/examples/disk_full_framework.cpp          |  8 +--
+ src/examples/long_lived_framework.cpp         |  8 +--
+ src/log/log.hpp                               |  2 +-
+ src/log/metrics.hpp                           |  6 +--
+ src/master/allocator/mesos/metrics.cpp        | 32 +++++------
+ src/master/allocator/mesos/metrics.hpp        | 26 ++++-----
+ src/master/allocator/sorter/drf/metrics.cpp   |  6 +--
+ src/master/allocator/sorter/drf/metrics.hpp   |  4 +-
+ src/master/master.hpp                         |  2 +-
+ src/master/metrics.cpp                        | 28 +++++-----
+ src/master/metrics.hpp                        | 54 +++++++++----------
+ src/master/registrar.cpp                      | 10 ++--
+ src/sched/sched.cpp                           |  6 +--
+ src/scheduler/scheduler.cpp                   |  6 +--
+ src/slave/containerizer/fetcher_process.hpp   |  6 +--
+ .../mesos/isolators/filesystem/linux.hpp      |  4 +-
+ src/slave/gc_process.hpp                      |  4 +-
+ src/slave/metrics.cpp                         | 28 +++++-----
+ src/slave/metrics.hpp                         | 36 ++++++-------
+ src/slave/slave.hpp                           |  2 +-
  21 files changed, 143 insertions(+), 143 deletions(-)
 
 diff --git a/src/examples/balloon_framework.cpp b/src/examples/balloon_framework.cpp
@@ -673,7 +673,7 @@ index e5e82d5d7..bde1cf7bb 100644
  
    double _event_queue_messages()
 diff --git a/src/scheduler/scheduler.cpp b/src/scheduler/scheduler.cpp
-index 07d2b37e0..c04cfbc42 100644
+index 1342d9054..9fde5e4cd 100644
 --- a/src/scheduler/scheduler.cpp
 +++ b/src/scheduler/scheduler.cpp
 @@ -56,7 +56,7 @@
@@ -685,7 +685,7 @@ index 07d2b37e0..c04cfbc42 100644
  #include <process/metrics/metrics.hpp>
  
  #include <process/ssl/flags.hpp>
-@@ -814,8 +814,8 @@ private:
+@@ -816,8 +816,8 @@ private:
      }
  
      // Process metrics.
@@ -954,5 +954,5 @@ index d638b8806..8d42011be 100644
    {
      return static_cast<double>(frameworks.size());
 -- 
-2.14.3
+2.21.0
 

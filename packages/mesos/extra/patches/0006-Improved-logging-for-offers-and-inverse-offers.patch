@@ -1,7 +1,7 @@
-From 16950c2a545494a06be1212c65fd286788a94618 Mon Sep 17 00:00:00 2001
+From 048401921cef9c2c94793b2e4b800e23440e9516 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Tue, 10 Jul 2018 08:06:32 -0700
-Subject: [PATCH] Improved logging for offers and inverse offers.
+Subject: [PATCH 06/24] Improved logging for offers and inverse offers.
 
 Log offer IDs and inverse offer IDs when sending out offers and
 inverse offers so it is easier to match them to their ACCEPT or DECLINE
@@ -19,10 +19,10 @@ Review: https://reviews.apache.org/r/67817/
  1 file changed, 18 insertions(+), 4 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 36b167fee..1e9775122 100644
+index 42f88b699..e49883e96 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
-@@ -8713,6 +8713,9 @@ void Master::offer(
+@@ -8753,6 +8753,9 @@ void Master::offer(
    // and a single allocation role.
    ResourceOffersMessage message;
  
@@ -32,7 +32,7 @@ index 36b167fee..1e9775122 100644
    foreachkey (const string& role, resources) {
      foreachpair (const SlaveID& slaveId,
                   const Resources& offered,
-@@ -8857,6 +8860,13 @@ void Master::offer(
+@@ -8897,6 +8900,13 @@ void Master::offer(
        // Add the offer *AND* the corresponding slave's PID.
        message.add_offers()->MergeFrom(offer_);
        message.add_pids(slave->pid);
@@ -46,7 +46,7 @@ index 36b167fee..1e9775122 100644
      }
    }
  
-@@ -8864,8 +8874,7 @@ void Master::offer(
+@@ -8904,8 +8914,7 @@ void Master::offer(
      return;
    }
  
@@ -56,7 +56,7 @@ index 36b167fee..1e9775122 100644
  
    framework->send(message);
  }
-@@ -8953,8 +8962,13 @@ void Master::inverseOffer(
+@@ -8993,8 +9002,13 @@ void Master::inverseOffer(
      return;
    }
  
@@ -73,5 +73,5 @@ index 36b167fee..1e9775122 100644
    framework->send(message);
  }
 -- 
-2.14.3
+2.21.0
 
