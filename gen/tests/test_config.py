@@ -7,6 +7,7 @@ import yaml
 
 import gen
 import pkgpanda.util
+from gen.exceptions import ExhibitorTLSBootstrapError
 from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_error_multikey, validate_success
 
 
@@ -243,6 +244,64 @@ def test_exhibitor_tls_enabled():
         {'exhibitor_tls_enabled': 'foo'},
         'exhibitor_tls_enabled',
         true_false_msg)
+
+
+def test_exhibitor_tls_required():
+    validate_success({'exhibitor_tls_required': 'false'})
+    validate_success({'exhibitor_tls_required': 'true'})
+    validate_error(
+        {'exhibitor_tls_required': 'foo'},
+        'exhibitor_tls_required',
+        true_false_msg)
+
+
+def test_exhibitor_tls_initialize_fail():
+    with pytest.raises(ExhibitorTLSBootstrapError) as exc:
+        gen.generate(arguments=make_arguments({
+            'platform': 'onprem',
+            'exhibitor_tls_enabled': 'false',
+            'exhibitor_tls_required': 'true',
+        }))
+    assert exc.value.errors == [
+        'Exhibitor security is disabled',
+        'Exhibitor security is an enterprise feature',
+    ]
+
+    with pytest.raises(ExhibitorTLSBootstrapError) as exc:
+        gen.generate(arguments=make_arguments({
+            'platform': 'onprem',
+            'exhibitor_tls_enabled': 'true',
+            'exhibitor_tls_required': 'true',
+        }))
+    assert exc.value.errors == [
+        'Exhibitor security is an enterprise feature',
+    ]
+
+    with pytest.raises(ExhibitorTLSBootstrapError) as exc:
+        gen.generate(arguments=make_arguments({
+            'platform': 'onprem',
+            'exhibitor_tls_enabled': 'true',
+            'exhibitor_tls_required': 'true',
+            'master_discovery': 'master_http_loadbalancer',
+            'exhibitor_address': 'http://foobar',
+            'num_masters': '5',
+        }))
+    assert exc.value.errors == [
+        'Only static master discovery is supported',
+        'Exhibitor security is an enterprise feature',
+    ]
+
+
+def test_exhibitor_tls_initialize_prints_errors(capsys):
+    gen.generate(arguments=make_arguments({
+        'platform': 'onprem',
+        'exhibitor_tls_enabled': 'true',
+    }))
+    expected_message = (
+        '[gen.exhibitor_tls_bootstrap] not bootstrapping '
+        'exhibitor CA: Exhibitor security is an enterprise feature'
+    )
+    assert expected_message in capsys.readouterr().out
 
 
 def test_exhibitor_bootstrap_ca_url():

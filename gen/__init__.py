@@ -670,6 +670,10 @@ def generate(
     argument_dict['expanded_config_full'] = format_expanded_config(expanded_config_full)
     argument_dict['expanded_config'] = format_expanded_config(expanded_config_scrubbed)
 
+    # Initialize CA and add arguments (exhibitor_ca_certificate and exhibitor_ca_certificate_path
+    # init_exhibitor_ca_bootstrap(argument_dict)
+    gen.exhibitor_tls_bootstrap.initialize_exhibitor_ca(argument_dict)
+
     log.debug(
         "Final arguments:" + json_prettyprint({
             # Mask secret config values.
@@ -677,9 +681,6 @@ def generate(
         })
     )
 
-    # Initialize CA and add arguments (exhibitor_ca_certificate and exhibitor_ca_certificate_path
-    # init_exhibitor_ca_bootstrap(argument_dict)
-    gen.exhibitor_tls_bootstrap.initialize_exhibitor_ca(argument_dict)
     # Fill in the template parameters
     # TODO(cmaloney): render_templates should ideally take the template targets.
     rendered_templates = render_templates(templates, argument_dict)
