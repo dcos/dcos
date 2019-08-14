@@ -19,10 +19,6 @@ def _check(config: Dict[str, Any]) -> List[str]:
     Current constraints are:
         config.yaml:
             - exhibitor_tls_enabled == True,
-            - bootstrap_url must not be a local path
-                This is necessary to prevent this orchestration
-                from running when gen is not executed on a proper
-                bootstrap node.
             - master_discovery must be static
             - DC/OS variant must be enterprise
     """
@@ -33,9 +29,6 @@ def _check(config: Dict[str, Any]) -> List[str]:
          'Only static master discovery is supported'),
         (lambda: config['dcos_variant'] == 'enterprise',
          'Exhibitor security is an enterprise feature'),
-        (lambda: urlparse(config['bootstrap_url']).scheme != 'file',
-         'Exhibitor security is only supported when using a remote'
-         ' bootstrap node'),
     ]
 
     reasons = []
