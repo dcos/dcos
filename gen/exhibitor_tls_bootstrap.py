@@ -4,7 +4,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 from urllib.parse import urlparse
 
 from gen.exceptions import ExhibitorTLSBootstrapError
@@ -15,7 +15,7 @@ BINARY_PATH = '/genconf/bin'
 CA_PATH = '/genconf/ca'
 
 
-def _check(config: Dict[str, Any]) -> List[str]:
+def _check(config: Dict[str, Any]) -> Tuple[List[str], bool]:
     """
     Current constraints are:
         config.yaml:
@@ -23,28 +23,39 @@ def _check(config: Dict[str, Any]) -> List[str]:
             - bootstrap_url must not be a local path
                 This is necessary to prevent this orchestration
                 from running when gen is not executed on a proper
-                bootstrap node.
+                bootstrap node. This is a soft failure
             - master_discovery must be static
             - DC/OS variant must be enterprise
+            - exhibitor_bootstrap_ca_url must not be set. When set,
+              it indicates that the ca service will be initialized and
+              started outside of gen.
+    Hard failures help us to fail early when exhibitor_tls_required == True.
+    Soft "failures" allow CA initialization to occur outside of genconf.
     """
     checks = [
-        (lambda: config.get('exhibitor_tls_enabled', False) == 'true',
-         'Exhibitor security is disabled'),
+        (lambda: config.get('exhibitor_tls_enabled') == 'true',
+         'Exhibitor security is disabled', True),
         (lambda: config['master_discovery'] == 'static',
-         'Only static master discovery is supported'),
+         'Only static master discovery is supported', True),
         (lambda: config['dcos_variant'] == 'enterprise',
-         'Exhibitor security is an enterprise feature'),
+         'Exhibitor security is an enterprise feature', True),
         (lambda: urlparse(config['bootstrap_url']).scheme != 'file',
-         'Exhibitor security is only supported when using a remote'
-         ' bootstrap node'),
+         'CA init in gen is only supported when using a remote'
+         ' bootstrap node', False),
+        (lambda: 'exhibitor_bootstrap_ca_url' in config,
+         'Custom CA url has been specified, not initializing CA', False)
     ]
 
     reasons = []
-    for (func, reason) in checks:
+
+    hard_failure = False
+    for (func, reason, hard) in checks:
         if not func():
+            if hard:
+                hard_failure = True
             reasons.append(reason)
 
-    return reasons
+    return reasons, hard_failure
 
 
 def _find_package(packages_json: str) -> str:
@@ -100,10 +111,10 @@ def initialize_exhibitor_ca(final_arguments: Dict[str, Any]) -> None:
     if final_arguments['platform'] != 'onprem':
         return
 
-    reasons = _check(final_arguments)
+    reasons, hard_failure = _check(final_arguments)
     if reasons:
         # Exhibitor TLS is required, fail hard
-        if final_arguments.get('exhibitor_tls_required') == 'true':
+        if final_arguments.get('exhibitor_tls_required') == 'true' and hard_failure:
             raise ExhibitorTLSBootstrapError(errors=reasons)
         print('[{}] not bootstrapping exhibitor CA: {}'.format(
             __name__, '\n'.join(reasons)))

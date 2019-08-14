@@ -262,9 +262,11 @@ def test_exhibitor_tls_initialize_fail():
             'exhibitor_tls_enabled': 'false',
             'exhibitor_tls_required': 'true',
         }))
+    print(exc.value.errors)
     assert exc.value.errors == [
         'Exhibitor security is disabled',
         'Exhibitor security is an enterprise feature',
+        'CA init in gen is only supported when using a remote bootstrap node',
     ]
 
     with pytest.raises(ExhibitorTLSBootstrapError) as exc:
@@ -275,6 +277,7 @@ def test_exhibitor_tls_initialize_fail():
         }))
     assert exc.value.errors == [
         'Exhibitor security is an enterprise feature',
+        'CA init in gen is only supported when using a remote bootstrap node',
     ]
 
     with pytest.raises(ExhibitorTLSBootstrapError) as exc:
@@ -289,6 +292,7 @@ def test_exhibitor_tls_initialize_fail():
     assert exc.value.errors == [
         'Only static master discovery is supported',
         'Exhibitor security is an enterprise feature',
+        'CA init in gen is only supported when using a remote bootstrap node',
     ]
 
 
