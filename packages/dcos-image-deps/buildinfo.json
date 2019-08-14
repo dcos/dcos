@@ -62,11 +62,6 @@
       "url": "https://pypi.python.org/packages/cf/23/ef729d6ef3a9d19732d480eaaf94a72799a99a38ed25eda10f8e68ffd408/azure_storage-0.32.0-py3-none-any.whl",
       "sha1": "3cc425a291fe6359f6d786aa040059004082795d"
     },
-    "pytest-xdist": {
-      "kind": "url",
-      "url": "https://files.pythonhosted.org/packages/9f/cc/371b2e6dfbf4e8df07b04e310dd6ea0b3f367e257d1e6cb516b25bc4af1b/pytest_xdist-1.29.0-py2.py3-none-any.whl",
-      "sha1": "bddd3f0f1e00e87c85158bc121900ed798fcb10d"
-    },
     "msrest": {
       "kind": "url",
       "url": "https://pypi.python.org/packages/a4/79/956d2475af557ccc7de76ef67087fc8e7b591162748ab7783d88e9b685d7/msrest-0.4.17-py2.py3-none-any.whl",
@@ -96,6 +91,11 @@
       "kind": "url",
       "url": "https://pypi.python.org/packages/3.4/d/docutils/docutils-0.12-py3-none-any.whl",
       "sha1": "88749802f8d61883da36a5abfca171a4ae60cc71"
+    },
+    "execnet": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/9a/73/5be9d235327b3770c330bed707766c8885e8157577db85f11b874b26da34/execnet-1.6.1-py2.py3-none-any.whl",
+      "sha1": "6e212e61c45486798f7a96040820f3aa2e8b46b6"
     },
     "humanfriendly": {
       "kind": "url_extract",
