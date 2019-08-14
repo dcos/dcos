@@ -1287,6 +1287,9 @@ entry = {
         'superuser_service_account_uid': '',
         'superuser_service_account_public_key': '',
         '_superuser_service_account_public_key_json': calculate__superuser_service_account_public_key_json,
+        # This is a private variable that is not supposed to be used by cluster
+        # operators. It allows to explicitly disable Exhibitor TLS in DC/OS Enterprise
+        # version even if the DC/OS Bootstrap CA service is available.
         'exhibitor_tls_enabled': 'false',
         'exhibitor_tls_required': 'false',
         'exhibitor_bootstrap_ca_url': '',
