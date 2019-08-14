@@ -64,7 +64,7 @@ def test_connection(ca_url):
         print('connection to {}:{} successful'.format(host, port))
         return True
     except Exception as e:
-        print('could not connect to bootstrap node: {}'.format(e))
+        print('could not connect to DC/OS bootstrap CA: {}'.format(e))
         return False
     finally:
         s.close()
