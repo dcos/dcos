@@ -142,8 +142,6 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-metronome.service',
         'dcos-signal.service',
         'dcos-signal.timer',
-        'dcos-signal-ee.service',
-        'dcos-signal-ee.timer',
         'dcos-bouncer.service',
         'dcos-bouncer-migrate-users.service',
         'dcos-ui-update-service.service',
