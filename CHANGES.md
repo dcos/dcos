@@ -8,7 +8,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Upgraded Marathon to 1.9.34. Marathon 1.9 brings support for multirole, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
 
-* Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0)
+* Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0). Also, Signal now sends telemetry data every 5 minutes instead of every hour. This is to align the frequency with DC/OS Enterprise.
 
 * Updated to Metronome 0.6.33 which has the following benefits: When querying run detail with embed=history, successfulFinishedRuns and failedFinishedRuns contains new field tasks which is an array of taskIds of that finished run. This will allow people to query task ids even for finished job runs.  Updated to the latest version of cron-utils 9.0.0 and removed threeten-backport. This fixes a number of cron related issues in the underlying dependencies.  Fixed a bug when task status was not updated after the task turned running (when querying embed=activeRuns).  Fixes DCOS_OSS-5166 where metronome did not use the revive operation
 
@@ -42,11 +42,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Upgraded platform OpenSSL from 1.0.2x to release 1.1.1x. (DCOS-54108)
 
-* Updated DC/OS UI to [master+v2.138.2](https://github.com/dcos/dcos-ui/releases/tag/master+v2.138.2).
+* Updated DC/OS UI to [master+v2.140.0](https://github.com/dcos/dcos-ui/releases/tag/master+v2.140.0).
 
 * Added L4LB metrics in DC/OS Net. (DCOS_OSS-5011)
 
-* Updated to [Mesos 1.9.x](https://github.com/apache/mesos/blob/ff8c9a96be6ae1ee47faf9d5b80a518dfb4a3db0/CHANGELOG). (DCOS_OSS-5342)
+* Updated to [Mesos 1.9.x](https://github.com/apache/mesos/blob/ea953482f82131fcf033aca60145b1471ce4fcb2/CHANGELOG). (DCOS_OSS-5342)
 
 * Bumped Mesos modules to have overlay metrics exposed. (DCOS_OSS-5322)
 
@@ -68,6 +68,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * DC/OS no longer increases the rate limit for journald logging.  Scale testing demonstrated that raising the limit overloads journald, causing problems for other components that see delayed or lost logs or, worse, hang until log buffers are read. The default of 10000 messages per 30 seconds appears to distinguish well between busy components and excessively verbose components. (DCOS-53763)
 
+* DC/OS Net: Fix support for big sets in the ipset manager. (COPS-5229)
 
 ### Breaking changes
 
@@ -83,5 +84,7 @@ The following parameters have been removed from the DC/OS installer:
 * --postflight
 
 ### Fixed and improved
+
+* Added framework ID tags to Mesos framework metrics. (DCOS-53302)
 
 * Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
