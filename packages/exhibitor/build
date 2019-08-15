@@ -44,6 +44,11 @@ exhibitor_artifact_permission_setter="$PKG_PATH/bin/set_exhibitor_file_permissio
 envsubst '$PKG_PATH' < /pkg/extra/set_exhibitor_file_permissions.py > "$exhibitor_artifact_permission_setter"
 chmod +x "$exhibitor_artifact_permission_setter"
 
+exhibitor_tls_bootsrapper="$PKG_PATH/bin/bootstrap_exhibitor_tls.py"
+envsubst '$PKG_PATH' < /pkg/extra/bootstrap_exhibitor_tls.py > "$exhibitor_tls_bootsrapper"
+chmod +x "$exhibitor_tls_bootsrapper"
+
+
 mkdir -p "$PKG_PATH/usr/zookeeper/build/lib/"
 cp /pkg/src/log4j/log4j-systemd-journal-appender-1.3.2.jar "$PKG_PATH/usr/zookeeper/lib/"
 # DCOS-308: Renaming "jna-4.2.2" to "log4j-jna-4.2.2.jar" will

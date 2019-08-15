@@ -40,6 +40,11 @@ if [ ! -d genconf/state ]; then
     mkdir -p genconf/state
 fi
 
+DCOS_BOOTSTRAP_CA=dcos-bootstrap-ca
+
+# kill any existing dcos-boostrap-ca processes before running genconf
+kill $(pidof $DCOS_BOOTSTRAP_CA || true) 2>/dev/null || true
+
 PORT=${{PORT:-9000}}
 DCOS_INSTALLER_DAEMONIZE=${{DCOS_INSTALLER_DAEMONIZE:-false}}
 DCOS_INSTALLER_CONTAINER_NAME=${{DCOS_INSTALLER_CONTAINER_NAME:-{genconf_tar}}}
@@ -50,4 +55,16 @@ else
     trap 'docker kill {genconf_tar}' HUP QUIT INT TERM
     docker run --rm --name=$DCOS_INSTALLER_CONTAINER_NAME -i -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
 fi
-exit $?
+
+if [ -d genconf/ca ]; then
+    psk=$(cat genconf/ca/psk 2>/dev/null || echo "")
+    if [ -z "$psk" ]; then
+        echo "WARNING: DC/OS Bootstrap CA service PSK is unset"
+    fi
+
+    echo "Starting DC/OS Bootstrap CA service in the background"
+    genconf/bin/$DCOS_BOOTSTRAP_CA -d genconf/ca/ serve --address :443 --psk "$psk" &
+    echo
+fi
+
+exit 0

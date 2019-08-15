@@ -409,6 +409,28 @@ def validate_bootstrap_url(bootstrap_url):
     assert bootstrap_url[-1] != '/', "Must not end in a '/'"
 
 
+def validate_exhibitor_bootstrap_ca_url(exhibitor_bootstrap_ca_url):
+    if exhibitor_bootstrap_ca_url == '':
+        return
+
+    assert exhibitor_bootstrap_ca_url[-1] != '/', "Must not end in a '/'"
+
+    try:
+        protocol, url = exhibitor_bootstrap_ca_url.split('://')
+    except ValueError as exc:
+        message = (
+            'Failed to determine `exhibitor_bootstrap_ca_url` protocol.'
+        )
+        raise AssertionError(message) from exc
+
+    if protocol != 'https':
+        message = (
+            'Expected `https://` as `exhibitor_bootstrap_ca_url` '
+            'protocol.'
+        )
+        raise AssertionError(message)
+
+
 def validate_channel_name(channel_name):
     assert len(channel_name) > 1, "Must be more than 2 characters"
     assert channel_name[0] != '/', "Must not start with a '/'"
@@ -1067,6 +1089,7 @@ entry = {
         validate_s3_prefix,
         validate_num_masters,
         validate_bootstrap_url,
+        validate_exhibitor_bootstrap_ca_url,
         validate_channel_name,
         validate_dns_search,
         validate_master_list,
@@ -1076,6 +1099,8 @@ entry = {
         validate_zk_hosts,
         validate_zk_path,
         validate_superuser_credentials_not_partially_given,
+        lambda exhibitor_tls_enabled: validate_true_false(exhibitor_tls_enabled),
+        lambda exhibitor_tls_required: validate_true_false(exhibitor_tls_required),
         lambda auth_cookie_secure_flag: validate_true_false(auth_cookie_secure_flag),
         lambda oauth_enabled: validate_true_false(oauth_enabled),
         lambda oauth_available: validate_true_false(oauth_available),
@@ -1262,6 +1287,12 @@ entry = {
         'superuser_service_account_uid': '',
         'superuser_service_account_public_key': '',
         '_superuser_service_account_public_key_json': calculate__superuser_service_account_public_key_json,
+        # This is a private variable that is not supposed to be used by cluster
+        # operators. It allows to explicitly disable Exhibitor TLS in DC/OS Enterprise
+        # version even if the DC/OS Bootstrap CA service is available.
+        'exhibitor_tls_enabled': 'false',
+        'exhibitor_tls_required': 'false',
+        'exhibitor_bootstrap_ca_url': '',
         'enable_gpu_isolation': 'true',
         'cluster_docker_registry_url': '',
         'cluster_docker_credentials_dcos_owned': calculate_docker_credentials_dcos_owned,

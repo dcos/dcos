@@ -1,0 +1,8 @@
+{
+  "single_source" : {
+      "kind": "git",
+      "git": "git@github.com:mesosphere/dcos-bootstrap-ca.git",
+      "ref": "44ab01047a903e09bfa4d26f72b1d47bd8caf7c5",
+      "ref_origin": "master"
+  }
+}

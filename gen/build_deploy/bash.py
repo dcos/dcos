@@ -558,6 +558,17 @@ function check_all() {
     return $OVERALL_RC
 }
 
+function setup_exhibitor_tls_bootstrap()
+{
+    read -d '' ca_data << 'EOF' || true
+{{ exhibitor_ca_certificate }}
+EOF
+
+    if [ -n "$ca_data" ]; then
+        echo "$ca_data" > {{ exhibitor_ca_certificate_path }}
+    fi
+}
+
 function dcos_install()
 {
     # Enable errexit
@@ -565,6 +576,7 @@ function dcos_install()
 
     setup_directories
     setup_dcos_roles
+    setup_exhibitor_tls_bootstrap
     configure_dcos
     setup_and_start_services
 
@@ -697,7 +709,10 @@ def make_bash(gen_out) -> None:
         'generation_date': util.template_generation_date,
         'setup_flags': setup_flags,
         'setup_services': setup_services,
-        'mesos_agent_work_dir': gen_out.arguments['mesos_agent_work_dir']})
+        'mesos_agent_work_dir': gen_out.arguments['mesos_agent_work_dir'],
+        'exhibitor_ca_certificate': gen_out.arguments['exhibitor_ca_certificate'],
+        'exhibitor_ca_certificate_path': gen_out.arguments['exhibitor_ca_certificate_path'],
+    })
 
     # Output the dcos install script
     install_script_filename = 'dcos_install.sh'

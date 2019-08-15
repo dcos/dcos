@@ -7,6 +7,7 @@ import yaml
 
 import gen
 import pkgpanda.util
+from gen.exceptions import ExhibitorTLSBootstrapError
 from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_error_multikey, validate_success
 
 
@@ -234,6 +235,101 @@ def test_exhibitor_storage_master_discovery():
         ['exhibitor_storage_backend', 'master_discovery'],
         msg_master_discovery,
         unset={'exhibitor_address', 'num_masters'})
+
+
+def test_exhibitor_tls_enabled():
+    validate_success({'exhibitor_tls_enabled': 'false'})
+    validate_success({'exhibitor_tls_enabled': 'true'})
+    validate_error(
+        {'exhibitor_tls_enabled': 'foo'},
+        'exhibitor_tls_enabled',
+        true_false_msg)
+
+
+def test_exhibitor_tls_required():
+    validate_success({'exhibitor_tls_required': 'false'})
+    validate_success({'exhibitor_tls_required': 'true'})
+    validate_error(
+        {'exhibitor_tls_required': 'foo'},
+        'exhibitor_tls_required',
+        true_false_msg)
+
+
+def test_exhibitor_tls_initialize_fail():
+    with pytest.raises(ExhibitorTLSBootstrapError) as exc:
+        gen.generate(arguments=make_arguments({
+            'platform': 'onprem',
+            'exhibitor_tls_enabled': 'false',
+            'exhibitor_tls_required': 'true',
+        }))
+    print(exc.value.errors)
+    assert exc.value.errors == [
+        'Exhibitor security is disabled',
+        'Exhibitor security is an enterprise feature',
+        'CA init in gen is only supported when using a remote bootstrap node',
+    ]
+
+    with pytest.raises(ExhibitorTLSBootstrapError) as exc:
+        gen.generate(arguments=make_arguments({
+            'platform': 'onprem',
+            'exhibitor_tls_enabled': 'true',
+            'exhibitor_tls_required': 'true',
+        }))
+    assert exc.value.errors == [
+        'Exhibitor security is an enterprise feature',
+        'CA init in gen is only supported when using a remote bootstrap node',
+    ]
+
+    with pytest.raises(ExhibitorTLSBootstrapError) as exc:
+        gen.generate(arguments=make_arguments({
+            'platform': 'onprem',
+            'exhibitor_tls_enabled': 'true',
+            'exhibitor_tls_required': 'true',
+            'master_discovery': 'master_http_loadbalancer',
+            'exhibitor_address': 'http://foobar',
+            'num_masters': '5',
+        }))
+    assert exc.value.errors == [
+        'Only static master discovery is supported',
+        'Exhibitor security is an enterprise feature',
+        'CA init in gen is only supported when using a remote bootstrap node',
+    ]
+
+
+def test_exhibitor_tls_initialize_prints_errors(capsys):
+    gen.generate(arguments=make_arguments({
+        'platform': 'onprem',
+        'exhibitor_tls_enabled': 'true',
+    }))
+    expected_message = (
+        '[gen.exhibitor_tls_bootstrap] not bootstrapping '
+        'exhibitor CA: Exhibitor security is an enterprise feature'
+    )
+    assert expected_message in capsys.readouterr().out
+
+
+def test_exhibitor_bootstrap_ca_url():
+    validate_success({'exhibitor_bootstrap_ca_url': ''})
+    validate_success({'exhibitor_bootstrap_ca_url': 'https://hello.com'})
+    validate_success({'exhibitor_bootstrap_ca_url': 'https://1.2.3.4'})
+    validate_success({'exhibitor_bootstrap_ca_url': 'https://hello.com:443'})
+    validate_success({'exhibitor_bootstrap_ca_url': 'https://1.2.3.4:443'})
+    validate_error(
+        {'exhibitor_bootstrap_ca_url': 'https://hello.com/'},
+        'exhibitor_bootstrap_ca_url',
+        "Must not end in a '/'")
+    validate_error(
+        {'exhibitor_bootstrap_ca_url': 'https://hello.com://there'},
+        'exhibitor_bootstrap_ca_url',
+        'Failed to determine `exhibitor_bootstrap_ca_url` protocol.')
+    validate_error(
+        {'exhibitor_bootstrap_ca_url': 'http://hello.com'},
+        'exhibitor_bootstrap_ca_url',
+        'Expected `https://` as `exhibitor_bootstrap_ca_url` protocol.')
+    validate_error(
+        {'exhibitor_bootstrap_ca_url': 'file://hello.com'},
+        'exhibitor_bootstrap_ca_url',
+        'Expected `https://` as `exhibitor_bootstrap_ca_url` protocol.')
 
 
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
