@@ -29,6 +29,8 @@ PermissionsStartOnly=true
 EnvironmentFile=/opt/mesosphere/etc/check_time.env
 ExecStartPre=/opt/mesosphere/bin/check-time
 
+# Run automated certificate bootstrap
+ExecStartPre=$PKG_PATH/bin/bootstrap_exhibitor_tls.py
 # Execute a python script, as root, that sets file permissions to some exact set if those files exist.
 ExecStartPre=$PKG_PATH/bin/set_exhibitor_file_permissions.py
 # Start Exhibitor

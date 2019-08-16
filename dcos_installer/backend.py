@@ -21,7 +21,7 @@ from dcos_installer.config import (
     normalize_config_validation_exception,
 )
 from dcos_installer.constants import CONFIG_PATH, GENCONF_DIR
-from gen.exceptions import ValidationError
+from gen.exceptions import ExhibitorTLSBootstrapError, ValidationError
 
 log = logging.getLogger()
 
@@ -45,7 +45,11 @@ def do_configure(config_path=CONFIG_PATH):
         validation = normalize_config_validation_exception(e)
         print_messages(validation)
         return 1
-
+    except ExhibitorTLSBootstrapError as e:
+        log.error('Failed to bootstrap Exhibitor TLS')
+        for i, error in enumerate(e.errors):
+            return log.error("{}: {}".format(i + 1, error))
+        return 1
     config_util.make_serve_dir(gen_out)
 
     return 0
@@ -63,6 +67,11 @@ def generate_node_upgrade_script(installed_cluster_version, config_path=CONFIG_P
     except ValidationError as e:
         validation = normalize_config_validation_exception(e)
         print_messages(validation)
+        return 1
+    except ExhibitorTLSBootstrapError as e:
+        log.error('Failed to bootstrap Exhibitor TLS')
+        for i, error in enumerate(e.errors):
+            return log.error("{}: {}".format(i + 1, error))
         return 1
 
     config_util.make_serve_dir(gen_out)

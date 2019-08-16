@@ -24,6 +24,7 @@ from typing import List
 import yaml
 
 import gen.calc
+import gen.exhibitor_tls_bootstrap
 import gen.internals
 import gen.template
 import gen.util
@@ -668,6 +669,9 @@ def generate(
     expanded_config_scrubbed = {k: v for k, v in expanded_config_full.items() if k not in secret_variables}
     argument_dict['expanded_config_full'] = format_expanded_config(expanded_config_full)
     argument_dict['expanded_config'] = format_expanded_config(expanded_config_scrubbed)
+
+    # Initialize CA and add arguments (exhibitor_ca_certificate and exhibitor_ca_certificate_path)
+    gen.exhibitor_tls_bootstrap.initialize_exhibitor_ca(argument_dict)
 
     log.debug(
         "Final arguments:" + json_prettyprint({

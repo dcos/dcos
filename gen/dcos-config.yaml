@@ -1965,6 +1965,10 @@ package:
 {% case "aws_s3" %}
   - path: /etc/exhibitor
     content: |
+      EXHIBITOR_TLS_ENABLED={{ exhibitor_tls_enabled }}
+      EXHIBITOR_TLS_REQUIRED={{ exhibitor_tls_required }}
+      EXHIBITOR_BOOTSTRAP_CA_URL={{ exhibitor_bootstrap_ca_url }}
+      BOOTSTRAP_URL={{ bootstrap_url }}
       EXHIBITOR_BACKEND=AWS_S3
       AWS_REGION={{ aws_region }}
       AWS_S3_BUCKET={{ s3_bucket }}
@@ -1980,22 +1984,38 @@ package:
 {% case "shared_filesystem" %}
   - path: /etc/exhibitor
     content: |
+      EXHIBITOR_TLS_ENABLED={{ exhibitor_tls_enabled }}
+      EXHIBITOR_TLS_REQUIRED={{ exhibitor_tls_required }}
+      EXHIBITOR_BOOTSTRAP_CA_URL={{ exhibitor_bootstrap_ca_url }}
+      BOOTSTRAP_URL={{ bootstrap_url }}
       EXHIBITOR_BACKEND=SHARED_FS
       EXHIBITOR_FSCONFIGDIR={{ exhibitor_fs_config_dir }}
 {% case "static" %}
   - path: /etc/exhibitor
     content: |
+      EXHIBITOR_TLS_ENABLED={{ exhibitor_tls_enabled }}
+      EXHIBITOR_TLS_REQUIRED={{ exhibitor_tls_required }}
+      EXHIBITOR_BOOTSTRAP_CA_URL={{ exhibitor_bootstrap_ca_url }}
+      BOOTSTRAP_URL={{ bootstrap_url }}
       EXHIBITOR_BACKEND=STATIC
       EXHIBITOR_STATICENSEMBLE={{ exhibitor_static_ensemble }}
 {% case "zookeeper" %}
   - path: /etc/exhibitor
     content: |
+      EXHIBITOR_TLS_ENABLED={{ exhibitor_tls_enabled }}
+      EXHIBITOR_TLS_REQUIRED={{ exhibitor_tls_required }}
+      EXHIBITOR_BOOTSTRAP_CA_URL={{ exhibitor_bootstrap_ca_url }}
+      BOOTSTRAP_URL={{ bootstrap_url }}
       EXHIBITOR_BACKEND=ZK
       ZK_CONFIG_CONNECT={{ exhibitor_zk_hosts }}
       ZK_CONFIG_ZPATH={{ exhibitor_zk_path }}
 {% case "azure" %}
   - path: /etc/exhibitor
     content: |
+      EXHIBITOR_TLS_ENABLED={{ exhibitor_tls_enabled }}
+      EXHIBITOR_TLS_REQUIRED={{ exhibitor_tls_required }}
+      EXHIBITOR_BOOTSTRAP_CA_URL={{ exhibitor_bootstrap_ca_url }}
+      BOOTSTRAP_URL={{ bootstrap_url }}
       EXHIBITOR_BACKEND=AZURE
       AZURE_CONTAINER=dcos-exhibitor
       AZURE_PREFIX={{ exhibitor_azure_prefix }}
