@@ -15,6 +15,7 @@
     "python-markupsafe",
     "python-passlib",
     "python-pyyaml",
+    "python-responses",
     "python-requests",
     "python-retrying",
     "six",
