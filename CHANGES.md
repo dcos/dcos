@@ -28,6 +28,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * [Marathon] Remove strict validation of external volume name (MARATHON-8681)
 
+* DC/OS Net: Fix support for big sets in the ipset manager. (COPS-5229)
+
 ### Security updates
 
 ## DC/OS 1.13.3 (CF - 2019-07-10)
