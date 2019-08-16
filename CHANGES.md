@@ -2,15 +2,13 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 1.13.4 (In Development)
 
-* Marathon Updated to 1.8.222 (DCOS_OSS-5460)
-
-### Notable changes
-
 ### Notable changes
 
 * Updated DC/OS UI to [1.13+v2.82.9](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.9).
 
 * Updated to [Mesos 1.8.x](https://github.com/apache/mesos/blob/6ecaa5106ffd5b2f712854e97b5386741b1d14a7/CHANGELOG)
+
+* Marathon Updated to 1.8.222 (DCOS_OSS-5460)
 
 ### Fixed and improved
 
@@ -19,6 +17,16 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * The content of `/var/log/mesos-state.tar.gz` is now included in the diagnostics bundle. (DCOS-56403)
 
 * Prune VIPs with no backends in order to avoid unbounded growth of state and messages exchanged among `dcos-net` processes. (DCOS_OSS-5356)
+
+* [Marathon] Clarify support for ranges and sets with constraint operators (MARATHON-7977)
+
+* [Marathon] Revive and suppress offers based on instance state (MARATHON-8627)
+
+* [Marathon] Exit with 111 if Marathon could not bind to address (MARATHON-8685)
+
+* [Marathon] Added maintenance mode to info endpoint (MARATHON-8660)
+
+* [Marathon] Remove strict validation of external volume name (MARATHON-8681)
 
 ### Security updates
 
@@ -47,11 +55,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * DC/OS Checks: made false negative results less likely by changing a timeout constant. (DCOS-53742, COPS-5041)
 
-* [Marathon] Clarify support for ranges and sets with constraint operators (MARATHON-7977)
-* [Marathon] Revive and suppress offers based on instance state (MARATHON-8627)
-* [Marathon] Exit with 111 if Marathon could not bind to address (MARATHON-8685)
-* [Marathon] Added maintenance mode to info endpoint (MARATHON-8660)
-* [Marathon] Remove strict validation of external volume name (MARATHON-8681)
+* [Marathon] Marathon will not get stuck anymore when trying to kill an unreachable instance. (MARATHON-8422)
+
+* [Marathon] Persistent volumes tagged with a profile name now default to `DiskType.Mount`. (MARATHON-8631)
+
 
 ### Security updates
 
