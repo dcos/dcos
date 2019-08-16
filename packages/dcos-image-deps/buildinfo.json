@@ -36,6 +36,11 @@
       "url": "https://pypi.python.org/packages/39/db/ba6ce2c3f13dd046eec3a7767a7d10607c15dc8b23d68bc125ad577f924f/analytics_python-1.2.3-py2.py3-none-any.whl",
       "sha1": "218ff1fdecb2a0d06499618a6d0e65fcecf50c19"
     },
+    "apipkg": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/67/08/4815a09603fc800209431bec5b8bd2acf2f95abdfb558a44a42507fb94da/apipkg-1.5-py2.py3-none-any.whl",
+      "sha1": "1e0df1d216243e4cb8bffd21e7ab851d0a629c49"
+    },
     "azure-common": {
       "kind": "url",
       "url": "https://pypi.python.org/packages/32/10/b353b328deb80e81a9288f0c684e4bbc6b022ec29110c4f90d265b07a371/azure_common-1.1.4-py2.py3-none-any.whl",
@@ -90,6 +95,11 @@
       "kind": "url",
       "url": "https://pypi.python.org/packages/3.4/d/docutils/docutils-0.12-py3-none-any.whl",
       "sha1": "88749802f8d61883da36a5abfca171a4ae60cc71"
+    },
+    "execnet": {
+      "kind": "url",
+      "url": "https://files.pythonhosted.org/packages/9a/73/5be9d235327b3770c330bed707766c8885e8157577db85f11b874b26da34/execnet-1.6.1-py2.py3-none-any.whl",
+      "sha1": "6e212e61c45486798f7a96040820f3aa2e8b46b6"
     },
     "humanfriendly": {
       "kind": "url_extract",
