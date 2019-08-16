@@ -323,13 +323,27 @@ def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session):
     """
     test bundle create, read, delete workflow
     """
+
+    health_url = dcos_api_session.default_url.copy(
+        query='cache=0',
+        path='system/health/v1',
+    )
+
+    diagnostics = Diagnostics(
+        default_url=health_url,
+        masters=dcos_api_session.masters,
+        all_slaves=dcos_api_session.all_slaves,
+        session=dcos_api_session.copy().session,
+        use_legacy_api=use_legacy_api,
+    )
+
     app, test_uuid = test_helpers.marathon_test_app()
     with dcos_api_session.marathon.deploy_and_cleanup(app):
-        bundle = _create_bundle(dcos_api_session)
+        bundle = _create_bundle(diagnostics)
         _check_diagnostics_bundle_status(dcos_api_session)
-        _download_and_extract_bundle(dcos_api_session, bundle)
-        _download_and_extract_bundle_from_another_master(dcos_api_session, bundle)
-        _delete_bundle(dcos_api_session, bundle)
+        _download_and_extract_bundle(dcos_api_session, bundle, diagnostics)
+        _download_and_extract_bundle_from_another_master(dcos_api_session, bundle, diagnostics)
+        _delete_bundle(diagnostics, bundle)
 
 
 def _check_diagnostics_bundle_status(dcos_api_session):
@@ -346,88 +360,53 @@ def _check_diagnostics_bundle_status(dcos_api_session):
             assert required_status_field in properties, 'property {} not found'.format(required_status_field)
 
 
-def _create_bundle(dcos_api_session):
+def _create_bundle(diagnostics: Diagnostics):
     last_datapoint = {
         'time': None,
         'value': 0
     }
 
-    health_url = dcos_api_session.default_url.copy(
-        query='cache=0',
-        path='system/health/v1',
-    )
-
-    diagnostics = Diagnostics(
-        default_url=health_url,
-        masters=dcos_api_session.masters,
-        all_slaves=dcos_api_session.all_slaves,
-        session=dcos_api_session.copy().session,
-    )
-
     create_response = diagnostics.start_diagnostics_job().json()
     diagnostics.wait_for_diagnostics_job(last_datapoint=last_datapoint)
     diagnostics.wait_for_diagnostics_reports()
     bundles = diagnostics.get_diagnostics_reports()
-    assert len(bundles) == 1, 'bundle file not found'
-    assert bundles[0] == create_response['extra']['bundle_name']
+    assert len(bundles) > 0, 'bundle file not found'
 
-    return create_response['extra']['bundle_name']
+    bundle_name = create_response.get('id')
+    if not bundle_name:
+        bundle_name = create_response['extra']['bundle_name']
+    assert bundle_name in bundles
+
+    return bundle_name
 
 
-def _delete_bundle(dcos_api_session, bundle):
-    health_url = dcos_api_session.default_url.copy(
-        query='cache=0',
-        path='system/health/v1',
-    )
-    diagnostics = Diagnostics(
-        default_url=health_url,
-        masters=dcos_api_session.masters,
-        all_slaves=dcos_api_session.all_slaves,
-        session=dcos_api_session.copy().session,
-    )
-
+def _delete_bundle(diagnostics: Diagnostics, bundle):
     bundles = diagnostics.get_diagnostics_reports()
     assert bundle in bundles, 'not found {} in {}'.format(bundle, bundles)
 
-    dcos_api_session.health.post(os.path.join('/report/diagnostics/delete', bundle))
+    diagnostics.delete_bundle(bundle)
 
     bundles = diagnostics.get_diagnostics_reports()
     assert bundle not in bundles, 'found {} in {}'.format(bundle, bundles)
 
 
-@retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def _download_and_extract_bundle(dcos_api_session, bundle):
-    _download_bundle_from_master(dcos_api_session, 0, bundle)
+def _download_and_extract_bundle(dcos_api_session, bundle, diagnostics):
+    _download_bundle_from_master(dcos_api_session, 0, bundle, diagnostics)
 
 
-@retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def _download_and_extract_bundle_from_another_master(dcos_api_session, bundle):
+def _download_and_extract_bundle_from_another_master(dcos_api_session, bundle, diagnostics,):
     if len(dcos_api_session.masters) > 1:
-        _download_bundle_from_master(dcos_api_session, 1, bundle)
+        _download_bundle_from_master(dcos_api_session, 1, bundle, diagnostics)
 
 
-def _download_bundle_from_master(dcos_api_session, master_index, bundle):
+def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnostics):
     """ Download DC/OS diagnostics bundle from a master
 
     :param dcos_api_session: dcos_api_session fixture
     :param master_index: master index from dcos_api_session.masters array
     :param bundle: bundle name to download from master
+    :param diagnostics: DCOS Diagnostics client
     """
-    assert len(dcos_api_session.masters) >= master_index + 1, '{} masters required. Got {}'.format(
-        master_index + 1, len(dcos_api_session.masters))
-
-    health_url = dcos_api_session.default_url.copy(
-        query='cache=0',
-        path='system/health/v1',
-    )
-
-    diagnostics = Diagnostics(
-        default_url=health_url,
-        masters=dcos_api_session.masters,
-        all_slaves=dcos_api_session.all_slaves,
-        session=dcos_api_session.copy().session,
-    )
-
     bundles = diagnostics.get_diagnostics_reports()
     assert bundle in bundles, 'not found {} in {}'.format(bundle, bundles)
 
@@ -537,12 +516,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         bundle_full_location = os.path.join(tmp_dir, bundle)
-        with open(bundle_full_location, 'wb') as f:
-            r = dcos_api_session.health.get(os.path.join('/report/diagnostics/serve', bundle), stream=True,
-                                            node=dcos_api_session.masters[master_index])
-
-            for chunk in r.iter_content(1024):
-                f.write(chunk)
+        diagnostics.download_diagnostics_reports([bundle], tmp_dir, dcos_api_session.masters[master_index])
 
         # validate bundle zip file.
         assert zipfile.is_zipfile(bundle_full_location)
