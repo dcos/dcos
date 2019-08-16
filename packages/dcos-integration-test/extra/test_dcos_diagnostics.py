@@ -431,70 +431,72 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle):
     bundles = diagnostics.get_diagnostics_reports()
     assert bundle in bundles, 'not found {} in {}'.format(bundle, bundles)
 
-    expected_common_files = ['dmesg_-T.output.gz',
-                             'ip_addr.output.gz',
-                             'ip_route.output.gz',
-                             'ps_aux_ww_Z.output.gz',
-                             'optmesospherebincurl_-s_-S_http:localhost:62080v1vips.output.gz',
-                             'optmesospherebincurl_-s_-S_http:localhost:62080v1records.output.gz',
-                             'optmesospherebincurl_-s_-S_http:localhost:62080v1metricsdefault.output.gz',
-                             'optmesospherebincurl_-s_-S_http:localhost:62080v1metricsdns.output.gz',
-                             'optmesospherebincurl_-s_-S_http:localhost:62080v1metricsmesos_listener.output.gz',
-                             'optmesospherebincurl_-s_-S_http:localhost:62080v1metricslashup.output.gz',
-                             'timedatectl.output.gz',
-                             'binsh_-c_cat etc*-release.output.gz',
-                             'systemctl_list-units_dcos*.output.gz',
-                             'sestatus.output.gz',
-                             'iptables-save.output.gz',
-                             'ip6tables-save.output.gz',
-                             'ipset_list.output.gz',
-                             'opt/mesosphere/active.buildinfo.full.json.gz',
-                             'opt/mesosphere/etc/dcos-version.json.gz',
-                             'opt/mesosphere/etc/expanded.config.json.gz',
-                             'opt/mesosphere/etc/user.config.yaml.gz',
+    expected_common_files = ['dmesg_-T.output',
+                             'ip_addr.output',
+                             'ip_route.output',
+                             'ps_aux_ww_Z.output',
+                             'optmesospherebincurl_-s_-S_http:localhost:62080v1vips.output',
+                             'optmesospherebincurl_-s_-S_http:localhost:62080v1records.output',
+                             'optmesospherebincurl_-s_-S_http:localhost:62080v1metricsdefault.output',
+                             'optmesospherebincurl_-s_-S_http:localhost:62080v1metricsdns.output',
+                             'optmesospherebincurl_-s_-S_http:localhost:62080v1metricsmesos_listener.output',
+                             'optmesospherebincurl_-s_-S_http:localhost:62080v1metricslashup.output',
+                             'timedatectl.output',
+                             'binsh_-c_cat etc*-release.output',
+                             'systemctl_list-units_dcos*.output',
+                             # FIXME: Uncomment DCOS_OSS-5467
+                             # 'sestatus.output',
+                             'iptables-save.output',
+                             'ip6tables-save.output',
+                             'ipset_list.output',
+                             'opt/mesosphere/active.buildinfo.full.json',
+                             'opt/mesosphere/etc/dcos-version.json',
+                             'opt/mesosphere/etc/expanded.config.json',
+                             'opt/mesosphere/etc/user.config.yaml',
                              'dcos-diagnostics-health.json',
-                             'var/lib/dcos/cluster-id.gz',
-                             'proc/cmdline.gz',
-                             'proc/cpuinfo.gz',
-                             'proc/meminfo.gz',
-                             'proc/self/mountinfo.gz',
-                             'optmesospherebindetect_ip.output.gz',
-                             'sysctl_-a.output.gz',
+                             'var/lib/dcos/cluster-id',
+                             'proc/cmdline',
+                             'proc/cpuinfo',
+                             'proc/meminfo',
+                             'proc/self/mountinfo',
+                             'optmesospherebindetect_ip.output',
+                             'sysctl_-a.output',
                              ]
 
     # these files are expected to be in archive for a master host
     expected_master_files = [
-        'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID| cut -d\'=\' -f2`environ.output.gz',
+        'binsh_-c_cat proc`systemctl show dcos-mesos-master.service -p MainPID| cut -d\'=\' -f2`environ.output',
         '5050-quota.json',
-        '5050-overlay-master_state.json.gz',
-        'dcos-mesos-master.service.gz',
-        'var/lib/dcos/exhibitor/zookeeper/snapshot/myid.gz',
-        'var/lib/dcos/exhibitor/conf/zoo.cfg.gz',
-        'var/lib/dcos/mesos/log/mesos-master.log.gz',
-        'var/lib/dcos/mesos/log/mesos-master.log.1.gz',
-        'var/lib/dcos/mesos/log/mesos-master.log.2.gz.gz',
-        'var/lib/dcos/mesos/log/mesos-master.log.3.gz.gz',
+        '5050-overlay-master_state.json',
+        'dcos-mesos-master.service',
+        'var/lib/dcos/exhibitor/zookeeper/snapshot/myid',
+        'var/lib/dcos/exhibitor/conf/zoo.cfg',
+        'var/lib/dcos/mesos/log/mesos-master.log',
+        # FIXME: Uncomment DCOS_OSS-5467
+        # 'var/lib/dcos/mesos/log/mesos-master.log.1',
+        # 'var/lib/dcos/mesos/log/mesos-master.log.2.gz',
+        # 'var/lib/dcos/mesos/log/mesos-master.log.3.gz',
     ] + expected_common_files
 
     expected_agent_common_files = [
         '5051-containers.json',
         '5051-containerizer_debug.json',
         '5051-overlay-agent_overlay.json',
-        'var/log/mesos/mesos-agent.log.gz',
-        'docker_--version.output.gz',
-        'docker_ps.output.gz',
+        'var/log/mesos/mesos-agent.log',
+        'docker_--version.output',
+        'docker_ps.output',
     ]
 
     # for agent host
     expected_agent_files = [
-        'dcos-mesos-slave.service.gz',
-        'binsh_-c_cat proc`systemctl show dcos-mesos-slave.service -p MainPID| cut -d\'=\' -f2`environ.output.gz'
+        'dcos-mesos-slave.service',
+        'binsh_-c_cat proc`systemctl show dcos-mesos-slave.service -p MainPID| cut -d\'=\' -f2`environ.output'
     ] + expected_agent_common_files + expected_common_files
 
     # for public agent host
     expected_public_agent_files = [
-        'dcos-mesos-slave-public.service.gz',
-        'binsh_-c_cat proc`systemctl show dcos-mesos-slave-public.service -p MainPID| cut -d\'=\' -f2`environ.output.gz'
+        'dcos-mesos-slave-public.service',
+        'binsh_-c_cat proc`systemctl show dcos-mesos-slave-public.service -p MainPID| cut -d\'=\' -f2`environ.output'
     ] + expected_agent_common_files + expected_common_files
 
     def _read_from_zip(z: zipfile.ZipFile, item: str, to_json=True):
