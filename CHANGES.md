@@ -2,15 +2,31 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 1.13.2 (in development)
 
+* Marathon Updated to 1.8.222 (DCOS_OSS-5460)
 
 ### Notable changes
-
 
 ### Fixed and improved
 
 * Mesos task logs are sent to Fluent Bit with task metadata included. (DCOS-53834)
 
 * Telegraf reports procstat metrics only for DC/OS systemd services, instead of all processes. (DCOS-53589)
+
+* [Marathon] Prevent rare NPE (MARATHON-8616)
+* [Marathon] Add TASK_UNKNOWN to the valid mesos task status enums (MARATHON-8624)
+* [Marathon] Better handle invalid state command exceptions in InstanceTrackerActor (MARATHON-8623)
+* [Marathon] Only match disk with profile if that profile is needed (DCOS_OSS-5211)
+* [Marathon] Restart legacy resident apps (DCOS_OSS-5212)
+* [Marathon] Fix rollback on 1.8 with default deployment strategy (MARATHON-8625)
+* [Marathon] Persist reservation ids (MARATHON-8626)
+* [Marathon] Fix interfering deployments (DCOS-54927)
+* [Marathon] Do not try to kill a terminal instance (MARATHON-8422)
+* [Marathon] Persistent volumes with profile now default to DiskType.Mount (MARATHON-8631)
+* [Marathon] Clarify support for ranges and sets with constraint operators (MARATHON-7977)
+* [Marathon] Revive and suppress offers based on instance state (MARATHON-8627)
+* [Marathon] Exit with 111 if Marathon could not bind to address (MARATHON-8685)
+* [Marathon] Added maintenance mode to info endpoint (MARATHON-8660)
+* [Marathon] Remove strict validation of external volume name (MARATHON-8681)
 
 ### Security updates
 
