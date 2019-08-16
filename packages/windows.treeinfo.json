@@ -21,6 +21,7 @@
     "cockroach",
     "cosmos",
     "curl",
+    "dcos-bootstrap-ca",
     "dcos-check-runner",
     "dcos-checks",
     "dcos-cni",
