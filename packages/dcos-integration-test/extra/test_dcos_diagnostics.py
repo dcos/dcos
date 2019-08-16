@@ -306,19 +306,6 @@ def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
 
 
 @pytest.mark.supportedwindows
-def test_dcos_diagnostics_selftest(dcos_api_session):
-    """
-    test invokes dcos-diagnostics `self test` functionality
-    """
-    for node in dcos_api_session.masters:
-        response = check_json(dcos_api_session.health.get('/selftest/info', node=node))
-        for test_name, attrs in response.items():
-            assert 'Success' in attrs, 'Field `Success` does not exist'
-            assert 'ErrorMessage' in attrs, 'Field `ErrorMessage` does not exist'
-            assert attrs['Success'], '{} failed, error message {}'.format(test_name, attrs['ErrorMessage'])
-
-
-@pytest.mark.supportedwindows
 def test_dcos_diagnostics_report(dcos_api_session):
     """
     test dcos-diagnostics report endpoint /system/health/v1/report
@@ -348,16 +335,13 @@ def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session):
 def _check_diagnostics_bundle_status(dcos_api_session):
     # validate diagnostics job status response
     diagnostics_bundle_status = check_json(dcos_api_session.health.get('/report/diagnostics/status/all'))
-    required_status_fields = ['is_running', 'status', 'errors', 'last_bundle_dir', 'job_started', 'job_ended',
-                              'job_duration', 'diagnostics_bundle_dir', 'diagnostics_job_timeout_min',
+    required_status_fields = ['is_running', 'status', 'last_bundle_dir', 'job_started',
+                              'diagnostics_bundle_dir', 'diagnostics_job_timeout_min',
                               'journald_logs_since_hours', 'diagnostics_job_get_since_url_timeout_min',
                               'command_exec_timeout_sec', 'diagnostics_partition_disk_usage_percent',
                               'job_progress_percentage']
 
     for _, properties in diagnostics_bundle_status.items():
-        assert len(properties) == len(required_status_fields), 'response must have the following fields: {}'.format(
-            required_status_fields
-        )
         for required_status_field in required_status_fields:
             assert required_status_field in properties, 'property {} not found'.format(required_status_field)
 
@@ -694,9 +678,9 @@ def validate_state(zip_state):
     assert isinstance(zip_state, zipfile.ZipExtFile)
     state_output = gzip.decompress(zip_state.read())
     state = json.loads(state_output)
-    assert len(state["frameworks"]) == 2, "bundle must contains information about frameworks"
-    task_count = len(state["frameworks"][1]["tasks"]) + len(state["frameworks"][0]["tasks"])
-    assert task_count == 1, "bundle must contains information about tasks"
+    assert len(state["frameworks"]) > 1, "bundle must contain information about frameworks"
+    task_count = sum([len(f["tasks"]) for f in state["frameworks"]])
+    assert task_count > 0, "bundle must contains information about tasks"
 
 
 def verify_archived_items(folder, archived_items, expected_files):

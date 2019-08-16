@@ -1,16 +1,56 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
-## DC/OS 1.13.2 (in development)
+## DC/OS 1.13.4 (In Development)
 
 * Marathon Updated to 1.8.222 (DCOS_OSS-5460)
 
 ### Notable changes
 
+### Notable changes
+
+* Updated DC/OS UI to [1.13+v2.82.9](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.9).
+
+* Updated to [Mesos 1.8.x](https://github.com/apache/mesos/blob/6ecaa5106ffd5b2f712854e97b5386741b1d14a7/CHANGELOG)
+
 ### Fixed and improved
 
-* Mesos task logs are sent to Fluent Bit with task metadata included. (DCOS-53834)
+* Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
 
-* Telegraf reports procstat metrics only for DC/OS systemd services, instead of all processes. (DCOS-53589)
+* The content of `/var/log/mesos-state.tar.gz` is now included in the diagnostics bundle. (DCOS-56403)
+
+* Prune VIPs with no backends in order to avoid unbounded growth of state and messages exchanged among `dcos-net` processes. (DCOS_OSS-5356)
+
+### Security updates
+
+## DC/OS 1.13.3 (CF - 2019-07-10)
+
+### Notable changes
+
+* Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/releases/tag/v0.6.33)
+
+* Updated to [Marathon 1.8.207](https://github.com/mesosphere/marathon/tree/9f3550487).
+
+* Updated to [Mesos 1.8.x](https://github.com/apache/mesos/blob/07d053f68b75505a4386913f05d521fa5e36373d/CHANGELOG)
+
+* Updated the DC/OS UI to version [1.13+v2.82.7](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.7).
+
+* Updated the DC/OS Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/commits/1.6.0).
+
+
+### Fixed and improved
+
+* Consolidated `iam-database-restore` to work when no database exists. This helps recovery in rare scenarios. (DCOS_OSS-5317)
+
+* Consolidated `dcos-zk backup` and `dcos-zk restore` to exit early with a clear error message if ZooKeeper is still running. (DCOS_OSS-5353)
+
+* DC/OS Metrics: Prometheus metrics can now be collected from Mesos tasks in the `container` networking mode. (DCOS-56018, COPS-5040)
+
+* DC/OS Checks: made false negative results less likely by changing a timeout constant. (DCOS-53742, COPS-5041)
+
+* [Marathon] Marathon will not get stuck anymore when trying to kill an unreachable instance. (MARATHON-8422)
+
+* [Marathon] Persistent volumes tagged with a profile name now default to `DiskType.Mount`. (MARATHON-8631)
+
 
 * [Marathon] Prevent rare NPE (MARATHON-8616)
 * [Marathon] Add TASK_UNKNOWN to the valid mesos task status enums (MARATHON-8624)
@@ -30,20 +70,58 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Security updates
 
+N/A
 
-## DC/OS 1.13.1
+## DC/OS 1.13.2 (2019-07-03)
 
-### Notable changes
+## Notable changes
+
+* Updated to [Mesos 1.8.1-dev](https://github.com/apache/mesos/blob/fca89344aff96a8e2ec1b5b70f4a3cb0e899c352/CHANGELOG).
+
+* Updated to [Metronome 0.6.27](https://github.com/dcos/metronome/tree/b8a73dd).
+
+* Updated to [Marathon 1.8.204](https://github.com/mesosphere/marathon/tree/5209e3183).
+
+* Updated DC/OS UI to [1.13+v2.82.6](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.6)
 
 * ZooKeeper instances on master nodes can now be backed up and restored via a dedicated command line script `dcos-zk` that is shipped with DC/OS. (DCOS_OSS-5186)
 
-* Bumped DC/OS UI to [1.13+v2.82.3](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.3)
+### Fixed and improved
+
+* Mesos task logs are now sent to Fluent Bit with task metadata included. (DCOS-53834)
+
+* Telegraf reports procstat metrics only for DC/OS systemd services, instead of all processes. (DCOS-53589)
+
+* Telegraf now supports specyfying port names for task-label based Prometheus endpoints discovery. (DCOS-55100)
+
+* Fixed Telegraf configuration error that dropped task metrics with certain names or tags. (DCOS_OSS-5032)
+
+* Added Fluent Bit metrics to the pipeline. (DCOS-54425)
+
+* [Metronome] Improved validation of secrets. (DCOS_OSS-5019)
+
+* [Metronome] The task ID is now included in finished job runs. (DCOS_OSS-5273)
+
+* [Marathon ] Fixed an issue where two independent deployments could interfere with each other resulting in too many tasks launched and/or possibly a stuck deployment. (DCOS-54927, DCOS_OSS-5260)
+
+* [Cosmos] Consolidated fetching artifacts from the Internet. (DCOS-54077)
+
+* [Cosmos] Restored old behavior of the `describe` command. (DCOS-44111)
+
+### Security updates
+
+
+## DC/OS 1.13.1 (2019-05-31)
+
+### Notable changes
+
+* Updated to [Mesos 1.8.1-dev](https://github.com/apache/mesos/blob/f5770dcf322bd8a88e6c88041364a4089d92be90/CHANGELOG).
+
+* Updated DC/OS UI to [1.13+v2.82.3](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.3)
 
 ### Fixed and improved
 
-* Added Fluent Bit metrics to the pipeline (DCOS-54425)
-
-* Fixed Telegraf configuration error that dropped task metrics with certain names or tags. (DCOS_OSS-5032)
+* DC/OS Net: consolidated writing `resolv.conf`, addressing a rare race condition. (DCOS-47608)
 
 * `dcos_generate_config[ee].sh --validate-config` doesn't complain about missing deprecated `ssh_*` options anymore. (DCOS_OSS-5152)
 
@@ -57,9 +135,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fixed a number of issues that caused some DC/OS components to crash when `/tmp` is mounted with the `noexec` option. (DCOS-53077)
 
-* Support large uploads for Admin Router service endpoint. (DCOS-52768)
+* Support large uploads for Admin Router service endpoint. (DCOS-52768, COPS-4651)
 
 * Added Round-Robin DNS support. (DCOS_OSS-5118)
+
+* Ensure the DC/OS IAM (Bouncer) uses the configured web proxy details. (DCOS_OSS-5167)
 
 * [Marathon] Fix restarting resident apps and pods. (DCOS_OSS-5212)
 
@@ -74,8 +154,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * [Marathon] Prevent instance leak. (DCOS-51375)
 
 * [Marathon] Introduce new exit error code when the framework was removed from Mesos.
-
-* Ensure Bouncer uses configured web proxy. (DCOS_OSS-5167)
 
 
 ### Security updates

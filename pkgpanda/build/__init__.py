@@ -220,6 +220,8 @@ class PackageSet:
     @staticmethod
     def validate_package_tuples(package_tuples, treeinfo, package_store):
         # Validate that all packages have the variant specified in treeinfo.
+        print('package_tuples = %r' % package_tuples)
+        print('treeinfo = %r' % treeinfo.variants)
         for package_name, variant in package_tuples:
             treeinfo_variant = treeinfo.variants.get(package_name)
             if variant != treeinfo_variant:

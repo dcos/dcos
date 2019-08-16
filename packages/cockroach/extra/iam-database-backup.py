@@ -4,7 +4,7 @@ import argparse
 import logging
 import subprocess
 import sys
-from typing import IO
+from typing import IO, Union
 
 from dcos_internal_utils import utils
 
@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 logging.basicConfig(format='[%(levelname)s] %(message)s', level='INFO')
 
 
-def dump_database(my_internal_ip: str, out: IO[bytes]) -> None:
+def dump_database(my_internal_ip: str, out: Union[IO[bytes], IO[str]]) -> None:
     """
     Use `cockroach dump` to dump the IAM database to stdout.
 
@@ -40,7 +40,7 @@ def dump_database(my_internal_ip: str, out: IO[bytes]) -> None:
         ]
     log.info('Dump iam database via command `%s`', ' '.join(command))
     try:
-        result = subprocess.run(command, check=True, stdout=out)
+        subprocess.run(command, check=True, stdout=out)
         log.info('Database successfully dumped.')
     except subprocess.CalledProcessError:
         # The stderr output of the underlying cockroach command will be printed
