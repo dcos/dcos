@@ -109,6 +109,7 @@ def _get_ca_alt_name(config: Dict[str, Any]) -> str:
 
 def initialize_exhibitor_ca(final_arguments: Dict[str, Any]) -> None:
     if final_arguments['provider'] != 'onprem':
+        # Set values in the event that bash.py is used on something other than onprem
         final_arguments['exhibitor_ca_certificate'] = ""
         final_arguments['exhibitor_ca_certificate_path'] = "/dev/null"
         return
