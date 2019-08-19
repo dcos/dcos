@@ -155,8 +155,8 @@ def test_pod_logs(dcos_api_session):
         url = get_task_url(dcos_api_session, pod_id)
         container_id = url.split('/')[-1]
 
-        check_response('STDOUT_LOG', lambda: dcos_api_session.get(url + '?filter=STREAM:STDOUT'), dcos_api_session)
-        check_response('STDERR_LOG', lambda: dcos_api_session.get(url + '?filter=STREAM:STDERR'), dcos_api_session)
+        check_response('STDOUT_LOG', lambda: dcos_api_session.get(url + '?filter=STREAM:STDOUT'))
+        check_response('STDERR_LOG', lambda: dcos_api_session.get(url + '?filter=STREAM:STDERR'))
 
         response = dcos_api_session.get(url + '/download', query='limit=10&postfix=stdout')
         log_file_name = 'task-{}-stdout.log.gz'.format(container_id)
