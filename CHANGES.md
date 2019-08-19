@@ -3,6 +3,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 1.14.0 (in development)
 
+* Updated to Mesos [master](https://github.com/apache/mesos/blob/4dded8aee7e8c385a4671233d7ee9092782cb780/CHANGELOG)
+
 
 ### What's new
 
