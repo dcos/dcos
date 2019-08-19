@@ -1,5 +1,5 @@
 [Unit]
-Description=CockroachDB Disable Diagnostics: Disable CockroachDB diagnostic reporting
+Description=CockroachDB Config Change: Ensure `num_replicas` equals the expected number of master nodes.
 Documentation=https://docs.mesosphere.com
 
 [Service]
