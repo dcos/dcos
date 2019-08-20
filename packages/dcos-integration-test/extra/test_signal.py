@@ -9,8 +9,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from dcos_test_utils.enterprise import EnterpriseApiSession
-from ee_helpers import get_dcos_config
+from test_helpers import get_expanded_config
 
 __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
@@ -19,9 +18,7 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 log = logging.getLogger(__name__)
 
 
-def test_ee_signal_service(
-    superuser_api_session: EnterpriseApiSession,
-) -> None:
+def test_signal_service(dcos_api_session):
     """
     signal-service runs on an hourly timer, this test runs it as a one-off
     and pushes the results to the test_server app for easy retrieval
@@ -51,7 +48,7 @@ def test_ee_signal_service(
 
     # Collect the dcos-diagnostics output that `dcos-signal` uses to determine
     # whether or not there are failed units.
-    resp = superuser_api_session.get('/system/health/v1/report?cache=0')
+    resp = dcos_api_session.get('/system/health/v1/report?cache=0')
     # We expect reading the health report to succeed.
     resp.raise_for_status()
     # Parse the response into JSON.
@@ -96,7 +93,7 @@ def test_ee_signal_service(
         }
     }
 
-    dcos_config = get_dcos_config()
+    dcos_config = get_expanded_config()
     # Generic properties which are the same between all tracks
     generic_properties = {
         'licenseId': '',
