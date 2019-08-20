@@ -63,7 +63,7 @@ if [ -d genconf/ca ]; then
     fi
 
     echo "Starting DC/OS Bootstrap CA service in the background"
-    genconf/bin/$DCOS_BOOTSTRAP_CA -d genconf/ca/ serve --address :443 --psk "$psk" &
+    genconf/bin/$DCOS_BOOTSTRAP_CA -d genconf/ca/ serve --address :443 --psk "$psk" < /dev/null  &>/dev/null &
     echo
 fi
 
