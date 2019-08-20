@@ -19,7 +19,7 @@ __contact__ = 'tools-infra-team@mesosphere.io'
 log = logging.getLogger(__file__)
 
 
-def _tests_from_pattern(ci_pattern: str) -> Set[str]:
+def _tests_from_pattern(ci_pattern: str, cwd: str) -> Set[str]:
     """
     From a CI pattern, get all tests ``pytest`` would collect.
     """
@@ -36,6 +36,7 @@ def _tests_from_pattern(ci_pattern: str) -> Set[str]:
         args=args,
         stdout=subprocess.PIPE,
         env={**os.environ, **{'PYTHONIOENCODING': 'UTF-8'}},
+        cwd=cwd
     )
     output = result.stdout
     for line in output.splitlines():
@@ -74,17 +75,25 @@ def test_test_groups() -> None:
     This test confirms that the groups together contain all tests, and each
     test is collected only once.
     """
-    test_group_file = Path('test_groups.yaml')
+    test_groups_path = 'test_groups.yaml'
+    if 'pyexecnetcache' in os.getcwd():
+        # We are running this from outside the cluster using pytest-xdist, so test_groups.yaml won't be in the current
+        # working directory. It will be in /extra
+        test_groups_path = os.path.join('extra', test_groups_path)
+    else:
+        test_groups_path = os.path.join(os.getcwd(), test_groups_path)
+
+    test_group_file = Path(test_groups_path)
     test_group_file_contents = test_group_file.read_text()
     test_groups = yaml.load(test_group_file_contents)['groups']
     test_patterns = []
     for group in test_groups:
-        test_patterns += patterns_from_group(group_name=group)
+        test_patterns += patterns_from_group(group_name=group, test_groups_path=test_groups_path)
 
     # Turn this into  a list otherwise we can't cannonically state whether every test was collected _exactly_ once :-)
     tests_to_patterns = defaultdict(list)  # type: Mapping[str, List]
     for pattern in test_patterns:
-        tests = _tests_from_pattern(ci_pattern=pattern)
+        tests = _tests_from_pattern(ci_pattern=pattern, cwd=os.path.dirname(test_groups_path))
         for test in tests:
             tests_to_patterns[test].append(pattern)
 
@@ -107,6 +116,6 @@ def test_test_groups() -> None:
             log.error(message)
         raise Exception("Some tests are not collected exactly once, see errors.")
 
-    all_tests = _tests_from_pattern(ci_pattern='')
+    all_tests = _tests_from_pattern(ci_pattern='', cwd=os.path.dirname(test_groups_path))
     assert tests_to_patterns.keys() - all_tests == set()
     assert all_tests - tests_to_patterns.keys() == set()
