@@ -80,7 +80,7 @@ def gen_tls_artifacts(ca_url, artifacts_path):
 
     psk_path = Path(PRESHAREDKEY_LOCATION)
     if psk_path.exists():
-        psk = psk_path.read_text(encoding='ascii')
+        psk = psk_path.read_text(encoding='ascii').strip()
         print('Using preshared key from location `{}`'.format(str(psk_path)))
     else:
         print('No preshared key found at location `{}`'.format(str(psk_path)))
