@@ -14,6 +14,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
+
 * [Metronome] Querying run detail with embed=history, successfulFinishedRuns and failedFinishedRuns contains new field tasks which is an array of taskIds of that finished run. This will allow people to query task ids even for finished job runs.
 
 * [Metronome] Fixes metronome where it did not use the revive operation.
