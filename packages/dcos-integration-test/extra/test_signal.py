@@ -9,8 +9,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from dcos_test_utils.enterprise import EnterpriseApiSession
-from ee_helpers import get_dcos_config
+from test_helpers import get_expanded_config
 
 __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
@@ -19,9 +18,7 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 log = logging.getLogger(__name__)
 
 
-def test_ee_signal_service(
-    superuser_api_session: EnterpriseApiSession,
-) -> None:
+def test_signal_service(dcos_api_session):
     """
     signal-service runs on an hourly timer, this test runs it as a one-off
     and pushes the results to the test_server app for easy retrieval
@@ -31,13 +28,19 @@ def test_ee_signal_service(
     https://jira.mesosphere.com/browse/DCOS-22458 for more information.
     """
     dcos_version = os.getenv("DCOS_VERSION", "")
+    variant = 'open'
 
     signal_config_path = Path('/opt/mesosphere/etc/dcos-signal-config.json')
     signal_config = json.loads(signal_config_path.read_text())
     signal_extra_path = Path('/opt/mesosphere/etc/dcos-signal-extra.json')
-    signal_config.update(json.loads(signal_extra_path.read_text()))
+    try:
+        signal_config.update(json.loads(signal_extra_path.read_text()))
+        variant = 'enterprise'
+    except FileNotFoundError:
+        # the file only exists on EE clusters so just skip if it's not there
+        pass
 
-    customer_key = signal_config.get('customer_key', 'CUSTOMER KEY NOT SET')
+    customer_key = signal_config.get('customer_key', '')
     cluster_id = Path('/var/lib/dcos/cluster-id').read_text().strip()
 
     # sudo is required to read /run/dcos/etc/signal-service/service_account.json
@@ -51,7 +54,7 @@ def test_ee_signal_service(
 
     # Collect the dcos-diagnostics output that `dcos-signal` uses to determine
     # whether or not there are failed units.
-    resp = superuser_api_session.get('/system/health/v1/report?cache=0')
+    resp = dcos_api_session.get('/system/health/v1/report?cache=0')
     # We expect reading the health report to succeed.
     resp.raise_for_status()
     # Parse the response into JSON.
@@ -80,7 +83,6 @@ def test_ee_signal_service(
     exp_data = {
         'diagnostics': {
             'event': 'health',
-            'userId': customer_key,
             'anonymousId': cluster_id,
             'properties': units_health,
         },
@@ -96,7 +98,10 @@ def test_ee_signal_service(
         }
     }
 
-    dcos_config = get_dcos_config()
+    if customer_key != '':
+        exp_data['diagnostics']['userId'] = customer_key
+
+    dcos_config = get_expanded_config()
     # Generic properties which are the same between all tracks
     generic_properties = {
         'licenseId': '',
@@ -106,7 +111,7 @@ def test_ee_signal_service(
         'clusterId': cluster_id,
         'customerKey': customer_key,
         'environmentVersion': dcos_version,
-        'variant': 'enterprise'
+        'variant': variant
     }
 
     # Insert the generic property data which is the same between all signal tracks
