@@ -4,7 +4,7 @@
     "dcos-net": {
       "kind": "git",
       "git": "https://github.com/dcos/dcos-net.git",
-      "ref": "dd0aba60428f29aa66da99ae5f7cdd5bae1fcfcb",
+      "ref": "b3acd818f7824cdc8238542c44ebce26f75309b5",
       "ref_origin": "master"
     }
   },

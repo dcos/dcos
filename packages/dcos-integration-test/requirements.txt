@@ -30,7 +30,7 @@ dnspython3==1.12.0
 # /packages/python-kazoo/buildinfo.json
 kazoo==2.4.0
 # /packages/dcos-test-utils/buildinfo.json
-git+https://github.com/dcos/dcos-test-utils.git@5fb66a9f9be41ca50eea2069d6f72ba686db4cd2
+git+https://github.com/dcos/dcos-test-utils.git@a9aacbbbfb63733dc2a836624798eb3ef80ea825
 
 # /packages/python-prometheus_client/buildinfo.json
 prometheus_client==0.5.0

@@ -117,8 +117,8 @@ def test_task_logs(dcos_api_session):
 
     with dcos_api_session.marathon.deploy_and_cleanup(task_definition, check_health=False):
         url = get_task_url(dcos_api_session, task_id)
-        check_log_entry('STDOUT_LOG', url + '?filter=STREAM:STDOUT', dcos_api_session)
-        check_log_entry('STDERR_LOG', url + '?filter=STREAM:STDERR', dcos_api_session)
+        check_response('STDOUT_LOG', lambda: dcos_api_session.get(url + '?filter=STREAM:STDOUT'))
+        check_response('STDERR_LOG', lambda: dcos_api_session.get(url + '?filter=STREAM:STDERR'))
 
         stream_url = get_task_url(dcos_api_session, task_id, stream=True)
         response = dcos_api_session.get(stream_url, stream=True, headers={'Accept': 'text/event-stream'})
@@ -155,8 +155,8 @@ def test_pod_logs(dcos_api_session):
         url = get_task_url(dcos_api_session, pod_id)
         container_id = url.split('/')[-1]
 
-        check_log_entry('STDOUT_LOG', url + '?filter=STREAM:STDOUT', dcos_api_session)
-        check_log_entry('STDERR_LOG', url + '?filter=STREAM:STDERR', dcos_api_session)
+        check_response('STDOUT_LOG', lambda: dcos_api_session.get(url + '?filter=STREAM:STDOUT'))
+        check_response('STDERR_LOG', lambda: dcos_api_session.get(url + '?filter=STREAM:STDERR'))
 
         response = dcos_api_session.get(url + '/download', query='limit=10&postfix=stdout')
         log_file_name = 'task-{}-stdout.log.gz'.format(container_id)
@@ -164,10 +164,10 @@ def test_pod_logs(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=1000, stop_max_delay=3000)
-def check_log_entry(log_line, url, dcos_api_session):
-    response = dcos_api_session.get(url)
+def check_response(content, get_response):
+    response = get_response()
     check_response_ok(response, {})
-    assert log_line in response.text, 'Missing {} in output {}'.format(log_line, response.text)
+    assert content in response.text, 'Missing {} in response {}'.format(content, response.text)
 
 
 def get_task_url(dcos_api_session, task_name, stream=False):
@@ -327,14 +327,8 @@ def test_log_v2_task_logs(dcos_api_session):
     }
 
     with dcos_api_session.marathon.deploy_and_cleanup(task_definition, check_health=True):
-        response = dcos_api_session.logs.get('/v2/task/{}/file/stdout'.format(task_id))
-        check_response_ok(response, {})
-        assert 'STDOUT_LOG' in response.text, "Expect STDOUT_LOG in stdout file. Got {}".format(response.text)
-
-        response = dcos_api_session.logs.get('/v2/task/{}/file/stderr'.format(task_id))
-        check_response_ok(response, {})
-        assert 'STDERR_LOG' in response.text, "Expect STDERR_LOG in stdout file. Got {}".format(response.text)
-
+        check_response('STDOUT_LOG', lambda: dcos_api_session.logs.get('/v2/task/{}/file/stdout'.format(task_id)))
+        check_response('STDERR_LOG', lambda: dcos_api_session.logs.get('/v2/task/{}/file/stderr'.format(task_id)))
         _assert_files_in_browse_response(dcos_api_session, task_id, ['stdout', 'stderr'])
         _assert_can_download_files(dcos_api_session, task_id, ['stdout', 'stderr'])
 
@@ -360,14 +354,8 @@ def test_log_v2_pod_logs(dcos_api_session):
     }
 
     with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
-        response = dcos_api_session.logs.get('/v2/task/sleep1')
-        check_response_ok(response, {})
-        assert 'STDOUT_LOG' in response.text, "Expect STDOUT_LOG in stdout file. Got {}".format(response.text)
-
-        response = dcos_api_session.logs.get('/v2/task/sleep1/file/stderr')
-        check_response_ok(response, {})
-        assert 'STDERR_LOG' in response.text, "Expect STDERR_LOG in stdout file. Got {}".format(response.text)
-
+        check_response('STDOUT_LOG', lambda: dcos_api_session.logs.get('/v2/task/sleep1'))
+        check_response('STDERR_LOG', lambda: dcos_api_session.logs.get('/v2/task/sleep1/file/stderr'))
         _assert_files_in_browse_response(dcos_api_session, pod_id, ['stdout', 'stderr', 'foo'])
         _assert_can_download_files(dcos_api_session, pod_id, ['stdout', 'stderr', 'foo'])
 
