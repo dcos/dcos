@@ -531,12 +531,6 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
             log_data = _read_from_zip(z, 'summaryErrorsReport.txt', to_json=False)
             raise AssertionError('summaryErrorsReport.txt must be empty. Got {}'.format(log_data))
 
-        # validate all files in zip archive are not empty
-        for item in archived_items:
-            # FIXME: Change to assertion DCOS_OSS-5449
-            if not z.getinfo(item).file_size:
-                logging.info('item {} is empty'.format(item))
-
         # make sure all required log files for master node are in place.
         for master_ip in dcos_api_session.masters:
             master_folder = master_ip + '_master/'
