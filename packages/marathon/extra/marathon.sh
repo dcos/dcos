@@ -3,6 +3,7 @@ set -euo pipefail
 
 export LIBPROCESS_IP=$($MESOS_IP_DISCOVERY_COMMAND)
 
+# Assign values to env VARS if they are not set already
 : ${MARATHON_HOSTNAME="$LIBPROCESS_IP"}
 : ${MARATHON_MESOS_ROLE="slave_public"}
 : ${MARATHON_MAX_INSTANCES_PER_OFFER=100}
@@ -18,8 +19,11 @@ export LIBPROCESS_IP=$($MESOS_IP_DISCOVERY_COMMAND)
 
 # We only set this field if the old, deprecated one hasn't already been customized by some other means
 # Don't remove until Marathon 1.11, so that DC/OS users have a chance to see an error message with Marathon 1.10
+
+# If DefaultAcceptedResourceRoles is not set, then we try to assign a default value to resource roles
+# default behavior
 if [ -z "${MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES+x}" ]; then
-  MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR="unreserved"
+    : ${MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR="unreserved"}
 fi
 
 if [ -z "${MARATHON_DISABLE_ZK_COMPRESSION+x}" ]; then
