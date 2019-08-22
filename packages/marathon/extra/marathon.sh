@@ -20,7 +20,6 @@ fi
 : ${MARATHON_ENABLE_FEATURES="vips,task_killing,external_volumes,gpu_resources"}
 : ${MARATHON_MESOS_AUTHENTICATION_PRINCIPAL="dcos_marathon"}
 : ${MARATHON_MESOS_USER="root"}
-: ${MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR="unreserved"}
 
 if [ -z "${MARATHON_DISABLE_ZK_COMPRESSION+x}" ]; then
   MARATHON_ZK_COMPRESSION=""
