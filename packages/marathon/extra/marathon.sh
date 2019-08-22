@@ -4,7 +4,11 @@ set -euo pipefail
 export LIBPROCESS_IP=$($MESOS_IP_DISCOVERY_COMMAND)
 
 : ${MARATHON_HOSTNAME="$LIBPROCESS_IP"}
-: ${MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES=}
+# We only set this field if the old, deprecated one hasn't already been customized by some other means
+# Don't remove until Marathon 1.11, so that DC/OS users have a chance to see an error message with Marathon 1.10
+if [ -z "$MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES" ]; then
+  : ${MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR=unreserved}
+fi
 : ${MARATHON_MESOS_ROLE="slave_public"}
 : ${MARATHON_MAX_INSTANCES_PER_OFFER=100}
 : ${MARATHON_TASK_LAUNCH_CONFIRM_TIMEOUT=1800000}
@@ -44,7 +48,8 @@ export \
   STATSD_UDP_HOST \
   STATSD_UDP_PORT \
   MARATHON_ZK_COMPRESSION \
-  MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR
+  MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR \
+  MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES
 
 exec $PKG_PATH/marathon/bin/marathon \
     -Duser.dir=/var/lib/dcos/marathon \

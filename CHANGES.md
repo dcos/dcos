@@ -8,7 +8,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Created new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
 
-* Upgraded Marathon to 1.9.34. Marathon 1.9 brings support for multirole, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
+* Upgraded Marathon to 1.9.64. Marathon 1.9 brings support for multirole, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
+
+* The command-line flag MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR
 
 * Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0). Also, Signal now sends telemetry data every 5 minutes instead of every hour. This is to align the frequency with DC/OS Enterprise.
 
@@ -84,6 +86,8 @@ The following parameters have been removed from the DC/OS installer:
 * --install-prereqs
 * --deploy
 * --postflight
+
+The Marathon option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES` has been deprecated. Please use `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR`, instead, which has valid values of `any`, `unreserved`, or `reserved`.
 
 ### Fixed and improved
 
