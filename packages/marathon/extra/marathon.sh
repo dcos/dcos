@@ -4,11 +4,6 @@ set -euo pipefail
 export LIBPROCESS_IP=$($MESOS_IP_DISCOVERY_COMMAND)
 
 : ${MARATHON_HOSTNAME="$LIBPROCESS_IP"}
-# We only set this field if the old, deprecated one hasn't already been customized by some other means
-# Don't remove until Marathon 1.11, so that DC/OS users have a chance to see an error message with Marathon 1.10
-if [ -z "$MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES" ]; then
-  : ${MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR=unreserved}
-fi
 : ${MARATHON_MESOS_ROLE="slave_public"}
 : ${MARATHON_MAX_INSTANCES_PER_OFFER=100}
 : ${MARATHON_TASK_LAUNCH_CONFIRM_TIMEOUT=1800000}
@@ -20,6 +15,12 @@ fi
 : ${MARATHON_ENABLE_FEATURES="vips,task_killing,external_volumes,gpu_resources"}
 : ${MARATHON_MESOS_AUTHENTICATION_PRINCIPAL="dcos_marathon"}
 : ${MARATHON_MESOS_USER="root"}
+
+# We only set this field if the old, deprecated one hasn't already been customized by some other means
+# Don't remove until Marathon 1.11, so that DC/OS users have a chance to see an error message with Marathon 1.10
+if [ -z "${MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES+x}" ]; then
+  MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR="unreserved"
+fi
 
 if [ -z "${MARATHON_DISABLE_ZK_COMPRESSION+x}" ]; then
   MARATHON_ZK_COMPRESSION=""
