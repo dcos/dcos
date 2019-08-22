@@ -424,8 +424,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
                              'timedatectl.output',
                              'binsh_-c_cat etc*-release.output',
                              'systemctl_list-units_dcos*.output',
-                             # FIXME: Uncomment DCOS_OSS-5467
-                             # 'sestatus.output',
+                             'sestatus.output',
                              'iptables-save.output',
                              'ip6tables-save.output',
                              'ipset_list.output',
@@ -452,10 +451,9 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
         'var/lib/dcos/exhibitor/zookeeper/snapshot/myid',
         'var/lib/dcos/exhibitor/conf/zoo.cfg',
         'var/lib/dcos/mesos/log/mesos-master.log',
-        # FIXME: Uncomment DCOS_OSS-5467
-        # 'var/lib/dcos/mesos/log/mesos-master.log.1',
-        # 'var/lib/dcos/mesos/log/mesos-master.log.2.gz',
-        # 'var/lib/dcos/mesos/log/mesos-master.log.3.gz',
+        'var/lib/dcos/mesos/log/mesos-master.log.1',
+        'var/lib/dcos/mesos/log/mesos-master.log.2.gz',
+        'var/lib/dcos/mesos/log/mesos-master.log.3.gz',
     ] + expected_common_files
 
     expected_agent_common_files = [
