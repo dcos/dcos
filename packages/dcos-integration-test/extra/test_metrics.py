@@ -186,6 +186,7 @@ def test_metrics_master_adminrouter_nginx_vts(dcos_api_session):
     check_adminrouter_metrics()
 
 
+@pytest.mark.xfail(reason="Needs some refactoring, tracked in DCOS-57896")
 def test_metrics_master_exhibitor_status(dcos_api_session):
     """Assert that Exhibitor status metrics on master are present."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
