@@ -15,13 +15,13 @@ ENVIRONMENT VARIABLES TO SET
     important for your case, you can set WAIT_FOR_HOSTS=false
     and skip the three variables below.\033[0m
 
-    {begin_color}PUBLIC_SLAVE_HOSTS{end_color}
+    {begin_color}PUBLIC_AGENTS_PRIVATE_IPS{end_color}
     Comma-separated list of public agent private IPs.
 
-    {begin_color}SLAVE_HOSTS{end_color}
+    {begin_color}PRIVATE_AGENTS_PRIVATE_IPS{end_color}
     Comma-separated list of private agent private IPs.
 
-    {begin_color}MASTER_HOSTS{end_color}
+    {begin_color}MASTERS_PRIVATE_IPS{end_color}
     Comma-separated list of master private IPs.
 
 
@@ -45,6 +45,15 @@ ENVIRONMENT VARIABLES TO SET
     Full path to the private key for your cluster.
     If not set, you must add the key to your ssh agent.
 """.format(begin_color='\u001b[38;5;42m', end_color='\u001b[0m')
+
+
+# We use different variable names than inside the cluster to not confuse the user.
+# For example, it's not clear if SLAVE_HOSTS are public or private agents, public ips or private ips
+ENV_VAR_MAPPINGS = {
+    'MASTERS_PRIVATE_IPS': 'MASTER_HOSTS',
+    'PUBLIC_AGENTS_PRIVATE_IPS': 'PUBLIC_SLAVE_HOSTS',
+    'PRIVATE_AGENTS_PRIVATE_IPS': 'SLAVE_HOSTS'
+}
 
 
 def print_red(text):
@@ -91,6 +100,11 @@ def load_env_vars():
 
     for e in required_env_vars:
         set_required_env_var(dcos_env_vars, e)
+
+    for k, v in ENV_VAR_MAPPINGS:
+        if k in dcos_env_vars:
+            dcos_env_vars[v] = dcos_env_vars[k]
+            del dcos_env_vars[k]
 
     return dcos_env_vars
 

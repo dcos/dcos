@@ -50,7 +50,7 @@ def pytest_cmdline_main(config):
         if config.option.dist == 'no':
             config.option.dist = 'load'
         if not config.option.tx:
-            env_string = ''
+            env_string = '//env:PYTEST_LOCALE=en_US.utf8'
             options = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
             key_path = os.getenv('SSH_KEY_PATH')
             if key_path:
