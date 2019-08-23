@@ -1,7 +1,10 @@
 import logging
 import re
+import uuid
 
 import pytest
+
+from retrying import retry
 
 
 log = logging.getLogger(__name__)
@@ -85,3 +88,70 @@ class TestEncodingGzip:
             r.raise_for_status()
             log.info('Response headers: %s', repr(r.headers))
             assert 'content-encoding' not in r.headers
+
+
+class TestStateCacheUpdate:
+    """
+    Tests for Admin Router correctly updating its Mesos/Marathon state cache.
+    """
+
+    def test_invalid_dcos_service_port_index(self, dcos_api_session):
+        """
+        An invalid `DCOS_SERVICE_PORT_INDEX` will not impact the cache refresh.
+        """
+        bad_app = _marathon_container_network_nginx_app(port_index=1)
+        with dcos_api_session.marathon.deploy_and_cleanup(bad_app, check_health=False, timeout=30):
+
+            with pytest.raises(AssertionError):
+                _wait_for_state_cache_refresh(dcos_api_session, bad_app['id'])
+
+            good_app = _marathon_container_network_nginx_app(port_index=0)
+            with dcos_api_session.marathon.deploy_and_cleanup(good_app, check_health=False, timeout=30):
+                _wait_for_state_cache_refresh(dcos_api_session, good_app['id'])
+
+
+@retry(
+    stop_max_delay=30000,
+    wait_fixed=2000,
+    retry_on_exception=lambda e: isinstance(e, AssertionError),
+)
+def _wait_for_state_cache_refresh(dcos_api_session, service):
+    result = dcos_api_session.get('/service{}'.format(service), timeout=2)
+    assert result.status_code == 200
+
+
+def _marathon_container_network_nginx_app(port_index=0):
+    app_id = str(uuid.uuid4())
+    app_definition = {
+        'id': '/nginx-{}'.format(app_id),
+        'cpus': 0.1,
+        'instances': 1,
+        'mem': 64,
+        'networks': [{'mode': 'container', 'name': 'dcos'}],
+        'requirePorts': False,
+        'labels': {
+            'DCOS_SERVICE_NAME': 'nginx-{}'.format(app_id),
+            'DCOS_SERVICE_SCHEME': 'http',
+            'DCOS_SERVICE_PORT_INDEX': str(port_index),
+        },
+        'container': {
+            'type': 'DOCKER',
+            'docker': {
+                'image': 'bitnami/nginx:latest',
+                'forcePullImage': True,
+                'privileged': False,
+                'parameters': []
+            },
+            'portMappings': [
+                {
+                    'containerPort': 8080,
+                    'labels': {
+                        'VIP_0': '/nginx-{}:8080'.format(app_id),
+                    },
+                    'protocol': 'tcp',
+                    'name': 'http',
+                }
+            ]
+        }
+    }
+    return app_definition
