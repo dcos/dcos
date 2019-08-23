@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 TLS_ARTIFACT_LOCATION = '/var/lib/dcos/exhibitor-tls-artifacts'
 CSR_SERVICE_CERT_PATH = '/tmp/root-cert.pem'
-PRESHAREDKEY_LOCATION = '/root/.dcos-bootstrap-ca-psk'
+PRESHAREDKEY_LOCATION = '/var/lib/dcos/.dcos-bootstrap-ca-psk'
 EXHIBITOR_TLS_TMP_DIR = '/var/lib/dcos/exhibitor/.pki'
 BOOTSTRAP_CA_BINARY = '/opt/mesosphere/bin/dcos-bootstrap-ca'
 
