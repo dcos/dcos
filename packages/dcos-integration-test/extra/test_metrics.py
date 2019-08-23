@@ -189,7 +189,7 @@ def test_metrics_master_adminrouter_nginx_vts(dcos_api_session):
 @pytest.mark.xfailflake(
     jira="DCOS-57896",
     reason="Does not find expected metrics 'exhibitor_status_isleader', 'exhibitor_status_code'",
-    date="2019-08-23")
+    since="2019-08-23")
 def test_metrics_master_exhibitor_status(dcos_api_session):
     """Assert that Exhibitor status metrics on master are present."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
