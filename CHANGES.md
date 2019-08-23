@@ -6,6 +6,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### What's new
 
+* Added the ability to drain agent nodes via the DC/OS CLI and UI. (DCOS-53654)
+
 * Created new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
 
 * Upgraded Marathon to 1.9.64. Marathon 1.9 brings support for multirole, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
@@ -90,6 +92,8 @@ The following parameters have been removed from the DC/OS installer:
 The Marathon option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES` has been deprecated. Please use `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR`, instead, which has valid values of `any`, `unreserved`, or `reserved`.
 
 ### Fixed and improved
+
+* Improved the performance of command health checks to increase scalability. (DCOS-53656)
 
 * Added framework ID tags to Mesos framework metrics. (DCOS-53302)
 
