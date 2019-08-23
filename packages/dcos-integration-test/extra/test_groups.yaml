@@ -59,6 +59,7 @@ groups:
         - test_composition.py
         - test_dcos_diagnostics.py
         - test_exhibitor.py
+        - test_cockroach_config.py
     group_2:
         - test_dcos_log.py
         - test_endpoints.py

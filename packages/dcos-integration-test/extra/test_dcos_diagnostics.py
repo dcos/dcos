@@ -424,8 +424,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
                              'timedatectl.output',
                              'binsh_-c_cat etc*-release.output',
                              'systemctl_list-units_dcos*.output',
-                             # FIXME: Uncomment DCOS_OSS-5467
-                             # 'sestatus.output',
+                             'sestatus.output',
                              'iptables-save.output',
                              'ip6tables-save.output',
                              'ipset_list.output',
@@ -452,10 +451,9 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
         'var/lib/dcos/exhibitor/zookeeper/snapshot/myid',
         'var/lib/dcos/exhibitor/conf/zoo.cfg',
         'var/lib/dcos/mesos/log/mesos-master.log',
-        # FIXME: Uncomment DCOS_OSS-5467
-        # 'var/lib/dcos/mesos/log/mesos-master.log.1',
-        # 'var/lib/dcos/mesos/log/mesos-master.log.2.gz',
-        # 'var/lib/dcos/mesos/log/mesos-master.log.3.gz',
+        'var/lib/dcos/mesos/log/mesos-master.log.1',
+        'var/lib/dcos/mesos/log/mesos-master.log.2.gz',
+        'var/lib/dcos/mesos/log/mesos-master.log.3.gz',
     ] + expected_common_files
 
     expected_agent_common_files = [
@@ -530,12 +528,6 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
         if 'summaryErrorsReport.txt' in archived_items:
             log_data = _read_from_zip(z, 'summaryErrorsReport.txt', to_json=False)
             raise AssertionError('summaryErrorsReport.txt must be empty. Got {}'.format(log_data))
-
-        # validate all files in zip archive are not empty
-        for item in archived_items:
-            # FIXME: Change to assertion DCOS_OSS-5449
-            if not z.getinfo(item).file_size:
-                logging.info('item {} is empty'.format(item))
 
         # make sure all required log files for master node are in place.
         for master_ip in dcos_api_session.masters:
@@ -685,15 +677,12 @@ def verify_archived_items(folder, archived_items, expected_files):
         # about whether it's gzipped or not, we check for an optional `.gz`
         # file type in case it wasn't explicitly specified in the assertion.
         # For more context, see: https://jira.mesosphere.com/browse/DCOS_OSS-4531
-        if expected_file.endswith('.gz'):
-            assert expected_file in archived_items, ('expecting {} in {}'.format(expected_file, archived_items))
-        else:
-            expected_gzipped_file = (expected_file + '.gz')
-            unzipped_exists = expected_file in archived_items
-            gzipped_exists = expected_gzipped_file in archived_items
+        expected_gzipped_file = (expected_file + '.gz')
+        unzipped_exists = expected_file in archived_items
+        gzipped_exists = expected_gzipped_file in archived_items
 
-            message = ('expecting {} or {} in {}'.format(expected_file, expected_gzipped_file, archived_items))
-            assert (unzipped_exists or gzipped_exists), message
+        message = ('expecting {} or {} in {}'.format(expected_file, expected_gzipped_file, archived_items))
+        assert (unzipped_exists or gzipped_exists), message
 
 
 def verify_unit_response(unit_output, min_lines):
