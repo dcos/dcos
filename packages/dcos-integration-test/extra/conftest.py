@@ -50,18 +50,20 @@ def pytest_cmdline_main(config):
         if config.option.dist == 'no':
             config.option.dist = 'load'
         if not config.option.tx:
-            env_string = ''
+            env_string = '//env:PYTEST_LOCALE=en_US.utf8'
             options = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
-            key_path = os.getenv('SSH_KEY_PATH')
+            key_path = os.getenv('DCOS_SSH_KEY_PATH')
             if key_path:
                 options += '-i ' + key_path
             for k, v in env_vars.items():
                 env_string += '//env:{}={}'.format(k, v)
                 config.option.tx = [
-                    'ssh={options} {ssh_user}@{master_ip}//python=/opt/mesosphere/bin/dcos-shell python{env_string}'
+                    'ssh={options} {DCOS_SSH_USER}@{master_ip}//python=/opt/mesosphere/bin/dcos-shell '
+                    'python{env_string}'
                     .format(
-                        options=options, ssh_user=env_vars['SSH_USER'], master_ip=env_vars['MASTER_PUBLIC_IP'],
-                        env_string=env_string)
+                        options=options, DCOS_SSH_USER=env_vars['DCOS_SSH_USER'], env_string=env_string,
+                        master_ip=env_vars['MASTER_PUBLIC_IP']
+                    )
                 ]
         if not config.option.rsyncdir:
             config.option.rsyncdir = [os.path.dirname(os.path.abspath(__file__))]
