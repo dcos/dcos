@@ -4,13 +4,17 @@ Description=DC/OS Diagnostics Master: aggregates and exposes component health
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dcos-diagnostics.env
 EnvironmentFile=-/opt/mesosphere/etc/dcos-diagnostics-extra.env
+EnvironmentFile=-/run/dcos/etc/dcos-diagnostics/service.env
 Restart=always
 StartLimitInterval=0
 RestartSec=5
 LimitNOFILE=16384
 PermissionsStartOnly=True
 User=root
+ExecStartPre=/bin/bash -c 'mkdir -p /run/dcos/etc/dcos-diagnostics'
+# Mesos is listening only on this IP so we need to use it in order to acces its endpoints
+ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=$($MESOS_IP_DISCOVERY_COMMAND)" > /run/dcos/etc/dcos-diagnostics/service.env'
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-diagnostics-master
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-checks-master
-ExecStart=/opt/mesosphere/bin/dcos-diagnostics daemon --config ${DCOS_DIAGNOSTICS_CONFIG_PATH}
+ExecStart=/opt/mesosphere/bin/dcos-diagnostics daemon --config ${DCOS_DIAGNOSTICS_CONFIG_PATH} --hostname $LIBPROCESS_IP
 Sockets=dcos-diagnostics.socket

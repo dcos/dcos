@@ -1,8 +1,9 @@
-git+https://github.com/dcos/dcos-e2e.git@2019.06.03.0
+git+https://github.com/dcos/dcos-e2e.git@2019.06.19.0
 git+https://github.com/dcos/dcos-test-utils.git@3ebfc18ff9c5a1aa382311474a9192a68c98b0a7
 docker==3.7.0
 kazoo==2.6.1
 pytest==4.1.1
+responses==0.10.6
 requests==2.21.0
 wheel==0.33.1
 teamcity-messages==1.21

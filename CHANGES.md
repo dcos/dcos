@@ -30,6 +30,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * DC/OS Net: Fix support for big sets in the ipset manager. (COPS-5229)
 
+* Added new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
+
 ### Security updates
 
 
