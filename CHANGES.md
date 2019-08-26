@@ -12,6 +12,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Added new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
+
 * Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
 
 * The content of `/var/log/mesos-state.tar.gz` is now included in the diagnostics bundle. (DCOS-56403)
