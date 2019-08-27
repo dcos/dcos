@@ -45,12 +45,12 @@ else
     TEST_DIR='$(find /opt/mesosphere/active/ -name dcos-integration-test* | sort | tail -n 1)'
     TEST_NAMES=$($SSH -- "LC_ALL=$PYTEST_LOCALE LANG=$PYTEST_LOCALE cd $TEST_DIR && dcos-shell python $TEST_GROUPS_PATH group_$1")
 
-    export PUBLIC_SLAVE_HOSTS=$PUBLIC_SLAVE_HOSTS
-    export SLAVE_HOSTS=$SLAVE_HOSTS
-    export MASTER_HOSTS=$MASTER_PRIVATE_IP
+    export PUBLIC_AGENTS_PRIVATE_IPS=$PUBLIC_SLAVE_HOSTS
+    export PRIVATE_AGENTS_PRIVATE_IPS=$SLAVE_HOSTS
+    export MASTERS_PRIVATE_IPS=$MASTER_PRIVATE_IP
     export MASTER_PUBLIC_IP=$MASTER_PUBLIC_IP
-    export SSH_USER=$ssh_user
-    export SSH_KEY_PATH=~/.ssh/id_rsa
+    export DCOS_SSH_USER=$ssh_user
+    export DCOS_SSH_KEY_PATH=~/.ssh/id_rsa
 
     cd packages/dcos-integration-test/extra
     pytest ${EXTRA_PYTEST_ARGS} ${TEST_NAMES}
