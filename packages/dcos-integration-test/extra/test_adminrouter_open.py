@@ -100,13 +100,13 @@ class TestStateCacheUpdate:
         An invalid `DCOS_SERVICE_PORT_INDEX` will not impact the cache refresh.
         """
         bad_app = _marathon_container_network_nginx_app(port_index=1)
-        with dcos_api_session.marathon.deploy_and_cleanup(bad_app, check_health=False, timeout=30):
+        with dcos_api_session.marathon.deploy_and_cleanup(bad_app, check_health=False, timeout=120):
 
             with pytest.raises(AssertionError):
                 _wait_for_state_cache_refresh(dcos_api_session, bad_app['id'])
 
             good_app = _marathon_container_network_nginx_app(port_index=0)
-            with dcos_api_session.marathon.deploy_and_cleanup(good_app, check_health=False, timeout=30):
+            with dcos_api_session.marathon.deploy_and_cleanup(good_app, check_health=False, timeout=120):
                 _wait_for_state_cache_refresh(dcos_api_session, good_app['id'])
 
 
