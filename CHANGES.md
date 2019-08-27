@@ -8,6 +8,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Added new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
 
 ### Security updates
 
