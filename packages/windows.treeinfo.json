@@ -10,7 +10,6 @@
     "spartan": "windows"
   },
   "exclude": [
-    "avro-cpp",
     "boost-libs",
     "bootstrap",
     "boto",
