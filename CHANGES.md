@@ -7,6 +7,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ### What's new
 
 * Added the ability to drain agent nodes via the DC/OS CLI and UI. (DCOS-53654)
+* Remove nogroup group from installation (COPS-5220)
 
 * Created new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
 
