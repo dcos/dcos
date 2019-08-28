@@ -118,6 +118,39 @@ def test_if_ucr_app_can_be_deployed_with_auto_cgroups(dcos_api_session):
         pass
 
 
+def test_if_ucr_app_can_be_deployed_with_shm_in_specified_size(dcos_api_session):
+    """Marathon app deployment integration test using the Mesos Containerizer.
+
+    This test verifies that a marathon ucr app can be launched with a specified
+    size (1234MB) of private /dev/shm.
+    """
+    app = {
+        'id': '/test-ucr-' + str(uuid.uuid4().hex),
+        'cpus': 0.1,
+        'mem': 32,
+        'instances': 1,
+        'cmd': 'while true; do sleep 1; done',
+        'container': {
+            'type': 'MESOS',
+            'docker': {
+                'image': 'library/alpine'
+            },
+            "linuxInfo": {"ipcInfo": {"mode": "PRIVATE", "shmSize": 1234}}
+        },
+        'healthChecks': [{
+            'protocol': 'COMMAND',
+            'command': {'value': 'df -m /dev/shm | grep -w 1234'},
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 3
+        }]
+    }
+    with dcos_api_session.marathon.deploy_and_cleanup(app):
+        # Trivial app if it deploys, there is nothing else to check
+        pass
+
+
 def test_if_ucr_pods_can_be_deployed_with_image_entrypoint(dcos_api_session):
     """Marathon pods inside ucr deployment integration test.
 
