@@ -24,6 +24,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * DC/OS Net: Fix support for big sets in the ipset manager. (COPS-5229)
 
+* Remove nogroup creation. (COPS-5220)
+
 ### Security updates
 
 
