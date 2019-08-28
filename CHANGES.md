@@ -4,7 +4,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0)
 
-* Updated to Mesos [1.7.x](https://github.com/apache/mesos/blob/ccecf11e250621aad286564ecc1e98c307777277/CHANGELOG).
+* Updated to Mesos [1.7.3-dev](https://github.com/apache/mesos/blob/80d42b9a2c9223665a82bbaaf3cbc222a094e2ef/CHANGELOG)
 
 ### Notable changes
 
