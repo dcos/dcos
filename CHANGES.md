@@ -17,6 +17,91 @@ Format of the entries must be.
 
 ### Notable changes
 
+* Updated DC/OS UI to [1.12+v2.26.17](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.26.17).
+
+* Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/tree/b8a73dd)
+
+### Fixed and improved
+
+* [Metronome] Querying run detail with embed=history, successfulFinishedRuns and failedFinishedRuns contains new field tasks which is an array of taskIds of that finished run. This will allow people to query task ids even for finished job runs.
+
+* [Metronome] Fixes metronome where it did not use the revive operation.
+
+* [Metronome] Updates to fix daylight saving issues.
+
+* Changed `dcos-zk backup` and `dcos-zk restore` to exit early if ZooKeeper is running. (DCOS_OSS-5353)
+
+* Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
+
+* The content of `/var/log/mesos-state.tar.gz` is now included in the diagnostics bundle. (DCOS-56403)
+
+* Prune VIPs with no backends in order to avoid unbounded growth of state and messages exchanged among `dcos-net` processes. (DCOS_OSS-5356)
+
+* DC/OS Net: Fix support for big sets in the ipset manager. (COPS-5229)
+
+* Added new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
+
+* Fixes increasing diagnostics job duration when job is done (DCOS_OSS-5494)
+
+* Remove nogroup creation. (COPS-5220)
+
+### Security updates
+
+
+## DC/OS 1.12.4
+
+### Notable changes
+
+* Updated DC/OS UI to [1.12+v2.26.15](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.26.15)
+
+* ZooKeeper instances on master nodes can now be backed up and restored via a dedicated command line script `dcos-zk` that is shipped with DC/OS. (DCOS_OSS-5186)
+
+* Updated to [Mesos 1.7.3-dev](https://github.com/apache/mesos/blob/0f4e34b4dfe98178a7d94f5242041b5958eb7a24/CHANGELOG).
+
+* Updated to [Metronome 0.6.23](https://github.com/dcos/metronome/tree/be50099).
+
+* Updated to [Marathon 1.7.216](https://github.com/mesosphere/marathon/tree/9e2a9b579).
+
+* Updated REX-Ray to [version 0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4). (DCOS_OSS-4316, COPS-3961)
+
+* Updated ZooKeeper to release [3.4.14](https://zookeeper.apache.org/doc/r3.4.14/releasenotes.html). (DCOS_OSS-5002)
+
+* Introduced a new DC/OS configuration variable `adminrouter_x_frame_options`, defaulting to `SAMEORIGIN`. This can be used for controlling the `X-Frame-Options` HTTP header sent with the DC/OS UI. (DCOS-49594)
+* Updated ref of dvdcli to fix dvdcli package build (DCOS-53581)
+
+* Updated urllib3 version to 1.24.2 due to: https://nvd.nist.gov/vuln/detail/CVE-2019-11324. (DCOS-52210)
+
+### Fixed and improved
+
+* `dcos_generate_config[ee].sh --validate-config` doesn't complain about missing deprecated `ssh_*` options anymore. (DCOS_OSS-5152)
+
+* Fixed undecoded framework names in metric tags. (DCOS_OSS-5039)
+
+* Fixed a bug as of which DC/OS checks may accidentally fail, pre-maturely reporting `network is unreachable`. (DCOS-47608)
+
+* Improved Cosmos to handle more transient errors behind the scenes, enhancing its fault tolerance. (DCOS-51139)
+
+* `docker-gc` now removes unused volumes. (DCOS_OSS-1502) CONF
+
+* Fixed a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
+
+* Consolidated Telegraf for workloads that emit a large number of metrics. (DCOS-50994)
+
+* Consolidated Mesos metric collection by tuning timeout constants used in the Telegraf Mesos metric plugin. (DCOS-50672)
+
+* Prefixed illegal Prometheus metric names with an underscore, to enhance compatibility with more metric generators. (COPS-4634, COPS-3067)
+
+* Fixed dcos-net-setup.py failing when systemd network directory did not exist. (DCOS-49711) CONF
+
+* Fixed a race condition in L4LB. (DCOS_OSS-4939)
+
+* [Marathon] Introduced global throttling for Marathon health checks (MARATHON-8596)
+
+* [Marathon] Do not fail on offers with RAW and BLOCK disk types (MARATHON-8590)
+
+* [Marathon] Map `tcp,udp` to `udp,tcp` during migration (MARATHON-8575)
+
+* [Marathon] Allow all users to execute /marathon/bin/marathon (MARATHON-8581)
 
 ### Breaking changes
 
