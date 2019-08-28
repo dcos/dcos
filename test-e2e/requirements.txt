@@ -1,4 +1,4 @@
-git+https://github.com/dcos/dcos-e2e.git@2019.06.19.0
+git+https://github.com/dcos/dcos-e2e.git@2019.08.28.0
 git+https://github.com/dcos/dcos-test-utils.git@3ebfc18ff9c5a1aa382311474a9192a68c98b0a7
 docker==3.7.0
 kazoo==2.6.1
