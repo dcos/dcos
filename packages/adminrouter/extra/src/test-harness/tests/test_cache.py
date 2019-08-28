@@ -1132,6 +1132,54 @@ class TestCacheMarathon:
         self._assert_filter_regexp_for_invalid_app(
             filter_regexp, app, nginx_class, mocker, valid_user_header)
 
+    def test_app_container_networking_with_invalid_port_mapping_index_label(
+            self, nginx_class, mocker, valid_user_header):
+        app = self._scheduler_alwaysthere_app()
+        app["labels"]["DCOS_SERVICE_PORT_INDEX"] = "1"
+        app['networks'] = [{'mode': 'container', 'name': 'samplenet'}]
+        app['container']['portMappings'] = [{'containerPort': 16000, 'hostPort': 16000}]
+
+        message = (
+            "Cannot find port in container portMappings at Marathon "
+            "port index '1' for app '{app_id}'"
+        ).format(app_id=app["id"])
+        filter_regexp = {message: SearchCriteria(1, True)}
+        self._assert_filter_regexp_for_invalid_app(
+            filter_regexp, app, nginx_class, mocker, valid_user_header)
+
+    def test_app_container_networking_with_invalid_task_port_index_label(
+            self, nginx_class, mocker, valid_user_header):
+        app = self._scheduler_alwaysthere_app()
+        app["labels"]["DCOS_SERVICE_PORT_INDEX"] = "1"
+        app['networks'] = [{'mode': 'container', 'name': 'samplenet'}]
+        app['container']['portMappings'] = [
+            {'containerPort': 7777, 'hostPort': 16000},
+            {'containerPort': 0},
+        ]
+
+        message = (
+            "Cannot find port in task ports at Marathon "
+            "port index '1' for app '{app_id}'"
+        ).format(app_id=app["id"])
+        filter_regexp = {message: SearchCriteria(1, True)}
+        self._assert_filter_regexp_for_invalid_app(
+            filter_regexp, app, nginx_class, mocker, valid_user_header)
+
+    @pytest.mark.parametrize('networking_mode', ['container/bridge', 'host'])
+    def test_app_networking_with_invalid_task_port_index_label(
+            self, nginx_class, mocker, valid_user_header, networking_mode):
+        app = self._scheduler_alwaysthere_app()
+        app["labels"]["DCOS_SERVICE_PORT_INDEX"] = "1"
+        app['networks'] = [{'mode': networking_mode}]
+
+        message = (
+            "Cannot find port in task ports at Marathon "
+            "port index '1' for app '{app_id}'"
+        ).format(app_id=app["id"])
+        filter_regexp = {message: SearchCriteria(1, True)}
+        self._assert_filter_regexp_for_invalid_app(
+            filter_regexp, app, nginx_class, mocker, valid_user_header)
+
     def test_app_with_port_index_nan_label(
             self, nginx_class, mocker, valid_user_header):
         app = self._scheduler_alwaysthere_app()
@@ -1179,19 +1227,6 @@ class TestCacheMarathon:
         filter_regexp = {
             "Cannot find host or ip for app '{}'".format(app["id"]):
                 SearchCriteria(1, True),
-        }
-
-        self._assert_filter_regexp_for_invalid_app(
-            filter_regexp, app, nginx_class, mocker, valid_user_header)
-
-    def test_app_without_task_specified_port_idx(
-            self, nginx_class, mocker, valid_user_header):
-        app = self._scheduler_alwaysthere_app()
-        app["labels"]["DCOS_SERVICE_PORT_INDEX"] = "5"
-
-        filter_regexp = {
-            "Cannot find port at Marathon port index '5' for app '{}'".format(
-                app["id"]): SearchCriteria(1, True),
         }
 
         self._assert_filter_regexp_for_invalid_app(

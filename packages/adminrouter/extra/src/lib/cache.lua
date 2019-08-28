@@ -255,15 +255,47 @@ local function fetch_and_store_marathon_apps(auth_token)
        -- In "container/bridge" and "host" networking modes we need to use the
        -- host port for routing (available via task's ports array)
        local port
-       if is_container_network(app) and app["container"]["portMappings"][portIdx]["containerPort"] ~= 0 then
-         port = app["container"]["portMappings"][portIdx]["containerPort"]
-       else
-         port = task["ports"][portIdx]
+       if is_container_network(app) then
+
+           -- Special case, meaning no ports defined for app in container networking mode.
+           if next(app["container"]["portMappings"]) == nil then
+               goto continue
+           end
+
+           -- In every other case portMappings exist with at least the default.
+           -- Skip routing if DCOS_SERVICE_PORT_INDEX points out of bounds of existing portMappings.
+           if not app["container"]["portMappings"][portIdx] then
+               ngx.log(ngx.NOTICE, "Cannot find port in container portMappings at Marathon port index '" .. (portIdx - 1) .. "' for app '" .. appId .. "'")
+               goto continue
+           end
+
+           -- If the portMapping exists containerPort always exists.
+           -- https://mesosphere.github.io/marathon/docs/networking.html#port-mappings
+           -- For any other case route to the containerPort in container networking mode.
+           -- NOTE(tweidner): I believe this is unnecessary, containerPort 0 is not a special case.
+           if app["container"]["portMappings"][portIdx]["containerPort"] ~= 0 then
+               port = app["container"]["portMappings"][portIdx]["containerPort"]
+           end
        end
 
+       -- If the containerPort was randomly assigned or any other networking mode is used
+       -- try routing to the task ports assigned by Mesos for the given Marathon app.
        if not port then
-          ngx.log(ngx.NOTICE, "Cannot find port at Marathon port index '" .. (portIdx - 1) .. "' for app '" .. appId .. "'")
-          goto continue
+
+           -- Skip routing if the Mesos task does not include the ports field.
+           if not task["ports"] then
+               ngx.log(ngx.NOTICE, "Task ports field is not defined for app '" .. appId .. "'")
+               goto continue
+           end
+
+           -- Skip routing if DCOS_SERVICE_PORT_INDEX points out of bounds of existing task ports.
+           if not task["ports"][portIdx] then
+               ngx.log(ngx.NOTICE, "Cannot find port in task ports at Marathon port index '" .. (portIdx - 1) .. "' for app '" .. appId .. "'")
+               goto continue
+           end
+
+           -- For any other case route to the task port assigned by Mesos.
+           port = task["ports"][portIdx]
        end
 
        -- Details on how Admin Router interprets DCOS_SERVICE_REWRITE_REQUEST_URLS label:
