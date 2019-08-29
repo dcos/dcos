@@ -11,6 +11,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ### Fixed and improved
 
 * Added new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
+* [Admin Router] Improved service routing robustness by omitting Marathon apps with wrongly specified DCOS_SERVICE_PORT_INDEX values. (DCOS_OSS-5491)
 
 ### Security updates
 
