@@ -4,7 +4,7 @@
     "dcos-net": {
       "kind": "git",
       "git": "https://github.com/dcos/dcos-net.git",
-      "ref": "75ba3ccf60ce53cb1b7c9f34795313524b63d03c",
+      "ref": "7ce680ae0679e3a11e13afd759ddc764150525d7",
       "ref_origin": "inc/backoff-dep"
     }
   },
