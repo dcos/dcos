@@ -80,6 +80,7 @@
     "python-pycparser",
     "python-pyyaml",
     "python-requests",
+    "python-responses",
     "python-retrying",
     "python-tox",
     "rexray",
