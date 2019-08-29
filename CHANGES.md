@@ -76,6 +76,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * DC/OS Net: Fix support for big sets in the ipset manager. (COPS-5229)
 
+* DC/OS Net: switch to Erlang/OTP's Logger in order to be able to handle log message bursts without compromising the system stability. (DCOS_OSS-5461)
+
+* DC/OS Net: use exponential backoff when retrying failed requests to Mesos in order not to impose additional load onto potentially already overloaded Mesos. (DCOS_OSS-5459)
+
 ### Breaking changes
 
 The following parameters have been removed from the DC/OS installer:
