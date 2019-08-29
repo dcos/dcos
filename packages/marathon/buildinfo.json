@@ -1,4 +1,4 @@
-{rat
+{
   "requires" : [ "java" ],
   "single_source" : {
     "kind" : "url_extract",
