@@ -1,7 +1,6 @@
 {
   "variants": {
     "adminrouter": "windows",
-    "dcos-metrics": "windows",
     "erlang": "windows",
     "erts": "windows",
     "mesos": "windows",
@@ -32,6 +31,7 @@
     "dcos-installer-ui",
     "dcos-integration-test",
     "dcos-log",
+    "dcos-metrics",
     "dcos-net",
     "dcos-signal",
     "dcos-test-utils",
