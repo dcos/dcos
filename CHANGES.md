@@ -11,7 +11,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Created new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
 
-* Upgraded Marathon to 1.9.71. Marathon 1.9 brings support for multi-role, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
+* Upgraded Marathon to 1.9.73. Marathon 1.9 brings support for multi-role, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
 
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
