@@ -98,6 +98,8 @@ The Marathon option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES` has been deprecat
 
 ### Fixed and improved
 
+* Fixes increasing diagnostics job duration when job is done (DCOS_OSS-5494)
+
 * Improved the performance of command health checks to increase scalability. (DCOS-53656)
 
 * Added framework ID tags to Mesos framework metrics. (DCOS-53302)
