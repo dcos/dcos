@@ -10,7 +10,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Fixes increasing diagnostics job duration when job is done (DCOS_OSS-5494)
+
 * Added new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
+
 * [Admin Router] Improved service routing robustness by omitting Marathon apps with wrongly specified DCOS_SERVICE_PORT_INDEX values. (DCOS_OSS-5491)
 
 ### Security updates
@@ -204,6 +207,8 @@ No breaking changes are known to date.
 * Marathon 1.8 is now included. Among others, it adds the ability to launch app or pod containers defined with a seccomp profile.
 
 * Introduced the DC/OS configuration options `metronome_gpu_scheduling_behavior` and `marathon_gpu_scheduling_behavior`. By default, their values are set to `restricted`.
+
+* Improved the performance of command health checks to increase scalability. (DCOS-53656)
 
 * Metronome now supports the universal containerizer (UCR), as well as the "file-based secrets", and "hybrid cloud" DC/OS capabilities.
 
