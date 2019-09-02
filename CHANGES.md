@@ -11,7 +11,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Created new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
 
-* Upgraded Marathon to 1.9.71. Marathon 1.9 brings support for multi-role, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
+* Upgraded Marathon to 1.9.73. Marathon 1.9 brings support for multi-role, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
 
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
@@ -49,11 +49,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Upgraded platform OpenSSL from 1.0.2x to release 1.1.1x. (DCOS-54108)
 
-* Updated DC/OS UI to [master+v2.148.1](https://github.com/dcos/dcos-ui/releases/tag/master+v2.148.1).
+* Updated DC/OS UI to [master+v2.148.2](https://github.com/dcos/dcos-ui/releases/tag/master+v2.148.2).
 
 * Added L4LB metrics in DC/OS Net. (DCOS_OSS-5011)
 
-* Updated to [Mesos 1.9.x](https://github.com/apache/mesos/blob/ea953482f82131fcf033aca60145b1471ce4fcb2/CHANGELOG). (DCOS_OSS-5342)
+* Updated to [Mesos 1.9.0-rc3](https://github.com/apache/mesos/blob/cacc0e7a629de4fb1e678d814b30fd716bcb29d7/CHANGELOG). (DCOS_OSS-5342)
 
 * Bumped Mesos modules to have overlay metrics exposed. (DCOS_OSS-5322)
 
