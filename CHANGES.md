@@ -32,6 +32,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Added new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
 
+* Fixes increasing diagnostics job duration when job is done (DCOS_OSS-5494)
+
 ### Security updates
 
 
@@ -124,6 +126,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ### Fixed and improved
 
 * Include additional container metrics if provided (DCOS_OSS-4624)
+
+* Improved the performance of command health checks to increase scalability. (DCOS-53656)
 
 * Tighten permissions on ZooKeeper directories (DCOS-47687)
 
