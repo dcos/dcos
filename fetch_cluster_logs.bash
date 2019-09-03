@@ -32,8 +32,15 @@ check_max_artifact_size() {
   artifact_name=$1
   artifact_size=$(du --summarize --block-size=1M ${artifact_name} | grep -Po "\d+" | head -1)
   if (( $artifact_size > $max_artifact_size )); then
-    sudo rm -rf $artifact_name
     echo "Deleting artifact ${artifact_name}. Size of ${artifact_size}MB is exceeding limit of ${max_artifact_size}MB."
+    echo "Size threshhold can be adjusted via MAX_ARTIFACT_SIZE_MB environment variable"
+    # dump info / contents of tarballs on oversized files to try to be useful
+    # and prevent re-runs if possible
+    if [ $(file --mime-type -b ${artifact_name})=="application/gzip" ]
+        then
+            tar -ztvf ${artifact_name}
+    fi
+    sudo rm -rf $artifact_name
   fi
 }
 
