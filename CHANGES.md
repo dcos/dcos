@@ -1,6 +1,25 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
-## DC/OS 1.13.4 (In Development)
+## DC/OS 1.13.5 (in development)
+
+* Updated to Mesos [1.8.2-dev](https://github.com/apache/mesos/blob/adc958f553c3728aab5529de56b0ddc30c0f9b68/CHANGELOG)
+
+
+### Notable changes
+
+
+### Fixed and improved
+
+* Fixes increasing diagnostics job duration when job is done (DCOS_OSS-5494)
+
+* Added new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
+
+* [Admin Router] Improved service routing robustness by omitting Marathon apps with wrongly specified DCOS_SERVICE_PORT_INDEX values. (DCOS_OSS-5491)
+
+### Security updates
+
+
+## DC/OS 1.13.4
 
 ### Notable changes
 
@@ -32,7 +51,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Security updates
 
-## DC/OS 1.13.3 (CF - 2019-07-10)
+## DC/OS 1.13.3
 
 ### Notable changes
 
@@ -188,6 +207,8 @@ No breaking changes are known to date.
 * Marathon 1.8 is now included. Among others, it adds the ability to launch app or pod containers defined with a seccomp profile.
 
 * Introduced the DC/OS configuration options `metronome_gpu_scheduling_behavior` and `marathon_gpu_scheduling_behavior`. By default, their values are set to `restricted`.
+
+* Improved the performance of command health checks to increase scalability. (DCOS-53656)
 
 * Metronome now supports the universal containerizer (UCR), as well as the "file-based secrets", and "hybrid cloud" DC/OS capabilities.
 
