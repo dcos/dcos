@@ -72,43 +72,7 @@ index fbde112ea..77339a994 100644
 +
    FrameworkInfo frameworkInfo =
      std::move(*reregisterFrameworkMessage.mutable_framework());
- 
-@@ -2855,11 +2873,17 @@ void Master::sendFrameworkUpdates(const Framework& framework)
- 
- 
- void Master::subscribe(
--    const UPID& from,
-+    const UPID& from_,
-     scheduler::Call::Subscribe&& subscribe)
- {
-   FrameworkInfo& frameworkInfo = *subscribe.mutable_framework_info();
- 
-+  // Enforce "localhost" as SAN for outgoing TLS connection to the scheduler
-+  // as a workaround, since we can't have proper hostname validation for
-+  // master -> scheduler communication. See DCOS-57220.
-+  UPID from(from_);
-+  from.host = "localhost";
-+
-   // Update messages_{re}register_framework accordingly.
-   if (!frameworkInfo.has_id() || frameworkInfo.id() == "") {
-     ++metrics->messages_register_framework;
-@@ -3180,9 +3204,15 @@ void Master::_subscribe(
- 
- 
- void Master::updateFramework(
--    const process::UPID& from,
-+    const process::UPID& from_,
-     mesos::scheduler::Call::UpdateFramework&& call)
- {
-+  // Enforce "localhost" as SAN for outgoing TLS connection to the scheduler
-+  // as a workaround, since we can't have proper hostname validation for
-+  // master -> scheduler communication. See DCOS-57220.
-+  UPID from(from_);
-+  from.host = "localhost";
-+
-   FrameworkID frameworkId = call.framework_info().id();
- 
-   updateFramework(std::move(call))
+
 @@ -10539,8 +10569,14 @@ void Master::inverseOffer(
  // 'authenticate' message doesn't contain the 'FrameworkID'.
  // 'from' is the authenticatee process with which to communicate.
