@@ -187,6 +187,12 @@ if [[ ! -z $identity_file ]]; then
 fi
 
 nodes_info_json=$(./dcos-cli $debug_options node --json)
+# For newer DC/OS versions, the CLI can call "dcos node log --all" to get the complete logs.
+# However, that's not possible for older DC/OS versions.
+# Since we want this script to work for all versions, here we are using an arbitrary high number.
+# 250000000 lines averaging 200 characters would amounts to about 50GB.
+max_lines=250000000
+
 for node_info in $(echo "$nodes_info_json" | jq -r '.[] | @base64'); do
   _jq() {
    echo "$node_info" | base64 --decode | jq -r ${1}
@@ -204,7 +210,7 @@ for node_info in $(echo "$nodes_info_json" | jq -r '.[] | @base64'); do
     check_max_artifact_size "master_journald.log"
 
     # get mesos logs
-    ./dcos-cli $debug_options node log --leader > mesos_master.log
+    ./dcos-cli $debug_options node log --leader --lines $max_lines > mesos_master.log
     check_max_artifact_size "mesos_master.log"
   else
     mesos_sandbox_size=$(ssh $ssh_options $master_public_ip -- ssh $ssh_options $ip -- sudo du --summarize --block-size=1M /var/lib/mesos/slave/ | grep -Po "\d+")
@@ -228,7 +234,7 @@ for node_info in $(echo "$nodes_info_json" | jq -r '.[] | @base64'); do
     check_max_artifact_size "agent_${ip_underscores}_journald.log"
 
     # get mesos logs
-    ./dcos-cli $debug_options node log --mesos-id=$id > mesos_agent_${ip_underscores}.log
+    ./dcos-cli $debug_options node log --mesos-id=$id --lines $max_lines > mesos_agent_${ip_underscores}.log
     check_max_artifact_size "mesos_agent_${ip_underscores}.log"
   fi
 done
