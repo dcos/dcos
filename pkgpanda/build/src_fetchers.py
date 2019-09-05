@@ -268,7 +268,7 @@ def extract_archive(archive, dst_dir):
 
     if archive_type == 'tar':
         if is_windows:
-            check_call(["bsdtar", "-xf", archive, "-C", dst_dir])
+            check_call(['7z', 'x', archive, '-so', '|', '7z', 'x', '-aoa', '-si', '-ttar', dst_dir, '-r'])
         else:
             check_call(["tar", "-xf", archive, "--strip-components=1", "-C", dst_dir])
     elif archive_type == 'zip':
