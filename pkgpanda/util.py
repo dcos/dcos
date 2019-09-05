@@ -244,7 +244,9 @@ def extract_tarball(path, target):
         # Make this cross-platform via Python's tarfile module once
         # https://bugs.python.org/issue21872 is fixed.
         if is_windows:
-            check_call(['bsdtar', '-xf', path, '-C', target])
+            # Use 7zip for windows. First part is to extract the x-zip archive 
+            # and then the tar to the target folder
+            check_call(['7z', 'x', path, '-so', '|', '7z', 'x', '-aoa', '-si', '-ttar', target, '-r'])
         else:
             check_call(['tar', '-xf', path, '-C', target])
 
