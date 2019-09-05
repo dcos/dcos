@@ -12,9 +12,9 @@ LimitNOFILE=16384
 PermissionsStartOnly=True
 User=root
 ExecStartPre=/bin/bash -c 'mkdir -p /run/dcos/etc/dcos-diagnostics'
-# Mesos is listening only on this IP so we need to use it in order to acces its endpoints
+# Mesos is listening only on this IP so we need to use it in order to access its endpoints
 ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=$($MESOS_IP_DISCOVERY_COMMAND)" > /run/dcos/etc/dcos-diagnostics/service.env'
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-diagnostics-master
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-checks-master
-ExecStart=/opt/mesosphere/bin/dcos-diagnostics daemon --config ${DCOS_DIAGNOSTICS_CONFIG_PATH} --hostname $LIBPROCESS_IP
+ExecStart=/opt/mesosphere/bin/dcos-diagnostics daemon --config ${DCOS_DIAGNOSTICS_CONFIG_PATH} --hostname $LIBPROCESS_IP --exhibitor-url https://127.0.0.1:443/exhibitor/exhibitor/v1/cluster/status
 Sockets=dcos-diagnostics.socket
