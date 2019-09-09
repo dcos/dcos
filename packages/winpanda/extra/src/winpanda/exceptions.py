@@ -1,0 +1,2 @@
+"""Winpanda: Exception definitions.
+"""
