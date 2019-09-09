@@ -35,3 +35,13 @@ ExecStartPre=$PKG_PATH/bin/bootstrap_exhibitor_tls.py
 ExecStartPre=$PKG_PATH/bin/set_exhibitor_file_permissions.py
 # Start Exhibitor
 ExecStart=$PKG_PATH/usr/exhibitor/start_exhibitor.py
+
+# Environment variables that are required to run `zkServer.sh` script correctly.
+# Values must be kept in sync wiht `start_exhibitor.py` script.
+Environment=ZOOCFGDIR=/var/lib/dcos/exhibitor/conf
+Environment=ZOO_LOG_DIR=/var/lib/dcos/exhibitor/zookeeper
+Environment=ZOOPIDFILE=/var/lib/dcos/exhibitor/zk.pid
+
+# Ensure that ZK process has been cleaned up correctly and that pid file has
+# been removed
+ExecStop=$PKG_PATH/usr/zookeeper/bin/zkServer.sh stop

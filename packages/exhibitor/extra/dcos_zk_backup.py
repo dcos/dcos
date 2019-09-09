@@ -44,6 +44,10 @@ def _is_zookeeper_running(verbose: bool) -> bool:
     Returns whether the ZooKeeper process that Exhibitor controls is running.
     """
     zk_pid_file = Path('/var/lib/dcos/exhibitor/zk.pid')
+
+    # If there is no pid file the ZK is not running
+    if not zk_pid_file.exists():
+        return False
     zk_pid = int(zk_pid_file.read_text())
     try:
         # Check whether the ZooKeeper that Exhibitor controls is running.

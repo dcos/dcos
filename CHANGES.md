@@ -105,3 +105,5 @@ The Marathon option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES` has been deprecat
 * Added framework ID tags to Mesos framework metrics. (DCOS-53302)
 
 * Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
+
+* Fix leaking Zookeeper instance on `dcos-exhibitor` systemd unit restart. (DCOS-57231)
