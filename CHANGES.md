@@ -6,6 +6,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to Mesos [1.7.3-dev](https://github.com/apache/mesos/blob/80d42b9a2c9223665a82bbaaf3cbc222a094e2ef/CHANGELOG)
 
+* Metronome post-install configuration can be added to `/var/lib/dcos/metronome/environment` (DCOS_OSS-5509)
+
 ### Notable changes
 
 * Updated DC/OS UI to [1.12+v2.26.17](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.26.17).
