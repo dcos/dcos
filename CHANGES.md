@@ -4,6 +4,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to Mesos [1.8.2-dev](https://github.com/apache/mesos/blob/adc958f553c3728aab5529de56b0ddc30c0f9b68/CHANGELOG)
 
+* Metronome post-install configuration can be added to `/var/lib/dcos/metronome/environment` (DCOS_OSS-5509)
 
 ### Notable changes
 
