@@ -14,3 +14,10 @@ ln -s "$PKG_PATH/usr/java/bin/java" "$PKG_PATH/bin/java"
 ln -s "$PKG_PATH/usr/java/bin/java_vm" "$PKG_PATH/bin/java_vm"
 ln -s "$PKG_PATH/usr/java/bin/jps" "$PKG_PATH/bin/jps"
 ln -s "$PKG_PATH/usr/java/bin/keytool" "$PKG_PATH/bin/keytool"
+
+# The following command was added when moving from Oracle Java 8 to OpenJDK 8.
+# The cacerts from the downloaded OpenJDK were causing Gradle download failures when building the exhibitor package,
+# so they are replaced with the system cacerts (Ubuntu 16.04).
+# The OpenJDK 8 tarball hosted at https://downloads.mesosphere.io/java/openjdk-8u40-b25-linux-x64-10_feb_2015.tar.gz
+# was originally downloaded from https://download.java.net/openjdk/jdk8u40/ri/openjdk-8u40-b25-linux-x64-10_feb_2015.tar.gz
+cp /etc/ssl/certs/java/cacerts "$PKG_PATH/usr/java/jre/lib/security"
