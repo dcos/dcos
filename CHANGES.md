@@ -81,6 +81,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * DC/OS Net: use exponential backoff when retrying failed requests to Mesos in order not to impose additional load onto potentially already overloaded Mesos. (DCOS_OSS-5459)
 
+* Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
+
 ### Breaking changes
 
 The following parameters have been removed from the DC/OS installer:
