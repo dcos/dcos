@@ -17,6 +17,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * [Admin Router] Improved service routing robustness by omitting Marathon apps with wrongly specified DCOS_SERVICE_PORT_INDEX values. (DCOS_OSS-5491)
 
+* [Marathon] Marathon bug fixed in which a service could get stuck if a failure occurred while Mesos tried to create a reservation (MARATHON-8693)
+
+* [Marathon] Strict volume name validation was not relaxed enough in 1.13.4; this has been resolved (MARATHON-8697)
+
 ### Security updates
 
 
