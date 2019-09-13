@@ -5,7 +5,8 @@ copy-item -recurse  -Path c:/pkg/src/dcos-diagnostics/ -Destination c:/gopath/sr
 
 Push-Location $SRC_DIR
 
-& GOOS=windows go build .
+$env:GOOS = "windows"
+& go build .
 
 new-item -itemtype directory "$env:PKG_PATH/bin"
 Copy-Item -Path "$SRC_DIR/dcos-diagnostics.exe" -Destination "$env:PKG_PATH/bin/dcos-diagnostics.exe"
