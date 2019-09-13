@@ -6,6 +6,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Metronome post-install configuration can be added to `/var/lib/dcos/metronome/environment` (DCOS_OSS-5509)
 
+* Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
+
 ### Notable changes
 
 
