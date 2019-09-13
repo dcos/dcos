@@ -2,13 +2,13 @@
   "variants": {
     "adminrouter": "windows",
     "dcos-metrics": "windows",
-    "dcos-diagnostics": "windows",
     "erlang": "windows",
+    "dcos-diagnostics": "windows",
     "erts": "windows",
     "mesos": "windows",
     "openstackservice": "windows",
     "python": "windows",
-    "spartan": "windows",
+    "spartan": "windows"
   },
   "exclude": [
     "avro-cpp",
