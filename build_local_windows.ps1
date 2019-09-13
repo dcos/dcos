@@ -27,12 +27,14 @@ $myhome = $HOME.replace("\", "/")
 if ( ! (Test-Path "dcos-release.config.yaml") ) {
 $config_yaml = 
 "storage: `
-   local: `
-    kind: local_path `
-    path: $myhome/dcos-artifacts `
+   azure: `
+    kind: azure_block_blob `
+    account_name: $AZURE_PROD_STORAGE_ACCOUNT `
+    account_key: $AZURE_PROD_STORAGE_ACCESS_KEY `
+    container: dcos `
+    download_url: https://dcos.azureedge.net/dcos/dcos-windows/ `
 options: `
-  preferred: local `
-  cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos"
+  preferred: azure `
 
    $config_yaml | Set-Content -Path "dcos-release.config.yaml" 
 }
