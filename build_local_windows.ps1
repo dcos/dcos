@@ -34,7 +34,7 @@ $config_yaml =
     container: dcos `
     download_url: https://dcos.azureedge.net/dcos/dcos-windows/ `
 options: `
-  preferred: azure `
+  preferred: azure"
 
    $config_yaml | Set-Content -Path "dcos-release.config.yaml" 
 }
