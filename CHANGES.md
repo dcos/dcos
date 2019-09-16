@@ -22,3 +22,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Fixes increasing diagnostics job duration when job is done (DCOS_OSS-5494)
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
+
+* DC/OS Net: wait till agents become active before fanning out Mesos tasks. (DCOS_OSS-5463)
