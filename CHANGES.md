@@ -21,3 +21,4 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fixes increasing diagnostics job duration when job is done (DCOS_OSS-5494)
 
+* Remove octarine
