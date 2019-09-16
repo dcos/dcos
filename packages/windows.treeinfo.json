@@ -56,7 +56,6 @@
     "mesos-modules",
     "metronome",
     "ncurses",
-    "octarine",
     "openssl",
     "pkgpanda-api",
     "pkgpanda-role",
