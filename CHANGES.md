@@ -18,6 +18,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update CNI to 0.7.6
 
+* Updated to Boost 1.65.0 (DCOS_OSS-5555)
+
 
 ### Breaking changes
 
