@@ -22,3 +22,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
+
+* Remove the avro-cpp package from DC/OS. It was originally used as part of the metrics-collection framework which now relies on a different infrastructure.
