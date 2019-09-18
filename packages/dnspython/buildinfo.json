@@ -3,7 +3,7 @@
   "single_source": {
     "kind": "git",
     "git": "https://github.com/rthalley/dnspython.git",
-    "ref": "f9597eefe62c1bcda08c1a89140248060a07c73c",
-    "ref_origin": "v1.12.0-py3"
+    "ref": "1d0f64c9bc483ae1bd2c583e1fa096250f0cde0b",
+    "ref_origin": "v1.16.0"
   }
 }

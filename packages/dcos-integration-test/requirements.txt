@@ -26,7 +26,7 @@ zipp==0.5.2
 # The following should be kept in sync with their panda packages. Don't forget to update enterprise as well.
 
 # /packages/dnspython/buildinfo.json:
-dnspython3==1.12.0
+dnspython3==1.16.0
 # /packages/python-kazoo/buildinfo.json
 kazoo==2.4.0
 # /packages/dcos-test-utils/buildinfo.json
