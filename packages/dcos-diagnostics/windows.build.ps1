@@ -5,8 +5,12 @@ copy-item -recurse  -Path c:/pkg/src/dcos-diagnostics/ -Destination c:/gopath/sr
 
 Push-Location $SRC_DIR
 
+VERSION := 0.4.0
+COMMIT := $(shell git rev-parse --short HEAD)
+LDFLAGS := -X github.com/dcos/dcos-diagnostics/config.Version=$(VERSION) -X github.com/dcos/dcos-diagnostics/config.Commit=$(COMMIT)
+
 $env:GOOS = "windows"
-& go build .
+& go build . -ldflags '$(LDFLAGS)'
 
 new-item -itemtype directory "$env:PKG_PATH/bin"
 Copy-Item -Path "$SRC_DIR/dcos-diagnostics.exe" -Destination "$env:PKG_PATH/bin/dcos-diagnostics.exe"
