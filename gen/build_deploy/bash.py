@@ -452,12 +452,6 @@ function check_all() {
     # Pick up just the first line of output and get the version from it
     check systemctl 200 $(systemctl --version | head -1 | cut -f2 -d' ') systemd
 
-    echo -e -n "Checking if group 'nogroup' exists: "
-    getent group nogroup > /dev/null
-    RC=$?
-    print_status $RC
-    (( OVERALL_RC += $RC ))
-
     # Run service check on master node only
     if [[ $AGENT_ONLY -eq 0 ]]; then
         # master node service checks
