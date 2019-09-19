@@ -8,6 +8,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Remove nogroup group creation (COPS-5220)
 
 ### Security updates
 
