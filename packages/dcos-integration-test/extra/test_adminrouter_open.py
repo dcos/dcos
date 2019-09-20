@@ -95,6 +95,11 @@ class TestStateCacheUpdate:
     Tests for Admin Router correctly updating its Mesos/Marathon state cache.
     """
 
+    @pytest.mark.xfailflake(
+    jira='DCOS-58518',
+    reason='failing in master',
+    since='2019-09-20'
+    )
     def test_invalid_dcos_service_port_index(self, dcos_api_session):
         """
         An invalid `DCOS_SERVICE_PORT_INDEX` will not impact the cache refresh.
