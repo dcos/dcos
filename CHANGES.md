@@ -8,7 +8,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Switched from Oracle Java 8 to OpenJDK 8 (DCOS-54902)
 
-* Updated DC/OS UI to [master+v2.148.8](https://github.com/dcos/dcos-ui/releases/tag/master+v2.148.8).
+* Updated DC/OS UI to [master+v2.149.3](https://github.com/dcos/dcos-ui/releases/tag/master+v2.149.3).
+
 * Created new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
 
 * Upgraded Marathon to 1.9.73. Marathon 1.9 brings support for multi-role, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
