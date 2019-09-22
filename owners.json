@@ -15,7 +15,7 @@
   "jongiddy": {"slack": "jongiddy", "jira": "jonathangiddy"},
   "juliangieseke": {"slack": "Julian", "jira": "juliangieseke"},
   "meichstedt": {"slack": "matthias.eichstedt", "jira": "matthias.eichstedt"},
-  "mhrabovcin": {"slack": "martin.hrabovcin", "jira": "mhrabovcin.c"},
+  "mhrabovcin": {"slack": "martin", "jira": "mhrabovcin.c"},
   "mesosphere-mergebot": {"slack": "mergebot", "jira": "svc.mergebot"},
   "nLight": {"slack": "drozhkov", "jira": "drozhkov"},
   "orlandohohmeier": {"slack": "orlando", "jira": "orlando"},
