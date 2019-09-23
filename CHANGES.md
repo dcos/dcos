@@ -10,6 +10,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Remove nogroup group creation (COPS-5220)
 
+* Increase number of diagnostics fetchers (DCOS-51483)
+
 ### Security updates
 
 
