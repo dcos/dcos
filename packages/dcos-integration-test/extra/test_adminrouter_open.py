@@ -97,7 +97,7 @@ class TestStateCacheUpdate:
 
     @pytest.mark.xfailflake(
         jira='DCOS-58518',
-        reason='failing in master',
+        reason='TestStateCacheUpdate.test_invalid_dcos_service_port_index test is flaky',
         since='2019-09-20'
     )
     def test_invalid_dcos_service_port_index(self, dcos_api_session):
