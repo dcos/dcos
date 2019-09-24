@@ -23,7 +23,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
-* Mesos overlay networking: added an HTTPI endpoint for dropping agents from the state. (DCOS_OSS-5536)
+* Mesos overlay networking: added an HTTP endpoint for dropping agents from the state. (DCOS_OSS-5536)
 
 * Diagnostics bundle: Fixed a bug as of which the bundle creation job duration was shown as ever-increasing, even after the job finished. (DCOS_OSS-5494)
 
