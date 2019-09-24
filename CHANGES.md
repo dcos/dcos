@@ -17,9 +17,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
-* Updated to Mesos [1.8.2-dev](https://github.com/apache/mesos/blob/adc958f553c3728aab5529de56b0ddc30c0f9b68/CHANGELOG)
-
-* Metronome post-install configuration can be added to `/var/lib/dcos/metronome/environment` (DCOS_OSS-5509)
+* Updated to Mesos [1.8.2-dev](https://github.com/apache/mesos/blob/adc958f553c3728aab5529de56b0ddc30c0f9b68/CHANGELOG).
 
 * Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
 
@@ -27,14 +25,15 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Diagnostics bundle: Fixed a bug as of which the bundle creation job duration was shown as ever-increasing, even after the job finished. (DCOS_OSS-5494)
 
+* Diagnostics bundle: added a REST API with performance improvements. (DCOS_OSS-5098)
 
-* Added new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
+* Admin Router: Improved service routing robustness by omitting Marathon apps with wrongly specified DCOS_SERVICE_PORT_INDEX values. (DCOS_OSS-5491)
 
-* [Admin Router] Improved service routing robustness by omitting Marathon apps with wrongly specified DCOS_SERVICE_PORT_INDEX values. (DCOS_OSS-5491)
+* [Metronome] Post-install configuration can now be added to `/var/lib/dcos/metronome/environment`. (DCOS_OSS-5509)
 
-* [Marathon] Marathon bug fixed in which a service could get stuck if a failure occurred while Mesos tried to create a reservation (MARATHON-8693)
+* [Marathon] Fixed a bug in which a service could get stuck if a failure occurred while Mesos tried to create a reservation. (MARATHON-8693)
 
-* [Marathon] Strict volume name validation was not relaxed enough in 1.13.4; this has been resolved (MARATHON-8697)
+* [Marathon] Strict volume name validation was not relaxed enough in DC/OS release 1.13.4; this has been resolved. (MARATHON-8697)
 
 ### Security updates
 
