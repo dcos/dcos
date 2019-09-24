@@ -45,9 +45,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated DC/OS UI to [1.13+v2.82.9](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.9).
 
-* Updated to [Mesos 1.8.x](https://github.com/apache/mesos/blob/6ecaa5106ffd5b2f712854e97b5386741b1d14a7/CHANGELOG)
+* Updated to [Mesos 1.8.x](https://github.com/apache/mesos/blob/6ecaa5106ffd5b2f712854e97b5386741b1d14a7/CHANGELOG).
 
-* Marathon Updated to 1.8.222 (DCOS_OSS-5460)
+* Updated to Marathon 1.8.222. (DCOS_OSS-5460)
 
 ### Fixed and improved
 
@@ -75,11 +75,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
-* Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/releases/tag/v0.6.33)
+* Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/releases/tag/v0.6.33).
 
 * Updated to [Marathon 1.8.207](https://github.com/mesosphere/marathon/tree/9f3550487).
 
-* Updated to [Mesos 1.8.x](https://github.com/apache/mesos/blob/07d053f68b75505a4386913f05d521fa5e36373d/CHANGELOG)
+* Updated to [Mesos 1.8.x](https://github.com/apache/mesos/blob/07d053f68b75505a4386913f05d521fa5e36373d/CHANGELOG).
 
 * Updated the DC/OS UI to version [1.13+v2.82.7](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.7).
 
