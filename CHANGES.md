@@ -51,23 +51,25 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
-* Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
+* Fixed preflight check for Docker version failing for Docker 1.19. (DCOS-56831)
 
 * The content of `/var/log/mesos-state.tar.gz` is now included in the diagnostics bundle. (DCOS-56403)
 
-* Prune VIPs with no backends in order to avoid unbounded growth of state and messages exchanged among `dcos-net` processes. (DCOS_OSS-5356)
-
-* [Marathon] Clarify support for ranges and sets with constraint operators (MARATHON-7977)
-
-* [Marathon] Revive and suppress offers based on instance state (MARATHON-8627)
-
-* [Marathon] Exit with 111 if Marathon could not bind to address (MARATHON-8685)
-
-* [Marathon] Added maintenance mode to info endpoint (MARATHON-8660)
-
-* [Marathon] Remove strict validation of external volume name (MARATHON-8681)
-
 * DC/OS Net: Fix support for big sets in the ipset manager. (COPS-5229)
+
+* DC/OS Net: Prune VIPs with no backends in order to avoid unbounded growth of state and messages exchanged among `dcos-net` processes. (DCOS_OSS-5356)
+
+* [Marathon] Clarify support for ranges and sets with constraint operators. (MARATHON-7977)
+
+* [Marathon] Revive and suppress offers based on instance state. (MARATHON-8627)
+
+* [Marathon] Exit with status 111 if Marathon could not bind to address. (MARATHON-8685)
+
+* [Marathon] Added maintenance mode to info endpoint. (MARATHON-8660)
+
+* [Marathon] Removed strict validation of external volume name. (MARATHON-8681)
+
+
 
 ### Security updates
 
