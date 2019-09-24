@@ -25,7 +25,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
-* Fixes increasing diagnostics job duration when job is done (DCOS_OSS-5494)
+* Diagnostics bundle: Fixed a bug as of which the bundle creation job duration was shown as ever-increasing, even after the job finished. (DCOS_OSS-5494)
+
 
 * Added new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
 
