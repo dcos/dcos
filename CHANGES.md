@@ -23,7 +23,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
-
 ### Fixed and improved
 
 * Fixes increasing diagnostics job duration when job is done (DCOS_OSS-5494)
@@ -37,6 +36,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * [Marathon] Strict volume name validation was not relaxed enough in 1.13.4; this has been resolved (MARATHON-8697)
 
 ### Security updates
+
+N/A
 
 
 ## DC/OS 1.13.4 (2019-09-05)
@@ -69,9 +70,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * [Marathon] Removed strict validation of external volume name. (MARATHON-8681)
 
-
-
 ### Security updates
+
+N/A
+
 
 ## DC/OS 1.13.3 (2019-07-24)
 
@@ -87,7 +89,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated the DC/OS Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/commits/1.6.0).
 
-
 ### Fixed and improved
 
 * Consolidated `iam-database-restore` to work when no database exists. This helps recovery in rare scenarios. (DCOS_OSS-5317)
@@ -102,10 +103,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * [Marathon] Persistent volumes tagged with a profile name now default to `DiskType.Mount`. (MARATHON-8631)
 
-
 ### Security updates
 
 N/A
+
 
 ## DC/OS 1.13.2 (2019-07-03)
 
@@ -145,6 +146,8 @@ N/A
 
 ### Security updates
 
+N/A
+
 
 ## DC/OS 1.13.1 (2019-05-31)
 
@@ -152,7 +155,7 @@ N/A
 
 * Updated to [Mesos 1.8.1-dev](https://github.com/apache/mesos/blob/f5770dcf322bd8a88e6c88041364a4089d92be90/CHANGELOG).
 
-* Updated DC/OS UI to [1.13+v2.82.3](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.3)
+* Updated DC/OS UI to [1.13+v2.82.3](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.82.3).
 
 ### Fixed and improved
 
@@ -189,7 +192,6 @@ N/A
 * [Marathon] Prevent instance leak. (DCOS-51375)
 
 * [Marathon] Introduce new exit error code when the framework was removed from Mesos.
-
 
 ### Security updates
 
