@@ -19,9 +19,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to Mesos [1.8.2-dev](https://github.com/apache/mesos/blob/adc958f553c3728aab5529de56b0ddc30c0f9b68/CHANGELOG).
 
-* Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
+* Updated to Marathon 1.8.227.
 
 ### Fixed and improved
+
+* Mesos overlay networking: added an HTTPI endpoint for dropping agents from the state. (DCOS_OSS-5536)
 
 * Diagnostics bundle: Fixed a bug as of which the bundle creation job duration was shown as ever-increasing, even after the job finished. (DCOS_OSS-5494)
 
