@@ -232,8 +232,6 @@ No breaking changes are known to date.
 
 * Introduced the DC/OS configuration options `metronome_gpu_scheduling_behavior` and `marathon_gpu_scheduling_behavior`. By default, their values are set to `restricted`.
 
-* Improved the performance of command health checks to increase scalability. (DCOS-53656)
-
 * Metronome now supports the universal containerizer (UCR), as well as the "file-based secrets", and "hybrid cloud" DC/OS capabilities.
 
 * Environment variables can now be set for `docker-gc` in `/var/lib/dcos/docker-gc.env`. (DCOS_OSS-1140)
