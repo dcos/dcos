@@ -145,7 +145,7 @@ function Start-MesosBuild {
     Push-Location $MESOS_BUILD_DIR
     try {
         $generatorName = "Visual Studio 15 2017 Win64"
-        $parameters = @("$MESOS_GIT_REPO_DIR", "-G", "`"$generatorName`"", "-T", "host=x64", "-DENABLE_LIBEVENT=1")
+        $parameters = @("$MESOS_GIT_REPO_DIR", "-G", "`"$generatorName`"", "-T", "host=x64")
 
         Start-MesosCIProcess -ProcessPath "cmake.exe" -ArgumentList $parameters -BuildErrorMessage "Mesos cmake files failed to generate."
             #-StdoutFileName "mesos-build-cmake-stdout.log" -StderrFileName "mesos-build-cmake-stderr.log"
@@ -159,7 +159,7 @@ function Start-MesosBuild {
 
     try {
 
-        Start-MesosCIProcess -ProcessPath "cmake.exe" -ArgumentList @("--build", ".", "--", "/m") -BuildErrorMessage "Mesos binaries failed to build."
+        Start-MesosCIProcess -ProcessPath "cmake.exe" -ArgumentList @("--build", ".", "--config", "Release") -BuildErrorMessage "Mesos binaries failed to build."
     } finally {
         Pop-Location
     }
@@ -169,7 +169,7 @@ function Start-MesosBuild {
 }
 
 
-copy-item -Recurse "c:/pkg/src/" -destination "$MESOS_DIR"
+Copy-Item -Recurse "c:/pkg/src/" -destination "$MESOS_DIR"
 
 New-Environment
 
