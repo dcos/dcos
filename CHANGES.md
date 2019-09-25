@@ -18,9 +18,12 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update CNI to 0.7.6
 
+* Updated to Boost 1.65.0 (DCOS_OSS-5555)
+
 
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
 
 * DC/OS Net: wait till agents become active before fanning out Mesos tasks. (DCOS_OSS-5463)
+* Remove the avro-cpp package from DC/OS. It was originally used as part of the metrics-collection framework which now relies on a different infrastructure.
