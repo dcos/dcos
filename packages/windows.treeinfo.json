@@ -3,6 +3,7 @@
     "adminrouter": "windows",
     "dcos-metrics": "windows",
     "erlang": "windows",
+    "dcos-diagnostics": "windows",
     "erts": "windows",
     "mesos": "windows",
     "openstackservice": "windows",
@@ -10,7 +11,6 @@
     "spartan": "windows"
   },
   "exclude": [
-    "avro-cpp",
     "boost-libs",
     "bootstrap",
     "boto",
@@ -25,7 +25,6 @@
     "dcos-check-runner",
     "dcos-checks",
     "dcos-cni",
-    "dcos-diagnostics",
     "dcos-history",
     "dcos-image",
     "dcos-image-deps",
