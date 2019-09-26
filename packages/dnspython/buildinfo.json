@@ -1,9 +1,8 @@
 {
   "requires": ["python"],
   "single_source": {
-    "kind": "git",
-    "git": "https://github.com/rthalley/dnspython.git",
-    "ref": "1d0f64c9bc483ae1bd2c583e1fa096250f0cde0b",
-    "ref_origin": "v1.16.0"
+    "kind": "url_extract",
+    "url": "http://www.dnspython.org/kits/1.16.0/dnspython-1.16.0.tar.gz",
+    "sha1": "b0f30e7798a368a0aec67aa8e1dceebcd52187a6"
   }
 }
