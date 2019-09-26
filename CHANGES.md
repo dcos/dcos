@@ -26,4 +26,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
 
 * DC/OS Net: wait till agents become active before fanning out Mesos tasks. (DCOS_OSS-5463)
+
 * Remove the avro-cpp package from DC/OS. It was originally used as part of the metrics-collection framework which now relies on a different infrastructure.
+
+* Remove the spartan package from DC/OS. Is was deprecated in 1.11 and replaced by dcos-net.

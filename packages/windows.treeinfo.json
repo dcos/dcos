@@ -7,8 +7,7 @@
     "erts": "windows",
     "mesos": "windows",
     "openstackservice": "windows",
-    "python": "windows",
-    "spartan": "windows"
+    "python": "windows"
   },
   "exclude": [
     "boost-libs",
