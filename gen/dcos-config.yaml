@@ -1498,7 +1498,7 @@ package:
         "diagnostics-bundle-dir": "{{ diagnostics_bundles_dir }}",
         "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
         "no-unix-socket": true,
-        "fetchers-count": 3,
+        "fetchers-count": 100,
         "agent-port": 61001
       }
   - path: /etc_slave/dcos-diagnostics-config.json
