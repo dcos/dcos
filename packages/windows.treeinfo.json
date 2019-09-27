@@ -1,6 +1,7 @@
 {
   "variants": {
     "adminrouter": "windows",
+    "telegraf" : "windows",
     "dcos-metrics": "windows",
     "erlang": "windows",
     "erts": "windows",
@@ -86,8 +87,6 @@
     "six",
     "strace",
     "teamcity-messages",
-    "telegraf",
     "toybox"
   ]
 }
-
