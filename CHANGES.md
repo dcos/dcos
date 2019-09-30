@@ -30,3 +30,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Remove the avro-cpp package from DC/OS. It was originally used as part of the metrics-collection framework which now relies on a different infrastructure.
 
 * Remove the spartan package from DC/OS. Is was deprecated in 1.11 and replaced by dcos-net.
+
+* Remove the toybox package from DC/OS. Is was used only by Spartan.

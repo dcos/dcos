@@ -175,10 +175,6 @@ strace
 - Berkeley-style license
 - https://github.com/strace/strace/blob/master/COPYING
 
-toybox
-- BSD 3-Clause License
-- https://github.com/landley/toybox/blob/master/LICENSE
-
 rexray
 - Apache License, Version 2.0
 - https://rexray.readthedocs.io/en/stable/about/license/
