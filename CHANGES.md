@@ -12,7 +12,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
-* Updated to [Mesos 1.9.0-rc3](https://github.com/apache/mesos/blob/5e79a584e6ec3e9e2f96e8bf418411df9dafac2e/CHANGELOG). (DCOS_OSS-5342)
+* Updated to [Mesos 1.9](https://github.com/apache/mesos/blob/4895d4430f1349dc126fb004102184f8d0e9d2b3/CHANGELOG). (DCOS_OSS-5342)
 
 * Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
 
@@ -30,3 +30,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Remove the avro-cpp package from DC/OS. It was originally used as part of the metrics-collection framework which now relies on a different infrastructure.
 
 * Remove the spartan package from DC/OS. Is was deprecated in 1.11 and replaced by dcos-net.
+
+* Remove the toybox package from DC/OS. Is was used only by Spartan.
