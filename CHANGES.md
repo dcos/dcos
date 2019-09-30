@@ -16,6 +16,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Upgraded Marathon to 1.9.73. Marathon 1.9 brings support for multi-role, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
 
+* The configuration option `marathon_new_group_enforce_role` has been added to the installation config, and defaults to "top". This changes the default role for new services posted to non-existent groups, and ultimately affects the ability to deploy to public agents. Consider switching to use a top-level group `/slave_public` for these services. The config option can be changed from "top" to "off".
+
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
 * Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0). Also, Signal now sends telemetry data every 5 minutes instead of every hour. This is to align the frequency with DC/OS Enterprise.
@@ -57,6 +59,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Added L4LB metrics in DC/OS Net. (DCOS_OSS-5011)
 
 * Updated to Mesos [1.9.1-dev](https://github.com/apache/mesos/blob/c115fb0e4842f5c1211c7464d38a7a67994f08ae/CHANGELOG)
+* Updated to [Mesos 1.9](https://github.com/apache/mesos/blob/4895d4430f1349dc126fb004102184f8d0e9d2b3/CHANGELOG). (DCOS_OSS-5342)
 
 * Bumped Mesos modules to have overlay metrics exposed. (DCOS_OSS-5322)
 
@@ -108,3 +111,5 @@ The Marathon option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES` has been deprecat
 * Added framework ID tags to Mesos framework metrics. (DCOS-53302)
 
 * Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
+
+* DC/OS Net: wait till agents become active before fanning out Mesos tasks. (DCOS_OSS-5463)

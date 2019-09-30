@@ -424,11 +424,6 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6,
     return (vip, hosts, cmd, origin_app, proxy_app, pm_app)
 
 
-@pytest.mark.xfailflake(
-    jira='DCOS-53552',
-    reason='flaky because of outdated docker version in the universal installer',
-    since='2019-07-11'
-)
 @retrying.retry(wait_fixed=2000,
                 stop_max_delay=120 * 1000,
                 retry_on_exception=lambda x: True)
