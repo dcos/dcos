@@ -7,11 +7,9 @@
     "erts": "windows",
     "mesos": "windows",
     "openstackservice": "windows",
-    "python": "windows",
-    "spartan": "windows"
+    "python": "windows"
   },
   "exclude": [
-    "avro-cpp",
     "boost-libs",
     "bootstrap",
     "boto",
@@ -86,8 +84,7 @@
     "six",
     "strace",
     "teamcity-messages",
-    "telegraf",
-    "toybox"
+    "telegraf"
   ]
 }
 
