@@ -89,6 +89,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
 
+* Added support for new optional fields `lastModified` and `hasKnownIssues` in cosmos for packaging version v3, v4, and v5.
+
 ### Breaking changes
 
 The following parameters have been removed from the DC/OS installer:
