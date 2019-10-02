@@ -720,7 +720,7 @@ class TestCache:
                          cache_first_poll_delay=1,
                          )
 
-        url = ar.make_url_from_path('/dcos-history-service/foo/bar')
+        url = ar.make_url_from_path('/')
 
         with GuardedSubprocess(ar):
             lbf = LineBufferFilter(filter_regexp_pre,

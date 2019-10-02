@@ -32,3 +32,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Remove the spartan package from DC/OS. Is was deprecated in 1.11 and replaced by dcos-net.
 
 * Remove the toybox package from DC/OS. Is was used only by Spartan.
+
+* Remove the dcos-history-service from DC/OS. (DCOS-58529)

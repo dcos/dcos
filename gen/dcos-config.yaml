@@ -2140,9 +2140,6 @@ package:
     permissions: "0600"
     content: |
 {{ expanded_config_full }}
-  - path: /etc_master/dcos-history.env
-    content: |
-      STATE_SUMMARY_URI=http://leader.mesos:{{ mesos_master_port }}/state-summary
   - path: /etc_master/adminrouter-upstreams-open.conf
     content: |
       # Just for compatibility/uniformity with EE:

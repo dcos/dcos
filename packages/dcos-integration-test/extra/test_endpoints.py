@@ -96,14 +96,6 @@ def test_if_version_is_available(dcos_api_session):
 
 
 @pytest.mark.supportedwindows
-def test_if_dcos_history_service_is_up(dcos_api_session):
-    r = dcos_api_session.get('/dcos-history-service/ping')
-
-    assert r.status_code == 200
-    assert 'pong' == r.text
-
-
-@pytest.mark.supportedwindows
 def test_if_marathon_is_up(dcos_api_session):
     r = dcos_api_session.get('/marathon/v2/info')
 
@@ -149,20 +141,6 @@ def test_if_pkgpanda_metadata_is_available(dcos_api_session):
     data = r.json()
     assert 'mesos' in data
     assert len(data) > 5  # (prozlach) We can try to put minimal number of pacakages required
-
-
-def test_if_dcos_history_service_is_getting_data(dcos_api_session):
-    @retry(stop_max_delay=20000, wait_fixed=500)
-    def check_up():
-        r = dcos_api_session.get('/dcos-history-service/history/last')
-        assert r.status_code == 200
-        # Make sure some basic fields are present from state-summary which the DC/OS
-        # UI relies upon. Their exact content could vary so don't test the value.
-        json = r.json()
-        assert {'cluster', 'frameworks', 'slaves', 'hostname'} <= json.keys()
-        assert len(json["slaves"]) == len(dcos_api_session.all_slaves)
-
-    check_up()
 
 
 @pytest.mark.supportedwindows
