@@ -32,19 +32,16 @@ $config_yaml =
     bucket: downloads.dcos.io `
     object_prefix: dcos/dcos-windows `
     download_url: https://downloads.dcos.io/dcos/dcos-windows/ `
-    cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos/dcos-windows/ ``
 
 options: `
-  preferred: aws"
+  preferred: aws `
+  cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos/dcos-windows"
 
    $config_yaml | Set-Content -Path "dcos-release.config.yaml"
 
 # Create a python virtual environment to install the DC/OS tools to
 python -m venv "$tmpdir/dcos_build_venv"
 . "$tmpdir/dcos_build_venv/Scripts/Activate.ps1"
-
-$env:AZURE_PROD_STORAGE_ACCOUNT
-$env:AZURE_PROD_STORAGE_ACCESS_KEY
 
 # Install the DC/OS tools
 ./prep_local_windows.ps1
