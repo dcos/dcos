@@ -24,8 +24,8 @@ $myhome = $HOME.replace("\", "/")
 # Write a DC/OS Release tool configuration file which specifies where the build
 # should be published to. This default config makes the release tool push the
 # release to a folder in the current user's home directory.
-if ( ! (Test-Path "dcos-release.config.yaml") ) {
-$config_yaml = 
+if (Test-Path "dcos-release.config.yaml") {
+$config_yaml =
 "storage: `
    azure: `
     kind: azure_block_blob `
@@ -38,7 +38,7 @@ $config_yaml =
 options: `
   preferred: azure"
 
-   $config_yaml | Set-Content -Path "dcos-release.config.yaml" 
+   $config_yaml | Set-Content -Path "dcos-release.config.yaml"
 }
 
 # Create a python virtual environment to install the DC/OS tools to
