@@ -33,7 +33,6 @@ $config_yaml =
     account_key: $AZURE_PROD_STORAGE_ACCESS_KEY `
     container: dcos `
     download_url: https://dcos.azureedge.net/dcos/dcos-windows/ `
-    azure_download_url: https://dcos.azureedge.net/dcos/dcos-windows/ `
 
 options: `
   preferred: azure"
