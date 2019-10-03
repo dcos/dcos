@@ -1,29 +1,53 @@
-"""Winpanda: Windows service management: Base manager interface definition.
+"""Winpanda: Windows service management.
+
+Base manager interface definition.
 """
 import abc
+
+from core import logger
+from svcm import exceptions as svcm_exc
+
+
+LOG = logger.get_logger(__name__)
 
 SVCM_TYPES = {}
 
 
-def create(svcm_opts, *args, **kwargs):
-    """Instantiate a Windows service manager object.
+def create(**svcm_opts):
+    """Instantiate a Windows service manager.
 
-    :param svcm_opts: dict, Windows service manager specification
+    :param svcm_opts: dict, Windows service manager options:
+                      {
+                          'executor_name': <str>,
+                          'exec_path': <pathlib.Path>
+                      }
     """
-    executor = svcm_opts.get('executor')
+    executor_name = svcm_opts.get('executor_name')
 
-    return SVCM_TYPES[executor](svcm_opts, *args, **kwargs)
+    err_msg = None
+    if executor_name is None:
+        err_msg = ('Internal Error: Windows service manager:'
+                   ' Executor name not specified')
+    elif executor_name not in SVCM_TYPES:
+        err_msg = ('Internal Error: Windows service manager: '
+                   f'Not supported: {executor_name}')
+
+    if err_msg is not None:
+        LOG.critical(err_msg)
+        raise svcm_exc.ServiceManagerConfigError(err_msg)
+
+    return SVCM_TYPES[executor_name](**svcm_opts)
 
 
-def svcm_type(executor):
+def svcm_type(executor_name):
     """Register a Windows service manager class in the service manager types
     registry.
 
-    :param executor: str, name of underlying executor tool
+    :param executor_name: str, name of underlying executor tool
     """
     def decorator(cls):
         """"""
-        SVCM_TYPES[executor] = cls
+        SVCM_TYPES[executor_name] = cls
         return cls
 
     return decorator
@@ -32,8 +56,14 @@ def svcm_type(executor):
 class WindowsServiceManager(metaclass=abc.ABCMeta):
     """Abstract base class for Windows service manager types.
     """
-    def __init__(self, svcm_opts, *args, **kwargs):
+    def __init__(self, **svcm_opts):
         """Constructor.
+
+        :param svcm_opts: dict, service manager options:
+                          {
+                              'executor_name': <str>,
+                              'exec_path': <pathlib.Path>
+                          }
         """
         self.svcm_opts = svcm_opts
 
@@ -53,7 +83,7 @@ class WindowsServiceManager(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def setup(self, *args, **kwargs):
-        """Install (register) configuration for a Windows service.
+        """Setup (register) configuration for a Windows service.
         """
         pass
 
@@ -82,11 +112,19 @@ class WindowsServiceManager(metaclass=abc.ABCMeta):
         """
         pass
 
+    @abc.abstractmethod
     def stop(self, *args, **kwargs):
         """Stop a registered service (immediately).
         """
         pass
 
+    @abc.abstractmethod
+    def restart(self, *args, **kwargs):
+        """Restart   a registered service (immediately).
+        """
+        pass
+
+    @abc.abstractmethod
     def status(self, *args, **kwargs):
         """Discover status of a registered service.
         """
