@@ -32,7 +32,7 @@ $config_yaml =
     bucket: downloads.dcos.io `
     object_prefix: dcos/dcos-windows `
     download_url: https://downloads.dcos.io/dcos/dcos-windows/ `
-    cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos/dcos-windows ``
+    cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos/dcos-windows/ ``
 
 options: `
   preferred: aws"
