@@ -43,10 +43,11 @@ options: `
 python -m venv "$tmpdir/dcos_build_venv"
 . "$tmpdir/dcos_build_venv/Scripts/Activate.ps1"
 
+$env:AZURE_PROD_STORAGE_ACCOUNT
+$env:AZURE_PROD_STORAGE_ACCESS_KEY
+
 # Install the DC/OS tools
 ./prep_local_windows.ps1
-
-C:\Program Files\Git\usr\bin\env.exe
 
 # Build a release of DC/OS
 release create $env:USERNAME local_build windows
