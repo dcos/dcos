@@ -4,7 +4,6 @@ import urllib.parse
 import bs4
 import pytest
 from requests.exceptions import ConnectionError
-from retrying import retry
 
 __maintainer__ = 'vespian'
 __contact__ = 'dcos-security@mesosphere.io'
