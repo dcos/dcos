@@ -46,7 +46,7 @@ python -m venv "$tmpdir/dcos_build_venv"
 # Install the DC/OS tools
 ./prep_local_windows.ps1
 
-env
+C:\Program Files\Git\usr\bin\env.exe
 
 # Build a release of DC/OS
 release create $env:USERNAME local_build windows
