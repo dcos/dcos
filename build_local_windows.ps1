@@ -29,7 +29,7 @@ $config_yaml =
 "storage: `
    azure: `
     kind: azure_block_blob `
-    account_name: $AZURE_STORAGE_ACCOUNT `
+    account_name: mesosphereteamcity `
     account_key: $AZURE_STORAGE_ACCESS_KEY `
     container: dcos `
     download_url: https://dcos.azureedge.net/dcos/dcos-windows/ `
