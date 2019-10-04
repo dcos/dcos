@@ -34,9 +34,12 @@ $config_yaml =
     container: dcos `
     download_url: https://dcos.azureedge.net/dcos/dcos-windows/ `
 options: `
-  preferred: azure"
+  preferred: azure `
+  cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos/dcos-windows"
 
    $config_yaml | Set-Content -Path "dcos-release.config.yaml"
+
+type dcos-release.config.yaml
 
 # Create a python virtual environment to install the DC/OS tools to
 python -m venv "$tmpdir/dcos_build_venv"
