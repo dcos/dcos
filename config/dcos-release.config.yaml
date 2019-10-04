@@ -4,7 +4,7 @@ storage:
     bucket: downloads.dcos.io
     object_prefix: dcos
     download_url: https://downloads.dcos.io/dcos/
- azure:
+  azure:
     kind: azure_block_blob
     account_name: $AZURE_PROD_STORAGE_ACCOUNT
     account_key: $AZURE_PROD_STORAGE_ACCESS_KEY
