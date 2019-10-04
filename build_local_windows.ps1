@@ -37,6 +37,10 @@ options: `
    $config_yaml | Set-Content -Path "dcos-release.config.yaml" 
 }
 
+# test code DO NOT MERGE!!!!!
+gci env:* | sort-object name
+type dcos-release.config.yaml
+
 # Create a python virtual environment to install the DC/OS tools to
 python -m venv "$tmpdir/dcos_build_venv"
 . "$tmpdir/dcos_build_venv/Scripts/Activate.ps1"
