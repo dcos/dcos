@@ -27,15 +27,13 @@ $myhome = $HOME.replace("\", "/")
 
 $config_yaml =
 "storage: `
-   aws: `
-    kind: aws_s3 `
-    bucket: downloads.dcos.io `
-    object_prefix: dcos/dcos-windows `
-    download_url: https://downloads.dcos.io/dcos/dcos-windows/ `
+   azure: `
+    kind: azure_block_blob `
+    container: dcos `
+    download_url: https://dcosio.azureedge.net/dcos/dcos-windows/ `
 
 options: `
-  preferred: aws `
-  cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos/dcos-windows"
+  preferred: azure "
 
    $config_yaml | Set-Content -Path "dcos-release.config.yaml"
 
