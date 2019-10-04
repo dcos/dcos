@@ -4,13 +4,5 @@
           "kind": "url",
           "url": "https://openresty.org/download/openresty-1.15.8.2-win64.zip",
           "sha1": "8379fdcb93f1bb6ace8b9f575c5fe60b831182fc"
-        },
-        "AdminRouter": {
-          "kind": "git",
-          "git": "https://github.com/KostiantynOleksiienko/dcos.git",
-          "ref": "eff3aec084d5c5601ea6b0fbe222febc5392109c",
-          "ref_origin": "add-windows-config"
         }
-  },
-  "username": "dcos_epmd"
 }
