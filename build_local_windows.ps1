@@ -35,8 +35,8 @@ $config_yaml =
     download_url: https://dcos.azureedge.net/dcos/dcos-windows/ `
    aws: `
        kind: aws_s3 `
-       access_key_id = $env:AWS_ACCESS_KEY_ID `
-       secret_access_key $env:AWS_SECRET_ACCESS_KEY `
+       access_key_id: $env:AWS_ACCESS_KEY_ID `
+       secret_access_key: $env:AWS_SECRET_ACCESS_KEY `
        bucket: downloads.dcos.io `
        object_prefix: dcos/dcos-windows `
        download_url: https://downloads.dcos.io/dcos/dcos-windows/ `
