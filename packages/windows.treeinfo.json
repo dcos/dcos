@@ -1,7 +1,7 @@
 {
   "variants": {
     "adminrouter": "windows",
-    "dcos-metrics": "windows",
+    "telegraf" : "windows",
     "erlang": "windows",
     "dcos-diagnostics": "windows",
     "erts": "windows",
@@ -30,6 +30,7 @@
     "dcos-installer-ui",
     "dcos-integration-test",
     "dcos-log",
+    "dcos-metrics",
     "dcos-net",
     "dcos-signal",
     "dcos-test-utils",
@@ -84,7 +85,6 @@
     "six",
     "strace",
     "teamcity-messages",
-    "telegraf"
+    "toybox"
   ]
 }
-
