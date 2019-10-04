@@ -16,4 +16,4 @@ ls "C:\pkg\build\extra\src\"
 
 Copy-Item -Recurse -Path "c:\tmp\openresty\openresty-1.15.8.2-win64\*" "$env:PKG_PATH\bin\dcos-adminrouter\"
 Copy-Item -Recurse -Path "C:\pkg\build\extra\src\*" "$env:PKG_PATH\etc\dcos-adminrouter\conf\"
-Copy-Item "$env:PKG_PATH\etc\dcos-adminrouter\conf\nginx.agent.conf" "$env:PKG_PATH\etc\dcos-adminrouter\conf\nginx.conf"
+Copy-Item "$env:PKG_PATH\etc\dcos-adminrouter\conf\nginx.windows.agent.conf" "$env:PKG_PATH\etc\dcos-adminrouter\conf\nginx.conf"
