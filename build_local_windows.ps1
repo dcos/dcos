@@ -33,8 +33,15 @@ $config_yaml =
     account_key: $env:AZURE_STORAGE_ACCESS_KEY `
     container: dcos `
     download_url: https://dcos.azureedge.net/dcos/dcos-windows/ `
+   aws: `
+       kind: aws_s3 `
+       access_key_id = $env:AWS_ACCESS_KEY_ID `
+       secret_access_key $env:AWS_SECRET_ACCESS_KEY `
+       bucket: downloads.dcos.io `
+       object_prefix: dcos/dcos-windows `
+       download_url: https://downloads.dcos.io/dcos/dcos-windows/ `
 options: `
-  preferred: azure `
+  preferred: aws `
   cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos/dcos-windows"
 
    $config_yaml | Set-Content -Path "dcos-release.config.yaml"
