@@ -385,11 +385,13 @@ def _tar_filter(tar_info: tarfile.TarInfo) -> tarfile.TarInfo:
 
 
 def make_tar(result_filename, change_folder):
-    # In the past we used bzip2 on Windows here. At the time of writing there is no
-    # test which fails on Windows. If this fails due to lzma not being
-    # available check liblzma linking on the DC/OS python package or consider
-    # using bzip2 instead.
-    with tarfile.open(name=str(result_filename), mode='w:xz') as tar:
+    tar_mode = ''
+    if is_windows:
+        tar_mode = 'w:bz2'
+    else:
+        tar_mode = 'w:xz'
+
+    with tarfile.open(name=str(result_filename), mode=tar_mode) as tar:
         tar.add(name=str(change_folder), arcname='./', filter=_tar_filter)
 
 

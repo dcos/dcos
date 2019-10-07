@@ -3,8 +3,7 @@
     "dcos-launch",
     "dcos-metrics",
     "erts",
-    "openstackservice",
-    "spartan"
+    "openstackservice"
   ],
   "bootstrap_package_list": ["dcos-image"]
 }

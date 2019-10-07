@@ -2064,6 +2064,11 @@ package:
       MARATHON_GPU_SCHEDULING_BEHAVIOR={{ marathon_gpu_scheduling_behavior }}
 {% case "false" %}
 {% endswitch %}
+{% switch has_marathon_new_group_enforce_role %}
+{% case "true" %}
+      MARATHON_NEW_GROUP_ENFORCE_ROLE={{ marathon_new_group_enforce_role }}
+{% case "false" %}
+{% endswitch %}
 
   - path: /etc/proxy.env
 {% switch use_proxy %}
