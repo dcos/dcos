@@ -4,15 +4,8 @@
 # $searchUrl = ($packageRepo.Trim('/'), 'Packages()?$filter=(Id%20eq%20%27chocolatey%27)%20and%20IsLatestVersion') -join '/'
 
 # UPDATE THIS PATH
-$localChocolateyPackageFilePath = 'c:\dcos\chocolatey_offline   \chocolatey.0.10.15.nupkg'
-# Determine unzipping method
-# 7zip is the most compatible, but you need an internally hosted 7za.exe.
-# Make sure the version matches for the arguments as well.
-# Built-in does not work with Server Core, but if you have PowerShell 5
-# it uses Expand-Archive instead of COM
+$localChocolateyPackageFilePath = 'c:\dcos\chocolatey_offline\chocolatey.0.10.15.nupkg'
 $unzipMethod = 'builtin'
-#$unzipMethod = '7zip'
-#$7zipUrl = 'https://chocolatey.org/7za.exe' (download this file, host internally, and update this to internal)
 
 $ChocoInstallPath = "$($env:SystemDrive)\ProgramData\Chocolatey\bin"
 $env:ChocolateyInstall = "$($env:SystemDrive)\ProgramData\Chocolatey"
@@ -20,7 +13,7 @@ $env:Path += ";$ChocoInstallPath"
 $DebugPreference = "Continue";
 # if you really want to see debugging output related to the
 # installation, uncomment the next line
-$env:ChocolateyEnvironmentDebug = 'true'
+# $env:ChocolateyEnvironmentDebug = 'true'
 
 function Get-Downloader {
 param (

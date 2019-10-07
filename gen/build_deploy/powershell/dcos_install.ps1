@@ -148,24 +148,7 @@ function SetupDirectories() {
     }
 }
 
-# TO DO: remove
-# DEPRECATED since version is not used on winagent
-# function GetDestination([String] $version, [String] $destfile) {
-#     $versiondir = "$($basedir)\$($version)"
-#     if (-not (test-path "$versiondir") ) {
-#         Write-Log("$($versiondir) folder doesn't exist", "Error")
-#     } else {
-#         $output = "$($versiondir )\$($destfile)"
-#         Write-Log("Placing downloaded file as $output")
-#     }
-#     return $output
-# }
-
 function Download([String] $url, [String] $file) {
-    # Download url
-    # TO DO: remove
-    # DEPRECATED since version is not used on winagent
-    # $output = $(GetDestination $version $file)
     $output = "$($basedir)\bootstrap\$file"
     Write-Log("Starting Download of $($url) to $($output) ...")
     $start_time = Get-Date
@@ -173,7 +156,7 @@ function Download([String] $url, [String] $file) {
     Write-Log("Download complete. Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)")
 }
 
-Function ExtractTarXz($infile){
+function ExtractTarXz($infile){
     if (-not (test-path "$env:ProgramFiles\7-Zip\7z.exe")) {
         throw "$env:ProgramFiles\7-Zip\7z.exe needed"
     }
@@ -201,13 +184,6 @@ function ExtractBootstrapZip($zipfile, $Target){
 }
 
 function CreateWriteFile([String] $dir, [String] $file, [String] $content) {
-    #     $versiondir = "$($basedir)\$($version)"
-#     if (-not (test-path "$versiondir") ) {
-#         Write-Log("$($versiondir) folder doesn't exist", "Error")
-#     } else {
-#         $output = "$($versiondir )\$($destfile)"
-#         Write-Log("Placing downloaded file as $output")
-#     }
     Write-Log("vars: $dir, $file, $content")
     if (-not (test-path "$($dir)\$($file)") ) {
         Write-Log("Creating $($file) at $($dir)")
