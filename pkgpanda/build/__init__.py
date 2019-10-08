@@ -20,8 +20,8 @@ from pkgpanda.constants import install_root, PKG_DIR, RESERVED_UNIT_NAMES
 from pkgpanda.exceptions import FetchError, PackageError, ValidationError
 from pkgpanda.util import (check_forbidden_services, download_atomic,
                            hash_checkout, is_windows, load_json, load_string, logger,
-                           make_directory, make_file, make_tar, remove_directory, rewrite_symlinks, write_json,
-                           write_string)
+                           make_directory, make_file, make_tar, make_zip, remove_directory,
+                           rewrite_symlinks, write_json, write_string)
 
 
 class BuildError(Exception):
@@ -1266,8 +1266,12 @@ def _build(package_store, name, variant, clean_after_build, recursive):
         write_string(package_store.get_last_build_filename(name, variant), str(pkg_id))
 
     # Bundle the artifacts into the pkgpanda package
-    tmp_name = pkg_path + "-tmp.tar.xz"
-    make_tar(tmp_name, cache_abs("result"))
+    if is_windows:
+        tmp_name = pkg_path + "-tmp.zip"
+        make_zip(tmp_name, cache_abs("result"))
+    else:
+        tmp_name = pkg_path + "-tmp.tar.xz"
+        make_tar(tmp_name, cache_abs("result"))
     os.replace(tmp_name, pkg_path)
     print("Package built.")
     if clean_after_build:

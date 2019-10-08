@@ -11,6 +11,7 @@ import stat
 import subprocess
 import tarfile
 import tempfile
+import zipfile
 from contextlib import contextmanager, ExitStack
 from itertools import chain
 from multiprocessing import Process
@@ -393,6 +394,15 @@ def make_tar(result_filename, change_folder):
 
     with tarfile.open(name=str(result_filename), mode=tar_mode) as tar:
         tar.add(name=str(change_folder), arcname='./', filter=_tar_filter)
+
+
+def make_zip(result_filename, change_folder):
+    zf = zipfile.ZipFile(result_filename, "w")
+    for dirname, subdirs, files in os.walk("change_folder"):
+        zf.write(dirname)
+        for filename in files:
+            zf.write(os.path.join(dirname, filename))
+    zf.close()
 
 
 def rewrite_symlinks(root, old_prefix, new_prefix):
