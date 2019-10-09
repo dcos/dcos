@@ -171,17 +171,9 @@ six
 - MIT License
 - https://github.com/benjaminp/six/blob/master/LICENSE
 
-spartan
-- Apache License, Version 2.0
-- https://github.com/dcos/spartan/blob/master/LICENSE
-
 strace
 - Berkeley-style license
 - https://github.com/strace/strace/blob/master/COPYING
-
-toybox
-- BSD 3-Clause License
-- https://github.com/landley/toybox/blob/master/LICENSE
 
 rexray
 - Apache License, Version 2.0
