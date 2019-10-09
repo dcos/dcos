@@ -1,6 +1,8 @@
 {
   "variants": {
     "adminrouter": "windows",
+    "vcredist" : "windows",
+    "nssm" : "windows",
     "telegraf" : "windows",
     "erlang": "windows",
     "dcos-diagnostics": "windows",
