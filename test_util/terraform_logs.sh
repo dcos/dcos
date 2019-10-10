@@ -15,7 +15,7 @@ rm -rf logs/
 mkdir logs/
 cd logs/
 
-wget https://raw.githubusercontent.com/dcos/dcos/master/fetch_cluster_logs.bash
+wget https://raw.githubusercontent.com/dcos/dcos/38205ee3714eea5400100371f8d853ac64c332d0/fetch_cluster_logs.bash
 
 if [ "$1" == "enterprise" ]; then
     bash fetch_cluster_logs.bash enterprise "$ssh_user" "$master_ip" --username=testadmin --password=testpassword --identity-file=../id_rsa --max-artifact-size=${MAX_ARTIFACT_SIZE_MB:-1000} --debug
