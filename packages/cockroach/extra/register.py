@@ -394,11 +394,9 @@ def _init_cockroachdb_cluster(ip: str) -> None:
         '--cache={}'.format(cachesize),
         '--store=/var/lib/dcos/cockroach',
         '--insecure',
-        '--advertise-host={}'.format(ip),
-        '--host={}'.format(ip),
-        '--port=26257',
-        '--http-host=127.0.0.1',
-        '--http-port=8090',
+        '--advertise-addr={}'.format(ip),
+        '--listen-addr={}:26257'.format(ip),
+        '--http-addr=127.0.0.1:8090',
         '--pid-file={}'.format(PID_FILE_PATH),
         '--log-dir='
     ]
