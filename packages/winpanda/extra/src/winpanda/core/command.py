@@ -1,11 +1,12 @@
-"""Panda package management for Windows (Winpanda).
+"""Panda package management for Windows.
 
-Command definitions.
+DC/OS package management command definitions.
 """
 import abc
 
-from core import logger
-from core import cmd_conf
+from common.cli import CLI_COMMAND, CLI_CMDTARGET, CLI_CMDOPT
+from common import logger
+from core import cmdconf
 
 
 LOG = logger.get_logger(__name__)
@@ -18,13 +19,11 @@ def create(**cmd_opts):
 
     :param cmd_opts: dict, command options:
                      {
-                         'command_name': <str>
+                         'command_name': <str>,
+                         ...
                      }
     """
-    command_name = cmd_opts.get('command_name', 'help')
-
-    if command_name.lower() not in CMD_TYPES:
-        command_name = 'help'
+    command_name = cmd_opts.get(CLI_CMDOPT.CMD_NAME, '')
 
     return CMD_TYPES[command_name](**cmd_opts)
 
@@ -68,34 +67,17 @@ class Command(metaclass=abc.ABCMeta):
         pass
 
 
-@command_type('help')
-class HelpCmd(Command):
-    """Help command implementation."""
-    def __init__(self, **cmd_opts):
-        """"""
-        super(HelpCmd, self).__init__(**cmd_opts)
-        self.description = '''
-            Panda package management for Windows.
-        '''
-
-    def verify_cmd_options(self):
-        """Verify command options."""
-        pass
-
-    def execute(self):
-        """Execute command."""
-        print(self.description)
-
-
-@command_type('setup')
-class SetupCmd(Command):
+@command_type(CLI_COMMAND.SETUP)
+class CmdSetup(Command):
     """Setup command implementation."""
     def __init__(self, **cmd_opts):
         """"""
-        super(SetupCmd, self).__init__(**cmd_opts)
-        self.config = cmd_conf.create(**self.cmd_opts)
-        # self.active_packages = self.fetch_active_pkg_list()
-        # self.create_pkg_repo()
+        super(CmdSetup, self).__init__(**cmd_opts)
+        self.config = cmdconf.create(**self.cmd_opts)
+        LOG.debug(f'{self.__class__.__name__}: cmd_opts: {self.cmd_opts}')
+        LOG.debug(f'{self.__class__.__name__}: config: inst_storage:'
+                  f' construction_plist:'
+                  f' {self.config.inst_storage.construction_plist}')
 
     def verify_cmd_options(self):
         """Verify command options."""
@@ -103,7 +85,11 @@ class SetupCmd(Command):
 
     def execute(self):
         """Execute command."""
-        print(f'Setup command: cmd_opts: {self.cmd_opts}')
-        for pkg_meta in self.config.tree_info:
-            self.config.packages.get(pkg_meta.get('id')).svc_manager.setup()
-            self.config.packages.get(pkg_meta.get('id')).svc_manager.start()
+        if self.cmd_opts.get(CLI_CMDOPT.CMD_TARGET) == CLI_CMDTARGET.STORAGE:
+            self.config.inst_storage.construct(
+                clean=self.cmd_opts.get(CLI_CMDOPT.INST_CLEAN)
+            )
+        elif self.cmd_opts.get(CLI_CMDOPT.CMD_TARGET) == CLI_CMDTARGET.PKGALL:
+            for pkg_meta in self.config.tree_info:
+                self.config.packages.get(pkg_meta.get('id')).svc_manager.setup()
+                self.config.packages.get(pkg_meta.get('id')).svc_manager.start()

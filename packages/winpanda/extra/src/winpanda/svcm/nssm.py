@@ -1,4 +1,6 @@
-"""Winpanda: Windows service management: NSSM-based manager definition.
+"""Panda package management for Windows.
+
+Windows service management: NSSM-based service manager definition.
 
 Ref:
   [1] NSSM - the Non-Sucking Service Manager
@@ -17,8 +19,9 @@ import jinja2 as jj2
 
 from . import base
 from . import exceptions as svcm_exc
-import constants as const
-from core import logger
+from common import constants as cm_const
+from common import logger
+from common import storage
 
 
 LOG = logger.get_logger(__name__)
@@ -82,10 +85,10 @@ class NSSMConfSection(enum.Enum):
 @base.svcm_type('nssm')
 class WinSvcManagerNSSM(base.WindowsServiceManager):
     """NSSM-based Windows service manager."""
-    __exec_fname__ = 'nssm.exe'  # Executable file name.
-    __exec_id_pattern__ = re.compile(r'^NSSM.*$')  # Executable identity.
-    __svc_cfg_fname__ = 'package.nssm'
-    __ws__ = re.compile(r'[\s]+')
+    _exec_fname = 'nssm.exe'  # Executable file name.
+    _exec_id_pattern = re.compile(r'^NSSM.*$')  # Executable identity.
+    _svc_cfg_fname = 'package.nssm'
+    _ws = re.compile(r'[\s]+')
 
     def __init__(self, **svcm_opts):
         """Constructor."""
@@ -99,9 +102,9 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         self.svc_conf = (
             svc_conf if isinstance(svc_conf, configparser.ConfigParser) else
             self._read_svc_conf(
-                Path(const.DCOS_PKGREPO_ROOT_DPATH_DFT).joinpath(
-                    self.pkg_id).joinpath('etc').joinpath(
-                        self.__svc_cfg_fname__)
+                Path(storage.DCOS_PKGREPO_ROOT_DPATH_DFT).joinpath(
+                    str(self.pkg_id)).joinpath('etc').joinpath(
+                        self._svc_cfg_fname)
             )
         )
 
@@ -120,7 +123,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         """Check service management executor tool."""
         exec_path = self.svcm_opts.get('exec_path')
         exec_path = (exec_path if isinstance(exec_path, Path) else
-                     Path(self.__exec_fname__))
+                     Path(self._exec_fname))
 
         if not exec_path.is_absolute():
             # Look up in the system's PATH
@@ -150,7 +153,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
                 f'Executable broken: {exec_path}: {type(e).__name__}: {e}'
             )
         # Verify the identity of provided executable
-        if self.__exec_id_pattern__.search(
+        if self._exec_id_pattern.search(
                 subproc_run.stdout.splitlines()[0]
         ) is None:
             raise svcm_exc.ServiceManagerSetupError(
@@ -269,7 +272,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         for pname in pnames_opt:
             try:
                 pval = self.svc_conf.get(NSSMConfSection.SERVICE.value, pname)
-                if self.__ws__.search(pval):
+                if self._ws.search(pval):
                     err_msg = (
                         f'ServiceConfig: {self.svc_name}: Parameter value'
                         f' string possibly requires quotation:'

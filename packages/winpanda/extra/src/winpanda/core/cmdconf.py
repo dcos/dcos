@@ -1,25 +1,23 @@
-"""Panda package management for Windows (Winpanda).
+"""Panda package management for Windows.
 
 Command configuration object definitions.
 """
 import abc
-import configparser
 import os
 import os.path
 import posixpath
-from pathlib import Path
 import shutil
 
 
-import constants as const
-from core import logger
-import exceptions as exc
-from svcm.nssm import WinSvcManagerNSSM
-import utils as utl
+from common import cli
+from common import storage
+from common import logger
+from core import exceptions as cr_exc
+from core.package import Package
+from common import utils as cm_utl
 
 
 LOG = logger.get_logger(__name__)
-
 
 CMDCONF_TYPES = {}
 
@@ -29,13 +27,11 @@ def create(**cmd_opts):
 
     :param cmd_opts: dict, command options:
                      {
-                         'command_name': <str>
+                         'command_name': <str>,
+
                      }
     """
-    command_name = cmd_opts.get('command_name', 'help')
-
-    if command_name not in CMDCONF_TYPES:
-        command_name = 'help'
+    command_name = cmd_opts.get(cli.CLI_CMDOPT.CMD_NAME, '')
 
     return CMDCONF_TYPES[command_name](**cmd_opts)
 
@@ -59,7 +55,7 @@ class CommandConfig(metaclass=abc.ABCMeta):
     def __init__(self, **cmd_opts):
         """Constructor."""
         self.cmd_opts = cmd_opts
-        self.cluster_conf = None
+        # self.cluster_conf = None
 
     def __repr__(self):
         return (
@@ -70,37 +66,19 @@ class CommandConfig(metaclass=abc.ABCMeta):
         return self.__repr__()
 
 
-# class PackageConfig:
-#     """"""
-#     def __init__(self, pkg_id, cluster_conf):
-#         """"""
-#         self.pkg_id = pkg_id
-#         self.cluster_conf = dict(
-#             master_ip=cluster_conf.get('master_priv_ipaddr'),
-#             local_ip=cluster_conf.get('local-priv-ipaddr')
-#         )
-
-class Package:
-    """"""
-    def __init__(self, pkg_id, cluster_conf):
-        """"""
-        self.pkg_id = pkg_id
-        self.cluster_conf = dict(
-            master_ip=cluster_conf.get('master_priv_ipaddr'),
-            local_ip=cluster_conf.get('local-priv-ipaddr')
-        )
-        self.svc_manager = WinSvcManagerNSSM(
-            pkg_id=self.pkg_id,
-            cluster_conf=self.cluster_conf
-        )
-
-
-@cmdconf_type('setup')
-class SetupCmdConfig(CommandConfig):
+@cmdconf_type(cli.CLI_COMMAND.SETUP)
+class CmdConfigSetup(CommandConfig):
     """Configuration for the 'setup' command."""
     def __init__(self, **cmd_opts):
         """"""
-        super(SetupCmdConfig, self).__init__(**cmd_opts)
+        super(CmdConfigSetup, self).__init__(**cmd_opts)
+        self.inst_storage = storage.InstallationStorage(
+            root_dpath=cmd_opts.get(cli.CLI_CMDOPT.INST_ROOT),
+            cfg_dpath=cmd_opts.get(cli.CLI_CMDOPT.INST_CONF),
+            pkgrepo_dpath=cmd_opts.get(cli.CLI_CMDOPT.INST_PKGREPO),
+            state_dpath=cmd_opts.get(cli.CLI_CMDOPT.INST_STATE),
+            var_dpath=cmd_opts.get(cli.CLI_CMDOPT.INST_VAR)
+        )
         self.cluster_conf = self.get_cluster_conf()
         self.active_packages = self.fetch_active_pkg_list()
 
@@ -147,9 +125,9 @@ class SetupCmdConfig(CommandConfig):
         for pkg in self.active_packages:
             try:
                 # Fetch and unpack a package
-                utl.download(self.get_pkg_url(pkg=pkg),
-                             self.cmd_opts.get('inst_state_path'))
-                utl.unpack(
+                cm_utl.download(self.get_pkg_url(pkg=pkg),
+                                self.cmd_opts.get('inst_state_path'))
+                cm_utl.unpack(
                     '.'.join([
                         os.path.join(self.cmd_opts.get('inst_state_path'),
                                      pkg.get('id')),
@@ -178,6 +156,6 @@ class SetupCmdConfig(CommandConfig):
                     log_dpath = os.path.join(dst_dpath, 'mesos-logs')
                     os.mkdir(log_dpath)
             except Exception as e:
-                raise exc.SetupCommandError(f'{type(e).__name__}: {e}')
+                raise cr_exc.SetupCommandError(f'{type(e).__name__}: {e}')
 
         return pkg_managers

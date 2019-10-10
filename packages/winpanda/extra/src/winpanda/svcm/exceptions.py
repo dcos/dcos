@@ -1,16 +1,16 @@
-"""Winpanda: Windows service management.
+"""Panda package management for Windows.
 
-Exception definitions.
+Windows service management exception definitions.
 """
 import configparser as cp
 
-import exceptions as exc
+from common import exceptions as cm_exc
 
 # These errors may be thrown by the ConfigParser.get() method.
 CONFPARSER_GET_ERRORS = (cp.NoOptionError, cp.InterpolationError)
 
 
-class ServiceManagerError(exc.WinpandaError):
+class ServiceManagerError(cm_exc.WinpandaError):
     """Generic service manager error."""
     pass
 
@@ -30,7 +30,7 @@ class ServiceManagerCommandError(ServiceManagerError):
     pass
 
 
-class ServiceError(exc.WinpandaError):
+class ServiceError(cm_exc.WinpandaError):
     """Generic service error."""
     pass
 

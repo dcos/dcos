@@ -1,10 +1,10 @@
-"""Winpanda: Windows service management.
+"""Panda package management for Windows.
 
-Base manager interface definition.
+Base Windows service manager interface definition.
 """
 import abc
 
-from core import logger
+from common import logger
 from svcm import exceptions as svcm_exc
 
 
