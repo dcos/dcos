@@ -379,6 +379,23 @@ def test_vip(dcos_api_session, container_type, origin_network_type,
                   proxy_network_type, is_named_vip, proxy_and_origin_same_host)
 
 
+@pytest.mark.parametrize('container_type',
+                         [marathon.Container.MESOS, Container.POD])
+@pytest.mark.parametrize('is_named_vip', [True, False])
+@pytest.mark.parametrize('proxy_and_origin_same_host', [True, False])
+def test_calico_vip(dcos_api_session, container_type, is_named_vip,
+                    proxy_and_origin_same_host):
+    vip_test_base(
+        dcos_api_session,
+        container_type,
+        origin_network_type=marathon.Network.USER,
+        proxy_network_type=marathon.Network.USER,
+        is_named_vip=is_named_vip,
+        proxy_and_origin_same_host=proxy_and_origin_same_host,
+        origin_network_name="calico",
+        proxy_network_name="calico")
+
+
 def vip_test_base(dcos_api_session,
                   container_type,
                   origin_network_type,
