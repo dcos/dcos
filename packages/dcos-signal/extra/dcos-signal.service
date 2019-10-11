@@ -8,11 +8,10 @@ RestartSec=20
 LimitNOFILE=16384
 PermissionsStartOnly=True
 User=dcos_signal
-SupplementaryGroups=dcos_adminrouter
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=-/opt/mesosphere/etc/cfn_signal_metadata
 ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-signal
 
 # Signal depends on the dcos-licensing service for the license_id
-ExecStart=/opt/mesosphere/bin/dcos-signal -segment-key 51ybGTeFEFU1xo6u10XMDrr6kATFyRyh
+ExecStart=/opt/mesosphere/bin/dcos-signal -dcos-variant $DCOS_VARIANT -segment-key 51ybGTeFEFU1xo6u10XMDrr6kATFyRyh -licensing-socket /run/dcos/dcos-licensing.sock
