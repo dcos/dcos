@@ -70,6 +70,7 @@ groups:
         - test_misc.py
         - test_networking.py
         - test_rexray.py
+        - test_signal.py
     group_4:
         - test_metronome.py
         - test_packaging.py
