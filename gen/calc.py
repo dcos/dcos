@@ -29,6 +29,7 @@ import re
 import socket
 import string
 import textwrap
+from enum import IntEnum
 from math import floor
 from subprocess import check_output
 
@@ -312,13 +313,23 @@ def validate_network_default_name(overlay_network_default_name, dcos_overlay_net
             overlay_network_default_name))
 
 
-def validate_dcos_ucr_default_bridge_subnet(dcos_ucr_default_bridge_subnet):
+class IPVersion(IntEnum):
+    """Defines the package source to install package from
+    """
+    IPv4 = 4
+    IPv6 = 6
+
+
+def validate_config_subnet(config_name, subnet, version=IPVersion.IPv4):
     try:
-        ipaddress.ip_network(dcos_ucr_default_bridge_subnet)
+        network = ipaddress.ip_network(subnet)
+        if (version == IPVersion.IPv4 and not isinstance(network, ipaddress.IPv4Network)) or \
+                (version == IPVersion.IPv6 and not isinstance(network, ipaddress.IPv6Network)):
+            raise ValueError("IP version not match")
     except ValueError as ex:
-        raise AssertionError(
-            "Incorrect value for dcos_ucr_default_bridge_subnet: {}."
-            " Only IPv4 subnets are allowed".format(dcos_ucr_default_bridge_subnet)) from ex
+        err_msg = "Incorrect value for {}: {}. Only IPv{} subnets are allowed".format(
+            config_name, subnet, version)
+        raise AssertionError(err_msg) from ex
 
 
 def validate_dcos_overlay_network(dcos_overlay_network):
@@ -353,37 +364,18 @@ def validate_dcos_overlay_network(dcos_overlay_network):
             # Check the VTEP IP is present in the overlay configuration
             assert 'vtep_subnet' in overlay_network, (
                 'Missing "vtep_subnet" in overlay configuration {}'.format(overlay_network))
-
-            try:
-                ipaddress.ip_network(overlay_network['vtep_subnet'])
-            except ValueError as ex:
-                raise AssertionError(
-                    "Incorrect value for vtep_subnet: {}."
-                    " Only IPv4 values are allowed".format(overlay_network['vtep_subnet'])) from ex
-            try:
-                ipaddress.ip_network(overlay['subnet'])
-            except ValueError as ex:
-                raise AssertionError(
-                    "Incorrect value for overlay subnet {}."
-                    " Only IPv4 values are allowed".format(overlay['subnet'])) from ex
+            validate_config_subnet('vtep_subnet', overlay_network['vtep_subnet'])
+            validate_config_subnet('overlay subnet', overlay['subnet'])
 
         if 'subnet6' in overlay:
             # Check the VTEP IP6 is present in the overlay configuration
             assert 'vtep_subnet6' in overlay_network, (
                 'Missing "vtep_subnet6" in overlay configuration {}'.format(overlay_network))
 
-            try:
-                ipaddress.ip_network(overlay_network['vtep_subnet6'])
-            except ValueError as ex:
-                raise AssertionError(
-                    "Incorrect value for vtep_subnet6: {}."
-                    " Only IPv6 values are allowed".format(overlay_network['vtep_subnet6'])) from ex
-            try:
-                ipaddress.ip_network(overlay['subnet6'])
-            except ValueError as ex:
-                raise AssertionError(
-                    "Incorrect value for overlay subnet6 {}."
-                    " Only IPv6 values are allowed".format(overlay_network['subnet6'])) from ex
+            validate_config_subnet(
+                "vtep_subnet6", overlay_network['vtep_subnet6'], IPVersion.IPv6)
+            validate_config_subnet(
+                "subnet6", overlay['subnet6'], IPVersion.IPv6)
 
         if 'enabled' in overlay:
             gen.internals.validate_one_of(overlay['enabled'], [True, False])
@@ -1067,6 +1059,20 @@ def validate_custom_checks(custom_checks, check_config):
         raise AssertionError(msg)
 
 
+def validate_vxlan_port(vxlan_port):
+    validate_int_in_range(vxlan_port, 1025, 65535)
+    # dcos-net use fixed VXLAN UDP port 64000
+    # https://github.com/dcos/dcos-mesos-modules/blob/master/overlay/master.cpp#L1544
+    assert vxlan_port != 64000, 'VXLAN UDP port {} should not conflict with that of dcos-net'.format(vxlan_port)
+
+
+def validate_vxlan_vni(vxlan_vni):
+    validate_int_in_range(vxlan_vni, 4096, 16777215)
+    # dcos overlay use fixed VXLAN VNI 1024 assigned by the master module of dcos overlay network
+    # https://github.com/dcos/dcos-mesos-modules/blob/master/overlay/master.cpp#L1544
+    assert vxlan_vni != 1024, 'VXLAN VNI {} should not conflict with that of dcos overlay'
+
+
 def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
     if os.path.exists(fault_domain_detect_filename):
         return yaml.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
@@ -1112,7 +1118,8 @@ entry = {
         validate_os_type,
         validate_dcos_overlay_network,
         lambda dcos_overlay_network_json: validate_dcos_overlay_network(dcos_overlay_network_json),
-        validate_dcos_ucr_default_bridge_subnet,
+        lambda dcos_ucr_default_bridge_subnet: validate_config_subnet(
+            "dcos_ucr_default_bridge_subnet", dcos_ucr_default_bridge_subnet),
         lambda dcos_net_cluster_identity: validate_true_false(dcos_net_cluster_identity),
         lambda dcos_net_rest_enable: validate_true_false(dcos_net_rest_enable),
         lambda dcos_net_watchdog: validate_true_false(dcos_net_watchdog),
@@ -1172,6 +1179,14 @@ entry = {
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
         validate_marathon_new_group_enforce_role,
         lambda enable_windows_agents: validate_true_false(enable_windows_agents),
+        lambda calico_enabled: validate_true_false(calico_enabled),
+        lambda calico_vxlan_enabled: validate_true_false(calico_vxlan_enabled),
+        lambda calico_network_cidr: validate_config_subnet(
+            "calico_network_cidr", calico_network_cidr),
+        lambda calico_ipinip_mtu: validate_int_in_range(calico_ipinip_mtu, 552, None),
+        lambda calico_vxlan_mtu: validate_int_in_range(calico_vxlan_mtu, 552, None),
+        lambda calico_vxlan_port: validate_vxlan_port(calico_vxlan_port),
+        lambda calico_vxlan_vni: validate_vxlan_vni(calico_vxlan_vni),
     ],
     'default': {
         'exhibitor_azure_account_key': '',
@@ -1316,6 +1331,19 @@ entry = {
         'mesos_cni_root_dir_persist': 'false',
         'enable_mesos_input_plugin': 'true',
         'enable_windows_agents': 'false',
+        'calico_enabled': 'true',
+        'calico_network_cidr': '192.168.0.0/16',
+        'calico_vxlan_enabled': 'false',
+        'calico_ipinip_mtu': '1440',
+        'calico_vxlan_port': '4789',
+        'calico_vxlan_vni': '4096',
+        'calico_vxlan_mtu': '1410',
+        'etcd_endpoints': 'http://master.dcos.thisdcos.directory:2379',
+        # etcd related certificates are set empty to reuse the configurations
+        # defined in dcos-config.yaml in dcos-enterprise
+        'etcd_ca_cert_file': '',
+        'etcd_key_file': '',
+        'etcd_cert_file': '',
     },
     'must': {
         'fault_domain_enabled': 'false',

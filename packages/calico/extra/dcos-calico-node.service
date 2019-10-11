@@ -1,0 +1,20 @@
+[Unit]
+Description=DC/OS calico node: initializes a new calico node and runs calico components
+After=docker.service
+Requires=docker.service
+ConditionPathExists=/opt/mesosphere/etc/calico_enabled
+
+[Service]
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/calico-node.env
+ExecStartPre=-/usr/bin/docker rm -f dcos-calico-node
+ExecStart=/opt/mesosphere/active/calico/bin/dcos-calico-node.sh
+ExecStop=-/usr/bin/docker stop dcos-calico-node
+
+Restart=always
+StartLimitInterval=0
+KillSignal=SIGKILL
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

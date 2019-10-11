@@ -1,0 +1,40 @@
+#!/bin/bash
+set -x
+
+# copy calico CNI plugin to CNI plugin directory
+mkdir -p $PKG_PATH/cni
+cp /pkg/src/calico/calico-amd64 $PKG_PATH/cni/calico
+chmod +x $PKG_PATH/cni/calico
+cp /pkg/src/calico-ipam/calico-ipam-amd64 $PKG_PATH/cni/calico-ipam
+chmod +x $PKG_PATH/cni/calico-ipam
+
+
+# create `dcos-calicoctl` to simply the usage of calicoctl by passing the
+# configuration by default
+
+mkdir -p $PKG_PATH/bin
+cp /pkg/src/calicoctl/calicoctl-linux-amd64 $PKG_PATH/bin/calicoctl
+chmod +x $PKG_PATH/bin/calicoctl
+CALICOCTL="$PKG_PATH/bin/calicoctl"
+
+tee $PKG_PATH/bin/dcos-calicoctl <<EOF
+#!/bin/bash
+set -x
+exec "${CALICOCTL}" "\$@" --config /opt/mesosphere/etc/calico/calicoctl.cfg || exit 1
+EOF
+chmod +x $PKG_PATH/bin/dcos-calicoctl
+
+# copy the default calico profile to the package directory
+mkdir -p $PKG_PATH/etc
+cp /pkg/extra/default_profile.yaml $PKG_PATH/etc/default_profile.yaml
+
+# copy the launch script to the package bin directory
+cp /pkg/extra/dcos-calico-node.sh $PKG_PATH/bin/dcos-calico-node.sh
+chmod +x $PKG_PATH/bin/dcos-calico-node.sh
+
+# calico-node service works on both masters and slaves
+for at in master slave slave_public; do
+    tmp="$PKG_PATH/dcos.target.wants_${at}/dcos-calico-node.service"
+    mkdir -vp "$(dirname "$tmp")"
+    envsubst '$PKG_PATH' < "/pkg/extra/dcos-calico-node.service" > "$tmp"
+done
