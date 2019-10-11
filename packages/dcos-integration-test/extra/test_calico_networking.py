@@ -88,7 +88,7 @@ class CalicoNetworkTestBase(ABC):
 
     def test_container_in_overlay_network_cidr(
             self, dcos_api_session, mesos_calico_apps, expanded_config):
-        network_cidr = expanded_config["calico_overlay_network_cidr"]
+        network_cidr = expanded_config["calico_network_cidr"]
         for mesos_calico_app in mesos_calico_apps:
             contain_ip_address, _ = mesos_calico_app.hostport(dcos_api_session)
             assert IPv4Address(contain_ip_address) in IPv4Network(network_cidr)
