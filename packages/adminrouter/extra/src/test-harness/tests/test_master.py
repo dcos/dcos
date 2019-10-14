@@ -9,14 +9,12 @@ import pytest
 import requests
 
 from generic_test_code.common import (
-    generic_correct_upstream_dest_test,
-    generic_correct_upstream_request_test,
     generic_upstream_headers_verify_test,
     generic_verify_response_test,
     overridden_file_content,
     verify_header,
 )
-from util import GuardedSubprocess, LineBufferFilter, SearchCriteria
+from util import LineBufferFilter, SearchCriteria
 
 log = logging.getLogger(__name__)
 

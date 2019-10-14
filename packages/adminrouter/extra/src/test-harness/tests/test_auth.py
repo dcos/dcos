@@ -7,7 +7,7 @@ import pytest
 import requests
 
 from generic_test_code.common import assert_endpoint_response
-from util import GuardedSubprocess, SearchCriteria, auth_type_str
+from util import SearchCriteria, auth_type_str
 
 EXHIBITOR_PATH = "/exhibitor/foo/bar"
 
