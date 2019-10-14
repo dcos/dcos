@@ -20,6 +20,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to Boost 1.65.0 (DCOS_OSS-5555)
 
+* Admin Router: Accept nil task list from Marathon when updating cache. (DCOS_OSS-5541)
+
 
 ### Breaking changes
 
