@@ -10,11 +10,9 @@ exec /opt/mesosphere/active/cockroach/bin/cockroach start \
      --cache=100MiB \
      --store=/var/lib/dcos/cockroach \
      --insecure \
-     --advertise-host=${myip} \
-     --host=${myip} \
-     --port=26257 \
-     --http-host=127.0.0.1 \
-     --http-port=8090 \
+     --advertise-addr=${myip} \
+     --listen-addr=${myip}:26257 \
+     --http-addr=127.0.0.1:8090 \
      --log-dir= \
      --pid-file=/run/dcos/cockroach/cockroach.pid \
      --join=${nodes}

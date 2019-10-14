@@ -638,7 +638,21 @@ fi
 def generate(gen_out, output_dir):
     print("Generating Bash configuration files for DC/OS")
     make_bash(gen_out)
+    make_powershell(gen_out)
     util.do_bundle_onprem(gen_out, output_dir)
+
+
+def make_powershell(gen_out) -> None:
+    """Build powershell deployment script."""
+    # Populate the powershell script to Bootstrap for further deployment of Windows agent
+    powershell_script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'powershell/dcos_install.ps1')
+    with open(powershell_script_path, 'r') as f:
+        powershell_script = f.read()
+
+    # Output the dcos install ps1 script
+    install_script_filename = 'dcos_install.ps1'
+    pkgpanda.util.write_string(install_script_filename, powershell_script)
+    f.close()
 
 
 def make_bash(gen_out) -> None:
