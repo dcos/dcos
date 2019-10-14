@@ -732,7 +732,7 @@ class TestCache:
                 resp = requests.get(url,
                                     allow_redirects=False,
                                     headers=valid_user_header)
-                assert resp.status_code == 200
+                assert resp.status_code == 200, resp.text
 
             assert lbf.extra_matches == {}
 
@@ -754,7 +754,7 @@ class TestCache:
                 resp = requests.get(url,
                                     allow_redirects=False,
                                     headers=valid_user_header)
-                assert resp.status_code == 200
+                assert resp.status_code == 200, resp.text
 
             assert lbf.extra_matches == {}
 
