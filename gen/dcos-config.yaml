@@ -2453,8 +2453,6 @@ package:
       [[inputs.procstat]]
         systemd_unit = "dcos-exhibitor.service"
       [[inputs.procstat]]
-        systemd_unit = "dcos-history.service"
-      [[inputs.procstat]]
         systemd_unit = "dcos-log-master.service"
       [[inputs.procstat]]
         systemd_unit = "dcos-logrotate-master.service"
