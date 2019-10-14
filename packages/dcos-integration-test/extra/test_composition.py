@@ -162,6 +162,7 @@ def test_signal_service(dcos_api_session):
         'mesos-dns-service',
         'mesos-master-service',
         'metronome-service',
+        'signal-timer',
         'signal-service']
     all_node_units = [
         'diagnostics-service',
@@ -171,7 +172,6 @@ def test_signal_service(dcos_api_session):
         'net-service',
         'net-watchdog-service',
         'pkgpanda-api-service',
-        'signal-timer',
         'checks-poststart-service',
         'checks-poststart-timer']
     slave_units = [
