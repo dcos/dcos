@@ -666,30 +666,6 @@ endpoint_tests:
     type:
       - master
 
-######### /dcos-history-service/foo/bar
-  - tests:
-      is_response_correct:
-        expect_http_status: 200
-        nocaching_headers_are_sent: skip
-        test_paths:
-          - /dcos-history-service/foo/bar
-      are_upstream_req_headers_ok:
-        skip_authcookie_filtering_test: false
-        auth_token_is_forwarded: skip
-        test_paths:
-          - /dcos-history-service/foo/bar
-      is_upstream_correct:
-        test_paths:
-          - /dcos-history-service/foo/bar
-        upstream: http://127.0.0.1:15055
-      is_upstream_req_ok:
-        expected_http_ver: HTTP/1.0
-        test_paths:
-          - expected: /foo/bar
-            sent: /dcos-history-service/foo/bar
-    type:
-      - master
-
 ######### /mesos_dns
   - tests:
       is_response_correct:

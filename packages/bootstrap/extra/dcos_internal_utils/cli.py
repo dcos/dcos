@@ -146,21 +146,6 @@ def dcos_bouncer(b, opts):
 
 
 @check_root
-def dcos_history(b, opts):
-    # Permissions are restricted to the dcos_history user in case this
-    # directory contains sensitive data - we also want to avoid the security
-    # risk of other users writing to this directory.
-    # See https://jira.mesosphere.com/browse/DCOS-18350 for a related change to
-    # dcos-bouncer.
-
-    # The ``dcos_history_tmpdir`` directory path corresponds to the
-    # TMPDIR environment variable configured in the dcos-history.service file.
-    user = 'dcos_history'
-    dcos_history_tmpdir = _known_exec_directory() / user
-    _create_private_directory(path=dcos_history_tmpdir, owner=user)
-
-
-@check_root
 def dcos_cockroach_config_change(b, opts):
     # Permissions are restricted to the dcos_cockroach user in case this
     # directory contains sensitive data - we also want to avoid the security
@@ -200,7 +185,6 @@ bootstrappers = {
     'dcos-cockroach': noop,
     'dcos-cockroach-config-change': dcos_cockroach_config_change,
     'dcos-metronome': noop,
-    'dcos-history': dcos_history,
     'dcos-mesos-dns': noop,
     'dcos-net': dcos_net,
     'dcos-telegraf-master': dcos_telegraf_master,

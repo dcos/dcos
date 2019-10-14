@@ -506,7 +506,6 @@ function check_all() {
             "9000 metronome" \
             "9942 metronome" \
             "9990 cosmos" \
-            "15055 dcos-history" \
             "36771 marathon" \
             "41281 zookeeper" \
             "46839 metronome" \
