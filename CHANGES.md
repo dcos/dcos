@@ -22,6 +22,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Admin Router: Accept nil task list from Marathon when updating cache. (DCOS_OSS-5541)
 
+* Updated Marathon to 1.9.99
+
+    * Marathon API performance has been improved. JSON serialization is 50% faster and has 50% less memory overhead.
+
 
 ### Breaking changes
 
