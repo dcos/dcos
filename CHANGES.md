@@ -15,6 +15,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Increase number of diagnostics fetchers (DCOS-51483)
 
+* Delete each VTEP IP address only once when deleting agent records (DCOS_OSS-5597)
+
 ### Security updates
 
 
