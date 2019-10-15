@@ -131,12 +131,6 @@ function util.set_leader_host(leader_name, local_upstream, skip_prefix_iflocal)
     end
 
     if mleader['is_local'] == 'yes' then
-        -- Let's adjust the URI we send to the upstream service/remove the
-        -- `/dcos-history-service` prefix:
-        if skip_prefix_iflocal ~= nil then
-            local next_char = string.len(skip_prefix_iflocal) + 1
-            ngx.req.set_uri(string.sub(ngx.var.uri, next_char))
-        end
         ngx.var.leader_host = local_upstream
     else
         -- Let's prevent infinite proxy loops during failovers. Prefixing

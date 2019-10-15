@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-test-utils.git",
-    "ref": "c57bedab17d460403b0f30b37b5fef3af8eb2b9c",
-    "ref_origin": "pod-sandbox-helpers"
+    "ref": "9a9cafdd509bc9b8c76ab5e9f59849e7f3ace765",
+    "ref_origin": "master"
   }
 }
