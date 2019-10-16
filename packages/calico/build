@@ -17,13 +17,6 @@ cp /pkg/src/calicoctl/calicoctl-linux-amd64 $PKG_PATH/bin/calicoctl
 chmod +x $PKG_PATH/bin/calicoctl
 CALICOCTL="$PKG_PATH/bin/calicoctl"
 
-tee $PKG_PATH/bin/dcos-calicoctl <<EOF
-#!/bin/bash
-set -x
-exec "${CALICOCTL}" "\$@" --config /opt/mesosphere/etc/calico/calicoctl.cfg || exit 1
-EOF
-chmod +x $PKG_PATH/bin/dcos-calicoctl
-
 # copy the default calico profile to the package directory
 mkdir -p $PKG_PATH/etc
 cp /pkg/extra/default_profile.yaml $PKG_PATH/etc/default_profile.yaml

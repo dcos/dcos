@@ -7,6 +7,8 @@ ConditionPathExists=/opt/mesosphere/etc/calico_enabled
 [Service]
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/calico-node.env
+ExecStartPre=/usr/bin/mkdir -p /etc/calico
+ExecStartPre=/usr/bin/cp /opt/mesosphere/etc/calico/calicoctl.cfg /etc/calico/calicoctl.cfg
 ExecStartPre=-/usr/bin/docker rm -f dcos-calico-node
 ExecStart=/opt/mesosphere/active/calico/bin/dcos-calico-node.sh
 ExecStop=-/usr/bin/docker stop dcos-calico-node
