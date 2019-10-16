@@ -14,7 +14,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Created new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
 
-* Upgraded Marathon to 1.9.73. Marathon 1.9 brings support for multi-role, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
+* Upgraded Marathon to 1.9.100. Marathon 1.9 brings support for multi-role, enabling you to launch services for different roles (against different Mesos quotas) with the same Marathon instance.
 
 * The configuration option `marathon_new_group_enforce_role` has been added to the installation config, and defaults to "top". This changes the default role for new services posted to non-existent groups, and ultimately affects the ability to deploy to public agents. Consider switching to use a top-level group `/slave_public` for these services. The config option can be changed from "top" to "off".
 
@@ -90,6 +90,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
 
 * Added support for new optional fields `lastModified` and `hasKnownIssues` in cosmos for packaging version v3, v4, and v5.
+* Updated Marathon to 1.9.99
+
+    * Marathon API performance has been improved. JSON serialization is 50% faster and has 50% less memory overhead.
+
 
 ### Breaking changes
 
