@@ -28,3 +28,7 @@ packages/dcos-provider-*
 package_lists
 .vscode
 .python-version
+
+# lint releate:
+.mypy_cache
+
