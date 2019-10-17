@@ -22,6 +22,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Admin Router: Accept nil task list from Marathon when updating cache. (DCOS_OSS-5541)
 
+* Add `fix-py-lint` and `py-lint` Makefile target for formatting Python code and CI.
+
 
 ### Breaking changes
 

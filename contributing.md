@@ -15,3 +15,4 @@
  - Link to the build that made the artifact being updated (or upstream release page)
  - Link to Unit Test Results, Code Coverage, etc of the project. Things that give confidence bumping this component version won't create unexpected instability.
  - Snippets for the Docs / Release Notes about major
+ - When Python files are included in a newly added package, Makefile including `fix-py-lint` and `py-lint` should be created for this package, for example [exhibitor Makefile](packages/exhibitor/Makefile) and lint check is required to show up in `packages/Makefile` for CI.

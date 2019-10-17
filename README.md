@@ -66,6 +66,11 @@ To find the git SHA of any given release, check the latest commit in the version
     - ArchLinux: [pxz-git in the AUR](https://aur.archlinux.org/packages/pxz-git). The pxz package corrupts tarballs fairly frequently.
     - Fedora 23: `sudo dnf install pxz`
 
+# Lint Python Code
+
+`py-lint` Makefile target is provided in `Makefile.common` for code error analysis, you can integrate this lint function into your module/package to lint your Python code.
+`fix-py-lint` target is also provided in `Makefile.common` to format Python code to conform to pep8 style guide, and remove pylint errors, automatically.
+
 # Unit Tests
 
 Unit tests can be run locally but require the [development environment](#development-environment) specified above.
