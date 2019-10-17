@@ -4,12 +4,12 @@ import os
 import platform
 import subprocess
 
-import dns.exception
-import dns.resolver
-import kazoo.client
 import pytest
 import requests
 
+import dns.exception
+import dns.resolver
+import kazoo.client
 from test_helpers import get_expanded_config
 
 __maintainer__ = 'mnaboka'
@@ -21,10 +21,9 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 def test_dcos_cluster_is_up(dcos_api_session):
     def _docker_info(component):
         # sudo is required for non-coreOS installs
-        return (subprocess.check_output(['sudo', 'docker', 'version', '-f', component], timeout=60)
-                .decode('utf-8')
-                .rstrip()
-                )
+        return (subprocess.check_output(
+            ['sudo', 'docker', 'version', '-f', component],
+            timeout=60).decode('utf-8').rstrip())
 
     try:
         docker_client = _docker_info('{{.Client.Version}}')
@@ -42,7 +41,7 @@ def test_dcos_cluster_is_up(dcos_api_session):
         "system_platform": platform.platform(),
         "system_platform_system": platform.system(),
         "system_platform_release": platform.release(),
-        "system_platform_version": platform.version()
+        "system_platform_version": platform.version(),
     }
     logging.info(json.dumps(cluster_environment, sort_keys=True, indent=4))
 
@@ -62,7 +61,7 @@ def test_leader_election(dcos_api_session):
 def test_if_all_mesos_masters_have_registered(dcos_api_session):
     # Currently it is not possible to extract this information through Mesos'es
     # API, let's query zookeeper directly.
-    zk_hostports = 'zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181'
+    zk_hostports = 'zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181'  # NOQA
     zk = kazoo.client.KazooClient(hosts=zk_hostports, read_only=True)
     master_ips = []
 
@@ -87,7 +86,10 @@ def test_if_all_exhibitors_are_in_sync(dcos_api_session):
     for master_node_ip in dcos_api_session.masters:
         # This relies on the fact that Admin Router always proxies the local
         # Exhibitor.
-        resp = requests.get('http://{}/exhibitor/exhibitor/v1/cluster/status'.format(master_node_ip), verify=False)
+        resp = requests.get(
+            'http://{}/exhibitor/exhibitor/v1/cluster/status'.format(
+                master_node_ip),
+            verify=False)
         assert resp.status_code == 200
 
         tested_data = sorted(resp.json(), key=lambda k: k['hostname'])
@@ -162,11 +164,10 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-checks-poststart.timer',
         'dcos-telegraf.service',
         'dcos-telegraf.socket',
-        'dcos-fluent-bit.service']
-    slave_units = [
-        'dcos-mesos-slave.service']
-    public_slave_units = [
-        'dcos-mesos-slave-public.service']
+        'dcos-fluent-bit.service',
+    ]
+    slave_units = ['dcos-mesos-slave.service']
+    public_slave_units = ['dcos-mesos-slave-public.service']
     all_slave_units = [
         'dcos-docker-gc.service',
         'dcos-docker-gc.timer',
@@ -175,12 +176,14 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-log-agent.socket',
         'dcos-logrotate-agent.service',
         'dcos-logrotate-agent.timer',
-        'dcos-rexray.service']
+        'dcos-rexray.service',
+    ]
 
     expected_units = {
         "master": set(all_node_units + master_units),
         "agent": set(all_node_units + all_slave_units + slave_units),
-        "agent_public": set(all_node_units + all_slave_units + public_slave_units),
+        "agent_public":
+        set(all_node_units + all_slave_units + public_slave_units),
     }
 
     # Collect the dcos-diagnostics output that `dcos-signal` uses to determine
@@ -200,11 +203,11 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
     #                 {
     #                     "Role": "agent" (or "agent_public", or "master")
     #                     "IP": "172.17.0.2",
-    #                     "Host": "dcos-e2e-7dd6638e-a6f5-4276-bf6b-c9a4d6066ea4-master-2",
+    #                     "Host": "dcos-e2e-7dd6638e-a6f5-4276-bf6b-c9a4d6066ea4-master-2",  # NOQA
     #                     "Health": 0 if node is healthy, 1 if unhealthy,
     #                     "Output": {
-    #                         "dcos-unit-bar.service": "" (empty string if healthy),
-    #                         "dcos-unit-foo.service": "journalctl output" (if unhealthy),
+    #                         "dcos-unit-bar.service": "" (empty string if healthy),  # NOQA
+    #                         "dcos-unit-foo.service": "journalctl output" (if unhealthy),  # NOQA
     #                     }
     #                 },
     #                 ...
@@ -242,7 +245,7 @@ def test_signal_service(dcos_api_session):
     consider that the issue may be due to check timeouts which are too low.
     """
     # This is due to caching done by dcos-diagnostics / Signal service
-    # We're going to remove this soon: https://mesosphere.atlassian.net/browse/DCOS-9050
+    # We're going to remove this soon: https://mesosphere.atlassian.net/browse/DCOS-9050  # NOQA
     dcos_version = os.environ["DCOS_VERSION"]
     with open('/opt/mesosphere/etc/dcos-signal-config.json', 'r') as f:
         signal_config_data = json.load(f)
@@ -252,13 +255,16 @@ def test_signal_service(dcos_api_session):
         cluster_id = f.read().strip()
 
     if enabled == 'false':
-        pytest.skip('Telemetry disabled in /opt/mesosphere/etc/dcos-signal-config.json... skipping test')
+        pytest.skip(
+            'Telemetry disabled in '
+            '/opt/mesosphere/etc/dcos-signal-config.json... skipping test')
 
     logging.info("Version: " + dcos_version)
     logging.info("Customer Key: " + customer_key)
     logging.info("Cluster ID: " + cluster_id)
 
-    signal_results = subprocess.check_output(["/opt/mesosphere/bin/dcos-signal", "-test"], universal_newlines=True)
+    signal_results = subprocess.check_output(
+        ["/opt/mesosphere/bin/dcos-signal", "-test"], universal_newlines=True)
     r_data = json.loads(signal_results)
 
     resp = dcos_api_session.get('/system/health/v1/report?cache=0')
@@ -266,7 +272,8 @@ def test_signal_service(dcos_api_session):
     resp.raise_for_status()
     # Parse the response into JSON.
     health_report = resp.json()
-    # Reformat the /health json into the expected output format for dcos-signal.
+    # Reformat the /health json into the expected output format for
+    # dcos-signal.
     units_health = {}
     for unit, unit_health in health_report["Units"].items():
         unhealthy = 0
@@ -283,8 +290,10 @@ def test_signal_service(dcos_api_session):
                     unhealthy += 1
         prefix = "health-unit-{}".format(unit.replace('.', '-'))
         units_health.update({
-            "{}-total".format(prefix): len(unit_health["Nodes"]),
-            "{}-unhealthy".format(prefix): unhealthy,
+            "{}-total".format(prefix):
+            len(unit_health["Nodes"]),
+            "{}-unhealthy".format(prefix):
+            unhealthy,
         })
 
     exp_data = {
@@ -296,13 +305,13 @@ def test_signal_service(dcos_api_session):
         'cosmos': {
             'event': 'package_list',
             'anonymousId': cluster_id,
-            'properties': {}
+            'properties': {},
         },
         'mesos': {
             'event': 'mesos_track',
             'anonymousId': cluster_id,
-            'properties': {}
-        }
+            'properties': {},
+        },
     }
 
     expanded_config = get_expanded_config()
@@ -315,10 +324,11 @@ def test_signal_service(dcos_api_session):
         'licenseId': '',
         'customerKey': customer_key,
         'environmentVersion': dcos_version,
-        'variant': 'open'
+        'variant': 'open',
     }
 
-    # Insert the generic property data which is the same between all signal tracks
+    # Insert the generic property data which is the same between all signal
+    # tracks
     exp_data['diagnostics']['properties'].update(generic_properties)
     exp_data['cosmos']['properties'].update(generic_properties)
     exp_data['mesos']['properties'].update(generic_properties)
@@ -333,9 +343,12 @@ def test_signal_service(dcos_api_session):
         assert r_data['diagnostics'] == exp_data['diagnostics']
 
     # Check a subset of things regarding Mesos that we can logically check for
-    framework_names = [x['name'] for x in r_data['mesos']['properties']['frameworks']]
+    framework_names = [
+        x['name'] for x in r_data['mesos']['properties']['frameworks']
+    ]
     assert 'marathon' in framework_names
     assert 'metronome' in framework_names
 
-    # There are no packages installed by default on the integration test, ensure the key exists
+    # There are no packages installed by default on the integration test,
+    # ensure the key exists
     assert len(r_data['cosmos']['properties']['package_list']) == 0

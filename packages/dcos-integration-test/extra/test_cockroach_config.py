@@ -6,19 +6,15 @@ import subprocess
 
 from retrying import retry
 
-
 __maintainer__ = 'tweidner'
 __contact__ = 'security-team@mesosphere.io'
-
 
 LOG = logging.getLogger(__name__)
 
 
 def test_config_change_applied():
     config_change_unit = 'dcos-cockroachdb-config-change'
-    subprocess.check_call(
-        ['sudo', 'systemctl', 'restart', config_change_unit],
-    )
+    subprocess.check_call(['sudo', 'systemctl', 'restart', config_change_unit])
     assert _wait_for_expected_journal_output(
         # Indicator for successful config update via CRDB SQL client.
         expected_output='CONFIGURE ZONE 1',

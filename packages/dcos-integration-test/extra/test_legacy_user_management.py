@@ -8,15 +8,16 @@ Assume that access control is activated in Master Admin Router (could be
 disabled with `oauth_enabled`) and therefore authenticate individual HTTP
 dcos_api_session.
 
-One aspect of legacy DC/OS user management is that once authenticated a user can
-add other users. Unauthenticated HTTP dcos_api_session are rejected by Master
-Admin Router and user management fails (this is the coarse-grained authorization
-model of (open) DC/OS). Here, test that unauthenticated HTTP dcos_api_session
-cannot manage users. However, do not test that newly added users can add other
-users: in this test suite we are limited to having authentication state for just
-a single user available. This is why we can test managing other users only from
-that first user's point of view. That is, we can not test that a user (e.g.
-user2) which was added by the first user (user1) can add another user (user3).
+One aspect of legacy DC/OS user management is that once authenticated a user
+can add other users. Unauthenticated HTTP dcos_api_session are rejected by
+Master Admin Router and user management fails (this is the coarse-grained
+authorization model of (open) DC/OS). Here, test that unauthenticated HTTP
+dcos_api_session cannot manage users. However, do not test that newly added
+users can add other users: in this test suite we are limited to having
+authentication state for just a single user available. This is why we can test
+managing other users only from that first user's point of view. That is, we can
+not test that a user (e.g. user2) which was added by the first user (user1)
+can add another user (user3).
 """
 import logging
 import uuid
@@ -25,10 +26,8 @@ import pytest
 
 from test_helpers import get_expanded_config
 
-
 __maintainer__ = 'jgehrcke'
 __contact__ = 'security-team@mesosphere.io'
-
 
 log = logging.getLogger(__name__)
 
@@ -38,10 +37,8 @@ log = logging.getLogger(__name__)
 def skip_in_downstream():
     expanded_config = get_expanded_config()
     if 'security' in expanded_config:
-        pytest.skip(
-            'Skip upstream-specific user management tests',
-            allow_module_level=True
-        )
+        pytest.skip('Skip upstream-specific user management tests',
+                    allow_module_level=True)
 
 
 def get_users(apisession):
@@ -125,10 +122,8 @@ def test_legacy_user_creation_with_empty_json_doc(dcos_api_session):
 
 @pytest.mark.usefixtures('remove_users_added_by_test')
 def test_user_put_email_uid_and_description(dcos_api_session):
-    r = dcos_api_session.put(
-        '/acs/api/v1/users/user1@domain.foo',
-        json={'description': 'integration test user'}
-    )
+    r = dcos_api_session.put('/acs/api/v1/users/user1@domain.foo',
+                             json={'description': 'integration test user'})
     assert r.status_code == 201, r.text
 
     users = get_users(dcos_api_session)
@@ -141,13 +136,14 @@ def test_user_put_with_legacy_body(dcos_api_session):
     # The UI up to DC/OS 1.12 sends the `creator_uid` and the `cluster_url`
     # properties although they are not used by dcos-oauth. Bouncer supports
     # these two properties for legacy reasons. Note(JP): As a follow-up task we
-    # should change the UI to not send these properties anymore, and then remove
-    # the properties from Bouncer's UserCreate JSON schema again, ideally within
-    # the 1.13 development cycle.
-    r = dcos_api_session.put(
-        '/acs/api/v1/users/user2@domain.foo',
-        json={'creator_uid': 'any@thing.bla', 'cluster_url': 'foobar'}
-    )
+    # should change the UI to not send these properties anymore, and then
+    # remove the properties from Bouncer's UserCreate JSON schema again,
+    # ideally within the 1.13 development cycle.
+    r = dcos_api_session.put('/acs/api/v1/users/user2@domain.foo',
+                             json={
+                                 'creator_uid': 'any@thing.bla',
+                                 'cluster_url': 'foobar',
+                             })
     assert r.status_code == 201, r.text
 
 
@@ -208,7 +204,7 @@ def test_dcos_add_user(dcos_api_session, new_dcos_cli):
             "is_remote": True,
             "is_service": False,
             "provider_type": "oidc",
-            "provider_id": "https://dcos.auth0.com/"
+            "provider_id": "https://dcos.auth0.com/",
         }
         assert expected_user_data in r.json()['array']
     finally:

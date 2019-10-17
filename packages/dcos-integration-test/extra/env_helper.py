@@ -1,6 +1,5 @@
 import os
 import sys
-
 from typing import Dict
 
 HELP_MESSAGE = """
@@ -60,14 +59,19 @@ ALL ENVIRONMENT VARIABLES:
     {begin_color}DCOS_SSH_KEY_PATH{end_color}
     Full path to the private key for your cluster.
     If not set, you must add the key to your ssh agent.
-""".format(begin_color='\u001b[38;5;42m', end_color='\u001b[0m', begin_cmd='\033[0;30;47m', end_cmd='\033[0m')
+""".format(begin_color='\u001b[38;5;42m',
+           end_color='\u001b[0m',
+           begin_cmd='\033[0;30;47m',
+           end_cmd='\033[0m')
 
-# We use different variable names than inside the cluster to not confuse the user.
-# For example, it's not clear if PRIVATE_AGENTS_PRIVATE_IPS are public or private agents, public ips or private ips
+# We use different variable names than inside the cluster to not confuse the
+# user.
+# For example, it's not clear if PRIVATE_AGENTS_PRIVATE_IPS are public or
+# private agents, public ips or private ips
 ENV_VAR_MAPPINGS = {
     'MASTERS_PRIVATE_IPS': 'MASTER_HOSTS',
     'PUBLIC_AGENTS_PRIVATE_IPS': 'PUBLIC_SLAVE_HOSTS',
-    'PRIVATE_AGENTS_PRIVATE_IPS': 'SLAVE_HOSTS'
+    'PRIVATE_AGENTS_PRIVATE_IPS': 'SLAVE_HOSTS',
 }
 
 
@@ -86,16 +90,21 @@ def print_yellow(text: str) -> None:
 def set_required_env_var(dcos_env_vars: dict, env_var_name: str) -> None:
     env_var = os.getenv(env_var_name)
     if env_var is None:
-        print_red("ERROR: required environment variable '{}' is not set!".format(env_var_name))
+        print_red(
+            "ERROR: required environment variable '{}' is not set!".format(
+                env_var_name))
 
         if not dcos_env_vars:
-            print_red('No dcos-test-utils variables were detected in your environment.')
+            print_red('No dcos-test-utils variables were detected in your '
+                      'environment.')
         else:
-            print('Current dcos-test-utils variables detected in your environment:')
+            print('Current dcos-test-utils variables detected in your '
+                  'environment:')
             for k, v in dcos_env_vars.items():
                 print('{}={}'.format(k, v))
 
-        print_red("Run 'pytest --env-help' to see all environment variables to set.")
+        print_red(
+            "Run 'pytest --env-help' to see all environment variables to set.")
         sys.exit(1)
 
     dcos_env_vars[env_var_name] = env_var
@@ -104,10 +113,19 @@ def set_required_env_var(dcos_env_vars: dict, env_var_name: str) -> None:
 def load_env_vars() -> Dict[str, str]:
     dcos_env_vars = {}  # type: Dict[str, str]
     required_env_vars = ['DCOS_SSH_USER', 'MASTER_PUBLIC_IP']
-    non_required_env_vars = ['DCOS_LOGIN_UNAME', 'DCOS_LOGIN_PW', 'DCOS_ACS_TOKEN', 'DCOS_SSH_KEY_PATH']
+    non_required_env_vars = [
+        'DCOS_LOGIN_UNAME',
+        'DCOS_LOGIN_PW',
+        'DCOS_ACS_TOKEN',
+        'DCOS_SSH_KEY_PATH',
+    ]
     wait_for_hosts = os.getenv('WAIT_FOR_HOSTS', 'true')
     if wait_for_hosts == 'true':
-        required_env_vars += ['PUBLIC_AGENTS_PRIVATE_IPS', 'PRIVATE_AGENTS_PRIVATE_IPS', 'MASTERS_PRIVATE_IPS']
+        required_env_vars += [
+            'PUBLIC_AGENTS_PRIVATE_IPS',
+            'PRIVATE_AGENTS_PRIVATE_IPS',
+            'MASTERS_PRIVATE_IPS',
+        ]
     else:
         dcos_env_vars['WAIT_FOR_HOSTS'] = 'false'
 
@@ -130,6 +148,8 @@ def load_env_vars() -> Dict[str, str]:
 def get_env_vars() -> Dict[str, str]:
     env_vars = load_env_vars()
     if 'DCOS_SSH_KEY_PATH' not in env_vars:
-        print_yellow("Environment variable 'DCOS_SSH_KEY_PATH' is not set. Make sure you add the ssh key for your "
-                     "cluster to your ssh agent!")
+        print_yellow(
+            "Environment variable 'DCOS_SSH_KEY_PATH' is not set. Make sure "
+            "you add the ssh key for your "
+            "cluster to your ssh agent!")
     return env_vars

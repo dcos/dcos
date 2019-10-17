@@ -22,12 +22,12 @@ def test_if_rlimits_can_be_used(dcos_api_session):
         '--name={}'.format(name),
         '--command=ulimit -c | grep -q unlimited',
         '--shell=true',
-        '--env={"LC_ALL":"C"}']
+        '--env={"LC_ALL":"C"}',
+    ]
 
-    output = subprocess.check_output(
-        argv,
-        stderr=subprocess.STDOUT,
-        universal_newlines=True)
+    output = subprocess.check_output(argv,
+                                     stderr=subprocess.STDOUT,
+                                     universal_newlines=True)
 
     expected_output = \
         "Received status update TASK_FINISHED for task '{name}'".format(

@@ -9,13 +9,18 @@ __contact__ = 'dcos-security@mesosphere.io'
 def auth_enabled():
     out = subprocess.check_output([
         '/bin/bash', '-c',
-        'source /opt/mesosphere/etc/adminrouter.env && echo $ADMINROUTER_ACTIVATE_AUTH_MODULE']).\
+        'source /opt/mesosphere/etc/adminrouter.env '
+        '&& echo $ADMINROUTER_ACTIVATE_AUTH_MODULE']).\
         decode().strip('\n')
-    assert out in ['true', 'false'], 'Unknown ADMINROUTER_ACTIVATE_AUTH_MODULE state: {}'.format(out)
+    assert out in [
+        'true',
+        'false',
+    ], 'Unknown ADMINROUTER_ACTIVATE_AUTH_MODULE state: {}'.format(out)
     return out == 'true'
 
 
-def test_adminrouter_access_control_enforcement(dcos_api_session, noauth_api_session):
+def test_adminrouter_access_control_enforcement(dcos_api_session,
+                                                noauth_api_session):
     reason = 'Can only test adminrouter enforcement if auth is enabled'
     if not auth_enabled():
         pytest.skip(reason)
@@ -37,10 +42,9 @@ def test_adminrouter_access_control_enforcement(dcos_api_session, noauth_api_ses
 
     # Test authentication with auth cookie instead of Authorization header.
     authcookie = {
-        'dcos-acs-auth-cookie': dcos_api_session.auth_user.auth_cookie}
-    r = noauth_api_session.get(
-        '/service/marathon/',
-        cookies=authcookie)
+        'dcos-acs-auth-cookie': dcos_api_session.auth_user.auth_cookie,
+    }
+    r = noauth_api_session.get('/service/marathon/', cookies=authcookie)
     assert r.status_code == 200
 
 
@@ -52,5 +56,6 @@ def test_logout(dcos_api_session):
     """
     r = dcos_api_session.get('/acs/api/v1/auth/logout')
     cookieheader = r.headers['set-cookie']
-    assert 'dcos-acs-auth-cookie=;' in cookieheader or 'dcos-acs-auth-cookie="";' in cookieheader
+    assert 'dcos-acs-auth-cookie=;' in cookieheader or \
+           'dcos-acs-auth-cookie="";' in cookieheader
     assert 'expires' in cookieheader.lower()

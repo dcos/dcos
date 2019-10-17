@@ -3,46 +3,39 @@ import re
 import uuid
 
 import pytest
-
 from retrying import retry
-
 
 log = logging.getLogger(__name__)
 
 
 @pytest.mark.security
 class TestRedirectSecurity:
-
-    @pytest.mark.parametrize(
-        'path,expected', (
-            ('/exhibitor', 301),
-            ('/exhibitor/', 302),
-            ('/marathon', 307),
-            ('/mesos', 301),
-            ('/mesos/master/redirect', 307),
-            ('/mesos_dns', 301),
-            ('/net', 301),
-            ('/pkgpanda/repository', 301),
-            ('/service/marathon', 301),
-            ('/service/test-service', 301),
-            ('/system/v1/logs', 301),
-            ('/system/v1/metrics', 301),
-        )
-    )
+    @pytest.mark.parametrize('path,expected', (
+        ('/exhibitor', 301),
+        ('/exhibitor/', 302),
+        ('/marathon', 307),
+        ('/mesos', 301),
+        ('/mesos/master/redirect', 307),
+        ('/mesos_dns', 301),
+        ('/net', 301),
+        ('/pkgpanda/repository', 301),
+        ('/service/marathon', 301),
+        ('/service/test-service', 301),
+        ('/system/v1/logs', 301),
+        ('/system/v1/metrics', 301),
+    ))
     def test_redirect_host(
-        self,
-        dcos_api_session,
-        path,
-        expected,
+            self,
+            dcos_api_session,
+            path,
+            expected,
     ) -> None:
         """
         Redirection does not propagate a bad Host header
         """
-        r = dcos_api_session.get(
-            path,
-            headers={'Host': 'bad.host'},
-            allow_redirects=False
-        )
+        r = dcos_api_session.get(path,
+                                 headers={'Host': 'bad.host'},
+                                 allow_redirects=False)
 
         r.raise_for_status()
 
@@ -66,7 +59,8 @@ class TestEncodingGzip:
         assert len(filenames) > 0
         for filename in set(filenames):
             log.info('Load %r', filename)
-            r = dcos_api_session.head(filename, headers={'Accept-Encoding': 'gzip'})
+            r = dcos_api_session.head(filename,
+                                      headers={'Accept-Encoding': 'gzip'})
             r.raise_for_status()
             log.info('Response headers: %s', repr(r.headers))
             assert r.headers.get('content-encoding') == 'gzip'
@@ -84,7 +78,8 @@ class TestEncodingGzip:
             log.info('Load %r', filename)
             # Set a benign `Accept-Encoding` header to prevent underlying
             # libraries setting their own header based on their capabilities.
-            r = dcos_api_session.head(filename, headers={'Accept-Encoding': 'identity'})
+            r = dcos_api_session.head(filename,
+                                      headers={'Accept-Encoding': 'identity'})
             r.raise_for_status()
             log.info('Response headers: %s', repr(r.headers))
             assert 'content-encoding' not in r.headers
@@ -94,19 +89,21 @@ class TestStateCacheUpdate:
     """
     Tests for Admin Router correctly updating its Mesos/Marathon state cache.
     """
-
     def test_invalid_dcos_service_port_index(self, dcos_api_session):
         """
         An invalid `DCOS_SERVICE_PORT_INDEX` will not impact the cache refresh.
         """
         bad_app = _marathon_container_network_nginx_app(port_index=1)
-        with dcos_api_session.marathon.deploy_and_cleanup(bad_app, check_health=False, timeout=120):
+        with dcos_api_session.marathon.deploy_and_cleanup(bad_app,
+                                                          check_health=False,
+                                                          timeout=120):
 
             with pytest.raises(AssertionError):
                 _wait_for_state_cache_refresh(dcos_api_session, bad_app['id'])
 
             good_app = _marathon_container_network_nginx_app(port_index=0)
-            with dcos_api_session.marathon.deploy_and_cleanup(good_app, check_health=False, timeout=120):
+            with dcos_api_session.marathon.deploy_and_cleanup(
+                    good_app, check_health=False, timeout=120):
                 _wait_for_state_cache_refresh(dcos_api_session, good_app['id'])
 
 
@@ -127,7 +124,9 @@ def _marathon_container_network_nginx_app(port_index=0):
         'cpus': 0.1,
         'instances': 1,
         'mem': 64,
-        'networks': [{'mode': 'container/bridge'}],
+        'networks': [{
+            'mode': 'container/bridge',
+        }],
         'requirePorts': False,
         'labels': {
             'DCOS_SERVICE_NAME': 'nginx-{}'.format(app_id),
@@ -135,23 +134,22 @@ def _marathon_container_network_nginx_app(port_index=0):
             'DCOS_SERVICE_PORT_INDEX': str(port_index),
         },
         'container': {
-            'type': 'DOCKER',
+            'type':
+            'DOCKER',
             'docker': {
                 'image': 'bitnami/nginx:latest',
                 'forcePullImage': True,
                 'privileged': False,
-                'parameters': []
+                'parameters': [],
             },
-            'portMappings': [
-                {
-                    'containerPort': 8080,
-                    'labels': {
-                        'VIP_0': '/nginx-{}:8080'.format(app_id),
-                    },
-                    'protocol': 'tcp',
-                    'name': 'http',
-                }
-            ]
-        }
+            'portMappings': [{
+                'containerPort': 8080,
+                'labels': {
+                    'VIP_0': '/nginx-{}:8080'.format(app_id),
+                },
+                'protocol': 'tcp',
+                'name': 'http',
+            }],
+        },
     }
     return app_definition

@@ -1,7 +1,7 @@
 """
 Test Enterprise DC/OS Signal Service
-TODO: this test only differs from upstream in the services that it checks for, rather
-    find a method such that we do not need to duplicate so much code
+TODO: this test only differs from upstream in the services that it checks for,
+      rather find a method such that we do not need to duplicate so much code
 """
 import json
 import logging
@@ -13,7 +13,6 @@ from test_helpers import get_expanded_config
 
 __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
-
 
 log = logging.getLogger(__name__)
 
@@ -43,11 +42,14 @@ def test_signal_service(dcos_api_session):
     customer_key = signal_config.get('customer_key', '')
     cluster_id = Path('/var/lib/dcos/cluster-id').read_text().strip()
 
-    # sudo is required to read /run/dcos/etc/signal-service/service_account.json
+    # sudo is required to read /run/dcos/etc/signal-service/service_account.json  # NOQA
     env = os.environ.copy()
     signal_cmd = ["sudo", "-E", "/opt/mesosphere/bin/dcos-signal", "-test"]
     # universal_newlines means utf-8
-    with subprocess.Popen(signal_cmd, stdout=subprocess.PIPE, universal_newlines=True, env=env) as p:
+    with subprocess.Popen(signal_cmd,
+                          stdout=subprocess.PIPE,
+                          universal_newlines=True,
+                          env=env) as p:
         signal_results = p.stdout.read()
 
     r_data = json.loads(signal_results)
@@ -59,7 +61,7 @@ def test_signal_service(dcos_api_session):
     resp.raise_for_status()
     # Parse the response into JSON.
     health_report = resp.json()
-    # Reformat the /health json into the expected output format for dcos-signal.
+    # Reformat the /health json into the expected output format for dcos-signal
     units_health = {}
     for unit, unit_health in health_report["Units"].items():
         unhealthy = 0
@@ -76,8 +78,10 @@ def test_signal_service(dcos_api_session):
                     unhealthy += 1
         prefix = "health-unit-{}".format(unit.replace('.', '-'))
         units_health.update({
-            "{}-total".format(prefix): len(unit_health["Nodes"]),
-            "{}-unhealthy".format(prefix): unhealthy,
+            "{}-total".format(prefix):
+            len(unit_health["Nodes"]),
+            "{}-unhealthy".format(prefix):
+            unhealthy,
         })
 
     exp_data = {
@@ -89,13 +93,13 @@ def test_signal_service(dcos_api_session):
         'cosmos': {
             'event': 'package_list',
             'anonymousId': cluster_id,
-            'properties': {}
+            'properties': {},
         },
         'mesos': {
             'event': 'mesos_track',
             'anonymousId': cluster_id,
-            'properties': {}
-        }
+            'properties': {},
+        },
     }
 
     if customer_key != '':
@@ -111,10 +115,11 @@ def test_signal_service(dcos_api_session):
         'clusterId': cluster_id,
         'customerKey': customer_key,
         'environmentVersion': dcos_version,
-        'variant': variant
+        'variant': variant,
     }
 
-    # Insert the generic property data which is the same between all signal tracks
+    # Insert the generic property data which is the same between all signal
+    # tracks
     exp_data['diagnostics']['properties'].update(generic_properties)
     exp_data['cosmos']['properties'].update(generic_properties)
     exp_data['mesos']['properties'].update(generic_properties)
@@ -129,9 +134,12 @@ def test_signal_service(dcos_api_session):
         assert r_data['diagnostics'] == exp_data['diagnostics']
 
     # Check a subset of things regarding Mesos that we can logically check for
-    framework_names = [x['name'] for x in r_data['mesos']['properties']['frameworks']]
+    framework_names = [
+        x['name'] for x in r_data['mesos']['properties']['frameworks']
+    ]
     assert 'marathon' in framework_names
     assert 'metronome' in framework_names
 
-    # There are no packages installed by default on the integration test, ensure the key exists
+    # There are no packages installed by default on the integration test,
+    # ensure the key exists
     assert len(r_data['cosmos']['properties']['package_list']) == 0

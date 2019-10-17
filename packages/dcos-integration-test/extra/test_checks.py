@@ -2,7 +2,6 @@ import logging
 import random
 import uuid
 
-
 __maintainer__ = 'branden'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
@@ -37,14 +36,19 @@ def test_checks_cli(dcos_api_session):
         },
     })
 
-    # Check runner should only use the PATH and LD_LIBRARY_PATH from check config.
+    # Check runner should only use the PATH and LD_LIBRARY_PATH from check
+    # config.
     dcos_api_session.metronome_one_off({
         'id': 'test-checks-env-' + test_uuid,
         'run': {
-            'cpus': .1,
-            'mem': 128,
-            'disk': 0,
-            'cmd': ' '.join([
+            'cpus':
+            .1,
+            'mem':
+            128,
+            'disk':
+            0,
+            'cmd':
+            ' '.join([
                 'env',
                 'PATH=badvalue',
                 'LD_LIBRARY_PATH=badvalue',
@@ -64,12 +68,18 @@ def test_checks_api(dcos_api_session):
     failed and dcos-checks functioned properly.
     """
     checks_uri = '/system/checks/v1/'
-    # Test that we can list and run node and cluster checks on a master, agent, and public agent.
+    # Test that we can list and run node and cluster checks on a master, agent
+    # and public agent.
     check_nodes = []
-    for nodes in [dcos_api_session.masters, dcos_api_session.slaves, dcos_api_session.public_slaves]:
+    for nodes in [
+            dcos_api_session.masters,
+            dcos_api_session.slaves,
+            dcos_api_session.public_slaves,
+    ]:
         if nodes:
             check_nodes.append(random.choice(nodes))
-    logging.info('Testing %s on these nodes: %s', checks_uri, ', '.join(check_nodes))
+    logging.info('Testing %s on these nodes: %s', checks_uri,
+                 ', '.join(check_nodes))
 
     for node in check_nodes:
         for check_type in ['node', 'cluster']:
@@ -90,7 +100,10 @@ def test_checks_api(dcos_api_session):
 
             # check that the returned statuses of each check is 0
             expected_status = {c: 0 for c in checks.keys()}
-            response_status = {c: v['status'] for c, v in results['checks'].items()}
+            response_status = {
+                c: v['status']
+                for c, v in results['checks'].items()
+            }
 
             # print out the response for debugging
             logging.info('Response: {}'.format(results))

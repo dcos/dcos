@@ -7,7 +7,6 @@ import subprocess
 
 import pytest
 
-
 __maintainer__ = 'gpaul'
 __contact__ = 'dcos-security@mesosphere.io'
 
@@ -39,16 +38,17 @@ def test_verify_units():
                     # line before checking if it is valid.
                     if "dcos-" not in line:
                         return True
-                    # The TasksMax directive exists in newer versions of systemd
-                    # where it is important to set. As we want to support multiple
-                    # versions of systemd our tests must ignore errors that
-                    # complain that it is an unknown directive.
+                    # The TasksMax directive exists in newer versions of
+                    # systemd where it is important to set. As we want to
+                    # support multiple versions of systemd our tests must
+                    # ignore errors that complain that it is an unknown
+                    # directive.
                     ignore_new_directives = ["TasksMax"]
                     for directive in ignore_new_directives:
                         # When systemd does not understand a directive it
                         # prints a line with the following format:
                         #
-                        #    [/etc/systemd/system/foo.service:5] Unknown lvalue 'EExecStat' in section 'Service'
+                        #    [/etc/systemd/system/foo.service:5] Unknown lvalue 'EExecStat' in section 'Service'  # NOQA
                         #
                         # We ignore such errors when the lvalue is one of the
                         # well-known directives that got added to newer
@@ -84,10 +84,15 @@ def test_socket_units():
     """
     def _check_unit(file):
         logging.info("Checking socket unit {}".format(file))
-        out = subprocess.check_output(
-            ["/usr/bin/systemctl", "show", "--no-pager", os.path.basename(file)],
-            stderr=subprocess.STDOUT,
-            universal_newlines=True)
+        cmd = [
+            "/usr/bin/systemctl",
+            "show",
+            "--no-pager",
+            os.path.basename(file),
+        ]
+        out = subprocess.check_output(cmd,
+                                      stderr=subprocess.STDOUT,
+                                      universal_newlines=True)
         user = ""
         group = ""
         mode = ""
@@ -102,11 +107,14 @@ def test_socket_units():
             if k == "SocketGroup":
                 group = v
             if k == "ListenStream":
-                # Unix sockets are distinguished from IP sockets by having a '/' as the first
-                # character in the value of the ListenStream directive.
+                # Unix sockets are distinguished from IP sockets by having a
+                # '/' as the first character in the value of the ListenStream
+                # directive.
                 if v.startswith("/"):
                     had_unix_socket = True
-                    assert v.startswith("/run/dcos/"), "DC/OS unix sockets must go in the /run/dcos directory"
+                    assert v.startswith(
+                        "/run/dcos/",
+                    ), "DC/OS unix sockets must go in the /run/dcos directory"
             if k == "SocketMode":
                 mode = v
         if not had_unix_socket:
@@ -122,7 +130,8 @@ def test_socket_units():
 
 @pytest.mark.supportedwindows
 def test_socket_files():
-    """Test that all socket files in /run/dcos are owned by 'dcos_adminrouter'."""
+    """Test that all socket files in /run/dcos are owned by
+    'dcos_adminrouter'."""
     for file in glob.glob("/run/dcos/*"):
         path = pathlib.Path(file)
         if not path.is_socket():

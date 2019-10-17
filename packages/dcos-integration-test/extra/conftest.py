@@ -3,18 +3,22 @@ import logging
 import os
 import sys
 
-import env_helper
-
 import pytest
 import requests
 from _pytest.tmpdir import TempdirFactory
 from dcos_test_utils import dcos_cli
 from dcos_test_utils.diagnostics import Diagnostics
+
+import env_helper
 from test_helpers import get_expanded_config
 
 log = logging.getLogger(__name__)
 
 pytest_plugins = ['pytest-dcos']
+
+BINARY_URL = 'https://downloads.dcos.io/cli/releases/binaries/dcos/linux/x86-64/latest/dcos'  # noqa: E501
+CORE_PLUGIN_URL = 'https://downloads.dcos.io/cli/releases/plugins/dcos-core-cli/linux/x86-64/dcos-core-cli-1.14-patch.2.zip'  # noqa: E501
+EE_PLUGIN_URL = 'https://downloads.mesosphere.io/cli/releases/plugins/dcos-enterprise-cli/linux/x86-64/dcos-enterprise-cli-1.13-patch.1.zip'  # noqa: E501
 
 
 @pytest.fixture(scope='session')
@@ -30,8 +34,7 @@ def dcos_api_session(dcos_api_session_factory):
         exhibitor_admin_password = expanded_config['exhibitor_admin_password']
 
     api = dcos_api_session_factory(
-        exhibitor_admin_password=exhibitor_admin_password,
-        **args)
+        exhibitor_admin_password=exhibitor_admin_password, **args)
     api.wait_for_dcos()
     return api
 
@@ -45,40 +48,50 @@ def pytest_cmdline_main(config):
         print(env_helper.HELP_MESSAGE)
         sys.exit()
 
-    if user_outside_cluster and not config.option.help and not config.option.collectonly:
+    if user_outside_cluster and not config.option.help and not \
+            config.option.collectonly:
         env_vars = env_helper.get_env_vars()
         if config.option.dist == 'no':
             config.option.dist = 'load'
         if not config.option.tx:
             env_string = '//env:PYTEST_LOCALE=en_US.utf8'
-            options = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
+            options = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '  # NOQA
             key_path = os.getenv('DCOS_SSH_KEY_PATH')
             if key_path:
                 options += '-i ' + key_path
             for k, v in env_vars.items():
                 env_string += '//env:{}={}'.format(k, v)
                 config.option.tx = [
-                    'ssh={options} {DCOS_SSH_USER}@{master_ip}//python=/opt/mesosphere/bin/dcos-shell '
-                    'python{env_string}'
-                    .format(
-                        options=options, DCOS_SSH_USER=env_vars['DCOS_SSH_USER'], env_string=env_string,
-                        master_ip=env_vars['MASTER_PUBLIC_IP']
-                    )
+                    'ssh={options} {DCOS_SSH_USER}@{master_ip}//python=/opt/mesosphere/bin/dcos-shell '  # NOQA
+                    'python{env_string}'.format(
+                        options=options,
+                        DCOS_SSH_USER=env_vars['DCOS_SSH_USER'],
+                        env_string=env_string,
+                        master_ip=env_vars['MASTER_PUBLIC_IP']),
                 ]
         if not config.option.rsyncdir:
-            config.option.rsyncdir = [os.path.dirname(os.path.abspath(__file__))]
+            config.option.rsyncdir = [
+                os.path.dirname(os.path.abspath(__file__)),
+            ]
 
 
 def pytest_addoption(parser):
-    parser.addoption("--windows-only", action="store_true",
+    parser.addoption("--windows-only",
+                     action="store_true",
                      help="run only Windows tests")
-    parser.addoption("--env-help", action="store_true",
-                     help="show which environment variables must be set for DC/OS integration tests")
+    parser.addoption(
+        "--env-help",
+        action="store_true",
+        help="show which environment variables must be set for DC/OS " +
+        "integration tests",
+    )
 
 
 def pytest_configure(config):
-    config.addinivalue_line('markers', 'first: run test before all not marked first')
-    config.addinivalue_line('markers', 'last: run test after all not marked last')
+    config.addinivalue_line('markers',
+                            'first: run test before all not marked first')
+    config.addinivalue_line('markers',
+                            'last: run test after all not marked last')
 
 
 def pytest_collection_modifyitems(session, config, items):
@@ -159,24 +172,24 @@ def noauth_api_session(dcos_api_session):
 
 @pytest.fixture(scope='session', autouse=True)
 def _dump_diagnostics(request, dcos_api_session):
-    """Download the zipped diagnostics bundle report from each master in the cluster to the home directory. This should
-    be run last. The _ prefix makes sure that pytest calls this first out of the autouse session scope fixtures, which
-    means that its post-yield code will be executed last.
+    """Download the zipped diagnostics bundle report from each master in the
+    cluster to the home directory. This should be run last. The _ prefix makes
+    sure that pytest calls this first out of the autouse session scope
+    fixtures, which means that its post-yield code will be executed last.
 
     * There is no official way to ensure fixtures are called in a certain order
     https://github.com/pytest-dev/pytest/issues/1216
-    * However it seems that fixtures at the same scope are called alphabetically
+    * However it seems that fixtures at the same scope are called
+      alphabetically
     https://stackoverflow.com/a/28593102/1436300
     """
     yield
 
-    make_diagnostics_report = os.environ.get('DIAGNOSTICS_DIRECTORY') is not None
+    make_diagnostics_report = os.environ.get(
+        'DIAGNOSTICS_DIRECTORY') is not None
     if make_diagnostics_report:
         creation_start = datetime.datetime.now()
-        last_datapoint = {
-            'time': None,
-            'value': 0
-        }
+        last_datapoint = {'time': None, 'value': 0}
 
         health_url = dcos_api_session.default_url.copy(
             query='cache=0',
@@ -215,12 +228,10 @@ def install_dcos_cli(tmpdir_factory: TempdirFactory):
     Install the CLI.
     """
     tmpdir = tmpdir_factory.mktemp('dcos_cli')
-    cli = dcos_cli.DcosCli.new_cli(
-        download_url='https://downloads.dcos.io/cli/releases/binaries/dcos/linux/x86-64/latest/dcos',
-        core_plugin_url='https://downloads.dcos.io/cli/releases/plugins/dcos-core-cli/linux/x86-64/dcos-core-cli-1.14-patch.2.zip',  # noqa: E501
-        ee_plugin_url='https://downloads.mesosphere.io/cli/releases/plugins/dcos-enterprise-cli/linux/x86-64/dcos-enterprise-cli-1.13-patch.1.zip',  # noqa: E501
-        tmpdir=str(tmpdir)
-    )
+    cli = dcos_cli.DcosCli.new_cli(download_url=BINARY_URL,
+                                   core_plugin_url=CORE_PLUGIN_URL,
+                                   ee_plugin_url=EE_PLUGIN_URL,
+                                   tmpdir=str(tmpdir))
     yield cli
     cli.clear_cli_dir()
 

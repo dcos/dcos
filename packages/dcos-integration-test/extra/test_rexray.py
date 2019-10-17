@@ -19,7 +19,8 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
 
     """
     expanded_config = get_expanded_config()
-    if not (expanded_config['provider'] == 'aws' or expanded_config['platform'] == 'aws'):
+    if not (expanded_config['provider'] == 'aws' or
+            expanded_config['platform'] == 'aws'):
         pytest.skip('Must be run in an AWS environment!')
 
     if expanded_config.get('security') == 'strict':
@@ -40,22 +41,25 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
                 'external': {
                     'name': test_label,
                     'provider': 'dvdi',
-                    'options': {'dvdi/driver': 'rexray'}
-                }
-            }]
-        }
+                    'options': {
+                        'dvdi/driver': 'rexray',
+                    },
+                },
+            }],
+        },
     }
 
     write_app = copy.deepcopy(base_app)
     write_app.update({
-        'id': '/{}/write'.format(test_label),
+        'id':
+        '/{}/write'.format(test_label),
         'cmd': (
             # Check that the volume is empty.
-            '[ $(ls -A {volume_path}/ | grep -v --line-regexp "lost+found" | wc -l) -eq 0 ] && '
+            '[ $(ls -A {volume_path}/ | grep -v --line-regexp "lost+found" | wc -l) -eq 0 ] && '  # NOQA
             # Write the test UUID to a file.
             'echo "{test_uuid}" >> {volume_path}/test && '
-            'while true; do sleep 1000; done'
-        ).format(test_uuid=test_uuid, volume_path=mesos_volume_path),
+            'while true; do sleep 1000; done').format(
+                test_uuid=test_uuid, volume_path=mesos_volume_path),
         'constraints': [['hostname', 'LIKE', hosts[0]]],
     })
     write_app['container']['type'] = 'MESOS'
@@ -64,12 +68,13 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
 
     read_app = copy.deepcopy(base_app)
     read_app.update({
-        'id': '/{}/read'.format(test_label),
+        'id':
+        '/{}/read'.format(test_label),
         'cmd': (
             # Diff the file and the UUID.
             'echo "{test_uuid}" | diff - {volume_path}/test && '
-            'while true; do sleep 1000; done'
-        ).format(test_uuid=test_uuid, volume_path=docker_volume_path),
+            'while true; do sleep 1000; done').format(
+                test_uuid=test_uuid, volume_path=docker_volume_path),
         'constraints': [['hostname', 'LIKE', hosts[1]]],
     })
     read_app['container'].update({
@@ -77,7 +82,7 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
         'docker': {
             'image': 'busybox',
             'network': 'HOST',
-        }
+        },
     })
     read_app['container']['volumes'][0]['containerPath'] = docker_volume_path
 
@@ -86,31 +91,39 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
 
     deploy_kwargs = {
         'check_health': False,
-        # A volume might fail to attach because EC2. We can tolerate that and retry.
+        # A volume might fail to attach because EC2. We can tolerate that and
+        # retry.
         'ignore_failed_tasks': True,
-        'timeout': timeout
+        'timeout': timeout,
     }
 
     try:
-        with dcos_api_session.marathon.deploy_and_cleanup(write_app, **deploy_kwargs):
+        with dcos_api_session.marathon.deploy_and_cleanup(
+                write_app, **deploy_kwargs):
             logging.info('Successfully wrote to volume')
-        with dcos_api_session.marathon.deploy_and_cleanup(read_app, **deploy_kwargs):
+        with dcos_api_session.marathon.deploy_and_cleanup(
+                read_app, **deploy_kwargs):
             logging.info('Successfully read from volume')
     finally:
         logging.info('Deleting volume: ' + test_label)
         delete_cmd = \
             "/opt/mesosphere/bin/dcos-shell python " \
-            "/opt/mesosphere/active/dcos-integration-test/util/delete_ec2_volume.py {}".format(test_label)
+            "/opt/mesosphere/active/dcos-integration-test/util/delete_ec2_volume.py {}".format(test_label)  # NOQA
         delete_job = {
             'id': 'delete-volume-' + test_uuid,
             'run': {
                 'cpus': .1,
                 'mem': 128,
                 'disk': 0,
-                'cmd': delete_cmd}}
+                'cmd': delete_cmd,
+            },
+        }
         try:
-            # We use a metronome job to work around the `aws-deploy` integration tests where the master doesn't have
-            # volume permissions so all volume actions need to be performed from the agents.
+            # We use a metronome job to work around the `aws-deploy`
+            # integration tests where the master doesn't have volume
+            # permissions so all volume actions need to be performed from the
+            # agents.
             dcos_api_session.metronome_one_off(delete_job, timeout=timeout)
         except Exception as ex:
-            raise Exception('Failed to clean up volume {}: {}'.format(test_label, ex)) from ex
+            raise Exception('Failed to clean up volume {}: {}'.format(
+                test_label, ex)) from ex

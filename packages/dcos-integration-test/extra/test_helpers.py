@@ -5,7 +5,6 @@ import subprocess
 import uuid
 
 import retrying
-
 from dcos_test_utils import marathon
 
 __maintainer__ = 'orsenthil'
@@ -34,16 +33,20 @@ def get_expanded_config():
     # which tests should run before the test suite kicks off
     with open('/opt/mesosphere/etc/expanded.config.json', 'r') as f:
         expanded_config = json.load(f)
-        # expanded.config.json doesn't contain secret values, so we need to read the Exhibitor admin password from
+        # expanded.config.json doesn't contain secret values, so we need to
+        # read the Exhibitor admin password from
         # Exhibitor's config.
-        # TODO: Remove this hack. https://jira.mesosphere.com/browse/QUALITY-1611
-        expanded_config['exhibitor_admin_password'] = get_exhibitor_admin_password()
+        # TODO: Remove this hack. https://jira.mesosphere.com/browse/QUALITY-1611  # NOQA
+        expanded_config[
+            'exhibitor_admin_password'] = get_exhibitor_admin_password()
     return expanded_config
 
 
-@retrying.retry(wait_fixed=60 * 1000,       # wait for 60 seconds
-                retry_on_exception=lambda exc: isinstance(exc, subprocess.CalledProcessError),  # Called Process Error
-                stop_max_attempt_number=3)  # retry 3 times
+@retrying.retry(
+    wait_fixed=60 * 1000,  # wait for 60 seconds
+    retry_on_exception=lambda exc: isinstance(
+        exc, subprocess.CalledProcessError),  # Called Process Error
+    stop_max_attempt_number=3)  # retry 3 times
 def docker_pull_image(image: str) -> bool:
     log.info("\n Ensure docker image availability ahead of tests.")
     try:
@@ -54,15 +57,15 @@ def docker_pull_image(image: str) -> bool:
 
 
 def marathon_test_app_linux(
-        host_port: int=0,
-        container_port: int=None,
-        container_type: marathon.Container=marathon.Container.NONE,
-        network: marathon.Network=marathon.Network.HOST,
-        healthcheck_protocol: marathon.Healthcheck=marathon.Healthcheck.HTTP,
-        vip: str=None,
-        host_constraint: str=None,
-        network_name: str='dcos',
-        app_name_fmt: str=TEST_APP_NAME_FMT):
+        host_port: int = 0,
+        container_port: int = None,
+        container_type: marathon.Container = marathon.Container.NONE,
+        network: marathon.Network = marathon.Network.HOST,
+        healthcheck_protocol: marathon.Healthcheck = marathon.Healthcheck.HTTP,
+        vip: str = None,
+        host_constraint: str = None,
+        network_name: str = 'dcos',
+        app_name_fmt: str = TEST_APP_NAME_FMT):
     """ Creates an app definition for the python test server which will be
     consistent (i.e. deployable with green health checks and desired network
     routability). To learn more about the test server, see in this repo:
@@ -87,37 +90,43 @@ def marathon_test_app_linux(
         (dict, str): 2-Tuple of app definition (dict) and app ID (string)
     """
     if network != marathon.Network.HOST and container_port is None:
-        # provide a dummy value for the bridged container port if user is indifferent
+        # provide a dummy value for the bridged container port if user is
+        # indifferent
         container_port = 8080
 
     test_uuid = uuid.uuid4().hex
     app = copy.deepcopy({
-        'id': app_name_fmt.format(test_uuid),
-        'cpus': 0.1,
-        'mem': 32,
-        'instances': 1,
-        'cmd': '/opt/mesosphere/bin/dcos-shell python '
-               '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py {}'.format(
-                   # If container port is not defined, then the port is auto-assigned and
-                   # the commandline should reference the port with the marathon built-in
-                   '$PORT0' if container_port is None else container_port),
+        'id':
+        app_name_fmt.format(test_uuid),
+        'cpus':
+        0.1,
+        'mem':
+        32,
+        'instances':
+        1,
+        'cmd':
+        '/opt/mesosphere/bin/dcos-shell python '
+        '/opt/mesosphere/active/dcos-integration-test/util/python_test_server.py {}'  # NOQA
+        .format(
+            # If container port is not defined, then the port is auto-assigned
+            # and the commandline should reference the port with the marathon
+            # built-in
+            '$PORT0' if container_port is None else container_port),
         'env': {
             'DCOS_TEST_UUID': test_uuid,
             # required for python_test_server.py to run as nobody
-            'HOME': '/'
+            'HOME': '/',
         },
-        'healthChecks': [
-            {
-                'protocol': healthcheck_protocol.value,
-                'path': '/ping',
-                'gracePeriodSeconds': 5,
-                'intervalSeconds': 10,
-                'timeoutSeconds': 10,
-                'maxConsecutiveFailures': 120  # ~20 minutes until restarting
-                # killing the container will rarely, if ever, help this application
-                # reach a healthy state, so do not trigger a restart if unhealthy
-            }
-        ],
+        'healthChecks': [{
+            'protocol': healthcheck_protocol.value,
+            'path': '/ping',
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 120,  # ~20 minutes until restarting
+            # killing the container will rarely, if ever, help this application
+            # reach a healthy state, so do not trigger a restart if unhealthy
+        }],
     })
     if container_port is not None and \
             healthcheck_protocol == marathon.Healthcheck.MESOS_HTTP:
@@ -131,13 +140,16 @@ def marathon_test_app_linux(
 
     if container_type != marathon.Container.NONE:
         app['container'] = {
-            'type': container_type.value,
-            'docker': {'image': 'debian:stretch-slim'},
+            'type':
+            container_type.value,
+            'docker': {
+                'image': 'debian:stretch-slim',
+            },
             'volumes': [{
                 'containerPath': '/opt/mesosphere',
                 'hostPath': '/opt/mesosphere',
-                'mode': 'RO'
-            }]
+                'mode': 'RO',
+            }],
         }
     else:
         app['container'] = {'type': 'MESOS'}
@@ -148,7 +160,7 @@ def marathon_test_app_linux(
         app['portDefinitions'] = [{
             'protocol': 'tcp',
             'port': host_port,
-            'name': 'test'
+            'name': 'test',
         }]
         if vip is not None:
             app['portDefinitions'][0]['labels'] = {'VIP_0': vip}
@@ -157,30 +169,25 @@ def marathon_test_app_linux(
             'hostPort': host_port,
             'containerPort': container_port,
             'protocol': 'tcp',
-            'name': 'test'}]
+            'name': 'test',
+        }]
         if vip is not None:
             app['container']['portMappings'][0]['labels'] = {'VIP_0': vip}
         if network == marathon.Network.USER:
             if host_port == 0:
                 del app['container']['portMappings'][0]['hostPort']
-            app['networks'] = [{
-                'mode': 'container',
-                'name': network_name
-            }]
+            app['networks'] = [{'mode': 'container', 'name': network_name}]
         elif network == marathon.Network.BRIDGE:
-            app['networks'] = [{
-                'mode': 'container/bridge'
-            }]
+            app['networks'] = [{'mode': 'container/bridge'}]
 
     if host_constraint is not None:
         app['constraints'] = [['hostname', 'CLUSTER', host_constraint]]
     return app, test_uuid
 
 
-def marathon_test_app_windows(
-        host_constraint: str=None,
-        host_port: int=None,
-        network_name: str='dcosnat'):
+def marathon_test_app_windows(host_constraint: str = None,
+                              host_port: int = None,
+                              network_name: str = 'dcosnat'):
     """ Creates an app definition for the python test server container
 
     Args:
@@ -203,42 +210,49 @@ def marathon_test_app_windows(
 
     test_uuid = uuid.uuid4().hex
     app = copy.deepcopy({
-        'id': TEST_APP_NAME_FMT.format(test_uuid),
-        'cpus': 1,
-        'mem': 512,
-        'disk': 0,
-        'instances': 1,
-        'healthChecks': [
-            {
-                'protocol': 'MESOS_HTTP',
-                'path': '/',
-                'gracePeriodSeconds': 300,
-                'intervalSeconds': 60,
-                'timeoutSeconds': 20,
-                'maxConsecutiveFailures': 3,
-                'port': container_port,
-                'path': '/',
-                'ignoreHttp1xx': False
-            }
-        ],
+        'id':
+        TEST_APP_NAME_FMT.format(test_uuid),
+        'cpus':
+        1,
+        'mem':
+        512,
+        'disk':
+        0,
+        'instances':
+        1,
+        'healthChecks': [{
+            'protocol': 'MESOS_HTTP',
+            'path': '/',
+            'gracePeriodSeconds': 300,
+            'intervalSeconds': 60,
+            'timeoutSeconds': 20,
+            'maxConsecutiveFailures': 3,
+            'port': container_port,
+            'path': '/',
+            'ignoreHttp1xx': False,
+        }],
     })
 
-    app['networks'] = [
-        {'mode': 'container', 'name': network_name}]
+    app['networks'] = [{'mode': 'container', 'name': network_name}]
     app['container'] = {
         'type': container_type.value,
-        'docker': {'image': 'microsoft/iis:windowsservercore-1803'},
-        'volumes': []}
+        'docker': {
+            'image': 'microsoft/iis:windowsservercore-1803',
+        },
+        'volumes': [],
+    }
     app['container']['docker']['forcePullImage'] = False
     app['container']['docker']['privileged'] = False
     app['container']['docker']['portMappings'] = [{
         'containerPort': container_port,
-        'hostPort': host_port}]
+        'hostPort': host_port,
+    }]
 
     if host_constraint is not None:
         app['constraints'] = [['hostname', 'CLUSTER', host_constraint]]
     # Add Windows constraint
-    app['constraints'] = app.get('constraints', []) + [['os', 'LIKE', 'Windows']]
+    app['constraints'] = app.get('constraints',
+                                 []) + [['os', 'LIKE', 'Windows']]
     app['acceptedResourceRoles'] = ["slave_public"]
 
     return app, test_uuid

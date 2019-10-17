@@ -8,12 +8,16 @@ def test_metronome(dcos_api_session):
         'id': 'test.metronome',
         'run': {
             'cmd': 'ls',
-            'docker': {'image': 'busybox:latest'},
+            'docker': {
+                'image': 'busybox:latest',
+            },
             'cpus': 1,
             'mem': 512,
             'disk': 0,
             'user': 'nobody',
-            'restart': {'policy': 'ON_FAILURE'}
-        }
+            'restart': {
+                'policy': 'ON_FAILURE',
+            },
+        },
     }
     dcos_api_session.metronome_one_off(job)

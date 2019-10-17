@@ -23,14 +23,14 @@ def test_if_default_systctls_are_set(dcos_api_session):
         '--master=leader.mesos:5050',
         '--command={}'.format(test_command),
         '--shell=true',
-        '--env={"LC_ALL":"C"}']
+        '--env={"LC_ALL":"C"}',
+    ]
 
     def run_and_check(argv):
         name = 'test-sysctl-{}'.format(uuid.uuid4().hex)
-        output = subprocess.check_output(
-            argv + ['--name={}'.format(name)],
-            stderr=subprocess.STDOUT,
-            universal_newlines=True)
+        output = subprocess.check_output(argv + ['--name={}'.format(name)],
+                                         stderr=subprocess.STDOUT,
+                                         universal_newlines=True)
 
         expected_output = \
             "Received status update TASK_FINISHED for task '{name}'".format(

@@ -19,23 +19,33 @@ def test_if_ucr_app_can_be_deployed_with_image_whiteout(dcos_api_session):
     https://hub.docker.com/r/mesosphere/whiteout/
     """
     app = {
-        'id': '/test-ucr-' + str(uuid.uuid4().hex),
-        'cpus': 0.1,
-        'mem': 32,
-        'instances': 1,
-        'cmd': 'while true; do sleep 1; done',
+        'id':
+        '/test-ucr-' + str(uuid.uuid4().hex),
+        'cpus':
+        0.1,
+        'mem':
+        32,
+        'instances':
+        1,
+        'cmd':
+        'while true; do sleep 1; done',
         'container': {
             'type': 'MESOS',
-            'docker': {'image': 'mesosphere/whiteout:test'}
+            'docker': {
+                'image': 'mesosphere/whiteout:test',
+            },
         },
         'healthChecks': [{
             'protocol': 'COMMAND',
-            'command': {'value': 'test ! -f /dir1/file1 && test ! -f /dir1/dir2/file2 && test -f /dir1/dir2/file3'},
+            'command': {
+                'value':
+                'test ! -f /dir1/file1 && test ! -f /dir1/dir2/file2 && test -f /dir1/dir2/file3',  # NOQA
+            },
             'gracePeriodSeconds': 5,
             'intervalSeconds': 10,
             'timeoutSeconds': 10,
-            'maxConsecutiveFailures': 3
-        }]
+            'maxConsecutiveFailures': 3,
+        }],
     }
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         # Trivial app if it deploys, there is nothing else to check
@@ -49,25 +59,33 @@ def test_if_ucr_app_can_be_deployed_with_image_digest(dcos_api_session):
     by digest.
     """
     app = {
-        'id': '/test-ucr-' + str(uuid.uuid4().hex),
-        'cpus': 0.1,
-        'mem': 32,
-        'instances': 1,
-        'cmd': 'while true; do sleep 1; done',
+        'id':
+        '/test-ucr-' + str(uuid.uuid4().hex),
+        'cpus':
+        0.1,
+        'mem':
+        32,
+        'instances':
+        1,
+        'cmd':
+        'while true; do sleep 1; done',
         'container': {
             'type': 'MESOS',
             'docker': {
-                'image': 'library/alpine@sha256:9f08005dff552038f0ad2f46b8e65ff3d25641747d3912e3ea8da6785046561a'
-            }
+                'image':
+                'library/alpine@sha256:9f08005dff552038f0ad2f46b8e65ff3d25641747d3912e3ea8da6785046561a',  # NOQA
+            },
         },
         'healthChecks': [{
             'protocol': 'COMMAND',
-            'command': {'value': 'test -d $MESOS_SANDBOX'},
+            'command': {
+                'value': 'test -d $MESOS_SANDBOX',
+            },
             'gracePeriodSeconds': 5,
             'intervalSeconds': 10,
             'timeoutSeconds': 10,
-            'maxConsecutiveFailures': 3
-        }]
+            'maxConsecutiveFailures': 3,
+        }],
     }
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         # Trivial app if it deploys, there is nothing else to check
@@ -90,61 +108,80 @@ def test_if_ucr_app_can_be_deployed_with_auto_cgroups(dcos_api_session):
     0.2 * 1024 = 204 CPU shares) and 64MB memory (i.e., 67108864 bytes).
     """
     app = {
-        'id': '/test-ucr-' + str(uuid.uuid4().hex),
-        'cpus': 0.1,
-        'mem': 32,
-        'instances': 1,
-        'cmd': 'while true; do sleep 1; done',
+        'id':
+        '/test-ucr-' + str(uuid.uuid4().hex),
+        'cpus':
+        0.1,
+        'mem':
+        32,
+        'instances':
+        1,
+        'cmd':
+        'while true; do sleep 1; done',
         'container': {
             'type': 'MESOS',
             'docker': {
-                'image': 'library/alpine'
-            }
+                'image': 'library/alpine',
+            },
         },
         'healthChecks': [{
             'protocol': 'COMMAND',
             'command': {
-                'value': 'test `cat /sys/fs/cgroup/memory/memory.soft_limit_in_bytes` = 67108864 && '
-                         'test `cat /sys/fs/cgroup/cpu/cpu.shares` = 204'
+                'value':
+                'test `cat /sys/fs/cgroup/memory/memory.soft_limit_in_bytes` = 67108864 && '  # NOQA
+                'test `cat /sys/fs/cgroup/cpu/cpu.shares` = 204',
             },
             'gracePeriodSeconds': 5,
             'intervalSeconds': 10,
             'timeoutSeconds': 10,
-            'maxConsecutiveFailures': 3
-        }]
+            'maxConsecutiveFailures': 3,
+        }],
     }
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         # Trivial app if it deploys, there is nothing else to check
         pass
 
 
-def test_if_ucr_app_can_be_deployed_with_shm_in_specified_size(dcos_api_session):
+def test_if_ucr_app_can_be_deployed_with_shm_in_specified_size(
+        dcos_api_session):
     """Marathon app deployment integration test using the Mesos Containerizer.
 
     This test verifies that a marathon ucr app can be launched with a specified
     size (1234MB) of private /dev/shm.
     """
     app = {
-        'id': '/test-ucr-' + str(uuid.uuid4().hex),
-        'cpus': 0.1,
-        'mem': 32,
-        'instances': 1,
-        'cmd': 'while true; do sleep 1; done',
+        'id':
+        '/test-ucr-' + str(uuid.uuid4().hex),
+        'cpus':
+        0.1,
+        'mem':
+        32,
+        'instances':
+        1,
+        'cmd':
+        'while true; do sleep 1; done',
         'container': {
             'type': 'MESOS',
             'docker': {
-                'image': 'library/alpine'
+                'image': 'library/alpine',
             },
-            "linuxInfo": {"ipcInfo": {"mode": "PRIVATE", "shmSize": 1234}}
+            "linuxInfo": {
+                "ipcInfo": {
+                    "mode": "PRIVATE",
+                    "shmSize": 1234,
+                },
+            },
         },
         'healthChecks': [{
             'protocol': 'COMMAND',
-            'command': {'value': 'df -m /dev/shm | grep -w 1234'},
+            'command': {
+                'value': 'df -m /dev/shm | grep -w 1234',
+            },
             'gracePeriodSeconds': 5,
             'intervalSeconds': 10,
             'timeoutSeconds': 10,
-            'maxConsecutiveFailures': 3
-        }]
+            'maxConsecutiveFailures': 3,
+        }],
     }
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         # Trivial app if it deploys, there is nothing else to check
@@ -159,23 +196,45 @@ def test_if_ucr_pods_can_be_deployed_with_image_entrypoint(dcos_api_session):
     """
     test_uuid = uuid.uuid4().hex
     pod_definition = {
-        'id': '/integration-test-pods-{}'.format(test_uuid),
-        'scaling': {'kind': 'fixed', 'instances': 1},
-        'environment': {'PING': 'PONG'},
-        'containers': [
-            {
-                'name': 'container1',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'image': {'kind': 'DOCKER', 'id': 'mesosphere/inky'}
+        'id':
+        '/integration-test-pods-{}'.format(test_uuid),
+        'scaling': {
+            'kind': 'fixed',
+            'instances': 1,
+        },
+        'environment': {
+            'PING': 'PONG',
+        },
+        'containers': [{
+            'name': 'container1',
+            'resources': {
+                'cpus': 0.1,
+                'mem': 32,
             },
-            {
-                'name': 'container2',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'exec': {'command': {'shell': 'echo $PING > foo; while true; do sleep 1; done'}},
-                'healthcheck': {'command': {'shell': 'test $PING = `cat foo`'}}
-            }
-        ],
-        'networks': [{'mode': 'host'}]
+            'image': {
+                'kind': 'DOCKER',
+                'id': 'mesosphere/inky',
+            },
+        }, {
+            'name': 'container2',
+            'resources': {
+                'cpus': 0.1,
+                'mem': 32,
+            },
+            'exec': {
+                'command': {
+                    'shell': 'echo $PING > foo; while true; do sleep 1; done',
+                },
+            },
+            'healthcheck': {
+                'command': {
+                    'shell': 'test $PING = `cat foo`',
+                },
+            },
+        }],
+        'networks': [{
+            'mode': 'host',
+        }],
     }
     with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
         # Trivial app if it deploys, there is nothing else to check
@@ -191,23 +250,45 @@ def test_if_ucr_pods_can_be_deployed_with_scratch_image(dcos_api_session):
     """
     test_uuid = uuid.uuid4().hex
     pod_definition = {
-        'id': '/integration-test-pods-{}'.format(test_uuid),
-        'scaling': {'kind': 'fixed', 'instances': 1},
-        'environment': {'PING': 'PONG'},
-        'containers': [
-            {
-                'name': 'container1',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'image': {'kind': 'DOCKER', 'id': 'hello-world'}
+        'id':
+        '/integration-test-pods-{}'.format(test_uuid),
+        'scaling': {
+            'kind': 'fixed',
+            'instances': 1,
+        },
+        'environment': {
+            'PING': 'PONG',
+        },
+        'containers': [{
+            'name': 'container1',
+            'resources': {
+                'cpus': 0.1,
+                'mem': 32,
             },
-            {
-                'name': 'container2',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'exec': {'command': {'shell': 'echo $PING > foo; while true; do sleep 1; done'}},
-                'healthcheck': {'command': {'shell': 'test $PING = `cat foo`'}}
-            }
-        ],
-        'networks': [{'mode': 'host'}]
+            'image': {
+                'kind': 'DOCKER',
+                'id': 'hello-world',
+            },
+        }, {
+            'name': 'container2',
+            'resources': {
+                'cpus': 0.1,
+                'mem': 32,
+            },
+            'exec': {
+                'command': {
+                    'shell': 'echo $PING > foo; while true; do sleep 1; done',
+                },
+            },
+            'healthcheck': {
+                'command': {
+                    'shell': 'test $PING = `cat foo`',
+                },
+            },
+        }],
+        'networks': [{
+            'mode': 'host',
+        }],
     }
     with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
         # Trivial app if it deploys, there is nothing else to check
@@ -228,28 +309,55 @@ def test_if_ucr_pods_can_be_deployed_with_image_whiteout(dcos_api_session):
     """
     test_uuid = uuid.uuid4().hex
     pod_definition = {
-        'id': '/integration-test-pods-{}'.format(test_uuid),
-        'scaling': {'kind': 'fixed', 'instances': 1},
-        'environment': {'PING': 'PONG'},
+        'id':
+        '/integration-test-pods-{}'.format(test_uuid),
+        'scaling': {
+            'kind': 'fixed',
+            'instances': 1,
+        },
+        'environment': {
+            'PING': 'PONG',
+        },
         'containers': [
             {
                 'name': 'container1',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'image': {'kind': 'DOCKER', 'id': 'mesosphere/whiteout:test'},
+                'resources': {
+                    'cpus': 0.1,
+                    'mem': 32,
+                },
+                'image': {
+                    'kind': 'DOCKER',
+                    'id': 'mesosphere/whiteout:test',
+                },
                 'exec': {
                     'command': {
-                        'shell': 'test ! -f /dir1/file1 && test ! -f /dir1/dir2/file2 && test -f /dir1/dir2/file3'
-                    }
-                }
+                        'shell':
+                        'test ! -f /dir1/file1 && test ! -f /dir1/dir2/file2 && test -f /dir1/dir2/file3',  # NOQA
+                    },
+                },
             },
             {
                 'name': 'container2',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'exec': {'command': {'shell': 'echo $PING > foo; while true; do sleep 1; done'}},
-                'healthcheck': {'command': {'shell': 'test $PING = `cat foo`'}}
-            }
+                'resources': {
+                    'cpus': 0.1,
+                    'mem': 32,
+                },
+                'exec': {
+                    'command': {
+                        'shell':
+                        'echo $PING > foo; while true; do sleep 1; done',
+                    },
+                },
+                'healthcheck': {
+                    'command': {
+                        'shell': 'test $PING = `cat foo`',
+                    },
+                },
+            },
         ],
-        'networks': [{'mode': 'host'}]
+        'networks': [{
+            'mode': 'host',
+        }],
     }
     with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
         # Trivial app if it deploys, there is nothing else to check
@@ -264,27 +372,56 @@ def test_if_ucr_pods_can_be_deployed_with_image_digest(dcos_api_session):
     """
     test_uuid = uuid.uuid4().hex
     pod_definition = {
-        'id': '/integration-test-pods-{}'.format(test_uuid),
-        'scaling': {'kind': 'fixed', 'instances': 1},
-        'environment': {'PING': 'PONG'},
+        'id':
+        '/integration-test-pods-{}'.format(test_uuid),
+        'scaling': {
+            'kind': 'fixed',
+            'instances': 1,
+        },
+        'environment': {
+            'PING': 'PONG',
+        },
         'containers': [
             {
                 'name': 'container1',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'image': {
-                    'kind': 'DOCKER',
-                    'id': 'library/alpine@sha256:9f08005dff552038f0ad2f46b8e65ff3d25641747d3912e3ea8da6785046561a'
+                'resources': {
+                    'cpus': 0.1,
+                    'mem': 32,
                 },
-                'exec': {'command': {'shell': 'ls -al /'}}
+                'image': {
+                    'kind':
+                    'DOCKER',
+                    'id':
+                    'library/alpine@sha256:9f08005dff552038f0ad2f46b8e65ff3d25641747d3912e3ea8da6785046561a',  # NOQA
+                },
+                'exec': {
+                    'command': {
+                        'shell': 'ls -al /',
+                    },
+                },
             },
             {
                 'name': 'container2',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'exec': {'command': {'shell': 'echo $PING > foo; while true; do sleep 1; done'}},
-                'healthcheck': {'command': {'shell': 'test $PING = `cat foo`'}}
-            }
+                'resources': {
+                    'cpus': 0.1,
+                    'mem': 32,
+                },
+                'exec': {
+                    'command': {
+                        'shell':
+                        'echo $PING > foo; while true; do sleep 1; done',
+                    },
+                },
+                'healthcheck': {
+                    'command': {
+                        'shell': 'test $PING = `cat foo`',
+                    },
+                },
+            },
         ],
-        'networks': [{'mode': 'host'}]
+        'networks': [{
+            'mode': 'host',
+        }],
     }
     with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
         # Trivial app if it deploys, there is nothing else to check
@@ -304,33 +441,61 @@ def test_if_ucr_pods_can_be_deployed_with_auto_cgroups(dcos_api_session):
     resources read from the container specific cgroups include both the two
     container's resources (0.2 CPU and 64MB memory) and the default executor's
     resources (0.1 CPU and 32MB memory), so in total the resources are 0.3 CPU
-    (i.e., 0.3 * 1024 = 307 CPU shares) and 96MB memory (i.e., 100663296 bytes).
+    (i.e., 0.3 * 1024 = 307 CPU shares) and 96MB memory
+    (i.e., 100663296 bytes).
     """
     test_uuid = uuid.uuid4().hex
     pod_definition = {
-        'id': '/integration-test-pods-{}'.format(test_uuid),
-        'scaling': {'kind': 'fixed', 'instances': 1},
-        'environment': {'PING': 'PONG'},
+        'id':
+        '/integration-test-pods-{}'.format(test_uuid),
+        'scaling': {
+            'kind': 'fixed',
+            'instances': 1,
+        },
+        'environment': {
+            'PING': 'PONG',
+        },
         'containers': [
             {
                 'name': 'container1',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'image': {'kind': 'DOCKER', 'id': 'library/alpine'},
+                'resources': {
+                    'cpus': 0.1,
+                    'mem': 32,
+                },
+                'image': {
+                    'kind': 'DOCKER',
+                    'id': 'library/alpine',
+                },
                 'exec': {
                     'command': {
-                        'shell': 'test `cat /sys/fs/cgroup/memory/memory.soft_limit_in_bytes` = 100663296 && '
-                                 'test `cat /sys/fs/cgroup/cpu/cpu.shares` = 307'
-                    }
-                }
+                        'shell':
+                        'test `cat /sys/fs/cgroup/memory/memory.soft_limit_in_bytes` = 100663296 && '  # NOQA
+                        'test `cat /sys/fs/cgroup/cpu/cpu.shares` = 307',
+                    },
+                },
             },
             {
                 'name': 'container2',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'exec': {'command': {'shell': 'echo $PING > foo; while true; do sleep 1; done'}},
-                'healthcheck': {'command': {'shell': 'test $PING = `cat foo`'}}
-            }
+                'resources': {
+                    'cpus': 0.1,
+                    'mem': 32,
+                },
+                'exec': {
+                    'command': {
+                        'shell':
+                        'echo $PING > foo; while true; do sleep 1; done',
+                    },
+                },
+                'healthcheck': {
+                    'command': {
+                        'shell': 'test $PING = `cat foo`',
+                    },
+                },
+            },
         ],
-        'networks': [{'mode': 'host'}]
+        'networks': [{
+            'mode': 'host',
+        }],
     }
     with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
         # Trivial app if it deploys, there is nothing else to check
@@ -339,7 +504,8 @@ def test_if_ucr_pods_can_be_deployed_with_auto_cgroups(dcos_api_session):
 
 # TODO: Unmute this test once volume gid manager is enabled.
 @pytest.mark.skip(reason="cannot test this without volume gid manager enabled")
-def test_if_ucr_pods_can_be_deployed_with_non_root_user_ephemeral_volume(dcos_api_session):
+def test_if_ucr_pods_can_be_deployed_with_non_root_user_ephemeral_volume(
+        dcos_api_session):
     """Marathon pods inside ucr deployment integration test.
 
     This test launches a marathon ucr pod with a non-root user (nobody)
@@ -356,27 +522,60 @@ def test_if_ucr_pods_can_be_deployed_with_non_root_user_ephemeral_volume(dcos_ap
     """
     test_uuid = uuid.uuid4().hex
     pod_definition = {
-        'id': '/integration-test-pods-{}'.format(test_uuid),
-        'scaling': {'kind': 'fixed', 'instances': 1},
-        'environment': {'PING': 'PONG'},
-        'containers': [
-            {
-                'name': 'container1',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'image': {'kind': 'DOCKER', 'id': 'library/alpine'},
-                'exec': {'command': {'shell': 'echo data > ./etc/file'}},
-                'user': 'nobody',
-                "volumeMounts": [{"name": "volume1", "mountPath": "etc"}]
+        'id':
+        '/integration-test-pods-{}'.format(test_uuid),
+        'scaling': {
+            'kind': 'fixed',
+            'instances': 1,
+        },
+        'environment': {
+            'PING': 'PONG',
+        },
+        'containers': [{
+            'name':
+            'container1',
+            'resources': {
+                'cpus': 0.1,
+                'mem': 32,
             },
-            {
-                'name': 'container2',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'exec': {'command': {'shell': 'echo $PING > foo; while true; do sleep 1; done'}},
-                'healthcheck': {'command': {'shell': 'test $PING = `cat foo`'}}
-            }
-        ],
-        'networks': [{'mode': 'host'}],
-        'volumes': [{'name': 'volume1'}]
+            'image': {
+                'kind': 'DOCKER',
+                'id': 'library/alpine',
+            },
+            'exec': {
+                'command': {
+                    'shell': 'echo data > ./etc/file',
+                },
+            },
+            'user':
+            'nobody',
+            "volumeMounts": [{
+                "name": "volume1",
+                "mountPath": "etc",
+            }],
+        }, {
+            'name': 'container2',
+            'resources': {
+                'cpus': 0.1,
+                'mem': 32,
+            },
+            'exec': {
+                'command': {
+                    'shell': 'echo $PING > foo; while true; do sleep 1; done',
+                },
+            },
+            'healthcheck': {
+                'command': {
+                    'shell': 'test $PING = `cat foo`',
+                },
+            },
+        }],
+        'networks': [{
+            'mode': 'host',
+        }],
+        'volumes': [{
+            'name': 'volume1',
+        }],
     }
     with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
         # Trivial app if it deploys, there is nothing else to check
@@ -393,31 +592,63 @@ def test_if_ucr_pods_can_share_shm_with_childs(dcos_api_session):
     """
     test_uuid = uuid.uuid4().hex
     pod_definition = {
-        'id': '/integration-test-pods-{}'.format(test_uuid),
-        'scaling': {'kind': 'fixed', 'instances': 1},
-        'environment': {'PING': 'PONG'},
-        'containers': [
-            {
-                'name': 'container1',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'image': {'kind': 'DOCKER', 'id': 'library/alpine'},
-                'exec': {'command': {'shell': 'df -m /dev/shm | grep -w 1234'}},
-                'linuxInfo': {'ipcInfo': {'mode': 'SHARE_PARENT'}}
+        'id':
+        '/integration-test-pods-{}'.format(test_uuid),
+        'scaling': {
+            'kind': 'fixed',
+            'instances': 1,
+        },
+        'environment': {
+            'PING': 'PONG',
+        },
+        'containers': [{
+            'name': 'container1',
+            'resources': {
+                'cpus': 0.1,
+                'mem': 32,
             },
-            {
-                'name': 'container2',
-                'resources': {'cpus': 0.1, 'mem': 32},
-                'exec': {
-                    'command': {
-                        'shell': 'test -z $(df -m /dev/shm | grep -w 1234) && '
-                                 'echo $PING > foo; while true; do sleep 1; done'
-                    }
+            'image': {
+                'kind': 'DOCKER',
+                'id': 'library/alpine',
+            },
+            'exec': {
+                'command': {
+                    'shell': 'df -m /dev/shm | grep -w 1234',
                 },
-                'healthcheck': {'command': {'shell': 'test $PING = `cat foo`'}}
-            }
-        ],
-        'networks': [{'mode': 'host'}],
-        'linuxInfo': {'ipcInfo': {'mode': 'PRIVATE', 'shmSize': 1234}}
+            },
+            'linuxInfo': {
+                'ipcInfo': {
+                    'mode': 'SHARE_PARENT',
+                },
+            },
+        }, {
+            'name': 'container2',
+            'resources': {
+                'cpus': 0.1,
+                'mem': 32,
+            },
+            'exec': {
+                'command': {
+                    'shell':
+                    'test -z $(df -m /dev/shm | grep -w 1234) && '
+                    'echo $PING > foo; while true; do sleep 1; done',
+                },
+            },
+            'healthcheck': {
+                'command': {
+                    'shell': 'test $PING = `cat foo`',
+                },
+            },
+        }],
+        'networks': [{
+            'mode': 'host',
+        }],
+        'linuxInfo': {
+            'ipcInfo': {
+                'mode': 'PRIVATE',
+                'shmSize': 1234,
+            },
+        },
     }
     with dcos_api_session.marathon.deploy_pod_and_cleanup(pod_definition):
         # Trivial app if it deploys, there is nothing else to check
