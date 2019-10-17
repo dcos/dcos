@@ -1,11 +1,4 @@
 #!/usr/bin/env python
-import json
-import logging
-import subprocess
-
-from dcos_internal_utils import utils
-
-
 """Use this node's internal IP address to reach the local CockroachDB instance
 and update its configuration state.
 
@@ -15,6 +8,11 @@ applicable multiple times at arbitrary points in time during cluster runtime
 without harming the operation of CockroachDB.
 """
 
+import json
+import logging
+import subprocess
+
+from dcos_internal_utils import utils
 
 log = logging.getLogger(__name__)
 logging.basicConfig(format='[%(levelname)s] %(message)s', level='INFO')
@@ -24,7 +22,7 @@ def set_num_replicas(my_internal_ip: str, num_replicas: int) -> None:
     """
     CockroachDB version 2.1.7 sets the internal system range replication
     factor to `5` by default:
-    https://www.cockroachlabs.com/docs/stable/configure-replication-zones.html#view-all-replication-zones
+    https://www.cockroachlabs.com/docs/stable/configure-replication-zones.html#view-all-replication-zones  # NOQA
 
     In order to adjust this to the maximum replication factor possible for a
     given DC/OS cluster and to provide maximum fault-tolerance we set the
@@ -42,15 +40,16 @@ def set_num_replicas(my_internal_ip: str, num_replicas: int) -> None:
     # The DC/OS check is named "cockroachdb_replication".
     #
     # To resolve this, add more items to the following list.
-    # To display CockroachDB entities that must have their `num_replicas` setting
-    # adjusted, issue the following SQL command: `SHOW ALL ZONE CONFIGURATIONS;`
+    # To display CockroachDB entities that must have their `num_replicas`
+    # setting adjusted, issue the following SQL command:
+    # `SHOW ALL ZONE CONFIGURATIONS;`
     #
     # One option is to parse the output of the above SQL command.
     # However, there is a plan for CockroachDB that all replication will be
     # derived from ``.default``.
     # See https://forum.cockroachlabs.com/t/change-replication-factor/2052/3.
-    # Should this happen, we can replace the following loop initialisation with:
-    # zone = '.default'
+    # Should this happen, we can replace the following loop initialisation
+    # with: zone = '.default'
     # db_entity = 'RANGE default'
     for zone, db_entity in [
         ('.default', 'RANGE default'),
@@ -61,25 +60,19 @@ def set_num_replicas(my_internal_ip: str, num_replicas: int) -> None:
         ('.liveness', 'RANGE liveness'),
     ]:
         sql_command = (
-            'ALTER {db_entity} CONFIGURE ZONE USING {zone_config};'
-        ).format(
-            db_entity=db_entity,
-            zone_config=zone_config,
-        )
-        command = (
-            '/opt/mesosphere/active/cockroach/bin/cockroach '
-            'sql -e "{sql_command}" --insecure --host={host}'
-        ).format(
-            sql_command=sql_command,
-            host=my_internal_ip,
-        )
+            'ALTER {db_entity} CONFIGURE ZONE USING {zone_config};').format(
+                db_entity=db_entity,
+                zone_config=zone_config,
+            )
+        command = ('/opt/mesosphere/active/cockroach/bin/cockroach '
+                   'sql -e "{sql_command}" --insecure --host={host}').format(
+                       sql_command=sql_command, host=my_internal_ip)
         message = (
-            'Set `{zone_config}` for `{zone}` via command `{command}`'
-        ).format(
-            zone_config=repr(zone_config),
-            zone=repr(zone),
-            command=repr(command),
-        )
+            'Set `{zone_config}` for `{zone}` via command `{command}`').format(
+                zone_config=repr(zone_config),
+                zone=repr(zone),
+                command=repr(command),
+            )
         log.info(message)
         subprocess.run(command, shell=True)
         log.info('Command returned')

@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+"""Use this node's internal IP address to reach the local CockroachDB instance
+and restore the IAM database from a backup.
+
+This program is expected to be executed manually to recover should the IAM
+database become corrupt or otherwise require rolling back to a previous
+snapshot.
+"""
 
 import argparse
 import logging
@@ -9,21 +16,12 @@ from subprocess import CalledProcessError
 
 from dcos_internal_utils import utils
 
-
-"""Use this node's internal IP address to reach the local CockroachDB instance
-and restore the IAM database from a backup.
-
-This program is expected to be executed manually to recover should the IAM
-database become corrupt or otherwise require rolling back to a previous
-snapshot.
-"""
-
-
 log = logging.getLogger(__name__)
 logging.basicConfig(format='[%(levelname)s] %(message)s', level='INFO')
 
 
-def recover_database(my_internal_ip: str, backup_file_path: str, db_suffix: str) -> None:
+def recover_database(my_internal_ip: str, backup_file_path: str,
+                     db_suffix: str) -> None:
     """Recover the IAM database from `backup_file_path`.
 
     1. Use `cockroach sql` to create a temporary database called `iam_new`.
@@ -49,7 +47,7 @@ def recover_database(my_internal_ip: str, backup_file_path: str, db_suffix: str)
             '--host={}'.format(my_internal_ip),
             '-e',
             'SHOW TABLES FROM {}'.format(dbname),
-            ]
+        ]
         msg = 'Looking up tables of database `{}` via command `{}`'.format(
             dbname, ' '.join(command))
         log.info(msg)
@@ -68,7 +66,7 @@ def recover_database(my_internal_ip: str, backup_file_path: str, db_suffix: str)
             '--host={}'.format(my_internal_ip),
             '-e',
             'CREATE DATABASE {}'.format(dbname),
-            ]
+        ]
         msg = 'Creating database `{}` via command `{}`'.format(
             dbname, ' '.join(command))
         log.info(msg)
@@ -86,18 +84,19 @@ def recover_database(my_internal_ip: str, backup_file_path: str, db_suffix: str)
             '--insecure',
             '--host={}'.format(my_internal_ip),
             '--database={}'.format(dbname),
-            ]
-        msg = (
-            'Loading backup into database `{}` by '
-            'streaming statements over stdin to command `{}`'
-            ).format(dbname, ' '.join(command))
+        ]
+        msg = ('Loading backup into database `{}` by '
+               'streaming statements over stdin to command `{}`').format(
+                   dbname, ' '.join(command))
         log.info(msg)
         with open(backup_file_path, 'rb') as f:
             try:
                 subprocess.run(command, stdin=f, check=True)
-                log.info("Successfully loaded data into database `{}`.".format(dbname))
+                log.info("Successfully loaded data into database `{}`.".format(
+                    dbname))
             except CalledProcessError:
-                log.error('Failed to load data into database `{}`.'.format(dbname))
+                log.error(
+                    'Failed to load data into database `{}`.'.format(dbname))
                 raise
 
     def _rename_database(oldname: str, newname: str) -> None:
@@ -108,14 +107,15 @@ def recover_database(my_internal_ip: str, backup_file_path: str, db_suffix: str)
             '--host={}'.format(my_internal_ip),
             '-e',
             'ALTER DATABASE {} RENAME to {}'.format(oldname, newname),
-            ]
+        ]
         msg = 'Rename database `{}` to `{}` via command `{}`'.format(
             oldname, newname, ' '.join(command))
         log.info(msg)
         try:
             subprocess.run(command, check=True)
         except CalledProcessError:
-            log.error('Failed to rename database `{}` -> `{}`.'.format(oldname, newname))
+            log.error('Failed to rename database `{}` -> `{}`.'.format(
+                oldname, newname))
             raise
 
     def _drop_database(dbname: str) -> None:
@@ -126,7 +126,7 @@ def recover_database(my_internal_ip: str, backup_file_path: str, db_suffix: str)
             '--host={}'.format(my_internal_ip),
             '-e',
             'DROP DATABASE {}'.format(dbname),
-            ]
+        ]
         msg = 'Drop database `{}` via command `{}`'.format(
             dbname, ' '.join(command))
         log.info(msg)
@@ -192,8 +192,11 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description='Restore the IAM database from a backup file.')
     parser.add_argument(
-        'backup_file_path', type=str,
-        help='the path to a file containing the IAM database backup to restore')
+        'backup_file_path',
+        type=str,
+        help='the path to a file containing the IAM database backup to '
+        'restore',
+    )
     return parser.parse_args()
 
 
@@ -214,7 +217,7 @@ def main() -> None:
             my_internal_ip=my_internal_ip,
             backup_file_path=args.backup_file_path,
             db_suffix=datetime.now().strftime('%Y%m%d_%H%M%S_%f'),
-            )
+        )
     except subprocess.CalledProcessError:
         log.error("Failed to restore IAM database.")
         sys.exit(1)

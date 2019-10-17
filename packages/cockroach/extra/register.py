@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """Start CockroachDB.
 
 CockroachDB clusters need to be bootstrapped.
@@ -59,7 +58,8 @@ The bootstrap and discovery strategy we designed is as follows:
 3.2 Check the `ZK_NODES_PATH` again to ensure the value hasn't been
     updated since we checked it in step 2.
 
-3.3 If it is now non-empty goto step 4 as the cluster has since been initialized.
+3.3 If it is now non-empty goto step 4 as the cluster has since been
+    initialized.
 
 3.4 If it is still empty, we need to bootstrap the cluster.
 
@@ -106,39 +106,39 @@ from typing import Any, Generator, List, Optional
 
 import requests
 import retrying
-
-from kazoo.client import KazooClient
-from kazoo.exceptions import (
-    ConnectionLoss,
-    LockTimeout,
-    SessionExpiredError,
-)
-from kazoo.retry import KazooRetry
-from kazoo.security import make_digest_acl
 from requests import ConnectionError, HTTPError, Timeout
 
 from dcos_internal_utils import utils
-
+from kazoo.client import KazooClient
+from kazoo.exceptions import ConnectionLoss, LockTimeout, SessionExpiredError
+from kazoo.retry import KazooRetry
+from kazoo.security import make_digest_acl
 
 log = logging.getLogger(__name__)
 
 
-def zk_connect(zk_user: Optional[str] = None, zk_secret: Optional[str] = None) -> KazooClient:
+def zk_connect(zk_user: Optional[str] = None,
+               zk_secret: Optional[str] = None) -> KazooClient:
     """Connect to ZooKeeper.
 
-    On connection failure, the function attempts to reconnect indefinitely with exponential backoff
-    up to 3 seconds. If a command fails, that command is retried every 300ms for 3 attempts before failing.
+    On connection failure, the function attempts to reconnect indefinitely with
+    exponential backoff
+    up to 3 seconds. If a command fails, that command is retried every 300ms
+    for 3 attempts before failing.
 
     These values are chosen to suit a human-interactive time.
 
     Args:
         zk_user:
-            The username to use when connecting to ZooKeeper or `None` if no authentication is necessary.
+            The username to use when connecting to ZooKeeper or `None` if no
+            authentication is necessary.
         zk_secret:
-            The secret to use when connecting to ZooKeeper or `None` if no authentication is necessary.
+            The secret to use when connecting to ZooKeeper or `None` if no
+            authentication is necessary.
 
     Returns:
-        A ZooKeeper client connection in the form of a `kazoo.client.KazooClient`.
+        A ZooKeeper client connection in the form of a
+        `kazoo.client.KazooClient`.
     """
     # Try to reconnect indefinitely, with time between updates going
     # exponentially to ~3s. Then every retry occurs every ~3 seconds.
@@ -158,7 +158,7 @@ def zk_connect(zk_user: Optional[str] = None, zk_secret: Optional[str] = None) -
         max_jitter=0.1,
         max_delay=1,
         ignore_expire=False,
-        )
+    )
     default_acl = None
     auth_data = None
     if zk_user and zk_secret:
@@ -173,7 +173,7 @@ def zk_connect(zk_user: Optional[str] = None, zk_secret: Optional[str] = None) -
         command_retry=cmd_retry_policy,
         default_acl=default_acl,
         auth_data=auth_data,
-        )
+    )
     zk.start()
     return zk
 
@@ -188,7 +188,7 @@ ZK_NODES_PATH = ZK_PATH + "/nodes"
 LOCK_CONTENDER_ID = "{hostname}:{pid}".format(
     hostname=socket.gethostname(),
     pid=os.getpid(),
-    )
+)
 # The path to the CockroachDB PID file.
 PID_FILE_PATH = '/run/dcos/cockroach/cockroach.pid'
 # The path to the file containing the list of nodes in the cluster as a
@@ -214,7 +214,8 @@ ZK_LOCK_TIMEOUT = 5
 
 
 @contextmanager
-def _zk_lock(zk: KazooClient, lock_path: str, contender_id: str, timeout: int) -> Generator:
+def _zk_lock(zk: KazooClient, lock_path: str, contender_id: str,
+             timeout: int) -> Generator:
     """
     This contextmanager takes a ZooKeeper lock, yields, then releases
     the lock. This lock behaves like an interprocess mutex lock.
@@ -282,7 +283,8 @@ def _init_cockroachdb_cluster(ip: str) -> None:
     # value.
     #
     # The more often we run this function, the more logs we generate.
-    # If we chose a value smaller than 1 second, we would therefore generate more logs.
+    # If we chose a value smaller than 1 second, we would therefore generate
+    # more logs.
     # We consider 1 second to be a reasonable maximum delay and in our
     # experience the log size has not been an issue.
     wait_fixed_ms = 1000
@@ -317,17 +319,21 @@ def _init_cockroachdb_cluster(ip: str) -> None:
 
         # 3.05 is a magic number for the HTTP ConnectTimeout.
         # http://docs.python-requests.org/en/master/user/advanced/#timeouts
-        # The rationale is to set connect timeouts to slightly larger than a multiple of 3,
+        # The rationale is to set connect timeouts to slightly larger than a
+        # multiple of 3,
         # which is the default TCP packet retransmission window.
         # 27 is the ReadTimeout, taken from the same example.
         connect_timeout_seconds = 3.05
 
         # In our experience, we have not seen a read timeout of > 1 second.
-        # If this were extremely long, we may have to wait up to that amount of time to see an error.
-        # If this were too short, and for example CockroachDB were spending a long time to respond
+        # If this were extremely long, we may have to wait up to that amount of
+        # time to see an error.
+        # If this were too short, and for example CockroachDB were spending a
+        # long time to respond
         # because it is busy or on slow hardware, we may retry this function
         # even when the cluster is initialized.
-        # Therefore we choose a long timeout which is not expected uncomfortably long for operators.
+        # Therefore we choose a long timeout which is not expected
+        # uncomfortably long for operators.
         read_timeout_seconds = 30
         request_timeout = (connect_timeout_seconds, read_timeout_seconds)
 
@@ -342,7 +348,7 @@ def _init_cockroachdb_cluster(ip: str) -> None:
 
         try:
             response.raise_for_status()
-        except HTTPError as exc:
+        except HTTPError:
             # 150 bytes was chosen arbitrarily as it might not be so long as to
             # cause annoyance in a console, but it might be long enough to show
             # some useful data.
@@ -352,26 +358,25 @@ def _init_cockroachdb_cluster(ip: str) -> None:
                 errors='backslashreplace',
             )
             message = (
-                'Retrying GET request to {url} as status code {status_code} was given.'
-                'The first 150 bytes of the HTTP response, '
+                'Retrying GET request to {url} as status code {status_code} '
+                'was given. The first 150 bytes of the HTTP response, '
                 'decoded with the ASCII character encoding: '
-                '"{resp_text}".'
-            ).format(
-                url=gossip_url,
-                status_code=response.status_code,
-                resp_text=decoded_first_150_bytes,
-            )
+                '"{resp_text}".').format(
+                    url=gossip_url,
+                    status_code=response.status_code,
+                    resp_text=decoded_first_150_bytes,
+                )
             log.info(message)
             return False
 
         output = json.loads(response.text)
         try:
-            cluster_id_bytes = output['infos']['cluster-id']['value']['rawBytes']
+            cluster_id_bytes = output['infos']['cluster-id']['value'][
+                'rawBytes']
         except KeyError:
             return False
-        log.info((
-            'Cluster ID bytes {} present in local gossip endpoint.'
-        ).format(cluster_id_bytes))
+        log.info(('Cluster ID bytes {} present in local gossip endpoint.'
+                  ).format(cluster_id_bytes))
         return True
 
     # By default cockroachdb grows the cache to 25% of available
@@ -398,21 +403,23 @@ def _init_cockroachdb_cluster(ip: str) -> None:
         '--listen-addr={}:26257'.format(ip),
         '--http-addr=127.0.0.1:8090',
         '--pid-file={}'.format(PID_FILE_PATH),
-        '--log-dir='
+        '--log-dir=',
     ]
 
-    # Launch CockroachDB as the 'dcos_cockroach' user so file and directory ownership are set correctly.
+    # Launch CockroachDB as the 'dcos_cockroach' user so file and directory
+    # ownership are set correctly.
     dcos_cockroach_uid = pwd.getpwnam('dcos_cockroach').pw_uid
 
     def run_as_dcos_cockroach() -> Any:
         """
-        This function is a hack to make `os.setuid()`'s type signature match what mypy is expecting
-        for preexec_fn.
+        This function is a hack to make `os.setuid()`'s type signature match
+        what mypy is expecting for preexec_fn.
         """
         os.setuid(dcos_cockroach_uid)
         return
 
-    log.info("Initializing CockroachDB cluster: {}".format(' '.join(cockroach_args)))
+    log.info("Initializing CockroachDB cluster: {}".format(
+        ' '.join(cockroach_args)))
     proc = subprocess.Popen(
         cockroach_args,
         preexec_fn=run_as_dcos_cockroach,
@@ -451,7 +458,7 @@ def _get_registered_nodes(zk: KazooClient, zk_path: str) -> List[str]:
     """
     # We call `sync()` before reading the value in order to
     # read the latest data written to ZooKeeper.
-    # See https://zookeeper.apache.org/doc/r3.1.2/zookeeperProgrammers.html#ch_zkGuarantees
+    # See https://zookeeper.apache.org/doc/r3.1.2/zookeeperProgrammers.html#ch_zkGuarantees  # NOQA
     log.info("Calling sync() on ZNode `{}`".format(zk_path))
     zk.sync(zk_path)
     log.info("Loading data from ZNode `{}`".format(zk_path))
@@ -465,7 +472,8 @@ def _get_registered_nodes(zk: KazooClient, zk_path: str) -> List[str]:
     return []
 
 
-def _register_cluster_membership(zk: KazooClient, zk_path: str, ip: str) -> List[str]:
+def _register_cluster_membership(zk: KazooClient, zk_path: str,
+                                 ip: str) -> List[str]:
     """
     Add `ip` to the list of cluster members registered in ZooKeeper.
 
@@ -484,7 +492,9 @@ def _register_cluster_membership(zk: KazooClient, zk_path: str, ip: str) -> List
     nodes = _get_registered_nodes(zk=zk, zk_path=zk_path)
     if ip in nodes:
         # We're already registered with ZK.
-        log.info("Cluster member `{}` already registered in ZooKeeper. Skipping.".format(ip))
+        log.info(
+            "Cluster member `{}` already registered in ZooKeeper. Skipping.".
+            format(ip))
         return nodes
     log.info("Adding `{}` to list of nodes `{}`".format(ip, nodes))
     nodes.append(ip)
@@ -496,7 +506,8 @@ def _register_cluster_membership(zk: KazooClient, zk_path: str, ip: str) -> List
 
 def _dump_nodes_to_file(nodes: List[str], file_path: str) -> None:
     with open(file_path, 'w') as f:
-        log.info("Writing nodes {} to file {}".format(','.join(nodes), file_path))
+        log.info("Writing nodes {} to file {}".format(','.join(nodes),
+                                                      file_path))
         f.write(','.join(nodes))
 
 
@@ -530,9 +541,15 @@ def main() -> None:
         # `NODES_FILE_PATH` and exit.
         log.info("Cluster has members registered already: {}".format(nodes))
         if my_ip not in nodes:
-            log.info("IP not found in list of nodes. Registering cluster membership.")
-            with _zk_lock(zk=zk, lock_path=ZK_LOCK_PATH, contender_id=LOCK_CONTENDER_ID, timeout=ZK_LOCK_TIMEOUT):
-                nodes = _register_cluster_membership(zk=zk, zk_path=ZK_NODES_PATH, ip=my_ip)
+            log.info("IP not found in list of nodes. Registering cluster "
+                     "membership.")
+            with _zk_lock(zk=zk,
+                          lock_path=ZK_LOCK_PATH,
+                          contender_id=LOCK_CONTENDER_ID,
+                          timeout=ZK_LOCK_TIMEOUT):
+                nodes = _register_cluster_membership(zk=zk,
+                                                     zk_path=ZK_NODES_PATH,
+                                                     ip=my_ip)
         _dump_nodes_to_file(nodes, NODES_FILE_PATH)
         log.info("Registration complete. ")
         return
@@ -553,7 +570,10 @@ def main() -> None:
     # restarted by systemd, we expect to see that the cluster has been
     # bootstrapped and will enter that alternative code path which
     # leads to an eventually converged cluster.
-    with _zk_lock(zk=zk, lock_path=ZK_LOCK_PATH, contender_id=LOCK_CONTENDER_ID, timeout=ZK_LOCK_TIMEOUT):
+    with _zk_lock(zk=zk,
+                  lock_path=ZK_LOCK_PATH,
+                  contender_id=LOCK_CONTENDER_ID,
+                  timeout=ZK_LOCK_TIMEOUT):
         # We check that the cluster hasn't been bootstrapped since we
         # first read the list of nodes from ZK.
         log.info("Checking for registered nodes while holding lock.")
@@ -562,7 +582,9 @@ def main() -> None:
             # The cluster has been bootstrapped since we checked. We join the
             # existing cluster and dump the node IPs.
             log.info("Cluster has already been initialized: {}".format(nodes))
-            nodes = _register_cluster_membership(zk=zk, zk_path=ZK_NODES_PATH, ip=my_ip)
+            nodes = _register_cluster_membership(zk=zk,
+                                                 zk_path=ZK_NODES_PATH,
+                                                 ip=my_ip)
             _dump_nodes_to_file(nodes, NODES_FILE_PATH)
             return
         else:
@@ -577,7 +599,9 @@ def main() -> None:
             #
             # If this fails the fact that a cluster was initialized will be
             # ignored by subsequent runs as our IP won't be present in ZK.
-            nodes = _register_cluster_membership(zk=zk, zk_path=ZK_NODES_PATH, ip=my_ip)
+            nodes = _register_cluster_membership(zk=zk,
+                                                 zk_path=ZK_NODES_PATH,
+                                                 ip=my_ip)
             _dump_nodes_to_file(nodes, NODES_FILE_PATH)
             log.info("Successfully initialized cluster.")
             return
