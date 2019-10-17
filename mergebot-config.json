@@ -50,7 +50,7 @@
                     "mergebot/review/approved/min_2",
                     "teamcity/dcos/build/dcos",
                     "teamcity/dcos/build/tox",
-                    "teamcity/dcos/build/dcos-windows",
+                    "teamcity/dcos/build/dcosWindows",
                     "continuous-integration/jenkins/pr-head",
                     "teamcity/dcos/test/aws/cloudformation/simple",
                     "teamcity/dcos/test/test-e2e/group1",

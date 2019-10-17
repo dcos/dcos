@@ -9,14 +9,12 @@ import pytest
 import requests
 
 from generic_test_code.common import (
-    generic_correct_upstream_dest_test,
-    generic_correct_upstream_request_test,
     generic_upstream_headers_verify_test,
     generic_verify_response_test,
     overridden_file_content,
     verify_header,
 )
-from util import GuardedSubprocess, LineBufferFilter, SearchCriteria
+from util import LineBufferFilter, SearchCriteria
 
 log = logging.getLogger(__name__)
 
@@ -62,105 +60,6 @@ class TestSystemAgentEndpoint:
             '/system/v1/agent/de1baf83-c36c-4d23-9cb0-f89f596cd6ab-S0/logs',
             assert_headers_absent=["Accept-Encoding"],
             )
-
-
-class TestHistoryServiceRouting:
-    def test_if_invalid_cache_case_is_handled(
-            self, nginx_class, valid_user_header, dns_server_mock):
-        ar = nginx_class()
-        url = ar.make_url_from_path('/dcos-history-service/foo/bar')
-
-        with GuardedSubprocess(ar):
-            # Unfortunatelly there are upstreams that use `leader.mesos` and
-            # removing this entry too early will result in Nginx failing to start.
-            # So we need to do it right after nginx starts, but before first
-            # cache update.
-            time.sleep(1)
-            dns_server_mock.remove_dns_entry('leader.mesos.')
-
-            resp = requests.get(url,
-                                allow_redirects=False,
-                                headers=valid_user_header)
-
-        assert resp.status_code == 503
-        assert 'cache is invalid' in resp.text
-
-    def test_if_leader_is_unknown_state_is_handled(
-            self, nginx_class, valid_user_header):
-        ar = nginx_class(host_ip=None)
-        url = ar.make_url_from_path('/dcos-history-service/foo/bar')
-
-        with GuardedSubprocess(ar):
-            resp = requests.get(url,
-                                allow_redirects=False,
-                                headers=valid_user_header)
-
-        assert resp.status_code == 503
-        assert 'mesos leader is unknown' in resp.text
-
-    def test_if_leader_is_local_state_is_handled(
-            self, nginx_class, valid_user_header):
-        ar = nginx_class()
-        path_sent = '/dcos-history-service/foo/bar?a1=GET+param&a2=foobarism'
-        path_expected = '/foo/bar?a1=GET+param&a2=foobarism'
-
-        with GuardedSubprocess(ar):
-            generic_correct_upstream_dest_test(
-                ar,
-                valid_user_header,
-                path_sent,
-                "http://127.0.0.1:15055")
-            generic_correct_upstream_request_test(
-                ar,
-                valid_user_header,
-                path_sent,
-                path_expected)
-            generic_upstream_headers_verify_test(
-                ar,
-                valid_user_header,
-                path_sent)
-
-    def test_if_leader_is_nonlocal_state_is_handled(
-            self, nginx_class, valid_user_header, dns_server_mock):
-        ar = nginx_class()
-        path_sent = '/dcos-history-service/foo/bar?a1=GET+param&a2=foobarism'
-        path_expected = '/dcos-history-service/foo/bar?a1=GET+param&a2=foobarism'
-        dns_server_mock.set_dns_entry('leader.mesos.', ip='127.0.0.3')
-
-        with GuardedSubprocess(ar):
-            generic_correct_upstream_dest_test(
-                ar,
-                valid_user_header,
-                path_sent,
-                "http://127.0.0.3:80")
-            generic_correct_upstream_request_test(
-                ar,
-                valid_user_header,
-                path_sent,
-                path_expected)
-            generic_upstream_headers_verify_test(
-                ar,
-                valid_user_header,
-                path_sent,
-                assert_headers={"DCOS-Forwarded": "true"})
-
-    def test_if_proxy_loop_is_handled(
-            self, nginx_class, valid_user_header, dns_server_mock):
-        ar = nginx_class()
-        url = ar.make_url_from_path('/dcos-history-service/foo/bar')
-
-        dns_server_mock.set_dns_entry('leader.mesos.', ip='127.0.0.3')
-
-        h = valid_user_header
-        h.update({"DCOS-Forwarded": "true"})
-
-        with GuardedSubprocess(ar):
-            resp = requests.get(url,
-                                allow_redirects=False,
-                                headers=h)
-
-        assert resp.status_code == 503
-        assert 'mesos leader is unknown' in resp.text
 
 
 class TestMetadata:
