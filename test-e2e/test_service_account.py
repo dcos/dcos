@@ -7,15 +7,13 @@ import cryptography.hazmat.backends
 import jwt
 import requests
 from _pytest.fixtures import SubRequest
-from cluster_helpers import (
-    wait_for_dcos_oss,
-)
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+
+from cluster_helpers import wait_for_dcos_oss
 from dcos_e2e.base_classes import ClusterBackend
 from dcos_e2e.cluster import Cluster
 from dcos_e2e.node import Output
-
 
 cryptography_default_backend = cryptography.hazmat.backends.default_backend()
 
@@ -52,10 +50,10 @@ def generate_rsa_keypair() -> Tuple[str, str]:
 
 
 def test_superuser_service_account_login(
-    docker_backend: ClusterBackend,
-    artifact_path: Path,
-    request: SubRequest,
-    log_dir: Path,
+        docker_backend: ClusterBackend,
+        artifact_path: Path,
+        request: SubRequest,
+        log_dir: Path,
 ) -> None:
     """
     Tests for successful superuser service account login which asserts
@@ -68,9 +66,9 @@ def test_superuser_service_account_login(
         'superuser_service_account_public_key': superuser_public_key,
     }
     with Cluster(
-        cluster_backend=docker_backend,
-        agents=0,
-        public_agents=0,
+            cluster_backend=docker_backend,
+            agents=0,
+            public_agents=0,
     ) as cluster:
         cluster.install_dcos_from_path(
             dcos_installer=artifact_path,
@@ -91,13 +89,18 @@ def test_superuser_service_account_login(
         login_endpoint = master_url + '/acs/api/v1/auth/login'
 
         service_login_token = jwt.encode(
-            {'uid': superuser_uid, 'exp': time.time() + 30},
+            {
+                'uid': superuser_uid,
+                'exp': time.time() + 30,
+            },
             superuser_private_key,
-            algorithm='RS256'
+            algorithm='RS256',
         ).decode('ascii')
 
         response = requests.post(
             login_endpoint,
-            json={'uid': superuser_uid, 'token': service_login_token}
-        )
+            json={
+                'uid': superuser_uid,
+                'token': service_login_token,
+            })
         assert response.status_code == 200

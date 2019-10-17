@@ -14,14 +14,13 @@ from dcos_e2e.cluster import Cluster
 from dcos_e2e.exceptions import DCOSTimeoutError
 from dcos_e2e.node import Node
 
-
 LOGGER = logging.getLogger(__name__)
 
 
 def wait_for_dcos_oss(
-    cluster: Cluster,
-    request: SubRequest,
-    log_dir: Path,
+        cluster: Cluster,
+        request: SubRequest,
+        log_dir: Path,
 ) -> None:
     """
     Helper for ``wait_for_dcos_oss`` that automatically dumps the journal of
@@ -60,9 +59,7 @@ def dump_cluster_journals(cluster: Cluster, target_dir: Path) -> None:
         ('public_agent', cluster.public_agents),
     ):
         for index, node in enumerate(nodes):
-            node_str = (
-                '{role}-{index}_{private_ip}'
-            ).format(
+            node_str = ('{role}-{index}_{private_ip}').format(
                 role=role,
                 index=index,
                 private_ip=node.private_ip_address,
@@ -83,7 +80,8 @@ def _dump_node_journals(node: Node, node_dir: Path) -> None:
     LOGGER.info('Dumping journals from {node}'.format(node=node))
     node_dir.mkdir(parents=True)
     try:
-        _dump_stdout_to_file(node, ['journalctl'], node_dir / _log_filename('journal'))
+        _dump_stdout_to_file(node, ['journalctl'],
+                             node_dir / _log_filename('journal'))
     except CalledProcessError as exc:
         # Continue dumping further journals even if an error occurs.
         LOGGER.warn('Unable to dump journalctl: {exc}'.format(exc=str(exc)))
@@ -130,9 +128,7 @@ def _dump_stdout_to_file(node: Node, cmd: List[str], file_path: Path) -> None:
             output=bytes(proc.stdout),
             stderr=bytes(proc.stderr),
         )
-        message = (
-            'Failed to complete "{cmd}": {exception}'
-        ).format(
+        message = ('Failed to complete "{cmd}": {exception}').format(
             cmd=cmd,
             exception=exception,
         )
@@ -146,8 +142,16 @@ def _dcos_systemd_units(node: Node) -> List[str]:
     """
     result = node.run(
         args=[
-            'sudo', 'systemctl', 'show', '-p', 'Wants', 'dcos.target', '|',
-            'cut', '-d=', '-f2'
+            'sudo',
+            'systemctl',
+            'show',
+            '-p',
+            'Wants',
+            'dcos.target',
+            '|',
+            'cut',
+            '-d=',
+            '-f2',
         ],
         shell=True,
     )

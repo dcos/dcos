@@ -18,7 +18,6 @@ from kazoo.client import KazooClient
 from kazoo.exceptions import NoNodeError
 from kazoo.retry import KazooRetry
 
-
 LOGGER = logging.getLogger(__name__)
 
 # Arbitrary value written to ZooKeeper.
@@ -27,19 +26,19 @@ FLAG = b'flag'
 
 @pytest.fixture
 def three_master_cluster(
-    artifact_path: Path,
-    docker_backend: Docker,
-    request: SubRequest,
-    log_dir: Path,
+        artifact_path: Path,
+        docker_backend: Docker,
+        request: SubRequest,
+        log_dir: Path,
 ) -> Cluster:
     """
     Spin up a highly-available DC/OS cluster with three master nodes.
     """
     with Cluster(
-        cluster_backend=docker_backend,
-        masters=3,
-        agents=0,
-        public_agents=0,
+            cluster_backend=docker_backend,
+            masters=3,
+            agents=0,
+            public_agents=0,
     ) as cluster:
         cluster.install_dcos_from_path(
             dcos_installer=artifact_path,
@@ -59,8 +58,10 @@ def zk_client(three_master_cluster: Cluster) -> KazooClient:
     """
     ZooKeeper client connected to a given DC/OS cluster.
     """
-    zk_hostports = ','.join(['{}:2181'.format(m.public_ip_address)
-                             for m in three_master_cluster.masters])
+    zk_hostports = ','.join([
+        '{}:2181'.format(m.public_ip_address)
+        for m in three_master_cluster.masters
+    ])
     retry_policy = KazooRetry(
         max_tries=-1,
         delay=1,
@@ -112,12 +113,12 @@ class TestZooKeeperBackup:
     """
 
     def test_transaction_log_backup_and_restore(
-        self,
-        three_master_cluster: Cluster,
-        zk_client: KazooClient,
-        tmp_path: Path,
-        request: SubRequest,
-        log_dir: Path,
+            self,
+            three_master_cluster: Cluster,
+            zk_client: KazooClient,
+            tmp_path: Path,
+            request: SubRequest,
+            log_dir: Path,
     ) -> None:
         """
         In a 3-master cluster, backing up the transaction log of ZooKeeper on
@@ -154,12 +155,12 @@ class TestZooKeeperBackup:
         )
 
     def test_snapshot_backup_and_restore(
-        self,
-        three_master_cluster: Cluster,
-        zk_client: KazooClient,
-        tmp_path: Path,
-        request: SubRequest,
-        log_dir: Path,
+            self,
+            three_master_cluster: Cluster,
+            zk_client: KazooClient,
+            tmp_path: Path,
+            request: SubRequest,
+            log_dir: Path,
     ) -> None:
         """
         In a 3-master cluster, backing up a snapshot of ZooKeeper on
@@ -171,7 +172,8 @@ class TestZooKeeperBackup:
         # the `snapCount` here only works as long as DC/OS does not set it.
         args = [
             'sed',
-            '-i', "'s/zoo-cfg-extra=/zoo-cfg-extra=snapCount\\\\=1\\&/'",
+            '-i',
+            "'s/zoo-cfg-extra=/zoo-cfg-extra=snapCount\\\\=1\\&/'",
             '/opt/mesosphere/active/exhibitor/usr/exhibitor/start_exhibitor.py',
         ]
         for master in three_master_cluster.masters:
@@ -278,7 +280,10 @@ def _do_restore(all_masters: Set[Node], backup_local_path: Path) -> None:
         master.run(
             args=[
                 '/opt/mesosphere/bin/dcos-shell',
-                'dcos-zk', 'restore', str(backup_remote_path), '-v',
+                'dcos-zk',
+                'restore',
+                str(backup_remote_path),
+                '-v',
             ],
             output=Output.LOG_AND_CAPTURE,
         )

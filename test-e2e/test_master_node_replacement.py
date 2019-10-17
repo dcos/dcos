@@ -7,9 +7,10 @@ import uuid
 from pathlib import Path
 from typing import Iterator
 
-import docker
 import pytest
 from _pytest.fixtures import SubRequest
+
+import docker
 from cluster_helpers import wait_for_dcos_oss
 from dcos_e2e.backends import Docker
 from dcos_e2e.cluster import Cluster
@@ -64,11 +65,11 @@ def docker_network_three_available_addresses() -> Iterator[Network]:
 
 
 def test_replace_all_static(
-    artifact_path: Path,
-    docker_network_three_available_addresses: Network,
-    tmp_path: Path,
-    request: SubRequest,
-    log_dir: Path,
+        artifact_path: Path,
+        docker_network_three_available_addresses: Network,
+        tmp_path: Path,
+        request: SubRequest,
+        log_dir: Path,
 ) -> None:
     """
     In a cluster with an Exhibitor backend consisting of a static ZooKeeper
@@ -88,25 +89,30 @@ def test_replace_all_static(
     docker_backend = Docker(network=docker_network_three_available_addresses)
 
     with Cluster(
-        cluster_backend=docker_backend,
-        # Allocate all 3 available IP addresses in the subnet.
-        masters=3,
-        agents=0,
-        public_agents=0,
+            cluster_backend=docker_backend,
+            # Allocate all 3 available IP addresses in the subnet.
+            masters=3,
+            agents=0,
+            public_agents=0,
     ) as original_cluster:
         master = next(iter(original_cluster.masters))
         result = master.run(
             args=[
                 'ifconfig',
-                '|', 'grep', '-B1', str(master.public_ip_address),
-                '|', 'grep', '-o', '"^\w*"',
+                '|',
+                'grep',
+                '-B1',
+                str(master.public_ip_address),
+                '|',
+                'grep',
+                '-o',
+                '"^\w*"',
             ],
             output=Output.LOG_AND_CAPTURE,
             shell=True,
         )
         interface = result.stdout.strip().decode()
-        ip_detect_contents = textwrap.dedent(
-            """\
+        ip_detect_contents = textwrap.dedent("""\
             #!/bin/bash -e
             if [ -f /sbin/ip ]; then
                IP_CMD=/sbin/ip
@@ -115,14 +121,16 @@ def test_replace_all_static(
             fi
 
             $IP_CMD -4 -o addr show dev {interface} | awk '{{split($4,a,"/");print a[1]}}'
-            """.format(interface=interface),
-        )
+            """.format(interface=interface))
         ip_detect_path = tmp_path / 'ip-detect'
         ip_detect_path.write_text(data=ip_detect_contents)
         static_config = {
-            'master_discovery': 'static',
-            'master_list': [str(master.private_ip_address)
-                            for master in original_cluster.masters],
+            'master_discovery':
+            'static',
+            'master_list': [
+                str(master.private_ip_address)
+                for master in original_cluster.masters
+            ],
         }
         dcos_config = {
             **original_cluster.base_config,
