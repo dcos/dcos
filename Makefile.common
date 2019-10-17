@@ -1,0 +1,67 @@
+.PHONY: isort
+isort:
+	isort \
+	    --recursive \
+	    --check-only
+	    .
+
+.PHONY: flake8
+flake8:
+	flake8 \
+	--max-line-length=79 \
+	    .
+
+.PHONY: apf
+yapf:
+	yapf \
+	    --diff \
+	    --recursive \
+	    --style '{indent_dictionary_value:False, split_before_logical_operator:False}' \
+	    .
+
+.PHONY: mypy
+mypy:
+	mypy *.py
+
+.PHONY: fix-isort
+fix-isort:
+	isort \
+	    --recursive \
+	    --apply \
+	    .
+
+.PHONY: pylint
+pylint:
+	pylint *.py
+
+.PHONY: fix-autoflake
+fix-autoflake:
+	autoflake \
+	    --in-place \
+	    --recursive \
+	    --remove-all-unused-imports \
+	    --remove-unused-variables \
+	    --expand-star-imports \
+	    .
+
+.PHONY: fix-yapf
+fix-yapf:
+	yapf \
+	    --in-place \
+	    --recursive \
+	    --style '{indent_dictionary_value:False, split_before_logical_operator:False}' \
+	    .
+
+.PHONY: py-lint
+py-lint: \
+	isort \
+	flake8 \
+	mypy \
+	yapf
+
+.PHONY: fix-lint
+fix-py-lint: \
+	fix-isort \
+	fix-autoflake \
+	fix-yapf \
+	py-lint
