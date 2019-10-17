@@ -22,12 +22,13 @@ def write_str(filename, contents):
         f.write(contents)
 
 
-# TODO(cmaloney): Pull out into a utility library. Copied in both gen_resolvconf.py
-# and here.
+# TODO(cmaloney): Pull out into a utility library. Copied in both
+# gen_resolvconf.py and here.
 def invoke_detect_ip():
     try:
-        ip = check_output(
-            ['/opt/mesosphere/bin/detect_ip']).strip().decode('utf-8')
+        ip = check_output([
+            '/opt/mesosphere/bin/detect_ip',
+        ]).strip().decode('utf-8')
     except CalledProcessError as e:
         print("check_output exited with {}".format(e))
         sys.exit(1)
@@ -36,7 +37,8 @@ def invoke_detect_ip():
         return ip
     except socket.error as e:
         print(
-            "inet_aton exited with {}. {} is not a valid IPv4 address".format(e, ip))
+            "inet_aton exited with {}. {} is not a valid IPv4 address".format(
+                e, ip))
         sys.exit(1)
 
 
@@ -67,22 +69,30 @@ exhibitor_cmdline = [
     '-Duser.home=/var/lib/dcos/exhibitor/',
     '-Duser.dir=/var/lib/dcos/exhibitor/',
     '-Djna.tmpdir=%s' % jna_tmpdir,
-    '-jar', '$PKG_PATH/usr/exhibitor/exhibitor.jar',
-    '--port', '8181',
-    '--defaultconfig', '/run/dcos_exhibitor/exhibitor_defaults.conf',
-    '--hostname', detected_ip
+    '-jar',
+    '$PKG_PATH/usr/exhibitor/exhibitor.jar',
+    '--port',
+    '8181',
+    '--defaultconfig',
+    '/run/dcos_exhibitor/exhibitor_defaults.conf',
+    '--hostname',
+    detected_ip,
 ]
 
 # Optionally pick up web server security configuration.
 if os.path.exists('/opt/mesosphere/etc/exhibitor_web.xml') and \
         os.path.exists('/opt/mesosphere/etc/exhibitor_realm'):
     exhibitor_cmdline.extend([
-        '--security', '/opt/mesosphere/etc/exhibitor_web.xml',
-        '--realm', 'DCOS:/opt/mesosphere/etc/exhibitor_realm',
-        '--remoteauth', 'basic:admin'
+        '--security',
+        '/opt/mesosphere/etc/exhibitor_web.xml',
+        '--realm',
+        'DCOS:/opt/mesosphere/etc/exhibitor_realm',
+        '--remoteauth',
+        'basic:admin',
     ])
 
-zookeeper_cluster_size = int(open('/opt/mesosphere/etc/master_count').read().strip())
+zookeeper_cluster_size = int(
+    open('/opt/mesosphere/etc/master_count').read().strip())
 
 check_ms = 30000
 if zookeeper_cluster_size == 1:
@@ -91,8 +101,8 @@ if zookeeper_cluster_size == 1:
 # Write out base exhibitor configuration
 write_str('/run/dcos_exhibitor/exhibitor_defaults.conf', """
 # These Exhibitor properties are used to first initialize the config stored in
-# an empty shared storage location. Any subsequent invocations of Exhibitor will
-# ignore these properties and use the config found in shared storage.
+# an empty shared storage location. Any subsequent invocations of Exhibitor
+# will ignore these properties and use the config found in shared storage.
 zookeeper-data-directory={zookeeper_data_dir}
 zookeeper-install-directory=/opt/mesosphere/active/exhibitor/usr/zookeeper
 zookeeper-log-directory={zookeeper_log_dir}
@@ -117,7 +127,7 @@ auto-manage-instances-fixed-ensemble-size={zookeeper_cluster_size}
     check_ms=check_ms,
     zookeeper_data_dir=ZK_SNAPSHOTS,
     zookeeper_log_dir=ZK_TRANSACTIONS,
-))
+))  # NOQA
 
 write_str('/var/lib/dcos/exhibitor/conf/log4j.properties', """
 log4j.rootLogger=INFO, journal
@@ -128,7 +138,7 @@ log4j.appender.journal.logThreadName=true
 log4j.appender.journal.logLoggerName=true
 log4j.appender.journal.layout=org.apache.log4j.EnhancedPatternLayout
 log4j.appender.journal.layout.ConversionPattern=[myid:%X{myid}] %-5p [%t:%C{1}@%L] - %m%n%throwable
-""")
+""")  # NOQA
 
 # Add backend specific arguments
 exhibitor_backend = get_var_assert_set('EXHIBITOR_BACKEND')
@@ -143,65 +153,76 @@ if exhibitor_backend == 'STATIC':
     if detected_ip not in master_ips:
         message = (
             "ERROR: ip-detect returned {master_ip}. "
-            "{master_ip} is not in the configured list of masters."
-        ).format(master_ip=detected_ip)
+            "{master_ip} is not in the configured list of masters.").format(
+                master_ip=detected_ip)
         print(message)
         sys.exit(1)
     exhibitor_cmdline += [
         '--configtype=static',
-        '--staticensemble', get_var_assert_set('EXHIBITOR_STATICENSEMBLE')
+        '--staticensemble',
+        get_var_assert_set('EXHIBITOR_STATICENSEMBLE'),
     ]
 elif zookeeper_cluster_size == 1:
     print("Exhibitor configured for single master/static backend")
-    # A Zookeeper cluster size of 1 is a special case regarding the Exhibitor backend.
-    # It will always result in a static backend independent of the DC/OS configuration.
-    # This allows for skipping exhibitor.wait() logic that is responsible for waiting
-    # for Exhibitor configuration change from standalone mode to ensemble mode.
+    # A Zookeeper cluster size of 1 is a special case regarding the Exhibitor
+    # backend. It will always result in a static backend independent of the
+    # DC/OS configuration. This allows for skipping exhibitor.wait() logic that
+    # is responsible for waiting for Exhibitor configuration change from
+    # standalone mode to ensemble mode.
     # https://jira.mesosphere.com/browse/DCOS-6147
     exhibitor_cmdline += [
         '--configtype=static',
-        '--staticensemble=1:' + detected_ip
+        '--staticensemble=1:' + detected_ip,
     ]
 elif exhibitor_backend == 'AWS_S3':
     print("Exhibitor configured for AWS S3")
     exhibitor_cmdline += [
         '--configtype=s3',
-        '--s3config', get_var_assert_set("AWS_S3_BUCKET") +
-        ':' + get_var_assert_set("AWS_S3_PREFIX"),
-        '--s3region', get_var_assert_set("AWS_REGION"),
-        '--s3backup', 'false',
+        '--s3config',
+        get_var_assert_set("AWS_S3_BUCKET") + ':' +
+        get_var_assert_set("AWS_S3_PREFIX"),
+        '--s3region',
+        get_var_assert_set("AWS_REGION"),
+        '--s3backup',
+        'false',
     ]
 
     # If there are explicit s3 credentials, add an --s3credentials flag
     if os.path.exists('/opt/mesosphere/etc/exhibitor.properties'):
-        exhibitor_cmdline += ['--s3credentials', '/opt/mesosphere/etc/exhibitor.properties']
+        exhibitor_cmdline += [
+            '--s3credentials',
+            '/opt/mesosphere/etc/exhibitor.properties',
+        ]
 elif exhibitor_backend == 'AZURE':
     print("Exhibitor configured for Azure")
     exhibitor_cmdline += [
         '--configtype=azure',
-        '--azureconfig', get_var_assert_set(
-            'AZURE_CONTAINER') + ':' + get_var_assert_set('AZURE_PREFIX'),
-        '--azurecredentials', '/opt/mesosphere/etc/exhibitor.properties',
+        '--azureconfig',
+        get_var_assert_set('AZURE_CONTAINER') + ':' +
+        get_var_assert_set('AZURE_PREFIX'),
+        '--azurecredentials',
+        '/opt/mesosphere/etc/exhibitor.properties',
     ]
 elif exhibitor_backend == 'GCE':
     print("Exhibitor configured for GCE")
     exhibitor_cmdline += [
         '--configtype=gcs',
         '--gcsconfig={}:{}'.format(
-            get_var_assert_set('GCS_BUCKET_NAME', 'GCE_BUCKET_NAME'))
+            get_var_assert_set('GCS_BUCKET_NAME', 'GCE_BUCKET_NAME')),
     ]
 elif exhibitor_backend == 'ZK':
     print("Exhibitor configured for Zookeeper")
     exhibitor_cmdline += [
         '--configtype=zookeeper',
         '--zkconfigconnect={}'.format(get_var_assert_set('ZK_CONFIG_CONNECT')),
-        '--zkconfigzpath={}'.format(get_var_assert_set('ZK_CONFIG_ZPATH'))
+        '--zkconfigzpath={}'.format(get_var_assert_set('ZK_CONFIG_ZPATH')),
     ]
 elif exhibitor_backend == 'SHARED_FS':
     print("Exhibitor configured for shared filesystem")
     exhibitor_cmdline += [
         '--configtype=file',
-        '--fsconfigdir', get_var_assert_set('EXHIBITOR_FSCONFIGDIR')
+        '--fsconfigdir',
+        get_var_assert_set('EXHIBITOR_FSCONFIGDIR'),
     ]
 else:
     print("ERROR: No known exhibitor backend:", exhibitor_backend)
@@ -216,11 +237,14 @@ if os.path.exists(truststore_path) and \
    os.path.exists(clientstore_path) and \
    os.path.exists(serverstore_path):
     exhibitor_env['EXHIBITOR_TLS_TRUSTSTORE_PATH'] = truststore_path
-    exhibitor_env['EXHIBITOR_TLS_TRUSTSTORE_PASSWORD'] = 'not-relevant-for-security'
+    exhibitor_env[
+        'EXHIBITOR_TLS_TRUSTSTORE_PASSWORD'] = 'not-relevant-for-security'
     exhibitor_env['EXHIBITOR_TLS_CLIENT_KEYSTORE_PATH'] = clientstore_path
-    exhibitor_env['EXHIBITOR_TLS_CLIENT_KEYSTORE_PASSWORD'] = 'not-relevant-for-security'
+    exhibitor_env[
+        'EXHIBITOR_TLS_CLIENT_KEYSTORE_PASSWORD'] = 'not-relevant-for-security'
     exhibitor_env['EXHIBITOR_TLS_SERVER_KEYSTORE_PATH'] = serverstore_path
-    exhibitor_env['EXHIBITOR_TLS_SERVER_KEYSTORE_PASSWORD'] = 'not-relevant-for-security'
+    exhibitor_env[
+        'EXHIBITOR_TLS_SERVER_KEYSTORE_PASSWORD'] = 'not-relevant-for-security'
     exhibitor_env['EXHIBITOR_TLS_REQUIRE_CLIENT_CERT'] = 'true'
     exhibitor_env['EXHIBITOR_TLS_VERIFY_PEER_CERT'] = 'true'
 

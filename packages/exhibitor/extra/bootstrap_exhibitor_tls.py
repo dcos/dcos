@@ -3,10 +3,8 @@ import os
 import socket
 import subprocess
 import sys
-
 from pathlib import Path
 from urllib.parse import urlparse
-
 
 TLS_ARTIFACT_LOCATION = '/var/lib/dcos/exhibitor-tls-artifacts'
 CSR_SERVICE_CERT_PATH = '/tmp/root-cert.pem'
@@ -17,8 +15,9 @@ BOOTSTRAP_CA_BINARY = '/opt/mesosphere/bin/dcos-bootstrap-ca'
 
 def invoke_detect_ip():
     try:
-        ip = subprocess.check_output(
-            ['/opt/mesosphere/bin/detect_ip']).strip().decode('utf-8')
+        ip = subprocess.check_output([
+            '/opt/mesosphere/bin/detect_ip',
+        ]).strip().decode('utf-8')
     except subprocess.CalledProcessError as e:
         print("check_output exited with {}".format(e))
         sys.exit(1)
@@ -27,7 +26,8 @@ def invoke_detect_ip():
         return ip
     except socket.error as e:
         print(
-            "inet_aton exited with {}. {} is not a valid IPv4 address".format(e, ip))
+            "inet_aton exited with {}. {} is not a valid IPv4 address".format(
+                e, ip))
         sys.exit(1)
 
 
@@ -45,7 +45,8 @@ def get_ca_url(exhibitor_bootstrap_ca_url, bootstrap_url):
         elif result.scheme == 'file':
             print('bootstrap url references a local file')
         else:
-            print('bootstrap url is using an unsupported scheme: {}'.format(result.scheme))
+            print('bootstrap url is using an unsupported scheme: {}'.format(
+                result.scheme))
         return ""
 
 
@@ -94,8 +95,10 @@ def gen_tls_artifacts(ca_url, artifacts_path):
     output = subprocess.check_output(
         args=[
             BOOTSTRAP_CA_BINARY,
-            '--output-dir', EXHIBITOR_TLS_TMP_DIR,
-            'init-entity', server_entity,
+            '--output-dir',
+            EXHIBITOR_TLS_TMP_DIR,
+            'init-entity',
+            server_entity,
         ],
         stderr=subprocess.STDOUT,
     )
@@ -105,8 +108,10 @@ def gen_tls_artifacts(ca_url, artifacts_path):
     output = subprocess.check_output(
         args=[
             BOOTSTRAP_CA_BINARY,
-            '--output-dir', EXHIBITOR_TLS_TMP_DIR,
-            'init-entity', client_entity,
+            '--output-dir',
+            EXHIBITOR_TLS_TMP_DIR,
+            'init-entity',
+            client_entity,
         ],
         stderr=subprocess.STDOUT,
     )
@@ -115,12 +120,19 @@ def gen_tls_artifacts(ca_url, artifacts_path):
     print('Making CSR for {} with IP `{}`'.format(server_entity, ip))
     output = subprocess.check_output(
         args=[
-            BOOTSTRAP_CA_BINARY, 'csr', server_entity,
-            '--output-dir', EXHIBITOR_TLS_TMP_DIR,
-            '--url', ca_url,
-            '--ca', CSR_SERVICE_CERT_PATH,
-            '--psk', psk,
-            '--sans', '{},localhost,127.0.0.1,exhibitor'.format(ip),
+            BOOTSTRAP_CA_BINARY,
+            'csr',
+            server_entity,
+            '--output-dir',
+            EXHIBITOR_TLS_TMP_DIR,
+            '--url',
+            ca_url,
+            '--ca',
+            CSR_SERVICE_CERT_PATH,
+            '--psk',
+            psk,
+            '--sans',
+            '{},localhost,127.0.0.1,exhibitor'.format(ip),
         ],
         stderr=subprocess.STDOUT,
     )
@@ -129,12 +141,19 @@ def gen_tls_artifacts(ca_url, artifacts_path):
     print('Making CSR for {} with IP `{}`'.format(client_entity, ip))
     output = subprocess.check_output(
         args=[
-            BOOTSTRAP_CA_BINARY, 'csr', client_entity,
-            '--output-dir', EXHIBITOR_TLS_TMP_DIR,
-            '--url', ca_url,
-            '--ca', CSR_SERVICE_CERT_PATH,
-            '--psk', psk,
-            '--sans', '{},localhost,127.0.0.1,exhibitor'.format(ip),
+            BOOTSTRAP_CA_BINARY,
+            'csr',
+            client_entity,
+            '--output-dir',
+            EXHIBITOR_TLS_TMP_DIR,
+            '--url',
+            ca_url,
+            '--ca',
+            CSR_SERVICE_CERT_PATH,
+            '--psk',
+            psk,
+            '--sans',
+            '{},localhost,127.0.0.1,exhibitor'.format(ip),
         ],
         stderr=subprocess.STDOUT,
     )
@@ -143,12 +162,18 @@ def gen_tls_artifacts(ca_url, artifacts_path):
     print('Writing TLS artifacts to {}'.format(artifacts_path))
     output = subprocess.check_output(
         args=[
-            BOOTSTRAP_CA_BINARY, 'create-exhibitor-artifacts',
-            '--output-dir', EXHIBITOR_TLS_TMP_DIR,
-            '--ca', CSR_SERVICE_CERT_PATH,
-            '--client-entity', client_entity,
-            '--server-entity', server_entity,
-            '--artifacts-directory', '{}'.format(artifacts_path),
+            BOOTSTRAP_CA_BINARY,
+            'create-exhibitor-artifacts',
+            '--output-dir',
+            EXHIBITOR_TLS_TMP_DIR,
+            '--ca',
+            CSR_SERVICE_CERT_PATH,
+            '--client-entity',
+            client_entity,
+            '--server-entity',
+            server_entity,
+            '--artifacts-directory',
+            '{}'.format(artifacts_path),
         ],
         stderr=subprocess.STDOUT,
     )
@@ -156,7 +181,8 @@ def gen_tls_artifacts(ca_url, artifacts_path):
 
 
 def _fail_and_calculate_status(message):
-    exit_status = 1 if os.environ.get('EXHIBITOR_TLS_REQUIRED') == 'true' else 0
+    exit_status = 1 if os.environ.get(
+        'EXHIBITOR_TLS_REQUIRED') == 'true' else 0
     if exit_status:
         print('exhibitor TLS bootstrap failed, but is required')
     else:
