@@ -3,6 +3,7 @@
 Core exception definitions.
 """
 from common import exceptions as cm_exc
+from common.exceptions import JSON_ERRORS
 
 
 class InstallationConfigError(cm_exc.InstallationError):
@@ -27,6 +28,16 @@ class RCNotFoundError(RCError):
 
 class RCDownloadError(RCError):
     """Resource download error.
+    """
+
+
+class RCExtractError(RCError):
+    """Resource extraction/unpacking error.
+    """
+
+
+class RCRemoveError(RCError):
+    """Resource removal error.
     """
 
 

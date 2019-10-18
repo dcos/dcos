@@ -8,7 +8,7 @@ Ref:
   [2] nssm/README.txt
       https://git.nssm.cc/nssm/nssm/src/master/README.txt
 """
-import configparser
+import configparser as cfp
 import enum
 import os
 from pathlib import Path
@@ -19,9 +19,7 @@ import jinja2 as jj2
 
 from . import base
 from . import exceptions as svcm_exc
-from common import constants as cm_const
 from common import logger
-from common import storage
 
 
 LOG = logger.get_logger(__name__)
@@ -29,17 +27,17 @@ LOG = logger.get_logger(__name__)
 
 class NSSMParameter(enum.Enum):
     """NSSM parameter set."""
-    DESCRIPTION = 'Description'
-    DISPLAYNAME = 'DisplayName'
-    NAME = 'Name'
-    APPLICATION = 'Application'
-    APPDIRECTORY = 'AppDirectory'
-    APPPARAMETERS = 'AppParameters'
-    START = 'Start'
-    DEPENDONSERVICE = 'DependOnService'
-    APPSTDOUT = 'AppStdout'
-    APPSTDERR = 'AppStderr'
-    APPENVIRONMENTEXTRA = 'AppEnvironmentExtra'
+    DESCRIPTION = 'description'
+    DISPLAYNAME = 'displayname'
+    NAME = 'name'
+    APPLICATION = 'application'
+    APPDIRECTORY = 'appdirectory'
+    APPPARAMETERS = 'appparameters'
+    START = 'start'
+    DEPENDONSERVICE = 'dependonservice'
+    APPSTDOUT = 'appstdout'
+    APPSTDERR = 'appstderr'
+    APPENVIRONMENTEXTRA = 'appenvironmentextra'
 
     @classmethod
     def values(cls):
@@ -87,26 +85,19 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
     """NSSM-based Windows service manager."""
     _exec_fname = 'nssm.exe'  # Executable file name.
     _exec_id_pattern = re.compile(r'^NSSM.*$')  # Executable identity.
-    _svc_cfg_fname = 'package.nssm'
     _ws = re.compile(r'[\s]+')
 
     def __init__(self, **svcm_opts):
         """Constructor."""
         super(WinSvcManagerNSSM, self).__init__(**svcm_opts)
-        self.pkg_id = svcm_opts.get('pkg_id')
-        self.cluster_conf = svcm_opts.get('cluster_conf', {})
-
-        self.exec_path = None
-
-        svc_conf = svcm_opts.get('svc_conf')
-        self.svc_conf = (
-            svc_conf if isinstance(svc_conf, configparser.ConfigParser) else
-            self._read_svc_conf(
-                Path(storage.DCOS_PKGREPO_ROOT_DPATH_DFT).joinpath(
-                    str(self.pkg_id)).joinpath('etc').joinpath(
-                        self._svc_cfg_fname)
-            )
+        self.cluster_conf = svcm_opts.get('cluster_conf', cfp.ConfigParser())
+        self.svc_conf = svcm_opts.get('svc_conf', cfp.ConfigParser())
+        assert isinstance(self.svc_conf, cfp.ConfigParser), (
+            f'Argument: svc_conf:'
+            f' Got {type(self.svc_conf).__name__} instead of ConfigParser'
         )
+
+        self.exec_path = None  # System service manager executable path
 
         self.svc_name = None
         self.svc_exec = None
@@ -161,39 +152,6 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
             )
 
         return exec_path
-
-    def _read_svc_conf(self, path):
-        """Read service configuration from a file.
-
-        :param path: pathlib.Path, local FS path to service's config file.
-        :return:     configparser.ConfigParser, service config options
-                     container.
-        """
-        assert isinstance(path, Path), (
-            f'pathlib.Path is required: Got {type(path).__name__}'
-        )
-
-        assert path.is_absolute(), f'Path is not absolute: {path}'
-
-        if not path.is_file():
-            raise svcm_exc.ServiceSetupError(
-                f'Service configuration file not found: {path}'
-            )
-
-        cfg_parser = configparser.ConfigParser()
-        cfg_parser.optionxform = lambda option: option
-
-        try:
-            files_ok = cfg_parser.read(path)
-        except configparser.Error as e:
-            raise svcm_exc.ServiceConfigError(
-                f'{path}: {type(e).__name__}: {e}'
-            )
-
-        if len(files_ok) != 1:
-            raise svcm_exc.ServiceConfigError(f'Can\'t open: {path}')
-
-        return cfg_parser
 
     def _verify_svc_conf(self):
         """Check service configuration"""
@@ -266,8 +224,15 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
             )
         ]
         cmd = NSSMCommand.SET.value
-        master_ip = self.cluster_conf.get('master_ip', '127.0.0.1')
-        local_ip = self.cluster_conf.get('local_ip', '127.0.0.1')
+        mnode_ipaddrs = [
+            self.cluster_conf.get(sect, 'privateipaddr', fallback='127.0.0.1')
+            for sect in self.cluster_conf.sections() if
+            sect.startswith('master-node')
+        ]
+        master_ip = mnode_ipaddrs[0] if mnode_ipaddrs else '127.0.0.1'
+        local_ip = self.cluster_conf.get(
+            'local', 'privateipaddr', fallback='127.0.0.1'
+        )
 
         for pname in pnames_opt:
             try:
@@ -340,6 +305,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
                     f'{cl_elements}: Exit code {subproc_run.returncode}:'
                     f' {subproc_run.stderr}'
                 )
+
         # TODO: Add a cleanup procedure for the case of unsuccessful service
         #       setup operation.
 

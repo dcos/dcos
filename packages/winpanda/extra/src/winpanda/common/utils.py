@@ -21,26 +21,12 @@ from pprint import pprint as pp
 import tarfile
 
 from pySmartDL import SmartDL
-import requests
 
 from common import logger
 
 
 LOG = logger.get_logger(__name__)
 
-# TODO: Needs refactoring
-def is_downloadable(url):
-    """
-    Does the url contain a downloadable resource
-    """
-    h = requests.head(url, allow_redirects=True)
-    header = h.headers
-    content_type = header.get('content-type')
-    if 'text' in content_type.lower():
-        return False
-    if 'html' in content_type.lower():
-        return False
-    return True
 
 # TODO: Needs refactoring
 def download(url, location):
@@ -84,7 +70,7 @@ def rmdir(path, recursive=False):
     """
     path_ = Path(str(path))
     path_ = path_ if path_.is_absolute() else Path(Path('.').resolve(), path_)
-    LOG.debug(f'rmdir(): path: {path_}')
+    LOG.debug(f'rmdir(): Target path: {path_}')
 
     if path_.exists():
         if path_.is_symlink():
@@ -103,9 +89,9 @@ def rmdir(path, recursive=False):
                         raise RuntimeError(f'Nested directory: {sub_path}')
                 else:
                     sub_path.unlink()
-                    LOG.debug(f'rmdir(): unlink(): {sub_path}')
+                    LOG.debug(f'rmdir(): Remove file: {sub_path}')
             # Remove a directory itself
             path_.rmdir()
-            LOG.debug(f'rmdir(): rmdir(): {path_}')
+            LOG.debug(f'rmdir(): Remove directory: {path_}')
     else:
         LOG.debug(f'rmdir(): Path not found: {path_}')

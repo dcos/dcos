@@ -36,6 +36,8 @@ class CLI_CMDOPT:
     LOCAL_PRIVIPADDR = 'local_priv_ipaddr'
     DSTOR_URL = 'dstor_url'
     DSTOR_PKGREPOPATH = 'dstor_pkgrepo_path'
+    DSTOR_PKGLISTPATH = 'dstor_pkglist_path'
+    DCOS_CLUSTERCFGPATH = 'dcos_clustercfg_path'
 
 
 CLI_ARGSPEC = '''Panda package management for Windows
@@ -47,27 +49,34 @@ Usage:
   winpanda {cmd_stop} [options]
 
 Options:
-  --target=<target>              target operational scope for a command (choose
-                                 from: {valid_cmd_targets})
-                                 [default: {default_cmd_target}]
-  --inst-root-dir=<path>         DC/OS installation root directory
-                                 [default: {default_root_dpath}]
-  --inst-config-dir=<path>       DC/OS installation configuration directory
-                                 [default: {default_config_dpath}]
-  --inst-state-dir=<path>        DC/OS installation state directory
-                                 [default: {default_state_dpath}]
-  --inst-repo-dir=<path>         DC/OS local package repository directory.
-                                 [default: {default_repository_dpath}]
-  --inst-var-data-dir=<path>     DC/OS variable data root directory.
-                                 [default: {default_var_dpath}]
-  --clean                        Wipe out any leftovers from previous DC/OS
-                                 installation before setting up a new one
-  --master-priv-ipaddr=<ipaddr>  master node's local private IP-address.
-                                 [default: 0.0.0.0]
-  --local-priv-ipaddr=<ipaddr>   agent node's local private IP-address.
-                                 [default: 0.0.0.0]
-  --dstor-url=<url>              DC/OS distribution storage URL.
-                                 [default: {default_dstor_url}]
-  --dstor-pkgrepo=<path>         DC/OS distribution storage URL.
-                                 [default: {default_dstor_pkgrepo_path}]
+  --target=<target>                 target operational scope for a command
+                                    (choose from: {valid_cmd_targets})
+                                    [default: {default_cmd_target}]
+  --inst-root-dir=<path>            DC/OS installation root directory
+                                    [default: {default_root_dpath}]
+  --inst-config-dir=<path>          DC/OS installation configuration directory
+                                    [default: {default_config_dpath}]
+  --inst-state-dir=<path>           DC/OS installation state directory
+                                    [default: {default_state_dpath}]
+  --inst-repo-dir=<path>            DC/OS local package repository directory
+                                    [default: {default_repository_dpath}]
+  --inst-var-data-dir=<path>        DC/OS variable data root directory
+                                    [default: {default_var_dpath}]
+  --clean                           Wipe out any leftovers from previous DC/OS
+                                    installation before setting up a new one
+  --master-priv-ipaddr=<ipaddr>...  master nodes private IP-addresses
+                                    [default: ]
+  --local-priv-ipaddr=<ipaddr>      agent node private IP-address
+                                    [default: ]
+  --dstor-url=<url>                 DC/OS distribution storage URL
+                                    [default: ]
+  --dstor-pkgrepo=<path>            DC/OS distribution storage package
+                                    repository path
+                                    [default: ]
+  --dstor-pkglist=<path>            DC/OS distribution storage reference
+                                    package list path
+                                    [default: ]
+  --cluster-cfgfile=<path>          DC/OS cluster configuration options local
+                                    file path
+                                    [default: {default_clustercfg_fpath}]
 '''

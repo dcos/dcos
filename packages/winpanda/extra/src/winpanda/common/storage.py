@@ -16,12 +16,29 @@ Default local storage layout for DC/OS installation:
             +-<inst_log>/     # Package-specific/common log files
             +-<inst_tmp>/     # Package-specific/common temporary data
 """
-import json
+# This is how the default DC/OS installation FS layout looks like
+# C:/                         # DC/OS installation drive
+#   +-dcos/                   # DC/OS installation root dir
+#     +-conf/                 # DC/OS installation config dir
+#     +-packages/             # DC/OS local package repository dir
+#     +-state/                # DC/OS installation state dir
+#       +-pkgactive/          # DC/OS active packages index
+#     +-var/                  # DC/OS installation variable data root dir
+#       +-opt/                # Package-specific work dirs
+#       +-run/                # Package-specific/common runtime data
+#       +-log/                # Package-specific/common log files
+#       +-tmp/                # Package-specific/common temporary data
+
+
+from collections import namedtuple
 from pathlib import Path
+import posixpath
+import shutil
 
 from common import logger
 from common import utils as cm_utl
 from core import exceptions as cr_exc
+from core.package import PackageManifest
 
 
 LOG = logger.get_logger(__name__)
@@ -61,6 +78,28 @@ DCOS_INST_RUN_DPATH_DFT = 'run'
 DCOS_INST_TMP_DPATH_DFT = 'tmp'
 
 
+class ISTOR_NODE:
+    """DC/OS installation storage core node."""
+    DRIVE = 'inst_drive'
+    ROOT = 'inst_root'
+    CFG = 'inst_cfg'
+    PKGREPO = 'inst_pkgrepo'
+    STATE = 'inst_state'
+    PKGACTIVE = 'pkgactive'
+    VAR = 'inst_var'
+    WORK = 'inst_work'
+    RUN = 'inst_run'
+    LOG = 'inst_log'
+    TMP = 'inst_tmp'
+
+
+IStorNodes = namedtuple('IStorNodes', [
+    ISTOR_NODE.DRIVE, ISTOR_NODE.ROOT, ISTOR_NODE.CFG, ISTOR_NODE.PKGREPO,
+    ISTOR_NODE.STATE, ISTOR_NODE.PKGACTIVE, ISTOR_NODE.VAR, ISTOR_NODE.WORK,
+    ISTOR_NODE.RUN, ISTOR_NODE.LOG, ISTOR_NODE.TMP
+])
+
+
 class InstallationStorage:
     """"""
     def __init__(self,
@@ -75,7 +114,7 @@ class InstallationStorage:
                  run_dpath=DCOS_INST_RUN_DPATH_DFT,
                  log_dpath=DCOS_INST_LOG_DPATH_DFT,
                  tmp_dpath=DCOS_INST_TMP_DPATH_DFT):
-        """DC/OS installation FS layout manager.
+        """DC/OS installation storage manager.
 
         :param drive:           str, DC/OS installation drive spec (ex. 'c:')
         :param root_dpath:      str, DC/OS installation root dir path
@@ -147,35 +186,29 @@ class InstallationStorage:
         self.tmp_dpath = (tmp_dpath_ if tmp_dpath_.is_absolute() else
                           self.var_dpath.joinpath(tmp_dpath_))
 
-        self.construction_plist = (
-            self.root_dpath,
-            self.cfg_dpath,
-            self.pkgrepo_dpath,
-            self.state_dpath,
-            self.pkgactive_dpath,
-            self.var_dpath,
-            self.work_dpath,
-            self.run_dpath,
-            self.log_dpath,
-            self.tmp_dpath
-        )
+        self.istor_nodes = IStorNodes(**{
+            ISTOR_NODE.DRIVE: self.drive,
+            ISTOR_NODE.ROOT: self.root_dpath,
+            ISTOR_NODE.CFG: self.cfg_dpath,
+            ISTOR_NODE.PKGREPO: self.pkgrepo_dpath,
+            ISTOR_NODE.STATE: self.state_dpath,
+            ISTOR_NODE.PKGACTIVE: self.pkgactive_dpath,
+            ISTOR_NODE.VAR: self.var_dpath,
+            ISTOR_NODE.WORK: self.work_dpath,
+            ISTOR_NODE.RUN: self.run_dpath,
+            ISTOR_NODE.LOG: self.log_dpath,
+            ISTOR_NODE.TMP: self.tmp_dpath})
 
-    def collect_pkgactive(self):
-        """Create a list of active packages."""
-        active_packages = []
+    def _inst_stor_is_clean_ready(self, clean=False):
+        """Check if the DC/OS installation storage may be safely (re-)created
+        from the scratch, cleaning up any leftovers from the previous
+        installation storage instances.
 
-        for path in self.pkgactive_dpath.iterdir():
-            try:
-                with path.open() as fp:
-                    pkg_manifest = json.load(fp=fp)
-            except (OSError, RuntimeError) as e:
-                raise cr_exc.InstallationStorageError(
-                    f'Collect active packages: {path}: {type(e).__name__}: {e}'
-                )
-
-            active_packages.append(pkg_manifest.get('pkg_id'))
-
-        return active_packages
+        :param clean_opt: bool, DC/OS installation storage 'cleanup' flag
+        :return:
+        """
+        # TODO: Implement logic for discovering cleanup readiness.
+        return clean
 
     def construct(self, clean=False):
         """Construct DC/OS installation storage.
@@ -185,13 +218,30 @@ class InstallationStorage:
                       directory structure, creating any missed pieces, as
                       required.
         """
-        for path in self.construction_plist:
+        clean_ready = self._inst_stor_is_clean_ready(clean=clean)
+        LOG.debug(f'{self.__class__.__name__}:'
+                  f' Construction: Clean ready: {clean_ready}')
+        rollback_path_list = []
+
+        def rollback():
+            """"""
+            for path in rollback_path_list:
+                # Remove an existing DC/OS installation storage element
+                try:
+                    cm_utl.rmdir(path=path, recursive=True)
+                except (OSError, RuntimeError) as e:
+                    LOG.error(f'{self.__class__.__name__}: Construction:'
+                              f' Rollback: {path}: {type(e).__name__}: {e}')
+
+        for path in self.istor_nodes[1:]:
             if path.exists():
                 if path.is_symlink():
+                    rollback()
                     raise cr_exc.InstallationStorageError(
                         f'Construction: Symlink conflict: {path}'
                     )
                 elif path.is_reserved():
+                    rollback()
                     raise cr_exc.InstallationStorageError(
                         f'Construction: Reserved name conflict: {path}'
                     )
@@ -199,45 +249,185 @@ class InstallationStorage:
                     # Remove a file
                     try:
                         path.unlink()
+                        LOG.debug(f'{self.__class__.__name__}:'
+                                  f' Construction: Auto-cleanup: File: {path}')
                     except (OSError, RuntimeError) as e:
+                        rollback()
                         raise cr_exc.InstallationStorageError(
-                            f'Construction: Cleanup failure: {path}:'
+                            f'Construction: Auto-cleanup: File: {path}:'
                             f' {type(e).__name__}: {e}'
-                        )
-                elif clean is True:
-                    # Remove an existing DC/OS installation storage element
-                    try:
-                        cm_utl.rmdir(path=path, recursive=True)
-                    except (OSError, RuntimeError) as e:
-                        raise cr_exc.InstallationStorageError(
-                            f'Construction: Cleanup failure: {path}:'
-                            f' {type(e).__name__}: {e}'
-                        )
+                        ) from e
                     # Create a fresh DC/OS installation storage element
                     try:
                         path.mkdir(parents=True, exist_ok=True)
+                        LOG.debug(f'{self.__class__.__name__}: Construction:'
+                                  f' Create directory: {path}')
                     except (OSError, RuntimeError) as e:
+                        rollback()
                         raise cr_exc.InstallationStorageError(
-                            f'Construction: Create element: {path}:'
+                            f'Construction: Create directory: {path}:'
                             f' {type(e).__name__}: {e}'
+                        ) from e
+                elif clean is True:
+                    if clean_ready is True:
+                        # Remove an existing DC/OS installation storage element
+                        try:
+                            cm_utl.rmdir(path=path, recursive=True)
+                            LOG.debug(f'{self.__class__.__name__}:'
+                                      f' Construction: Cleanup: {path}')
+                        except (OSError, RuntimeError) as e:
+                            rollback()
+                            raise cr_exc.InstallationStorageError(
+                                f'Construction: Cleanup: {path}:'
+                                f' {type(e).__name__}: {e}'
+                            ) from e
+                        # Create a fresh DC/OS installation storage element
+                        try:
+                            path.mkdir(parents=True, exist_ok=True)
+                            LOG.debug(f'{self.__class__.__name__}:'
+                                      f' Construction: Create directory:'
+                                      f' {path}')
+                        except (OSError, RuntimeError) as e:
+                            rollback()
+                            raise cr_exc.InstallationStorageError(
+                                f'Construction: Create directory: {path}:'
+                                f' {type(e).__name__}: {e}'
+                            ) from e
+                    else:
+                        rollback()
+                        raise cr_exc.InstallationStorageError(
+                            f'Construction:  Not ready for cleanup : {path}'
                         )
             else:
                 # Create a fresh DC/OS installation storage element
                 try:
                     path.mkdir(parents=True, exist_ok=True)
+                    rollback_path_list.append(path)
+                    LOG.debug(f'{self.__class__.__name__}: Construction:'
+                              f' Create directory: {path}')
                 except (OSError, RuntimeError) as e:
+                    rollback()
                     raise cr_exc.InstallationStorageError(
-                        f'Construction: Create element: {path}:'
+                        f'Construction: Create directory: {path}:'
                         f' {type(e).__name__}: {e}'
-                    )
+                    ) from e
 
     def destruct(self):
         """Remove entire existing DC/OS installation storage."""
-        for path in self.construction_plist:
+        for path in self.istor_nodes[1:]:
             if path.is_absolute() and path.is_dir():
                 try:
                     cm_utl.rmdir(path=path, recursive=True)
+                    LOG.debug(f'{self.__class__.__name__}: Destruction:'
+                              f' Remove directory: {path}')
                 except (OSError, RuntimeError) as e:
                     raise cr_exc.InstallationStorageError(
-                        f'Destruction: {path}: {type(e).__name__}: {e}'
+                        f'Destruction: Remove directory: {path}:'
+                        f' {type(e).__name__}: {e}'
                     )
+
+    def get_pkgactive(self):
+        """Retrieve set of manifests of active packages."""
+        pkg_manifests = set()
+
+        # Path('/path/does/not/exist').glob('*') yields []
+        for path in self.pkgactive_dpath.glob('*.json'):
+            abs_path = self.pkgactive_dpath.joinpath(path)
+
+            if abs_path.is_file():
+                try:
+                    pkg_manifests.add(PackageManifest.load(path))
+                except cr_exc.RCError as e:
+                    raise cr_exc.InstallationStorageError(
+                        f'Get active package manifest:'
+                        f' {path}: {type(e).__name__}: {e}'
+                    ) from e
+
+        return pkg_manifests
+
+    @staticmethod
+    def _make_pkg_url(pkg_id, dstor_root_url, dstor_pkgrepo_path):
+        """Construct a direct URL to a package tarball at DC/OS distribution
+        storage.
+
+        :param pkg_id:             PackageId, package ID
+        :param dstor_root_url:     str, DC/OS distribution storage root URL
+        :param dstor_pkgrepo_path: str, DC/OS distribution storage package
+                                   repository root path
+        :return:                   str, direct DC/OS package tarball URL
+        """
+        pkg_url = posixpath.join(str(dstor_root_url), str(dstor_pkgrepo_path),
+                                 pkg_id.pkg_name, f'{pkg_id.pkg_id}.tar.xz')
+
+        return pkg_url
+
+    def add_package(self, pkg_id, dstor_root_url, dstor_pkgrepo_path):
+        """Add a package to the local package repository.
+
+        :param pkg_id:             PackageId, package ID
+        :param dstor_root_url:     str, DC/OS distribution storage root URL
+        :param dstor_pkgrepo_path: str, DC/OS distribution storage package
+                                   repository root path
+        """
+        # Download a package tarball
+        try:
+            cm_utl.download(
+                self._make_pkg_url(pkg_id=pkg_id,
+                                   dstor_root_url=dstor_root_url,
+                                   dstor_pkgrepo_path=dstor_pkgrepo_path),
+                str(self.tmp_dpath)
+            )
+            LOG.debug(f'{self.__class__.__name__}:'
+                      f' Add package: Download: {pkg_id}')
+        except Exception as e:
+            raise cr_exc.RCDownloadError(
+                f'Add package: {pkg_id}: {type(e).__name__}: {e}'
+            )
+        # Unpack a package tarball
+        pkgtarball_fpath = (
+            self.tmp_dpath.joinpath(pkg_id.pkg_id).with_suffix('.tar.xz')
+        )
+        try:
+            cm_utl.unpack(str(pkgtarball_fpath), self.pkgrepo_dpath)
+            LOG.debug(f'{self.__class__.__name__}:'
+                      f' Add package: Extract: {pkg_id}')
+        except Exception as e:
+            raise cr_exc.RCExtractError(
+                f'Add package: {pkg_id}: {type(e).__name__}: {e}'
+            )
+        finally:
+            pkgtarball_fpath.unlink()
+
+        # Workaround for dcos-diagnostics to be able to start
+        # TODO: Remove this code after correct dcos-diagnostics configuration
+        #       is figured out and all its config files are arranged properly
+        #       to support DC/OS installation storage FS layout.
+        if pkg_id.pkg_name == 'dcos-diagnostics':
+            # Move binary and config-files to DC/OS installation storage root
+            src_dpath = self.pkgrepo_dpath.joinpath(pkg_id.pkg_id, 'bin')
+            try:
+                for src_fpath in src_dpath.glob('*.*'):
+                    if not self.root_dpath.joinpath(src_fpath).exists():
+                        shutil.copy(str(src_dpath.joinpath(src_fpath)),
+                                    str(self.root_dpath))
+                # Create a folder for logs
+                log_dpath = self.root_dpath.joinpath('mesos-logs')
+                if not log_dpath.exists():
+                    log_dpath.mkdir()
+            except Exception as e:
+                raise cr_exc.RCExtractError(
+                    f'Add package: {pkg_id}: {type(e).__name__}: {e}'
+                )
+
+    def remove_package(self, pkg_id):
+        """Remove a package from the local package repository.
+
+        :param pkg_id: PackageId, package ID
+        """
+        try:
+            pkg_dpath = self.pkgrepo_dpath.joinpath(pkg_id.pkg_id)
+            cm_utl.rmdir(str(pkg_dpath), recursive=True)
+        except (OSError, RuntimeError) as e:
+            raise cr_exc.RCRemoveError(
+                f'Package {pkg_id.pkg_id}: {type(e).__name__}: {e}'
+            )

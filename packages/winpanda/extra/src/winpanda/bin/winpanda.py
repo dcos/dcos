@@ -3,6 +3,7 @@
 CLI entry point definition.
 """
 from pathlib import Path
+import traceback
 import sys
 
 from docopt import docopt, DocoptExit
@@ -37,20 +38,22 @@ class DCOSInstallationManager:
             cmd_teardown=CLI_COMMAND.TEARDOWN,
             cmd_start=CLI_COMMAND.START,
             cmd_stop=CLI_COMMAND.STOP,
+            valid_cmd_targets=', '.join(VALID_CLI_CMDTARGETS),
             default_cmd_target=CLI_CMDTARGET.PKGALL,
             default_root_dpath=storage.DCOS_INST_ROOT_DPATH_DFT,
             default_config_dpath=storage.DCOS_INST_CFG_DPATH_DFT,
             default_state_dpath=storage.DCOS_INST_STATE_DPATH_DFT,
             default_repository_dpath=storage.DCOS_INST_PKGREPO_DPATH_DFT,
             default_var_dpath=storage.DCOS_INST_VAR_DPATH_DFT,
-            default_dstor_url=cm_const.DCOS_DSTOR_URL_DFT,
-            default_dstor_pkgrepo_path=cm_const.DCOS_DSTOR_PKGREPO_PATH_DFT
+            default_clustercfg_fpath=cm_const.DCOS_CLUSTER_CFG_FNAME_DFT
         )
 
         cli_args = docopt(cli_argspec)
 
         # Verify actual command target value
-        if cli_args.get('--target') not in VALID_CLI_CMDTARGETS:
+        cmdtarget = cli_args.get('--target')
+        if cmdtarget not in VALID_CLI_CMDTARGETS:
+            LOG.critical(f'CLI: Invalid option value: --target: {cmdtarget}')
             raise DocoptExit()
 
         LOG.debug(f'cli_args: {cli_args}')
@@ -89,7 +92,11 @@ class DCOSInstallationManager:
                 '--local-priv-ipaddr'
             ),
             CLI_CMDOPT.DSTOR_URL: self.cli_args.get('--dstor-url'),
-            CLI_CMDOPT.DSTOR_PKGREPOPATH: self.cli_args.get('--dstor-pkgrepo')
+            CLI_CMDOPT.DSTOR_PKGREPOPATH: self.cli_args.get('--dstor-pkgrepo'),
+            CLI_CMDOPT.DSTOR_PKGLISTPATH: self.cli_args.get('--dstor-pkglist'),
+            CLI_CMDOPT.DCOS_CLUSTERCFGPATH: self.cli_args.get(
+                '--cluster-cfgfile'
+            )
         }
 
         return command.create(**cmd_opts)
@@ -108,9 +115,13 @@ def main():
     try:
         DCOSInstallationManager().command_.execute()
     except Exception as e:
-        print(f'{type(e).__name__}: {e}', file=sys.stderr)
-        # TODO: Add logging dump of complete stacktrace in debug mode.
-        LOG.critical(f'{type(e).__name__}: {e}')
+        if log_level == LOG_LEVEL.DEBUG:
+            LOG.critical(f'\n{"".join(traceback.format_exc())}')
+            traceback.print_exc()
+        else:
+            LOG.critical(f'{type(e).__name__}: {e}')
+            print(f'{type(e).__name__}: {e}', file=sys.stderr)
+
         sys.exit(1)
     else:
         sys.exit(0)
