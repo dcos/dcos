@@ -1,9 +1,9 @@
 {
   "variants": {
     "adminrouter": "windows",
+    "telegraf" : "windows",
     "vcredist" : "windows",
     "nssm" : "windows",
-    "telegraf" : "windows",
     "erlang": "windows",
     "dcos-diagnostics": "windows",
     "erts": "windows",
@@ -26,7 +26,6 @@
     "dcos-check-runner",
     "dcos-checks",
     "dcos-cni",
-    "dcos-history",
     "dcos-image",
     "dcos-image-deps",
     "dcos-installer-ui",
