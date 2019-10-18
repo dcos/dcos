@@ -1654,6 +1654,11 @@ package:
                   "Role": ["master"]
               },
               {
+                  "Port": {{ marathon_port }},
+                  "Uri": "/v2/pods/::status",
+                  "Role": ["master"]
+              },
+              {
                   "Port": 8181,
                   "Uri": "/exhibitor/v1/cluster/list",
                   "Role": ["master"]
