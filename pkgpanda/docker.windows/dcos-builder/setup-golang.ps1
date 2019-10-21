@@ -1,4 +1,4 @@
-$FILENAME_PATH = "c:\temp\go1.12.9.windows-amd64.zip"
+$FILENAME_PATH = "c:\temp\go1.13.3.windows-amd64.zip"
 $INSTALL_DIR = Join-Path $env:SystemDrive ""
  
 Write-Output "Extracting $FILENAME_PATH"
