@@ -12,6 +12,5 @@ $Env:TMP="C:\tmp"
 Set-Location C:\gopath\src\github.com\influxdata\telegraf\
 $env:GOOS="windows"
 $env:GOARCH="386"
-$env:GOPATH="c:\gopath"
 go build .\cmd\telegraf\
 Copy-Item -Path "telegraf.exe" -Destination "$env:PKG_PATH\bin\"
