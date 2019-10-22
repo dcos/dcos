@@ -17,6 +17,12 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Delete each VTEP IP address only once when deleting agent records (DCOS_OSS-5597)
 
+* Marathon pod instances are now included in the DC/OS diagnostic bundle (DCOS_OSS-5616)
+
+* [Marathon] Very-large Mesos TaskStatus updates no longer  cause Marathon to crash loop (MARATHON-8698)
+
+
+
 ### Security updates
 
 
