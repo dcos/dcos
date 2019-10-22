@@ -2,11 +2,19 @@
 
 set -xe
 
-dcos_node_private_ip=`/opt/mesosphere/bin/detect_ip`
+# the default configuration path, `/etc/calico/calicoctl.cfg`, of calicoctl is
+# used to simply the interaction with Calico
+/usr/bin/mkdir -p /etc/calico
+/usr/bin/cp /opt/mesosphere/etc/calico/calicoctl.cfg /etc/calico/calicoctl.cfg
+
+# failure to remove the calico-node docker container should not break starting
+# calico node
+/usr/bin/docker rm -f dcos-calico-node || true
 
 /opt/mesosphere/active/calico/bin/dcos-calicoctl apply -f \
 	/opt/mesosphere/active/calico/etc/default_profile.yaml
 
+dcos_node_private_ip=`/opt/mesosphere/bin/detect_ip`
 /usr/bin/docker run --net=host --privileged \
  --name=dcos-calico-node \
  -e FELIX_IPINIPMTU=${CALICO_IPINIP_MTU} \
