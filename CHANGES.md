@@ -22,6 +22,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Admin Router: Accept nil task list from Marathon when updating cache. (DCOS_OSS-5541)
 
+* Marathon pod instances are now included in the DC/OS diagnostic bundle (DCOS_OSS-5616)
 
 ### Breaking changes
 
