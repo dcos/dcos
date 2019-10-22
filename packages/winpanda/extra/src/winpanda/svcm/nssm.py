@@ -80,6 +80,17 @@ class NSSMConfSection(enum.Enum):
     SERVICE = 'service'
 
 
+class SVC_STATUS:
+    """System service status."""
+    STOPPED = 'SERVICE_STOPPED'
+    RUNNING = 'SERVICE_RUNNING'
+    PAUSED = 'SERVICE_PAUSED'
+
+
+VALID_SVC_STATUSES = [getattr(SVC_STATUS, sname) for sname in
+                        SVC_STATUS.__dict__ if not sname.startswith('__')]
+
+
 @base.svcm_type('nssm')
 class WinSvcManagerNSSM(base.WindowsServiceManager):
     """NSSM-based Windows service manager."""

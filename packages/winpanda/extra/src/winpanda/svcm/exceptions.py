@@ -35,7 +35,7 @@ class ServiceError(cm_exc.WinpandaError):
     pass
 
 
-class ServiceConfigError(ServiceManagerError):
+class ServiceConfigError(ServiceError):
     """Service configuration error."""
     pass
 

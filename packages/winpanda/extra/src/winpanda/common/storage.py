@@ -369,6 +369,7 @@ class InstallationStorage:
         :param dstor_pkgrepo_path: str, DC/OS distribution storage package
                                    repository root path
         """
+        msg_src = self.__class__.__name__
         # Download a package tarball
         try:
             cm_utl.download(
@@ -377,8 +378,7 @@ class InstallationStorage:
                                    dstor_pkgrepo_path=dstor_pkgrepo_path),
                 str(self.tmp_dpath)
             )
-            LOG.debug(f'{self.__class__.__name__}:'
-                      f' Add package: Download: {pkg_id}')
+            LOG.debug(f'{msg_src}: Add package: Download: {pkg_id}')
         except Exception as e:
             raise cr_exc.RCDownloadError(
                 f'Add package: {pkg_id}: {type(e).__name__}: {e}'
@@ -389,14 +389,64 @@ class InstallationStorage:
         )
         try:
             cm_utl.unpack(str(pkgtarball_fpath), self.pkgrepo_dpath)
-            LOG.debug(f'{self.__class__.__name__}:'
-                      f' Add package: Extract: {pkg_id}')
+            LOG.debug(f'{msg_src}: Add package: Extract: {pkg_id}')
         except Exception as e:
             raise cr_exc.RCExtractError(
                 f'Add package: {pkg_id}: {type(e).__name__}: {e}'
             )
         finally:
             pkgtarball_fpath.unlink()
+        # Create a work, runtime and log data directories for a package.
+        for host_dpath in self.work_dpath, self.run_dpath, self.log_dpath:
+            path = host_dpath.joinpath(pkg_id.pkg_name)
+
+            if not path.exists():
+                try:
+                    path.mkdir(parents=True)
+                    LOG.debug(f'{msg_src}: Add package: {pkg_id}:'
+                              f' Create data directory: {path}')
+                except (OSError, RuntimeError) as e:
+                    raise cr_exc.InstallationStorageError(
+                        f'Add package: {pkg_id}: Create data directory:'
+                        f' {path}: {type(e).__name__}: {e}'
+                    ) from e
+            elif path.is_symlink():
+                raise cr_exc.InstallationStorageError(
+                        f'Add package: {pkg_id}: Create data directory:'
+                        f' {path}: Symlink conflict'
+                    )
+            elif path.is_reserved():
+                raise cr_exc.InstallationStorageError(
+                    f'Add package: {pkg_id}: Create data directory:'
+                    f' {path}: Reserved name conflict'
+                )
+            elif not path.is_dir():
+                # Attempt to auto-clean garbage
+                try:
+                    path.unlink()
+                    LOG.debug(f'{msg_src}: Add package: {pkg_id}: Auto-cleanup:'
+                              f' File: {path}')
+                except (OSError, RuntimeError) as e:
+                    raise cr_exc.InstallationStorageError(
+                        f'Add package: {pkg_id}: Auto-cleanup: File: {path}:'
+                        f' {type(e).__name__}: {e}'
+                    ) from e
+                # Attempt to create data dir
+                try:
+                    path.mkdir(parents=True)
+                    LOG.debug(f'{msg_src}: Add package: {pkg_id}:'
+                              f' Create data directory: {path}')
+                except (OSError, RuntimeError) as e:
+                    raise cr_exc.InstallationStorageError(
+                        f'Add package: {pkg_id}: Create data directory:'
+                        f' {path}: {type(e).__name__}: {e}'
+                    ) from e
+            else:
+                # Leave existing directories intact
+                pass
+
+
+
 
         # Workaround for dcos-diagnostics to be able to start
         # TODO: Remove this code after correct dcos-diagnostics configuration
@@ -406,10 +456,17 @@ class InstallationStorage:
             # Move binary and config-files to DC/OS installation storage root
             src_dpath = self.pkgrepo_dpath.joinpath(pkg_id.pkg_id, 'bin')
             try:
+                LOG.debug(
+                    f'{msg_src}: Add package: Workaround: Copy list: '
+                    f' {list(src_dpath.glob("*.*"))}'
+                )
                 for src_fpath in src_dpath.glob('*.*'):
-                    if not self.root_dpath.joinpath(src_fpath).exists():
-                        shutil.copy(str(src_dpath.joinpath(src_fpath)),
-                                    str(self.root_dpath))
+                    if not self.root_dpath.joinpath(src_fpath.name).exists():
+                        shutil.copy(str(src_fpath), str(self.root_dpath))
+                        LOG.debug(
+                            f'{msg_src}: Add package: Workaround: Copy file: '
+                            f' {str(src_fpath)} -> {str(self.root_dpath)}'
+                        )
                 # Create a folder for logs
                 log_dpath = self.root_dpath.joinpath('mesos-logs')
                 if not log_dpath.exists():

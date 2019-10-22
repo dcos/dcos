@@ -59,3 +59,8 @@ class CommandError(cm_exc.InstallationError):
 class SetupCommandError(cm_exc.InstallationError):
     """DC/OS Installation 'setup' management command error."""
     pass
+
+
+class StartCommandError(cm_exc.InstallationError):
+    """DC/OS Installation 'start' management command error."""
+    pass
