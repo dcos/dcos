@@ -8,14 +8,9 @@ chmod +x $PKG_PATH/cni/calico
 cp /pkg/src/calico-ipam/calico-ipam-amd64 $PKG_PATH/cni/calico-ipam
 chmod +x $PKG_PATH/cni/calico-ipam
 
-
-# create `dcos-calicoctl` to simply the usage of calicoctl by passing the
-# configuration by default
-
 mkdir -p $PKG_PATH/bin
 cp /pkg/src/calicoctl/calicoctl-linux-amd64 $PKG_PATH/bin/calicoctl
 chmod +x $PKG_PATH/bin/calicoctl
-CALICOCTL="$PKG_PATH/bin/calicoctl"
 
 # copy the default calico profile to the package directory
 mkdir -p $PKG_PATH/etc

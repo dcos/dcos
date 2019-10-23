@@ -11,7 +11,7 @@ set -xe
 # calico node
 /usr/bin/docker rm -f dcos-calico-node || true
 
-/opt/mesosphere/active/calico/bin/dcos-calicoctl apply -f \
+/opt/mesosphere/bin/calicoctl apply -f \
 	/opt/mesosphere/active/calico/etc/default_profile.yaml
 
 dcos_node_private_ip=`/opt/mesosphere/bin/detect_ip`

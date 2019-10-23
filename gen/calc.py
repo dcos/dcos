@@ -333,52 +333,100 @@ def validate_config_subnet(config_name, subnet, version=IPVersion.IPv4):
 
 
 def validate_dcos_overlay_network(dcos_overlay_network):
+    # a validate dcos_overlay_network is in such a format:
+    # dcos_overlay_network :
+    #   vtep_subnet: 44.128.0.0/20
+    #   vtep_subnet6: fd01:a::/64
+    #   vtep_mac_oui: 70:B3:D5:00:00:00
+    #   overlays:
+    #     - name: dcos
+    #       subnet: 9.0.0.0/8
+    #       prefix: 24
+    #     - name: dcos6
+    #       subnet6: fd01:b::/64
+    #       prefix6: 80
     try:
         overlay_network = json.loads(dcos_overlay_network)
     except ValueError as ex:
-        raise AssertionError("Provided input was not valid JSON: {}".format(dcos_overlay_network)) from ex
+        raise AssertionError("Provided input was not valid JSON: {}".format(
+            dcos_overlay_network)) from ex
 
     assert 'overlays' in overlay_network, (
-        'Missing "overlays" in overlay configuration {}'.format(overlay_network))
+        'Missing "overlays" in overlay configuration {}'.format(
+            overlay_network))
 
     assert len(overlay_network['overlays']) > 0, (
-        '"Overlays" network configuration is empty: {}'.format(overlay_network))
+        '"Overlays" network configuration is empty: {}'.format(overlay_network)
+    )
+
+    assert 'vtep_mac_oui' in overlay_network.keys(), (
+        'Missing "vtep_mac_oui" in overlay configuration {}'.format(
+            overlay_network))
+
+    # Check the VTEP IP is present in the overlay configuration
+    assert 'vtep_subnet' in overlay_network, (
+        'Missing "vtep_subnet" in overlay configuration {}'.format(
+            overlay_network))
+    validate_config_subnet('vtep_subnet', overlay_network['vtep_subnet'])
+
+    # Check the VTEP IP6 is present in the overlay configuration
+    assert 'vtep_subnet6' in overlay_network, (
+        'Missing "vtep_subnet6" in overlay configuration {}'.format(
+            overlay_network))
+    validate_config_subnet("vtep_subnet6", overlay_network['vtep_subnet6'],
+                           IPVersion.IPv6)
+
+    vtep_mtu = overlay_network.get('vtep_mtu', 1500)
+    validate_int_in_range(vtep_mtu, 552, None)
 
     for overlay in overlay_network['overlays']:
         assert 'name' in overlay, (
             'Missing "name" in overlay configuration: {}'.format(overlay))
 
-        assert (len(overlay['name']) <= 13), (
-            "Overlay name cannot exceed 13 characters:{}".format(overlay['name']))
+        assert (len(overlay['name']) <=
+                13), ("Overlay name cannot exceed 13 characters:{}".format(
+                    overlay['name']))
 
         assert ('subnet' in overlay or 'subnet6' in overlay), (
-            'Missing "subnet" or "subnet6" in overlay configuration:{}'.format(overlay))
-
-        assert 'vtep_mac_oui' in overlay_network.keys(), (
-            'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
-
-        vtep_mtu = overlay_network.get('vtep_mtu', 1500)
-        validate_int_in_range(vtep_mtu, 552, None)
+            'Missing "subnet" or "subnet6" in overlay configuration:{}'.format(
+                overlay))
 
         if 'subnet' in overlay:
-            # Check the VTEP IP is present in the overlay configuration
-            assert 'vtep_subnet' in overlay_network, (
-                'Missing "vtep_subnet" in overlay configuration {}'.format(overlay_network))
-            validate_config_subnet('vtep_subnet', overlay_network['vtep_subnet'])
             validate_config_subnet('overlay subnet', overlay['subnet'])
 
         if 'subnet6' in overlay:
-            # Check the VTEP IP6 is present in the overlay configuration
-            assert 'vtep_subnet6' in overlay_network, (
-                'Missing "vtep_subnet6" in overlay configuration {}'.format(overlay_network))
-
-            validate_config_subnet(
-                "vtep_subnet6", overlay_network['vtep_subnet6'], IPVersion.IPv6)
-            validate_config_subnet(
-                "subnet6", overlay['subnet6'], IPVersion.IPv6)
+            validate_config_subnet("subnet6", overlay['subnet6'],
+                                   IPVersion.IPv6)
 
         if 'enabled' in overlay:
             gen.internals.validate_one_of(overlay['enabled'], [True, False])
+
+
+def validate_net_overlap(dcos_overlay_network, dcos_overlay_enable,
+                         calico_network_cidr, calico_enabled):
+    """ checks the subnets used for dcos overlay do not overlap calico network
+
+    We assume the basic validations, like subnet cidr, have been done.
+    """
+    if calico_enabled.lower() != "true" or dcos_overlay_enable.lower(
+    ) != "true":
+        return
+    try:
+        overlay_network = json.loads(dcos_overlay_network)
+    except ValueError as ex:
+        raise AssertionError("Provided input was not valid JSON: {}".format(
+            dcos_overlay_network)) from ex
+    _calico_network_cidr = ipaddress.ip_network(calico_network_cidr)
+    overlay_subnets = [
+        ipaddress.ip_network(overlay["subnet"])
+        for overlay in overlay_network['overlays']
+    ]
+    for overlay_subnet in overlay_subnets:
+        if not isinstance(overlay_subnet, ipaddress.IPv4Network):
+            continue
+        assert overlay_subnet.overlaps(_calico_network_cidr), \
+            "overlay subnet {} overlaps calico network {}".format(
+                overlay_subnet, calico_network_cidr)
 
 
 def calculate_dcos_overlay_network_json(dcos_overlay_network, enable_ipv6):
@@ -1187,6 +1235,7 @@ entry = {
         lambda calico_vxlan_mtu: validate_int_in_range(calico_vxlan_mtu, 552, None),
         lambda calico_vxlan_port: validate_vxlan_port(calico_vxlan_port),
         lambda calico_vxlan_vni: validate_vxlan_vni(calico_vxlan_vni),
+        validate_net_overlap,
     ],
     'default': {
         'exhibitor_azure_account_key': '',
