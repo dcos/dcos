@@ -1,15 +1,9 @@
 {
   "sources": {
-        "URLRewrite": {
+        "OpenResty": {
           "kind": "url",
-          "url": "http://download.microsoft.com/download/D/D/E/DDE57C26-C62C-4C59-A1BB-31D58B36ADA2/rewrite_amd64_en-US.msi",
-          "sha1": "d2542e2d398f0e95981ebf4e729f79eaf96e6691"
-        },
-        "Application-Request-Routing": {
-          "kind": "url",
-          "url": "http://download.microsoft.com/download/E/9/8/E9849D6A-020E-47E4-9FD0-A023E99B54EB/requestRouter_amd64.msi",
-          "sha1": "9bbe610e347909afa68230778b9242bb57bbbc55"
+          "url": "https://openresty.org/download/openresty-1.15.8.2-win64.zip",
+          "sha1": "8379fdcb93f1bb6ace8b9f575c5fe60b831182fc"
         }
-  },
-  "username": "dcos_epmd"
+  }
 }
