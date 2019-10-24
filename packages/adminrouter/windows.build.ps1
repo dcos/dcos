@@ -2,7 +2,15 @@ $ErrorActionPreference = "stop"
 New-Item -ItemType Directory -Path "$env:PKG_PATH/etc/", "$env:PKG_PATH/etc/dcos-adminrouter/"
 New-Item -ItemType Directory -Path "$env:PKG_PATH/etc/dcos-adminrouter/conf/", "$env:PKG_PATH/etc/dcos-adminrouter/logs/"
 New-Item -ItemType Directory -Path "$env:PKG_PATH/bin/", "$env:PKG_PATH/bin/dcos-adminrouter/"
-New-Item -ItemType Directory "C:\Temp"
+
+
+
+if (-not (Test-Path -LiteralPath "C:\Temp")) {
+    New-Item -Path "C:\Temp" -ItemType Directory -ErrorAction Ignore | Out-Null #-Force
+}
+else {
+    "Directory already existed"
+}
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 function Unzip {
