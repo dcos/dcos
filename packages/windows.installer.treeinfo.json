@@ -4,7 +4,7 @@
     "dcos-image-deps",
     "dcos-image"
   ],
-  "core_package_list": [
+  "core_package_list": {
     "adminrouter": "windows",
     "telegraf" : "windows",
     "vcredist" : "windows",
@@ -15,5 +15,5 @@
     "mesos": "windows",
     "openstackservice": "windows",
     "python": "windows"
-  ]
+  }
 }
