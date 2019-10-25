@@ -89,14 +89,14 @@ release create $TAG $TAG $tree_variants
 
 echo '== promote =='
 # Change to Windows config
+# azure:
+#  kind: azure_block_blob
+#  account_name: $AZURE_PROD_STORAGE_ACCOUNT
+#  account_key: $AZURE_PROD_STORAGE_ACCESS_KEY
+#  container: dcos
+#  download_url: https://dcos.azureedge.net/dcos/dcos-windows/
 cat > dcos-release.config.yaml <<'EOF'
 storage:
-    azure:
-     kind: azure_block_blob
-     account_name: $AZURE_PROD_STORAGE_ACCOUNT
-     account_key: $AZURE_PROD_STORAGE_ACCESS_KEY
-     container: dcos
-     download_url: https://dcos.azureedge.net/dcos/dcos-windows/
     aws:
         kind: aws_s3
         access_key_id: $AWS_ACCESS_KEY_ID
