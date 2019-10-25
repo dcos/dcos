@@ -55,4 +55,4 @@ python -m venv "$tmpdir/dcos_build_venv"
 ./prep_local_windows.ps1
 
 # Build a release of DC/OS
-release create $env:USERNAME local_build windows
+release create $env:USERNAME local_build windows windows.installer
