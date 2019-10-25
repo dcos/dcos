@@ -164,7 +164,7 @@ def gen_templates(gen_arguments, arm_template, extra_sources):
     cloud_config = results.templates[cloud_config_yaml]
 
     # Add general services
-    cloud_config = results.utils.add_services(cloud_config, 'canonical')
+    cloud_config = results.utils.add_services(cloud_config)
 
     # Specialize for master, slave, slave_public
     variant_cloudconfig = {}

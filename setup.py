@@ -125,8 +125,6 @@ setup(
             'build_deploy/bash/installer_internal_wrapper.in',
             'build_deploy/bash/dcos-launch.spec',
             'build_deploy/powershell/dcos_install.ps1',
-            'coreos-aws/cloud-config.yaml',
-            'coreos/cloud-config.yaml'
         ] + get_advanced_templates(),
         'pkgpanda': [str(f) for f in expected_dcos_builder_files],
     },

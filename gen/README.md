@@ -8,7 +8,6 @@
 * `aws/`: AWS Cloudformation templates used in both simple and advanced Cloudformation templates
 * `azure/`: templates used for Azure Resource Manager deployments
 * `build_deploy/`: instructions for how to construct the templates and associated artifacts per deployment method
-* `coreos` and `coreos-aws`: templated add-ons for CoreOS
 * `ip-detect`: commonly used ip-detect scripts which can be pulled up as defaults
 
 ## Notable modules

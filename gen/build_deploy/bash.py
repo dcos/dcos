@@ -470,8 +470,7 @@ function check_all() {
         | sort -V \
         | head -n 1)
 
-    # CoreOS stable as of Aug 2015 has 1.6.2
-    check docker 1.6 "$docker_version"
+    check docker 18.09.9 "$docker_version"
 
     check curl
     check bash

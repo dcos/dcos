@@ -509,7 +509,7 @@ def calculate_mesos_isolation(enable_gpu_isolation, mesos_seccomp_enabled):
 
 
 def validate_os_type(os_type):
-    gen.internals.validate_one_of(os_type, ['coreos', 'el7'])
+    gen.internals.validate_one_of(os_type, ['el7'])
 
 
 def validate_bootstrap_tmp_dir(bootstrap_tmp_dir):

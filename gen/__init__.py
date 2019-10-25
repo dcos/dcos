@@ -57,7 +57,7 @@ role_template = config_dir + '/roles/{}'
 if is_windows:
     CLOUDCONFIG_KEYS = {'runcmd', 'root', 'mounts', 'disk_setup', 'fs_setup', 'bootcmd'}
 else:
-    CLOUDCONFIG_KEYS = {'coreos', 'runcmd', 'apt_sources', 'root', 'mounts', 'disk_setup', 'fs_setup', 'bootcmd'}
+    CLOUDCONFIG_KEYS = {'runcmd', 'apt_sources', 'root', 'mounts', 'disk_setup', 'fs_setup', 'bootcmd'}
 PACKAGE_KEYS = {'package', 'root'}
 
 
@@ -119,49 +119,41 @@ def add_roles(cloudconfig, roles):
     return cloudconfig
 
 
-def add_units(cloudconfig, services, cloud_init_implementation='coreos'):
-    '''
-    Takes a services dict in the format of CoreOS cloud-init 'units' and
+def add_units(cloudconfig, services):
+    """
+    Takes a services dict in the format of cloud-init 'units' and
     injects into cloudconfig a transformed version appropriate for the
-    cloud_init_implementation.  See:
-    https://coreos.com/os/docs/latest/cloud-config.html for the CoreOS 'units'
-    specification. See: https://cloudinit.readthedocs.io/en/latest/index.html
+    cloud_init_implementation.
+    See: https://cloudinit.readthedocs.io/en/latest/index.html
     for the Canonical implementation.
 
     Parameters:
     * cloudconfig is a dict
     * services is a list of dict's
-    * cloud_init_implementation is a string: 'coreos' or 'canonical'
-    '''
-    if cloud_init_implementation == 'canonical':
-        cloudconfig.setdefault('write_files', [])
-        cloudconfig.setdefault('runcmd', [])
-        for unit in services:
-            unit_name = unit['name']
-            if 'content' in unit:
-                write_files_entry = {'path': '/etc/systemd/system/{}'.format(unit_name),
-                                     'content': unit['content'],
-                                     'permissions': '0644'}
-                cloudconfig['write_files'].append(write_files_entry)
-            if 'enable' in unit and unit['enable']:
-                runcmd_entry = ['systemctl', 'enable', unit_name]
-                cloudconfig['runcmd'].append(runcmd_entry)
-            if 'command' in unit:
-                opts = []
-                if 'no_block' in unit and unit['no_block']:
-                    opts.append('--no-block')
-                if unit['command'] in ['start', 'stop', 'reload', 'restart', 'try-restart', 'reload-or-restart',
-                                       'reload-or-try-restart']:
-                    runcmd_entry = ['systemctl'] + opts + [unit['command'], unit_name]
-                else:
-                    raise Exception("Unsupported unit command: {}".format(unit['command']))
-                cloudconfig['runcmd'].append(runcmd_entry)
-    elif cloud_init_implementation == 'coreos':
-        cloudconfig.setdefault('coreos', {}).setdefault('units', [])
-        cloudconfig['coreos']['units'] += services
-    else:
-        raise Exception("Parameter value '{}' is invalid for cloud_init_implementation".format(
-            cloud_init_implementation))
+    * cloud_init_implementation is a string: 'canonical'
+    """
+    cloudconfig.setdefault('write_files', [])
+    cloudconfig.setdefault('runcmd', [])
+    for unit in services:
+        unit_name = unit['name']
+        if 'content' in unit:
+            write_files_entry = {'path': '/etc/systemd/system/{}'.format(unit_name),
+                                 'content': unit['content'],
+                                 'permissions': '0644'}
+            cloudconfig['write_files'].append(write_files_entry)
+        if 'enable' in unit and unit['enable']:
+            runcmd_entry = ['systemctl', 'enable', unit_name]
+            cloudconfig['runcmd'].append(runcmd_entry)
+        if 'command' in unit:
+            opts = []
+            if 'no_block' in unit and unit['no_block']:
+                opts.append('--no-block')
+            if unit['command'] in ['start', 'stop', 'reload', 'restart', 'try-restart', 'reload-or-restart',
+                                   'reload-or-try-restart']:
+                runcmd_entry = ['systemctl'] + opts + [unit['command'], unit_name]
+            else:
+                raise Exception("Unsupported unit command: {}".format(unit['command']))
+            cloudconfig['runcmd'].append(runcmd_entry)
 
     return cloudconfig
 
@@ -786,8 +778,8 @@ def generate(
     rendered_templates[cloud_config_yaml] = cc
 
     # Add utils that need to be defined here so they can be bound to locals.
-    def add_services(cloudconfig, cloud_init_implementation):
-        return add_units(cloudconfig, rendered_templates[dcos_services_yaml], cloud_init_implementation)
+    def add_services(cloudconfig):
+        return add_units(cloudconfig, rendered_templates[dcos_services_yaml])
 
     utils.add_services = add_services
 

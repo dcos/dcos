@@ -126,69 +126,59 @@ aws_region_names = [
         'id': 'ap-southeast-2'
     }]
 
-# Core OS AMIS from: https://github.com/dcos/dcos-images/blob/62f97aa3cada6d29356003ee6a01c7c94a5f5433/coreos/1967.6.0/aws/DCOS-1.12.2/docker-18.06.1/dcos_images.yaml # noqa
 # RHEL 7 AMIS from: https://github.com/dcos/dcos-images/blob/9c231811a8d7f5b925ea405f928b7c2b3182bae6/rhel/7.6/aws/DCOS-1.12.0/docker-1.13.1.git8633870/selinux_disabled/dcos_images.yaml # noqa
 # natami is from: https://aws.amazon.com/amazon-linux-ami/2018.03-release-notes/ instances labelled amzn-ami-vpc-nat-hvm
 
 region_to_ami_map = {
     'ap-northeast-1': {
-        'coreos': 'ami-0ffd2ee15ceabef65',
         'stable': 'ami-0ffd2ee15ceabef65',
         'el7': 'ami-0bfe52d6d145c674e',
         'el7prereq': 'ami-0bfe52d6d145c674e',
         'natami': 'ami-00d29e4cb217ae06b'
     },
     'ap-southeast-1': {
-        'coreos': 'ami-02e06ba544feb3f51',
         'stable': 'ami-02e06ba544feb3f51',
         'el7': 'ami-024ac75903e3114f1',
         'el7prereq': 'ami-024ac75903e3114f1',
         'natami': 'ami-01514bb1776d5c018'
     },
     'ap-southeast-2': {
-        'coreos': 'ami-07809279cd1e43478',
         'stable': 'ami-07809279cd1e43478',
         'el7': 'ami-0a81a425ed8ebf3c9',
         'el7prereq': 'ami-0a81a425ed8ebf3c9',
         'natami': 'ami-062c04ec46aecd204'
     },
     'eu-central-1': {
-        'coreos': 'ami-0285f4197bb94b5b0',
         'stable': 'ami-0285f4197bb94b5b0',
         'el7': 'ami-0e6000758f18fb6be',
         'el7prereq': 'ami-0e6000758f18fb6be',
         'natami': 'ami-06a5303d47fbd8c60'
     },
     'eu-west-1': {
-        'coreos': 'ami-0539ccccd1e371d4b',
         'stable': 'ami-0539ccccd1e371d4b',
         'el7': 'ami-0569e7216584320c6',
         'el7prereq': 'ami-0569e7216584320c6',
         'natami': 'ami-024107e3e3217a248'
     },
     'sa-east-1': {
-        'coreos': 'ami-0af8dc7533e9698e2',
         'stable': 'ami-0af8dc7533e9698e2',
         'el7': 'ami-0b34096d89569829a',
         'el7prereq': 'ami-0b34096d89569829a',
         'natami': 'ami-057f5d52ff7ae75ae'
     },
     'us-east-1': {
-        'coreos': 'ami-08511d0b9ed33a795',
         'stable': 'ami-08511d0b9ed33a795',
         'el7': 'ami-0da3316c3c6eb42b0',
         'el7prereq': 'ami-0da3316c3c6eb42b0',
         'natami': 'ami-00a9d4a05375b2763'
     },
     'us-west-1': {
-        'coreos': 'ami-08bcbb80bb680b5f2',
         'stable': 'ami-08bcbb80bb680b5f2',
         'el7': 'ami-074a555b65ca3c76e',
         'el7prereq': 'ami-074a555b65ca3c76e',
         'natami': 'ami-097ad469381034fa2'
     },
     'us-west-2': {
-        'coreos': 'ami-0235ac99b19539293',
         'stable': 'ami-0235ac99b19539293',
         'el7': 'ami-093949a7969be18da',
         'el7prereq': 'ami-093949a7969be18da',
@@ -365,14 +355,10 @@ def make_advanced_bundle(variant_args, extra_sources, template_name, cc_params):
         'aws/dcos-config.yaml',
         'aws/templates/advanced/{}'.format(template_name)
     ]
-    supported_os = ('coreos', 'el7')
+    supported_os = 'el7'
     if cc_params['os_type'] not in supported_os:
         raise RuntimeError('Unsupported os_type: {}'.format(cc_params['os_type']))
-    elif cc_params['os_type'] == 'coreos':
-        extra_templates += ['coreos-aws/cloud-config.yaml', 'coreos/cloud-config.yaml']
-        cloud_init_implementation = 'coreos'
     elif cc_params['os_type'] == 'el7':
-        cloud_init_implementation = 'canonical'
         cc_params['os_type'] = 'el7prereq'
 
     results = gen.generate(
@@ -385,13 +371,12 @@ def make_advanced_bundle(variant_args, extra_sources, template_name, cc_params):
     cloud_config = results.templates['cloud-config.yaml']
 
     # Add general services
-    cloud_config = results.utils.add_services(cloud_config, cloud_init_implementation)
+    cloud_config = results.utils.add_services(cloud_config)
 
     cc_variant = deepcopy(cloud_config)
     cc_variant = results.utils.add_units(
         cc_variant,
-        yaml.safe_load(gen.template.parse_str(late_services).render(cc_params)),
-        cloud_init_implementation)
+        yaml.safe_load(gen.template.parse_str(late_services).render(cc_params)))
 
     # Add roles
     cc_variant = results.utils.add_roles(cc_variant, cc_params['roles'] + ['aws'])
@@ -419,7 +404,7 @@ def gen_advanced_template(arguments, variant_prefix, reproducible_artifact_path,
         node_template_id, node_source = groups[node_type]
         local_source = Source()
         local_source.add_must('os_type', os_type)
-        local_source.add_must('region_to_ami_mapping', gen_ami_mapping({"coreos", "el7", "el7prereq"}))
+        local_source.add_must('region_to_ami_mapping', gen_ami_mapping({"el7", "el7prereq"}))
         params = cf_instance_groups[node_template_id]
         params['report_name'] = aws_advanced_report_names[node_type]
         params['os_type'] = os_type
@@ -481,15 +466,13 @@ def gen_simple_template(variant_prefix, filename, arguments, extra_source):
         arguments=arguments,
         extra_templates=[
             'aws/templates/cloudformation.json',
-            'aws/dcos-config.yaml',
-            'coreos-aws/cloud-config.yaml',
-            'coreos/cloud-config.yaml'],
+            'aws/dcos-config.yaml'],
         extra_sources=[aws_base_source, aws_simple_source, extra_source])
 
     cloud_config = results.templates['cloud-config.yaml']
 
     # Add general services
-    cloud_config = results.utils.add_services(cloud_config, 'coreos')
+    cloud_config = results.utils.add_services(cloud_config)
 
     # Specialize for master, slave, slave_public
     variant_cloudconfig = {}
@@ -585,7 +568,7 @@ def do_create(tag, build_name, reproducible_artifact_path, commit, variant_argum
         yield from make(3, 'multi-master.cloudformation.json')
 
         # Advanced templates
-        for os_type in ['coreos', 'el7']:
+        for os_type in ['el7']:
             yield from gen_advanced_template(
                 variant_base_args,
                 variant_prefix,

@@ -6,7 +6,7 @@ export LD_LIBRARY_PATH=/opt/mesosphere/lib
 
 pushd /pkg/src/curl
 ./buildconf
-# Configure with a base set of features as present on CoreOS. Err on the side of
+# Configure with a base set of features as present. Err on the side of
 # explicitly enabling the features we need and disabling those we don't.
 ./configure --disable-ares \
             --disable-ldap \
