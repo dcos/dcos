@@ -109,7 +109,7 @@ options:
   cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos/dcos-windows
 EOF
 
-DCOS_IMAGE_COMMIT=09608a1c0e0bf2237ffd0afb1111faa3414a6abb release promote --destination-channel $TAG 'dcos-windows/testing/tc-win1709-1$/commit/09608a1c0e0bf2237ffd0afb1111faa3414a6abb' testing
+DCOS_IMAGE_COMMIT=09608a1c0e0bf2237ffd0afb1111faa3414a6abb release promote --destination-channel $TAG 'testing/tc-win1709-1$/commit/09608a1c0e0bf2237ffd0afb1111faa3414a6abb' testing
 
 mkdir -p artifacts
 cp -r wheelhouse artifacts/
