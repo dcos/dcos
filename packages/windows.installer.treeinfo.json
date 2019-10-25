@@ -5,5 +5,15 @@
     "dcos-image"
   ],
   "core_package_list": [
+    "adminrouter": "windows",
+    "telegraf" : "windows",
+    "vcredist" : "windows",
+    "nssm" : "windows",
+    "erlang": "windows",
+    "dcos-diagnostics": "windows",
+    "erts": "windows",
+    "mesos": "windows",
+    "openstackservice": "windows",
+    "python": "windows"
   ]
 }
