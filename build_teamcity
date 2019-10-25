@@ -88,6 +88,27 @@ _scope_closed "setup"
 release create $TAG $TAG $tree_variants
 
 echo '== promote =='
+# Change to Windows config
+cat > dcos-release.config.yaml <<EOF
+storage:
+    azure:
+     kind: azure_block_blob
+     account_name: $AZURE_STORAGE_ACCOUNT
+     account_key: $AZURE_STORAGE_ACCESS_KEY
+     container: dcos
+     download_url: https://dcos.azureedge.net/dcos/dcos-windows/
+    aws:
+        kind: aws_s3
+        access_key_id: $AWS_ACCESS_KEY_ID
+        secret_access_key: $AWS_SECRET_ACCESS_KEY
+        bucket: downloads.dcos.io
+        object_prefix: dcos/dcos-windows
+        download_url: https://downloads.dcos.io/dcos/dcos-windows/
+options:
+  preferred: aws
+  cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos/dcos-windows
+EOF
+
 DCOS_IMAGE_COMMIT=09608a1c0e0bf2237ffd0afb1111faa3414a6abb release promote --destination-channel $TAG 'dcos-windows/testing/tc-win1709-1$/commit/09608a1c0e0bf2237ffd0afb1111faa3414a6abb' testing
 
 mkdir -p artifacts
