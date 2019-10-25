@@ -89,7 +89,7 @@ release create $TAG $TAG $tree_variants
 
 echo '== promote =='
 # Change to Windows config
-cat > dcos-release.config.yaml <<EOF
+cat > dcos-release.config.yaml <<'EOF'
 storage:
     azure:
      kind: azure_block_blob
