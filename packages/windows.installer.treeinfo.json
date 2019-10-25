@@ -1,8 +1,9 @@
 {
   "exclude": [
-    "openssl"
+    "openssl",
+    "dcos-image-deps",
+    "dcos-image"
   ],
   "core_package_list": [
-    "dcos-image"
   ]
 }
