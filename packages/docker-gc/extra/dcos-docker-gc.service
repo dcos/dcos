@@ -5,6 +5,3 @@ ConditionPathExists=/opt/mesosphere/etc/docker_gc_enabled
 [Service]
 Type=simple
 ExecStart=/bin/sh -c 'docker system prune --volumes --force'
-
-[Install]
-WantedBy=default.target
