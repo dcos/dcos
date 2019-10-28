@@ -1,5 +1,5 @@
 {
- "variants": {
+  "variants": {
     "adminrouter": "windows",
     "telegraf" : "windows",
     "vcredist" : "windows",
@@ -10,12 +10,22 @@
     "mesos": "windows",
     "openstackservice": "windows",
     "python": "windows"
-  },
- "exclude": [
+  },  
+   "exclude": [
     "openssl",
     "dcos-image-deps",
     "dcos-image"
   ],
   "core_package_list": [
+    "adminrouter",
+    "telegraf",
+    "vcredist",
+    "nssm",
+    "erlang",
+    "dcos-diagnostics",
+    "erts",
+    "mesos",
+    "openstackservice",
+    "python"
   ]
 }
