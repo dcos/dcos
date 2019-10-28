@@ -55,7 +55,6 @@
     "mesos-modules",
     "metronome",
     "ncurses",
-    "openssl",
     "pkgpanda-api",
     "pkgpanda-role",
     "pytest",
