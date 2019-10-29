@@ -52,8 +52,7 @@ python -m venv "$tmpdir/dcos_build_venv"
 . "$tmpdir/dcos_build_venv/Scripts/Activate.ps1"
 
 # Install the DC/OS tools
-#./prep_local_windows.ps1
-./prep_teamcity_windows.ps1
+./prep_local_windows.ps1
 # Build a release of DC/OS
 release create $env:USERNAME local_build windows
 # Build tar ball for windows. 2 params: packages location and DC/OS variant:
