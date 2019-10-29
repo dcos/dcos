@@ -28,7 +28,7 @@ Add or remove PARAMETERs as required.
   Author: Sergii Matus
 
 .EXAMPLE
-#  .\dcos_install.ps1 https://dcos-win.s3.amazonaws.com/bootstrap.zip "master1, master2"
+#  .\dcos_install.ps1 https://dcos-win.s3.amazonaws.com/bootstrap.zip "master1,master2"
 
 # requires -version 2
 #>
@@ -124,16 +124,16 @@ function SetupDirectories() {
     # available directories
     $dirs = @(
         "$($basedir)",
-        "$($basedir)\var",
-        "$($basedir)\var\log",
-        "$($basedir)\var\opt",
-        "$($basedir)\var\run",
-        "$($basedir)\work",
-        "$($basedir)\images",
+#        "$($basedir)\var",
+#        "$($basedir)\var\log",
+#        "$($basedir)\var\opt",
+#        "$($basedir)\var\run",
+#        "$($basedir)\work",
+#        "$($basedir)\images",
         "$($basedir)\bootstrap",
         "$($basedir)\chocolatey_offline",
-        "$($basedir)\packages",
-        "$($basedir)\active",
+#        "$($basedir)\packages",
+#        "$($basedir)\active",
         "$($basedir)\conf"
     )
     # setup
@@ -171,10 +171,6 @@ function ExtractTarXz($infile){
     Write-Log("Extract complete. Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)")
 }
 
-function RunWinpandaSetup($dir, $action){
-    Write-Log("What's Next? Run 'python.exe $($dir)\winpanda.py $($action)' which Ol.Belov/An.Borysov are working on.")
-}
-
 function ExtractBootstrapZip($zipfile, $Target){
     $Source = $zipfile
     Write-Log("Extracting $Source to $Target")
@@ -201,7 +197,7 @@ function CreateWriteFile([String] $dir, [String] $file, [String] $content) {
 function CreateRunOnceReg($dir, $masters_ip, $winagent_ip) {
     if (-not (test-path "$($dir)\RunOnce.ps1") ) {
         Write-Log("$($basedir)\RunOnce.ps1 missing. Creating")
-        $RunOnceScript_content = "& pip install virtualenv;`n& virtualenv .venv;`n& .venv\Scripts\activate;`n& pip install -r C:\dcos\chocolatey_offline\winpanda\requirements.txt;`n& python C:\dcos\chocolatey_offline\winpanda\cli.py setup --master-private-ipaddr $($masters_ip) --local-private-ipaddr $($winagent_ip)`n"
+        $RunOnceScript_content = "& pip install virtualenv;`n& virtualenv .venv;`n& .venv\Scripts\activate;`n& pip install -r C:\dcos\chocolatey_offline\winpanda\requirements.txt;`n& python C:\dcos\chocolatey_offline\winpanda\bin\winpanda.py setup;`n& python C:\dcos\chocolatey_offline\winpanda\bin\winpanda.py start`n#Remove a Scheduled task RunOnce, created while initial provision`nif(Get-ScheduledTask -TaskName `"RunOnce`" -TaskPath '\CustomTasks\' -ErrorAction Ignore) { Unregister-ScheduledTask -TaskName `"RunOnce`" -Confirm:`$False }`n"
         CreateWriteFile "$($basedir)" "RunOnce.ps1" $RunOnceScript_content
         Write-Log("Creating RunOnce registry record")
         $KeyName = 'Run'
@@ -221,7 +217,7 @@ function CreateRunOnceScheduledTask($dir, $masters_ip, $winagent_ip) {
     $destination = "$($dir)\RunOnce.ps1"
     if (-not (Test-Path $destination) ) {
         Write-Log("$($destination) missing. Creating")
-        $RunOnceScript_content = "& pip install virtualenv;`n& virtualenv .venv;`n& .venv\Scripts\activate;`n& pip install -r C:\dcos\chocolatey_offline\winpanda\requirements.txt;`n& python C:\dcos\chocolatey_offline\winpanda\cli.py setup --master-private-ipaddr $($masters_ip) --local-private-ipaddr $($winagent_ip)`n#Remove a Scheduled task RunOnce, created while initial provision`nif(Get-ScheduledTask -TaskName `"RunOnce`" -TaskPath '\CustomTasks\' -ErrorAction Ignore) { Unregister-ScheduledTask -TaskName `"RunOnce`" -Confirm:`$False }`n"
+        $RunOnceScript_content = "& pip install virtualenv;`n& virtualenv .venv;`n& .venv\Scripts\activate;`n& pip install -r C:\dcos\chocolatey_offline\winpanda\requirements.txt;`n& python C:\dcos\chocolatey_offline\winpanda\bin\winpanda.py setup;`n& python C:\dcos\chocolatey_offline\winpanda\bin\winpanda.py start;`n#Remove a Scheduled task RunOnce, created while initial provision`n#if(Get-ScheduledTask -TaskName `"RunOnce`" -TaskPath '\CustomTasks\' -ErrorAction Ignore) { Unregister-ScheduledTask -TaskName `"RunOnce`" -Confirm:`$False }`n"
         CreateWriteFile "$($dir)" "RunOnce.ps1" $RunOnceScript_content
 
         Write-Log("Creating Scheduled Task to run Winpanda")
@@ -258,16 +254,26 @@ function main($uri, $masters) {
     ## TO DO : remove in Phase 1.2
     & cmd.exe "/C chocolatey install nssm -s $($basedir)\chocolatey_offline --yes" 2>&1 | Out-File C:\dcos\var\log\dcos_install.log -Append
     & cmd.exe "/C chocolatey install vcredist140 -s $($basedir)\chocolatey_offline --version=14.22.27821 --yes" 2>&1 | Out-File C:\dcos\var\log\dcos_install.log -Append
+
     ##
+    ##  TO DO : remove! requested by Anatolii Borysov for integration testing ONLY!
+    & cmd.exe "/C chocolatey install git --yes" 2>&1 | Out-File C:\dcos\var\log\dcos_install.log -Append
+    Remove-Item -Path C:\dcos\chocolatey_offline\winpanda -Recurse -Force
+    & cmd.exe "/C mkdir -f c:\dcos\tempo";
+    "&'C:\Program Files\Git\bin\git.exe' clone --single-branch -b winpanda https://github.com/anatolii-borysov/dcos.git C:\dcos\tempo" | Invoke-Expression
+    Copy-Item C:\dcos\tempo\packages\winpanda\extra\src\winpanda -Destination C:\dcos\chocolatey_offline\ -Recurse
+    Remove-Item -Path C:\dcos\tempo -Recurse -Force
 
     # Fill up Ansible inventory content to cluster.conf
     Write-Log("MASTERS: $($masters)")
-    $masternode = foreach ($item in $masters.split(",")) {
-        "MasterNode=$item`n"
+
+    [System.Array]$masterarray = $masters.split(",")
+    $masternodecontent = for ($i=0; $i -lt $masterarray.length; $i++) {
+        "[master-node-$($i+1)]`nPrivateIPAddr=$($masterarray[$i])`nZookeeperListenerPort=2181`n"
     }
     $local_ip = (Get-WmiObject -Class Win32_NetworkAdapterConfiguration | where {$_.DefaultIPGateway -ne $null}).IPAddress | select-object -first 1
     Write-Log("Local IP: $($local_ip)")
-    $content = "[main]`n$($masternode)DistributionStorageURL=https://wintesting.s3.amazonaws.com/testing/`nLocalPrivateIPAddr=$($local_ip)`nZookeeperListenerPort=2181"
+    $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=https://wintesting.s3.amazonaws.com/`nPkgRepoPath=testing/packages`nPkgListPath=testing/package_lists/1.package_list.json`n[local]`nLocalPrivateIPAddr=$($local_ip)"
     CreateWriteFile "$($basedir)\conf" "cluster.conf" $content
 
     #CreateRunOnceReg $basedir $masters $local_ip
