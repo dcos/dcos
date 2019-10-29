@@ -5,7 +5,6 @@
     "vcredist" : "windows",
     "nssm" : "windows",
     "erlang": "windows",
-    "dcos-diagnostics": "windows",
     "erts": "windows",
     "mesos": "windows",
     "openstackservice": "windows",
