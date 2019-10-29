@@ -1,0 +1,9 @@
+{
+  "sources": {
+    "nssm": {
+      "kind": "url",
+      "url": "https://nssm.cc/release/nssm-2.24.zip",
+      "sha1": "be7b3577c6e3a280e5106a9e9db5b3775931cefc"
+    }
+  }
+}

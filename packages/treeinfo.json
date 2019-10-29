@@ -3,7 +3,9 @@
     "dcos-launch",
     "dcos-metrics",
     "erts",
-    "openstackservice"
+    "openstackservice",
+    "vcredist",
+    "nssm"
   ],
   "bootstrap_package_list": ["dcos-image"]
 }
