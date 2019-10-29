@@ -113,11 +113,6 @@ function _M.init(use_auth)
         return res.do_authn_and_authz_or_exit()
     end
 
-    -- /dcos-history-service/
-    res.access_historyservice_endpoint = function()
-        return res.do_authn_and_authz_or_exit()
-    end
-
     -- /mesos_dns/
     res.access_mesosdns_endpoint = function()
         return res.do_authn_and_authz_or_exit()

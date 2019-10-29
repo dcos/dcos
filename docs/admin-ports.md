@@ -34,7 +34,6 @@ The following is a list of ports used by internal DC/OS services, and their corr
  - 8123: dcos-mesos-dns
  - 8181: dcos-exhibitor
  - 9990: dcos-cosmos
- - 15055: dcos-history-service
  - 15101: dcos-marathon libprocess
  - 15201: dcos-metronome libprocess
  - 61053: dcos-mesos-dns

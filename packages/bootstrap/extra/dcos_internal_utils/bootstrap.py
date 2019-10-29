@@ -9,9 +9,8 @@ from kazoo.retry import KazooRetry
 from kazoo.security import ACL, ANYONE_ID_UNSAFE, Permissions
 
 from dcos_internal_utils import utils
-from pkgpanda.util import is_windows
 
-if not is_windows:
+if not utils.is_windows:
     assert 'pwd' in sys.modules
 
 log = logging.getLogger(__name__)

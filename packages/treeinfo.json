@@ -4,7 +4,8 @@
     "dcos-metrics",
     "erts",
     "openstackservice",
-    "spartan"
+    "vcredist",
+    "nssm"
   ],
   "bootstrap_package_list": ["dcos-image"]
 }

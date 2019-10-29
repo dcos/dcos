@@ -37,7 +37,7 @@ import yaml
 import gen.internals
 
 
-DCOS_VERSION = '1.14.0-dev'
+DCOS_VERSION = '2.1.0-dev'
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
@@ -213,6 +213,11 @@ def validate_metronome_gpu_scheduling_behavior(metronome_gpu_scheduling_behavior
 def validate_marathon_gpu_scheduling_behavior(marathon_gpu_scheduling_behavior):
     assert marathon_gpu_scheduling_behavior in ['restricted', 'unrestricted', ''], \
         "marathon_gpu_scheduling_behavior must be 'restricted', 'unrestricted', 'undefined' or ''"
+
+
+def validate_marathon_new_group_enforce_role(marathon_new_group_enforce_role):
+    assert marathon_new_group_enforce_role in ['top', 'off', ''], \
+        "marathon_new_group_enforce_role must be 'top', 'off', or ''"
 
 
 def calculate_mesos_log_retention_count(mesos_log_retention_mb):
@@ -1171,6 +1176,7 @@ entry = {
         lambda log_offers: validate_true_false(log_offers),
         lambda mesos_cni_root_dir_persist: validate_true_false(mesos_cni_root_dir_persist),
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
+        validate_marathon_new_group_enforce_role,
     ],
     'default': {
         'exhibitor_azure_account_key': '',
@@ -1220,6 +1226,7 @@ entry = {
         'mesos_default_container_shm_size': '',
         'metronome_gpu_scheduling_behavior': 'restricted',
         'marathon_gpu_scheduling_behavior': 'restricted',
+        'marathon_new_group_enforce_role': 'top',
         'oauth_issuer_url': 'https://dcos.auth0.com/',
         'oauth_client_id': '3yF5TOSzdlI45Q1xspxzeoGBe9fNxm9m',
         'oauth_auth_redirector': 'https://auth.dcos.io',
@@ -1374,6 +1381,8 @@ entry = {
         'metronome_port': '9000',
         'has_metronome_gpu_scheduling_behavior':
             lambda metronome_gpu_scheduling_behavior: calculate_set(metronome_gpu_scheduling_behavior),
+        'has_marathon_new_group_enforce_role':
+            lambda marathon_new_group_enforce_role: calculate_set(marathon_new_group_enforce_role),
         'has_marathon_gpu_scheduling_behavior':
             lambda marathon_gpu_scheduling_behavior: calculate_set(marathon_gpu_scheduling_behavior),
 

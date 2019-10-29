@@ -2064,6 +2064,11 @@ package:
       MARATHON_GPU_SCHEDULING_BEHAVIOR={{ marathon_gpu_scheduling_behavior }}
 {% case "false" %}
 {% endswitch %}
+{% switch has_marathon_new_group_enforce_role %}
+{% case "true" %}
+      MARATHON_NEW_GROUP_ENFORCE_ROLE={{ marathon_new_group_enforce_role }}
+{% case "false" %}
+{% endswitch %}
 
   - path: /etc/proxy.env
 {% switch use_proxy %}
@@ -2135,9 +2140,6 @@ package:
     permissions: "0600"
     content: |
 {{ expanded_config_full }}
-  - path: /etc_master/dcos-history.env
-    content: |
-      STATE_SUMMARY_URI=http://leader.mesos:{{ mesos_master_port }}/state-summary
   - path: /etc_master/adminrouter-upstreams-open.conf
     content: |
       # Just for compatibility/uniformity with EE:
@@ -2450,8 +2452,6 @@ package:
         systemd_unit = "dcos-cosmos.service"
       [[inputs.procstat]]
         systemd_unit = "dcos-exhibitor.service"
-      [[inputs.procstat]]
-        systemd_unit = "dcos-history.service"
       [[inputs.procstat]]
         systemd_unit = "dcos-log-master.service"
       [[inputs.procstat]]

@@ -1,6 +1,5 @@
 {
   "requires": [
-    "dcos-image",
     "python",
     "python-kazoo",
     "python-requests",

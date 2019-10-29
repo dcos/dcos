@@ -112,8 +112,6 @@ class MockerBase:
         res.append(ReflectingUnixSocketEndpoint('/run/dcos/telegraf-dcos-metrics.sock'))
         # log endpoint
         res.append(ReflectingUnixSocketEndpoint('/run/dcos/dcos-log.sock'))
-        # DC/OS history service
-        res.append(ReflectingTcpIpEndpoint(ip='127.0.0.1', port=15055))
         # Mesos DNS
         res.append(MesosDnsEndpoint(ip='127.0.0.1', port=8123))
         # DDDT, two variants:
