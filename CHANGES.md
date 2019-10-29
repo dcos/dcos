@@ -22,6 +22,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Admin Router: Accept nil task list from Marathon when updating cache. (DCOS_OSS-5541)
 
+* Replace [docker-gc](https://github.com/spotify/docker-gc) with `docker system prune`. (DCOS_OSS-5441)
+
 
 ### Breaking changes
 
