@@ -24,6 +24,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Marathon pod instances are now included in the DC/OS diagnostic bundle (DCOS_OSS-5616)
 
+* Replace [docker-gc](https://github.com/spotify/docker-gc) with `docker system prune`. (DCOS_OSS-5441)
+
+
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.

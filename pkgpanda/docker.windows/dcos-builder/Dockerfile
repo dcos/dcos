@@ -28,7 +28,7 @@ ADD http://erlang.org/download/otp_win64_19.3.exe c:\temp\otp_win64_19.3.exe
 COPY .\setup-erlang.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-erlang.ps1
 
-ADD https://golang.org/dl/go1.12.9.windows-amd64.zip c:\temp\go1.12.9.windows-amd64.zip
+ADD https://golang.org/dl/go1.13.3.windows-amd64.zip c:\temp\go1.13.3.windows-amd64.zip
 COPY .\setup-golang.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-golang.ps1
 ENV GOPATH 'c:\gopath'
