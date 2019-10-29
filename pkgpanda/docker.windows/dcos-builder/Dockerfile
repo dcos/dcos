@@ -12,6 +12,12 @@ ADD https://github.com/git-for-windows/git/releases/download/v2.16.1.windows.1/G
 COPY .\setup-git.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-git.ps1
 
+
+ADD https://www.python.org/ftp/python/2.7.13/python-2.7.13.msi c:\temp\python-2.7.13.msi
+ADD https://bootstrap.pypa.io/get-pip.py c:\temp\get-pip.py
+COPY .\setup-python27.ps1 \temp\
+RUN  powershell.exe -file c:\temp\setup-python27.ps1
+
 ADD https://cmake.org/files/v3.9/cmake-3.9.0-win64-x64.msi c:\temp\cmake-3.9.0-win64-x64.msi
 COPY .\setup-cmake.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-cmake.ps1
