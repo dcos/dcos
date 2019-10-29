@@ -11,7 +11,6 @@
   - Install pre-requisites using choco: 7-zip, nssm, vcredist, git, python
   - create ScheduledTask to execute RunOnce.ps1
   - create RunOnce.ps1 which will contain executor for Winpanda and clean the parent ScheduledTask
-  - #TO DO: Setup Mesos-DNS
 
 .PARAMETER InitialDirectory
   The initial directory which this example script will use C:\dcos
@@ -28,7 +27,7 @@ Add or remove PARAMETERs as required.
   Author: Sergii Matus
 
 .EXAMPLE
-#  .\dcos_install.ps1 https://dcos-win.s3.amazonaws.com/bootstrap.zip "master1,master2"
+#  .\dcos_install.ps1 https://dcos-win.s3.amazonaws.com/bootstrap.zip http://bootstrap.url "1.13.3/genconf_win/serve" "master1,master2"
 
 # requires -version 2
 #>
@@ -37,7 +36,8 @@ Add or remove PARAMETERs as required.
 
 # PARAMETERS
 param (
-    [string] $url,
+    [string] $url_prerequisites,
+    [string] $url_dcoswintarball,
     [string] $masters
 )
 
@@ -124,17 +124,10 @@ function SetupDirectories() {
     # available directories
     $dirs = @(
         "$($basedir)",
-#        "$($basedir)\var",
-#        "$($basedir)\var\log",
-#        "$($basedir)\var\opt",
-#        "$($basedir)\var\run",
-#        "$($basedir)\work",
-#        "$($basedir)\images",
         "$($basedir)\bootstrap",
         "$($basedir)\chocolatey_offline",
-#        "$($basedir)\packages",
-#        "$($basedir)\active",
-        "$($basedir)\conf"
+        "$($basedir)\conf",
+        "C:\winpanda"
     )
     # setup
     Write-Log("Creating a directories structure:")
@@ -166,8 +159,6 @@ function ExtractTarXz($infile){
     Write-Log("Extracting $Source to $Target")
     $start_time = Get-Date
     & cmd.exe "/C 7z x $Source -so | 7z x -aoa -si -ttar -o$Target"
-    # TO DO:
-    # handle validation of tar.xz , as "cmd 7z" is quite poor on such functionality. Message: Open ERROR: Can not open the file as [xz] archive
     Write-Log("Extract complete. Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)")
 }
 
@@ -194,30 +185,11 @@ function CreateWriteFile([String] $dir, [String] $file, [String] $content) {
     Get-Content "$($dir)\$($file)"
 }
 
-function CreateRunOnceReg($dir, $masters_ip, $winagent_ip) {
-    if (-not (test-path "$($dir)\RunOnce.ps1") ) {
-        Write-Log("$($basedir)\RunOnce.ps1 missing. Creating")
-        $RunOnceScript_content = "& pip install virtualenv;`n& virtualenv .venv;`n& .venv\Scripts\activate;`n& pip install -r C:\dcos\chocolatey_offline\winpanda\requirements.txt;`n& python C:\dcos\chocolatey_offline\winpanda\bin\winpanda.py setup;`n& python C:\dcos\chocolatey_offline\winpanda\bin\winpanda.py start`n#Remove a Scheduled task RunOnce, created while initial provision`nif(Get-ScheduledTask -TaskName `"RunOnce`" -TaskPath '\CustomTasks\' -ErrorAction Ignore) { Unregister-ScheduledTask -TaskName `"RunOnce`" -Confirm:`$False }`n"
-        CreateWriteFile "$($basedir)" "RunOnce.ps1" $RunOnceScript_content
-        Write-Log("Creating RunOnce registry record")
-        $KeyName = 'Run'
-        $Command = "%systemroot%\System32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -file `"$($dir)\RunOnce.ps1`""
-        if (-not ((Get-Item -Path HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce).$KeyName )) {
-            New-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce' -Name $KeyName -Value $Command -PropertyType ExpandString
-        }
-        else {
-            Set-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce' -Name $KeyName -Value $Command -PropertyType ExpandString
-        }
-    } else {
-        Write-Log("$($dir)\RunOnce.ps1 already exists. Skipping")
-    }
-}
-
 function CreateRunOnceScheduledTask($dir, $masters_ip, $winagent_ip) {
     $destination = "$($dir)\RunOnce.ps1"
     if (-not (Test-Path $destination) ) {
         Write-Log("$($destination) missing. Creating")
-        $RunOnceScript_content = "& pip install virtualenv;`n& virtualenv .venv;`n& .venv\Scripts\activate;`n& pip install -r C:\dcos\chocolatey_offline\winpanda\requirements.txt;`n& python C:\dcos\chocolatey_offline\winpanda\bin\winpanda.py setup;`n& python C:\dcos\chocolatey_offline\winpanda\bin\winpanda.py start;`n#Remove a Scheduled task RunOnce, created while initial provision`n#if(Get-ScheduledTask -TaskName `"RunOnce`" -TaskPath '\CustomTasks\' -ErrorAction Ignore) { Unregister-ScheduledTask -TaskName `"RunOnce`" -Confirm:`$False }`n"
+        $RunOnceScript_content = "Set-Location -Path 'C:\winpanda';`n& pip install virtualenv;`n& virtualenv .venv;`n& .venv\Scripts\activate;`n& pip install -r C:\winpanda\requirements.txt;`n& python C:\winpanda\bin\winpanda.py setup;`n& python C:\winpanda\bin\winpanda.py start`n#Remove a Scheduled task RunOnce, created while initial provision`nif(Get-ScheduledTask -TaskName `"RunOnce`" -TaskPath '\CustomTasks\' -ErrorAction Ignore) { Unregister-ScheduledTask -TaskName `"RunOnce`" -Confirm:`$False }`n"
         CreateWriteFile "$($dir)" "RunOnce.ps1" $RunOnceScript_content
 
         Write-Log("Creating Scheduled Task to run Winpanda")
@@ -230,16 +202,11 @@ function CreateRunOnceScheduledTask($dir, $masters_ip, $winagent_ip) {
     }
 }
 
-function SetupMesosDNS($masters_ip) {
-    Write-Log("Mesos-DNS setup with following $masters_ip")
-    #TO DO: Mesos-DNS logic to be placed here
-}
-
-function main($uri, $masters) {
+function main($uri1, $uri2, $bootstrap_endpoint, $masters) {
     SetupDirectories
 
     # Downloading/Extracting bootstrap.zip out of AWS S3 bucket
-    Download $uri "bootstrap.zip"
+    Download $uri1 "bootstrap.zip"
     $zipfile = "$($basedir)\bootstrap\bootstrap.zip"
     ExtractBootstrapZip $zipfile "$($basedir)\chocolatey_offline"
 
@@ -256,31 +223,29 @@ function main($uri, $masters) {
     & cmd.exe "/C chocolatey install vcredist140 -s $($basedir)\chocolatey_offline --version=14.22.27821 --yes" 2>&1 | Out-File C:\dcos\var\log\dcos_install.log -Append
 
     ##
-    ##  TO DO : remove! requested by Anatolii Borysov for integration testing ONLY!
+    ##  TO DO : remove once Winpanda is baked by TeamCity CI
     & cmd.exe "/C chocolatey install git --yes" 2>&1 | Out-File C:\dcos\var\log\dcos_install.log -Append
     Remove-Item -Path C:\dcos\chocolatey_offline\winpanda -Recurse -Force
+    Remove-Item -Path C:\winpanda -Recurse -Force
     & cmd.exe "/C mkdir -f c:\dcos\tempo";
-    "&'C:\Program Files\Git\bin\git.exe' clone --single-branch -b winpanda https://github.com/anatolii-borysov/dcos.git C:\dcos\tempo" | Invoke-Expression
-    Copy-Item C:\dcos\tempo\packages\winpanda\extra\src\winpanda -Destination C:\dcos\chocolatey_offline\ -Recurse
+    "&'C:\Program Files\Git\bin\git.exe' clone --single-branch -b master https://github.com/dcos/dcos.git C:\dcos\tempo" | Invoke-Expression
+    Copy-Item C:\dcos\tempo\packages\winpanda\extra\src\winpanda -Destination C:\ -Recurse
     Remove-Item -Path C:\dcos\tempo -Recurse -Force
 
     # Fill up Ansible inventory content to cluster.conf
     Write-Log("MASTERS: $($masters)")
 
     [System.Array]$masterarray = $masters.split(",")
-    $masternodecontent = for ($i=0; $i -lt $masterarray.length; $i++) {
-        "[master-node-$($i+1)]`nPrivateIPAddr=$($masterarray[$i])`nZookeeperListenerPort=2181`n"
+    $masternodecontent = ""
+    for ($i=0; $i -lt $masterarray.length; $i++) {
+        $masternodecontent += "[master-node-$($i+1)]`nPrivateIPAddr=$($masterarray[$i])`nZookeeperListenerPort=2181`n"
     }
     $local_ip = (Get-WmiObject -Class Win32_NetworkAdapterConfiguration | where {$_.DefaultIPGateway -ne $null}).IPAddress | select-object -first 1
     Write-Log("Local IP: $($local_ip)")
-    $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=https://wintesting.s3.amazonaws.com/`nPkgRepoPath=testing/packages`nPkgListPath=testing/package_lists/1.package_list.json`n[local]`nLocalPrivateIPAddr=$($local_ip)"
+    $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($uri2)`nPkgRepoPath=$($bootstrap_endpoint)`nPkgListPath=latest.package_list.json`n[local]`nLocalPrivateIPAddr=$($local_ip)"
     CreateWriteFile "$($basedir)\conf" "cluster.conf" $content
 
-    #CreateRunOnceReg $basedir $masters $local_ip
     CreateRunOnceScheduledTask $basedir $masters $local_ip
-
-    #TO DO: Setup Mesos-DNS
-    #SetupMesosDNS $masters
 }
 
-main $url $masters
+main $url_prerequisites $url_dcoswintarball $bootstrap_endpoint $masters
