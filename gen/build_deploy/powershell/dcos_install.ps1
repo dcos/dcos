@@ -223,16 +223,6 @@ function main($uri1, $uri2, $bootstrap_endpoint, $masters) {
     & cmd.exe "/C chocolatey install nssm -s $($basedir)\chocolatey_offline --yes" 2>&1 | Out-File C:\dcos\var\log\dcos_install.log -Append
     & cmd.exe "/C chocolatey install vcredist140 -s $($basedir)\chocolatey_offline --version=14.22.27821 --yes" 2>&1 | Out-File C:\dcos\var\log\dcos_install.log -Append
 
-    ##
-    ##  TO DO : remove once Winpanda is baked by TeamCity CI
-    & cmd.exe "/C chocolatey install git --yes" 2>&1 | Out-File C:\dcos\var\log\dcos_install.log -Append
-    Remove-Item -Path C:\dcos\chocolatey_offline\winpanda -Recurse -Force
-    Remove-Item -Path C:\winpanda -Recurse -Force
-    & cmd.exe "/C mkdir -f c:\dcos\tempo";
-    "&'C:\Program Files\Git\bin\git.exe' clone --single-branch -b master https://github.com/dcos/dcos.git C:\dcos\tempo" | Invoke-Expression
-    Copy-Item C:\dcos\tempo\packages\winpanda\extra\src\winpanda -Destination C:\ -Recurse
-    Remove-Item -Path C:\dcos\tempo -Recurse -Force
-
     # Fill up Ansible inventory content to cluster.conf
     Write-Log("MASTERS: $($masters)")
 
