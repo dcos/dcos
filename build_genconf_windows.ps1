@@ -31,16 +31,16 @@ $win_sh_template=@"
 #
 set -o errexit -o nounset -o pipefail
 
-# create genconf/serve_win dirs, if not extracted
-if [ ! -d genconf/serve_win ]; then
-    >&2 mkdir -p genconf/serve_win
+# create genconf_win/serve dirs, if not extracted
+if [ ! -d genconf_win/serve ]; then
+    >&2 mkdir -p genconf_win/serve
 fi
 
 
 # extract payload into genconf_win/serve dirs, if not extracted
-if [ ! -f "./genconf/serve_win)" ]; then
+if [ ! -f "./genconf_win/serve)" ]; then
     >&2 echo Extracting windows relese tar artifact from this script
-    sed '1,/^#EOF#$/d' "`$0" | tar xv --directory ./genconf/serve_win
+    sed '1,/^#EOF#$/d' "`$0" | tar xv --directory ./genconf_win/serve
 fi
 trap - INT
 
