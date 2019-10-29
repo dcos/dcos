@@ -38,6 +38,7 @@ Add or remove PARAMETERs as required.
 param (
     [string] $url_prerequisites,
     [string] $url_dcoswintarball,
+    [string] $bootstrap_endpoint,
     [string] $masters
 )
 
