@@ -325,11 +325,8 @@ class PackageStore:
 
                     # print('++ variants in _packages = %r' % self._packages)
                     # print('++ variants in _packages_by_name = %r' % self._packages_by_name)
-                    try:
-                        self._packages[(name, variant)] = buildinfo
-                        self._packages_by_name[name][variant] = buildinfo
-                    except Exception as ex:
-                        raise BuildError("Error in package structure on package '{}', variant '{}': {}".format(name, variant, ex))
+                    self._packages[(name, variant)] = buildinfo
+                    self._packages_by_name[name][variant] = buildinfo
 
                     if name in self._package_folders:
                         assert self._package_folders[name] == package_folder
@@ -346,7 +343,12 @@ class PackageStore:
         return self._packages_dir + "/cache/complete"
 
     def get_buildinfo(self, name, variant):
-        return self._packages[(name, variant)]
+        try:
+            foo = self._packages[(name, variant)]
+        except Exception as ex:
+            raise BuildError("Error in package structure on package '{}', variant '{}': {}".format(name, variant, ex))
+
+        return foo
 
     def get_last_complete_set(self, variants):
         def get_last_complete(variant):
