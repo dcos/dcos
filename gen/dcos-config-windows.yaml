@@ -15,7 +15,42 @@ package:
     permissions: "0644"
     content: |
       {{ cluster_package_list_id }}
-  - path: /etc/mesos-slave-modules/overlay_slave_modules.json
+{% switch dcos_overlay_enable %}
+{% case "true" %}
+  - path: /etc/mesos-master-modules/overlay_master_modules.json
+    content: |
+      {
+        "libraries":
+        [
+          {
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
+            "modules":
+              [
+                {
+                  "name": "com_mesosphere_mesos_OverlayMasterManager",
+                  "parameters" :
+                    [
+                      {
+                        "key": "master_config",
+                        "value" : "/opt/mesosphere/etc/overlay/config/master.json"
+                      }
+                    ]
+                },
+                {
+                  "name": "com_mesosphere_mesos_OverlayAgentManager",
+                  "parameters" :
+                    [
+                      {
+                        "key": "agent_config",
+                        "value" : "/opt/mesosphere/etc/overlay/config/agent-master.json"
+                      }
+                    ]
+                }
+              ]
+           }
+        ]
+      }
+- path: /etc/mesos-slave-modules/overlay_slave_modules.json
     content: |
       {
         "libraries":
