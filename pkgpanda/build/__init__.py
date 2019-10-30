@@ -285,7 +285,11 @@ class PackageStore:
         # Iterate through the packages directory finding all packages. Note this package dir comes
         # first, then we ignore duplicate definitions of the same package
         package_dirs = [self._packages_dir]
+
+        print('++ _packages_dir = %r' % self._packages_dir)
+
         if self._upstream:
+            print('++ _upstream_package_dir = %r' % self._upstream_package_dir)
             package_dirs.append(self._upstream_package_dir)
 
         for directory in package_dirs:
@@ -308,12 +312,20 @@ class PackageStore:
                 if os.path.exists(builder_folder):
                     self._builders[name] = builder_folder
 
+                print('++ package_folder = %r' % package_folder)
+
                 # Search the directory for buildinfo.json files, record the variants
                 for variant in get_variants_from_filesystem(package_folder, 'buildinfo.json'):
                     # Only adding the default dictionary once we know we have a package.
                     self._packages_by_name.setdefault(name, dict())
 
+                    print('++ variant from filesystem = %r' % variant)
+
                     buildinfo = load_buildinfo(package_folder, variant)
+
+                    print('++ variants in _packages = %r' % self._packages)
+                    print('++ variants in _packages_by_name = %r' % self._packages_by_name)
+
                     self._packages[(name, variant)] = buildinfo
                     self._packages_by_name[name][variant] = buildinfo
 
