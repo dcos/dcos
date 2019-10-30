@@ -210,6 +210,7 @@ class PackageSet:
         to_visit = list(package_tuples)
         while to_visit:
             package_tuple = to_visit.pop()
+            print("++ package_tuples_with_dependencies visiting '%r'" % package_tuple)
             for require in package_store.get_buildinfo(*package_tuple)['requires']:
                 require_tuple = expand_require(require)
                 if require_tuple not in package_tuples:
