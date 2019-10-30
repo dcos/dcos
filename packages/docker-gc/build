@@ -1,7 +1,4 @@
 #!/bin/bash
-cp /pkg/src/docker-gc/docker-gc "$PKG_PATH/docker-gc"
-cp /pkg/src/docker-gc/LICENSE "$PKG_PATH/LICENSE"
-
 service="$PKG_PATH/dcos.target.wants_slave/dcos-docker-gc.service"
 mkdir -p $(dirname "$service")
 envsubst '$PKG_PATH' < /pkg/extra/dcos-docker-gc.service > "$service"
@@ -17,5 +14,3 @@ envsubst '$PKG_PATH' < /pkg/extra/dcos-docker-gc.timer > "$timer"
 timer="$PKG_PATH/dcos.target.wants_slave_public/dcos-docker-gc.timer"
 mkdir -p $(dirname "$timer")
 envsubst '$PKG_PATH' < /pkg/extra/dcos-docker-gc.timer > "$timer"
-
-

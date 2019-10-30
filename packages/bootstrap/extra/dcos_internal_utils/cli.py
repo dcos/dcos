@@ -17,8 +17,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt.utils import base64url_decode, bytes_to_number
 
-from dcos_internal_utils import bootstrap, exhibitor
-from pkgpanda.actions import apply_service_configuration
+from dcos_internal_utils import bootstrap, exhibitor, utils
 
 log = logging.getLogger(__name__)
 
@@ -219,7 +218,7 @@ def main():
         if service not in bootstrappers:
             log.error('Unknown service: {}'.format(service))
             sys.exit(1)
-        apply_service_configuration(service)
+        utils.apply_service_configuration(service)
         log.info('bootstrapping {}'.format(service))
         bootstrappers[service](b, opts)
 
