@@ -323,11 +323,13 @@ class PackageStore:
 
                     buildinfo = load_buildinfo(package_folder, variant)
 
-                    print('++ variants in _packages = %r' % self._packages)
-                    print('++ variants in _packages_by_name = %r' % self._packages_by_name)
-
-                    self._packages[(name, variant)] = buildinfo
-                    self._packages_by_name[name][variant] = buildinfo
+                    # print('++ variants in _packages = %r' % self._packages)
+                    # print('++ variants in _packages_by_name = %r' % self._packages_by_name)
+                    try:
+                        self._packages[(name, variant)] = buildinfo
+                        self._packages_by_name[name][variant] = buildinfo
+                    except Exception as ex:
+                        raise BuildError("Error in package structure on package '{}', variant '{}': {}".format(name, variant, ex))
 
                     if name in self._package_folders:
                         assert self._package_folders[name] == package_folder
