@@ -26,22 +26,12 @@ $myhome = $HOME.replace("\", "/")
 # release to a folder in the current user's home directory.
 $config_yaml =
 "storage: `
-    azure: `
-     kind: azure_block_blob `
-     account_name: $env:AZURE_STORAGE_ACCOUNT `
-     account_key: $env:AZURE_STORAGE_ACCESS_KEY `
-     container: dcos `
-     download_url: https://dcos.azureedge.net/dcos/dcos-windows/ `
-    aws: `
-        kind: aws_s3 `
-        access_key_id: $env:AWS_ACCESS_KEY_ID `
-        secret_access_key: $env:AWS_SECRET_ACCESS_KEY `
-        bucket: downloads.dcos.io `
-        object_prefix: dcos/dcos-windows `
-        download_url: https://downloads.dcos.io/dcos/dcos-windows/
+   local: `
+    kind: local_path `
+    path: $myhome/dcos-artifacts `
 options: `
-  preferred: aws `
-  cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos/dcos-windows"
+  preferred: local `
+  cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos"
 
    $config_yaml | Set-Content -Path "dcos-release.config.yaml"
 
@@ -57,9 +47,10 @@ python -m venv "$tmpdir/dcos_build_venv"
 release create $env:USERNAME local_build windows
 # Build tar ball for windows. 2 params: packages location and DC/OS variant:
 ./build_genconf_windows.ps1 "$HOME\dcos-artifacts\windows"
-## Set AWS Credentials:
-# Set-AWSCredential -ProfileName teamcity-server
+## Set and Read AWS Credentials:
+Set-AWSCredential -AccessKey $env:AWS_ACCESS_KEY_ID -SecretKey $env:AWS_SECRET_ACCESS_KEY -StoreAs aws_s3_windows
+Set-AWSCredential -ProfileName aws_s3_windows
 ## Upload Tar Ball to dcos.download.io
-# Write-S3Object -BucketName "dcos.download.io" -File "$HOME\dcos-artifacts\windows\dcos_generate_config_win.sh" -CannedACLName public-read
+Write-S3Object -BucketName "s3-us-west-2" -Key "downloads.dcos.io\dcos\windows\$env:BRANCH\commit\$env:COMMIT\dcos_generate_config_win.sh" -File "$HOME\dcos-artifacts\windows\dcos_generate_config_win.sh" -CannedACLName public-read
 ## Verify that the files were uploaded
-# Get-S3BucketWebsite -BucketName "dcos.download.io"
+Get-S3BucketWebsite -BucketName "s3-us-west-2"
