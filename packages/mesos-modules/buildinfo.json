@@ -6,7 +6,7 @@
   "single_source": {
     "kind": "git",
     "git": "https://github.com/dcos/dcos-mesos-modules.git",
-    "ref": "e9edd2d93d9fce88c8e3f5536c7f9abc326093d9",
-    "ref_origin": "master"
+    "ref": "ffa5e01aba1631ec15077e8c639567bda248d3e0",
+    "ref_origin": "inc/reserve-vtep-ips"
   }
 }
