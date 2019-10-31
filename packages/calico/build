@@ -14,7 +14,7 @@ chmod +x $PKG_PATH/bin/calicoctl
 
 # copy the default calico profile to the package directory
 mkdir -p $PKG_PATH/etc
-cp /pkg/extra/default_profile.yaml $PKG_PATH/etc/default_profile.yaml
+cp /pkg/extra/profile.yaml $PKG_PATH/etc/profile.yaml
 
 # copy the launch script to the package bin directory
 cp /pkg/extra/dcos-calico-node.sh $PKG_PATH/bin/dcos-calico-node.sh
