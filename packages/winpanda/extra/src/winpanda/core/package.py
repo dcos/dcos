@@ -102,11 +102,9 @@ class PackageManifest:
         self.pkgrepo_dpath = pkgrepo_dpath
         self.pkgactive_dpath = pkgactive_dpath
 
-        # TODO: Add package info descriptor handling
-        # self.pkg_info = (
-        #     pkg_info if isinstance(pkg_info, dict) else self._load_pkg_info()
-        # )
-        self.pkg_info = {}
+        self.pkg_info = (
+            pkg_info if isinstance(pkg_info, dict) else self._load_pkg_info()
+        )
         # TODO: Add package initialization descriptor handling
         # self.pkg_ini = (
         #     pkg_ini if isinstance(pkg_ini, dict) else self._load_pkg_ini()
