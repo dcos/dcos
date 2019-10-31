@@ -424,7 +424,7 @@ def validate_net_overlap(dcos_overlay_network, dcos_overlay_enable,
     for overlay_subnet in overlay_subnets:
         if not isinstance(overlay_subnet, ipaddress.IPv4Network):
             continue
-        assert overlay_subnet.overlaps(_calico_network_cidr), \
+        assert not overlay_subnet.overlaps(_calico_network_cidr), \
             "overlay subnet {} overlaps calico network {}".format(
                 overlay_subnet, calico_network_cidr)
 
@@ -1382,9 +1382,9 @@ entry = {
         'enable_windows_agents': 'false',
         'calico_enabled': 'true',
         'calico_network_cidr': '192.168.0.0/16',
-        'calico_vxlan_enabled': 'false',
+        'calico_vxlan_enabled': 'true',
         'calico_ipinip_mtu': '1440',
-        'calico_vxlan_port': '4789',
+        'calico_vxlan_port': '64001',
         'calico_vxlan_vni': '4096',
         'calico_vxlan_mtu': '1410',
         'etcd_endpoints': 'http://master.dcos.thisdcos.directory:2379',
