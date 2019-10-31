@@ -1,7 +1,5 @@
 [Unit]
 Description=DC/OS calico node: initializes a new calico node and runs calico components
-After=docker.service
-Requires=docker.service
 ConditionPathExists=/opt/mesosphere/etc/calico_enabled
 
 [Service]

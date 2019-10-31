@@ -2,6 +2,10 @@
 
 set -xe
 
+
+/usr/bin/docker inspect calico/node:${CALICO_NODE_VERSION} || \
+	/usr/bin/docker load -i /opt/mesosphere/active/calico/images/calico_node_${CALICO_NODE_VERSION}.tgz
+
 # the default configuration path, `/etc/calico/calicoctl.cfg`, of calicoctl is
 # used to simply the interaction with Calico
 /usr/bin/mkdir -p /etc/calico

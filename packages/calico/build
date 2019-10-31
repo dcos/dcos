@@ -26,3 +26,11 @@ for at in master slave slave_public; do
     mkdir -vp "$(dirname "$tmp")"
     envsubst '$PKG_PATH' < "/pkg/extra/dcos-calico-node.service" > "$tmp"
 done
+
+
+# docker registry maybe unrechable for air-gapped clusters, we save calico node
+# docker image and loads the image during calico-node service starts up.
+mkdir  -p $PKG_PATH/images
+docker pull calico/node:v3.8.2
+docker save calico/node:v3.8.2 |gzip > calico_node_v3.8.2.tgz
+mv calico_node_v3.8.2.tar.gz $PKG_PATH/images/
