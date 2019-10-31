@@ -16,7 +16,7 @@ $win_release_tar = "$($artifact_storage)\windows.release.tar"
 $package_list = "latest.package_list.json"
 Remove-Item -path "$artifact_storage\$package_list" -Force -ErrorAction SilentlyContinue
 $latest = Get-ChildItem -Path "$artifact_storage\package_lists" | Sort-Object LastAccessTime -Descending | Select-Object -First 1
-Copy-Item -Path "$artifact_storage\package_lists\$latest" "$artifact_storage\package_lists\$package_list" -Force
+Copy-Item -Path "$artifact_storage\package_lists\$latest" "$artifact_storage\package_lists\$package_list" -Force -ErrorAction SilentlyContinue
 # Pack content of package_lists, packages from artifact_storage dir into windows.release.tar:
 & "$bsdtar" -C "$artifact_storage" -cvf "$win_release_tar" "package_lists" "packages"
 
