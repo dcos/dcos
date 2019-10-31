@@ -79,14 +79,14 @@ release create $env:USERNAME local_build windows
 # Build tar ball for windows. 2 params: packages location and DC/OS variant:
 ./build_genconf_windows.ps1 "$HOME\dcos-artifacts\testing"
 
-##Import AWS modules on Azure TeamCity runner
+# Import AWS modules on Azure TeamCity runner
 Install-Module -Name AWS.Tools.Common -Force
 Install-Module -Name AWS.Tools.S3 -Force
 
-## Set and Read AWS Credentials:
+# Set and Read AWS Credentials:
 Set-AWSCredential -AccessKey $env:AWS_ACCESS_KEY_ID -SecretKey $env:AWS_SECRET_ACCESS_KEY -StoreAs aws_s3_windows
 Set-AWSCredential -ProfileName aws_s3_windows
-## Upload Tar Ball to dcos.download.io
-Write-S3Object -BucketName "s3-us-west-2" -Key "downloads.dcos.io\dcos\windows\$env:BRANCH\commit\$env:COMMIT\dcos_generate_config_win.sh" -File "$HOME\dcos-artifacts\windows\dcos_generate_config_win.sh" -CannedACLName public-read
-## Verify that the files were uploaded
-Get-S3BucketWebsite -BucketName "s3-us-west-2"
+# Upload Tar Ball to dcos.download.io
+Write-S3Object -BucketName "downloads.dcos.io" -Key "dcos\testing\$env:BRANCH\pull\$env:PR\dcos_generate_config_win.sh" -File "$HOME\dcos-artifacts\testing\dcos_generate_config_win.sh" -CannedACLName public-read
+# Verify that the files were uploaded
+Get-S3BucketWebsite -BucketName "downloads.dcos.io"
