@@ -14,7 +14,6 @@ authed_endpoints = [
     '/acs/api/v1/reflect/me',
     '/capabilities',
     '/cosmos/service/foo/bar',
-    '/dcos-history-service/foo/bar',
     '/exhibitor/foo/bar',
     '/marathon/v2/reflect/me',
     '/mesos/reflect/me',
