@@ -2,13 +2,16 @@ param (
    [Parameter(Mandatory=$true)][string]$artifact_storage,
    [Parameter(Mandatory=$false)][string]$variant = ""
 )
-
+Set-PSDebug -Trace 2
 if ( $variant -eq "ee" ) {
     $artifact_out = "dcos_generate_config_win.$($variant).sh"
 }
 else {
     $artifact_out = "dcos_generate_config_win.sh"
 }
+
+Get-Location
+Get-ChildItem .\
 
 # Generate windows.release.tar with help of bsdtar.exe:
 $bsdtar = "C:\Program Files (x86)\GnuWin32\bin\bsdtar.exe"

@@ -76,6 +76,11 @@ python -m venv "$tmpdir/dcos_build_venv"
 # Build a release of DC/OS
 release create $env:USERNAME local_build windows
 
+# Debug:
+Set-PSDebug -Trace 2
+Get-Location
+Get-ChildItem .\
+
 # Build tar ball for windows. 2 params: packages location and DC/OS variant:
 ./build_genconf_windows.ps1 "$HOME\dcos-artifacts\testing"
 
