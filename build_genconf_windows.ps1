@@ -21,7 +21,7 @@ Get-ChildItem "$($artifact_storage)"
 
 # Generate windows.release.tar with help of bsdtar.exe:
 $bsdtar = "C:\Program Files (x86)\GnuWin32\bin\bsdtar.exe"
-$win_release_tar = "$($artifact_storage)\windows.release.tar"
+$win_release_tar = "windows.release.tar"
 Get-ChildItem "$($artifact_storage)"
 $package_list = "latest.package_list.json"
 Get-ChildItem "$($artifact_storage)"
@@ -30,7 +30,15 @@ $latest = Get-ChildItem -Path "$artifact_storage\package_lists" | Sort-Object La
 Copy-Item -Path "$artifact_storage\package_lists\$latest" "$artifact_storage\package_lists\$package_list" -Force -ErrorAction SilentlyContinue
 Get-ChildItem "$($artifact_storage)"
 # Pack content of package_lists, packages from artifact_storage dir into windows.release.tar:
+echo "bsdtar: $bsdtar"
+echo "artifact_storage: $artifact_storage"
+echo "win_release_tar: $win_release_tar"
+echo "current directory: $PWD"
+dir
+
 & "$bsdtar" -C "$artifact_storage" -cvf "$win_release_tar" "package_lists" "packages"
+
+dir $artifact_storage
 
 # Set *win.sh template
 $win_sh_template=@"
