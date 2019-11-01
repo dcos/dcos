@@ -13,12 +13,27 @@ else {
 # Generate windows.release.tar with help of bsdtar.exe:
 $bsdtar = "C:\Program Files (x86)\GnuWin32\bin\bsdtar.exe"
 $win_release_tar = "$($artifact_storage)\windows.release.tar"
+
+dir $($artifact_storage)
+
+dir $($artifact_storage)\packages
+
+dir $($artifact_storage)\package_lists
+
 $package_list = "latest.package_list.json"
 Remove-Item -path "$artifact_storage\$package_list" -Force -ErrorAction SilentlyContinue
 $latest = Get-ChildItem -Path "$artifact_storage\package_lists" | Sort-Object LastAccessTime -Descending | Select-Object -First 1
 Copy-Item -Path "$artifact_storage\package_lists\$latest" "$artifact_storage\package_lists\$package_list" -Force -ErrorAction SilentlyContinue
 # Pack content of package_lists, packages from artifact_storage dir into windows.release.tar:
-& "$bsdtar" -C "$artifact_storage" -cvf "$win_release_tar" "package_lists" "packages"
+$command = "$bsdtar" -C "$artifact_storage" -cvf "$win_release_tar" "package_lists" "packages"
+if ($command[0] -eq '"') { iex "& $command" }
+    else { iex $command }
+
+dir $($artifact_storage)
+
+
+
+
 
 # Set *win.sh template
 $win_sh_template=@"
@@ -54,4 +69,3 @@ exit `$?
 echo $win_sh_template | Set-Content -NoNewline -Path "$($artifact_storage)\$($artifact_out)";
 # Appending content of a win_release_tar file in a Byte format:
 Get-Content -Encoding Byte -ReadCount 512 $($win_release_tar) | Add-Content -Path "$($artifact_storage)\$($artifact_out)" -Encoding Byte;
-
