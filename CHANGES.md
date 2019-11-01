@@ -4,6 +4,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to Mesos [1.5.4-dev](https://github.com/apache/mesos/blob/f902fc6f447f3477e137639824ece7cbf3b31fe7/CHANGELOG)
 * Signal now sends telemetry data every 5 minutes instead of every hour. This is to align the frequency with DC/OS Enterprise.
+* Fixed problems when trying to download a diagnostics bundle (COPS-5509)
 
 ## DC/OS 1.11.12 (2019-09-26)
 
