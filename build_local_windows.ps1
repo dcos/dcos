@@ -77,13 +77,17 @@ python -m venv "$tmpdir/dcos_build_venv"
 release create $env:USERNAME local_build windows
 
 # Debug:
+Write-Host "DEBUG: Tracing from build_local_windows.ps1"
 Set-PSDebug -Trace 2
 Get-Location
 Get-ChildItem .\
+Get-ChildItem C:\Windows\system32\config\systemprofile\
+Get-ChildItem C:\Windows\system32\config\systemprofile\dcos-artifacts\
+Get-ChildItem C:\Windows\system32\config\systemprofile\dcos-artifacts\testing\
 
 # Build tar ball for windows. 2 params: packages location and DC/OS variant:
-./build_genconf_windows.ps1 "$HOME\dcos-artifacts\testing"
-
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& .\build_genconf_windows.ps1 '$HOME\dcos-artifacts\testing'"
+Set-PSDebug -Trace 0
 # Import AWS modules on Azure TeamCity runner
 Install-Module -Name AWS.Tools.Common -Force
 Install-Module -Name AWS.Tools.S3 -Force
