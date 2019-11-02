@@ -1,4 +1,5 @@
 {
+  "docker": "calico/node:v3.8.2",
   "sources": {
     "calico": {
       "kind": "url",

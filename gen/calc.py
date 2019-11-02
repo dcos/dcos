@@ -419,7 +419,7 @@ def validate_net_overlap(dcos_overlay_network, dcos_overlay_enable,
     _calico_network_cidr = ipaddress.ip_network(calico_network_cidr)
     overlay_subnets = [
         ipaddress.ip_network(overlay["subnet"])
-        for overlay in overlay_network['overlays']
+        for overlay in overlay_network['overlays'] if "subnet" in overlay
     ]
     for overlay_subnet in overlay_subnets:
         if not isinstance(overlay_subnet, ipaddress.IPv4Network):

@@ -1,12 +1,11 @@
 [Unit]
-Description=DC/OS calico node: initializes a new calico node and runs calico components
+Description=DC/OS calico node: Calico Core component responsible for programming routes and security policy
 ConditionPathExists=/opt/mesosphere/etc/calico_enabled
 
 [Service]
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/calico-node.env
-ExecStart=/opt/mesosphere/active/calico/bin/dcos-calico-node.sh
-ExecStop=-/usr/bin/docker stop dcos-calico-node
+ExecStart=/opt/mesosphere/bin/start-calico-felix.sh
 
 Restart=always
 StartLimitInterval=0

@@ -34,7 +34,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Update libpq to 9.6.15 (DCOS-59145)
 * Calico in DC/OS: introduced Calico network for mesos UCR, enabled by `calico_enabled` with default value `true`. (DCOS-58582)
 
-* Calico in DC/OS: introduced `dcos-calico-node` service deployed on all slaves and masters. (DCOS-58583)
+* Calico in DC/OS: introduced calico control panel services deployed on all slaves and masters. (DCOS-58583)
 
 ### Breaking changes
 

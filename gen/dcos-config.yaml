@@ -3029,24 +3029,18 @@ package:
       }
   - path: /etc/calico-node.env
     content: |
-      CALICO_NODE_VERSION=v3.8.2
       ETCD_ENDPOINTS={{ etcd_endpoints }}
       ETCD_CA_CERT_FILE={{ etcd_ca_cert_file }}
       ETCD_CERT_FILE={{ etcd_cert_file }}
       ETCD_KEY_FILE={{ etcd_key_file }}
-      CALICO_NODENAME=
-      CALICO_AS=
       CALICO_NO_DEFAULT_POOLS=false
       CALICO_IPV4POOL_CIDR={{ calico_network_cidr }}
       CALICO_IPV4POOL_NAT_OUTGOING=true
-      CALICO_IP=
-      CALICO_IP6=
-      CALICO_IPINIP_MTU={{ calico_ipinip_mtu }}
-      CALICO_VXLAN_MTU={{ calico_vxlan_mtu }}
-      CALICO_VXLAN_PORT={{ calico_vxlan_port }}
-      CALICO_VXLAN_VNI={{ calico_vxlan_vni }}
+      FELIX_IGNORELOOSERPF=true
+      FELIX_LOGFILEPATH=none
 {% switch calico_vxlan_enabled %}
 {% case "false" %}
+      FELIX_IPINIPMTU={{ calico_ipinip_mtu }}
       CALICO_IPV4POOL_IPIP=always
       CALICO_IPV4POOL_VXLAN=never
       CALICO_NETWORKING_BACKEND=bird
@@ -3054,6 +3048,15 @@ package:
       CALICO_IPV4POOL_IPIP=never
       CALICO_IPV4POOL_VXLAN=always
       CALICO_NETWORKING_BACKEND=vxlan
+      FELIX_VXLANMTU={{ calico_vxlan_mtu }}
+      FELIX_VXLANPORT={{ calico_vxlan_port }}
+      FELIX_VXLANVNI={{ calico_vxlan_vni }}
+{% endswitch %}
+{% switch calico_vxlan_enabled %}
+{% case "false" %}
+  - path: /etc/bird_enabled
+    content: ""
+{% case "true" %}
 {% endswitch %}
   - path: /etc/calico/calicoctl.cfg
     content: |

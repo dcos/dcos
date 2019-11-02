@@ -1,0 +1,19 @@
+[Unit]
+Description=DC/OS Calico Node: A simple configuration management tool providing dynamic configurations for Calico Bird
+ConditionPathExists=/opt/mesosphere/etc/bird_enabled
+ConditionPathExists=/opt/mesosphere/etc/calico_enabled
+
+[Service]
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/calico-node.env
+ExecStartPre=/usr/bin/mkdir -p /etc/calico
+ExecStartPre=/usr/bin/cp /opt/mesosphere/active/calico/confd /etc/calico/confd
+ExecStart=/opt/mesosphere/bin/start-calico-comp-wrapper.sh /opt/mesosphere/bin/calico-node -confd
+
+Restart=always
+StartLimitInterval=0
+KillSignal=SIGKILL
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

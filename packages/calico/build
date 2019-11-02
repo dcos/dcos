@@ -17,20 +17,23 @@ mkdir -p $PKG_PATH/etc
 cp /pkg/extra/profile.yaml $PKG_PATH/etc/profile.yaml
 
 # copy the launch script to the package bin directory
-cp /pkg/extra/dcos-calico-node.sh $PKG_PATH/bin/dcos-calico-node.sh
-chmod +x $PKG_PATH/bin/dcos-calico-node.sh
+cp /pkg/extra/start-calico-comp-wrapper.sh $PKG_PATH/bin/start-calico-comp-wrapper.sh
+chmod +x $PKG_PATH/bin/start-calico-comp-wrapper.sh
+cp /pkg/extra/start-calico-felix.sh $PKG_PATH/bin/start-calico-felix.sh
+chmod +x $PKG_PATH/bin/start-calico-felix.sh
 
-# calico-node service works on both masters and slaves
-for at in master slave slave_public; do
-    tmp="$PKG_PATH/dcos.target.wants_${at}/dcos-calico-node.service"
+# copy binaries from calico-node docker container
+cp /bin/calico-node $PKG_PATH/bin/calico-node
+chmod +x $PKG_PATH/bin/calico-node
+cp /bin/bird $PKG_PATH/bin/bird
+cp /bin/birdctl $PKG_PATH/bin/birdctl
+chmod +x $PKG_PATH/bin/bird
+chmod +x $PKG_PATH/bin/birdctl
+cp -r /etc/calico/confd $PKG_PATH/confd
+
+# calico components work on both masters and slaves
+for comp in bird confd felix; do
+    tmp="$PKG_PATH/dcos.target.wants/dcos-calico-${comp}.service"
     mkdir -vp "$(dirname "$tmp")"
-    envsubst '$PKG_PATH' < "/pkg/extra/dcos-calico-node.service" > "$tmp"
+    cp "/pkg/extra/dcos-calico-${comp}.service" "${tmp}"
 done
-
-
-# docker registry maybe unrechable for air-gapped clusters, we save calico node
-# docker image and loads the image during calico-node service starts up.
-mkdir  -p $PKG_PATH/images
-docker pull calico/node:v3.8.2
-docker save calico/node:v3.8.2 |gzip > calico_node_v3.8.2.tgz
-mv calico_node_v3.8.2.tar.gz $PKG_PATH/images/
