@@ -85,8 +85,11 @@ cp /pkg/extra/start_mesos.sh "$mesos_start_wrapper"
 chmod +x "$mesos_start_wrapper"
 
 
+
 # Add `protoc` to the path.
 export PATH=$PKG_PATH/bin:$PATH
+
+
 
 # OSS Mesos Modules
 
@@ -108,7 +111,7 @@ pushd build
     --with-mesos-root=/pkg/src/mesos \
     --with-mesos-build-dir=/pkg/src/mesos/build \
     --with-openssl=/opt/mesosphere/active/openssl \
-    --with-glog=/opt/mesosphere/lib/mesos/3rdparty/include/glog \
+    --with-glog=/pkg/src/mesos/build/3rdparty/glog-0.4.0 \
     --prefix="$PKG_PATH"
 
 make -j$NUM_CORES
@@ -137,7 +140,7 @@ pushd build
  --with-mesos-root=/pkg/src/mesos \
  --with-mesos-build-dir=/pkg/src/mesos/build \
  --with-openssl=/opt/mesosphere/active/openssl \
- --with-glog=/opt/mesosphere/lib/mesos/3rdparty/include/glog \
+ --with-glog=/pkg/src/mesos/build/3rdparty/glog-0.4.0 \
  --disable-werror \
  --prefix="$PKG_PATH"
 
