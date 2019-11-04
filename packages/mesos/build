@@ -85,10 +85,8 @@ cp /pkg/extra/start_mesos.sh "$mesos_start_wrapper"
 chmod +x "$mesos_start_wrapper"
 
 
-
 # Add `protoc` to the path.
-export PATH=/opt/mesosphere/lib/mesos/3rdparty/bin:$PATH
-
+export PATH=$PKG_PATH/bin:$PATH
 
 # OSS Mesos Modules
 
