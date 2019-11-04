@@ -93,6 +93,6 @@ Install-Module -Name AWS.Tools.S3 -Force
 Set-AWSCredential -AccessKey $env:AWS_ACCESS_KEY_ID -SecretKey $env:AWS_SECRET_ACCESS_KEY -StoreAs aws_s3_windows
 Set-AWSCredential -ProfileName aws_s3_windows
 # Upload Tar Ball to dcos.download.io
-Write-S3Object -BucketName "downloads.dcos.io" -Key "dcos\testing\skumaran\dcos_generate_config_win.sh" -File ".\dcos_generate_config_win.sh" -CannedACLName public-read
+Write-S3Object -BucketName "s3-us-west-2.amazonaws.com/downloads.dcos.io" -Key "dcos\testing\skumaran\dcos_generate_config_win.sh" -File ".\dcos_generate_config_win.sh" -CannedACLName public-read
 # Verify that the files were uploaded
 Get-S3BucketWebsite -BucketName "downloads.dcos.io"
