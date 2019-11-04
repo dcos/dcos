@@ -111,7 +111,7 @@ pushd build
     --with-mesos-root=/pkg/src/mesos \
     --with-mesos-build-dir=/pkg/src/mesos/build \
     --with-openssl=/opt/mesosphere/active/openssl \
-    --with-glog=/pkg/src/mesos/build/3rdparty/glog-0.4.0 \
+    --with-glog=/pkg/src/mesos/build/3rdparty/glog-0.4.0/src \
     --prefix="$PKG_PATH"
 
 make -j$NUM_CORES
@@ -140,7 +140,7 @@ pushd build
  --with-mesos-root=/pkg/src/mesos \
  --with-mesos-build-dir=/pkg/src/mesos/build \
  --with-openssl=/opt/mesosphere/active/openssl \
- --with-glog=/pkg/src/mesos/build/3rdparty/glog-0.4.0 \
+ --with-glog=/pkg/src/mesos/build/3rdparty/glog-0.4.0/src \
  --disable-werror \
  --prefix="$PKG_PATH"
 
