@@ -1,17 +1,17 @@
 {
   "variants": {
-    "adminrouter": "windows",
-    "telegraf" : "windows",
-    "vcredist" : "windows",
-    "nssm" : "windows",
-    "erlang": "windows",
-    "dcos-diagnostics": "windows",
-    "erts": "windows",
-    "mesos": "windows",
-    "openstackservice": "windows",
-    "python": "windows"
+    "dcos-diagnostics": "windows"
   },
   "exclude": [
+    "adminrouter",
+    "telegraf",
+    "vcredist",
+    "nssm",
+    "erlang",
+    "erts",
+    "mesos",
+    "openstackservice",
+    "python",
     "boost-libs",
     "bootstrap",
     "boto",
