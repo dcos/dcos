@@ -56,19 +56,9 @@ release create $env:USERNAME local_build windows
 
 rm -fo dcos-release.config.yaml
 
-# Creating temp dir, for instance: C:/temp/e9X
-# variant b)
-$digits = 48..57
-$letters = (65..90) + (97..122)
-$symbol_limit = 3
-$temp_subdir = Get-Random -Count $symbol_limit -Input ($digits + $letters) | % -Begin { $aa = $null } -Process {$aa += [char]$_} -End {$aa}
-$local_artifacts_dir = "C:/temp/$($temp_subdir)"
-mkdir -f $local_artifacts_dir
-dir "C:\temp"
-# variant a)
+# Creating temp dir, for instance:
 $local_artifacts_dir = "./packages/cache"
 mkdir -f $local_artifacts_dir
-dir ".\packages\cache"
 
 ##Write DCOS installer locally
 $config_yaml =
@@ -95,11 +85,6 @@ release create $env:USERNAME local_build windows
 # Build tar ball for windows. 2 params: packages location and DC/OS variant:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& .\build_genconf_windows.ps1 '$local_artifacts_dir\testing'"
 
-dir "$($local_artifacts_dir)/testing"
-dir ./
-#rm -r -fo $local_artifacts_dir
-
-Set-PSDebug -Trace 0
 # Import AWS modules on Azure TeamCity runner
 Install-Module -Name AWS.Tools.Common -Force
 Install-Module -Name AWS.Tools.S3 -Force

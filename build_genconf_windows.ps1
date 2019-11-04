@@ -10,8 +10,6 @@ else {
     $artifact_out = "dcos_generate_config_win.sh"
 }
 
-Write-Host "DEBUG: Tracing from build_genconf_windows.ps1"
-
 # Generate windows.release.tar with help of bsdtar.exe:
 $bsdtar = "C:\Program Files (x86)\GnuWin32\bin\bsdtar.exe"
 $win_release_tar = "windows.release.tar"
@@ -23,14 +21,12 @@ Copy-Item -Path "$artifact_storage\package_lists\$latest" "$artifact_storage\pac
 # Pack content of package_lists, packages from artifact_storage dir into windows.release.tar:
 echo "bsdtar: $bsdtar"
 echo "artifact_storage: $artifact_storage"
+dir $artifact_storage
 echo "win_release_tar: $win_release_tar"
 echo "current directory: $PWD"
 dir
 
 & "$bsdtar" -C "$artifact_storage" -cvf "$win_release_tar" "package_lists" "packages"
-
-dir $artifact_storage
-dir
 
 # Set *win.sh template
 $win_sh_template=@"
@@ -66,4 +62,3 @@ exit `$?
 echo $win_sh_template | Set-Content -NoNewline -Path "$($artifact_out)";
 # Appending content of a win_release_tar file in a Byte format:
 Get-Content -Encoding Byte -ReadCount 512 $($win_release_tar) | Add-Content -Path "$($artifact_out)" -Encoding Byte;
-Set-PSDebug -Trace 0
