@@ -54,12 +54,28 @@ python -m venv "$tmpdir/dcos_build_venv"
 # Build a release of DC/OS
 release create $env:USERNAME local_build windows
 
+rm -fo dcos-release.config.yaml
+
+# Creating temp dir, for instance: C:/temp/e9X
+# variant b)
+$digits = 48..57
+$letters = (65..90) + (97..122)
+$symbol_limit = 3
+$temp_subdir = Get-Random -Count $symbol_limit -Input ($digits + $letters) | % -Begin { $aa = $null } -Process {$aa += [char]$_} -End {$aa}
+$local_artifacts_dir = "C:/temp/$($temp_subdir)"
+mkdir -f $local_artifacts_dir
+dir "C:\temp"
+# variant a)
+$local_artifacts_dir = "./packages/cache"
+mkdir -f $local_artifacts_dir
+dir ".\packages\cache"
+
 ##Write DCOS installer locally
 $config_yaml =
 "storage: `
    local: `
     kind: local_path `
-    path: $myhome/dcos-artifacts `
+    path: $local_artifacts_dir `
 options: `
   preferred: local `
   cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos"
@@ -76,17 +92,13 @@ python -m venv "$tmpdir/dcos_build_venv"
 # Build a release of DC/OS
 release create $env:USERNAME local_build windows
 
-# Debug:
-Write-Host "DEBUG: Tracing from build_local_windows.ps1"
-Set-PSDebug -Trace 2
-Get-Location
-Get-ChildItem .\
-Get-ChildItem C:\Windows\system32\config\systemprofile\
-Get-ChildItem C:\Windows\system32\config\systemprofile\dcos-artifacts\
-Get-ChildItem C:\Windows\system32\config\systemprofile\dcos-artifacts\testing\
-
 # Build tar ball for windows. 2 params: packages location and DC/OS variant:
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& .\build_genconf_windows.ps1 '$HOME\dcos-artifacts\testing'"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& .\build_genconf_windows.ps1 '$local_artifacts_dir\testing'"
+
+dir "$($local_artifacts_dir)/testing"
+dir ./
+#rm -r -fo $local_artifacts_dir
+
 Set-PSDebug -Trace 0
 # Import AWS modules on Azure TeamCity runner
 Install-Module -Name AWS.Tools.Common -Force
@@ -96,6 +108,6 @@ Install-Module -Name AWS.Tools.S3 -Force
 Set-AWSCredential -AccessKey $env:AWS_ACCESS_KEY_ID -SecretKey $env:AWS_SECRET_ACCESS_KEY -StoreAs aws_s3_windows
 Set-AWSCredential -ProfileName aws_s3_windows
 # Upload Tar Ball to dcos.download.io
-Write-S3Object -BucketName "downloads.dcos.io" -Key "dcos\testing\$env:BRANCH\dcos_generate_config_win.sh" -File "$HOME\dcos-artifacts\testing\dcos_generate_config_win.sh" -CannedACLName public-read
+Write-S3Object -BucketName "downloads.dcos.io" -Key "dcos\testing\$env:BRANCH\dcos_generate_config_win.sh" -File ".\dcos_generate_config_win.sh" -CannedACLName public-read
 # Verify that the files were uploaded
 Get-S3BucketWebsite -BucketName "downloads.dcos.io"
