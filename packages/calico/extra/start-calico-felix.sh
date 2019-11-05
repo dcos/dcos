@@ -13,7 +13,7 @@ export NODENAME=`hostname`
 /opt/mesosphere/bin/calicoctl apply -f \
 	/opt/mesosphere/active/calico/etc/profile.yaml
 
-# nodename fiel name is expected to be created before starting up calico-node
+# nodename file name is expected to be created before starting up calico-node
 mkdir -p /var/lib/calico
 echo $NODENAME > /var/lib/calico/nodename
 

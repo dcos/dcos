@@ -6,14 +6,12 @@ ConditionPathExists=/opt/mesosphere/etc/calico_enabled
 [Service]
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/calico-node.env
+Environment=NODENAME=%H
 ExecStartPre=/usr/bin/mkdir -p /etc/calico
-ExecStartPre=/usr/bin/cp /opt/mesosphere/active/calico/confd /etc/calico/confd
-ExecStart=/opt/mesosphere/bin/start-calico-comp-wrapper.sh /opt/mesosphere/bin/calico-node -confd
+ExecStartPre=/usr/bin/cp -r /opt/mesosphere/active/calico/confd /etc/calico/confd
+ExecStart=/opt/mesosphere/bin/calico-node -confd
 
 Restart=always
 StartLimitInterval=0
 KillSignal=SIGKILL
 RestartSec=5
-
-[Install]
-WantedBy=multi-user.target

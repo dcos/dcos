@@ -17,8 +17,6 @@ mkdir -p $PKG_PATH/etc
 cp /pkg/extra/profile.yaml $PKG_PATH/etc/profile.yaml
 
 # copy the launch script to the package bin directory
-cp /pkg/extra/start-calico-comp-wrapper.sh $PKG_PATH/bin/start-calico-comp-wrapper.sh
-chmod +x $PKG_PATH/bin/start-calico-comp-wrapper.sh
 cp /pkg/extra/start-calico-felix.sh $PKG_PATH/bin/start-calico-felix.sh
 chmod +x $PKG_PATH/bin/start-calico-felix.sh
 
@@ -26,9 +24,10 @@ chmod +x $PKG_PATH/bin/start-calico-felix.sh
 cp /bin/calico-node $PKG_PATH/bin/calico-node
 chmod +x $PKG_PATH/bin/calico-node
 cp /bin/bird $PKG_PATH/bin/bird
-cp /bin/birdctl $PKG_PATH/bin/birdctl
+# birdcl can be used for debugging routes, protocols managed by bird
+cp /bin/birdcl $PKG_PATH/bin/birdcl
 chmod +x $PKG_PATH/bin/bird
-chmod +x $PKG_PATH/bin/birdctl
+chmod +x $PKG_PATH/bin/birdcl
 cp -r /etc/calico/confd $PKG_PATH/confd
 
 # calico components work on both masters and slaves
