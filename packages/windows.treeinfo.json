@@ -9,7 +9,8 @@
     "erts": "windows",
     "mesos": "windows",
     "openstackservice": "windows",
-    "python": "windows"
+    "python": "windows",
+    "winpanda" : "windows"
   },
   "exclude": [
     "boost-libs",
