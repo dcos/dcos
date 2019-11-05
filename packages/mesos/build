@@ -93,10 +93,10 @@ export PATH=$PKG_PATH/bin:$PATH
 echo "+++ Now running against Mesos as installed in ${PKG_PATH}"
 
 echo "+++ 3rdparty"
-ls -la /opt/mesosphere/lib/mesos/3rdparty
+ls -la $PKG_PATH/lib/mesos/3rdparty
 
 echo "+++ 3rdparty/include"
-ls -la /opt/mesosphere/lib/mesos/3rdparty/include
+ls -la $PKG_PATH/lib/mesos/3rdparty/include
 
 
 # OSS Mesos Modules
@@ -119,7 +119,7 @@ pushd build
     --with-mesos-root=/pkg/src/mesos \
     --with-mesos-build-dir=/pkg/src/mesos/build \
     --with-openssl=/opt/mesosphere/active/openssl \
-    --with-glog=/opt/mesosphere/lib/mesos/3rdparty \
+    --with-glog=$PKG_PATH/lib/mesos/3rdparty \
     --prefix="$PKG_PATH"
 
 make -j$NUM_CORES
@@ -148,7 +148,7 @@ pushd build
  --with-mesos-root=/pkg/src/mesos \
  --with-mesos-build-dir=/pkg/src/mesos/build \
  --with-openssl=/opt/mesosphere/active/openssl \
- --with-glog=/opt/mesosphere/lib/mesos/3rdparty \
+ --with-glog=$PKG_PATH/lib/mesos/3rdparty \
  --disable-werror \
  --prefix="$PKG_PATH"
 
