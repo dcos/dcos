@@ -5,13 +5,13 @@
     "adminrouter": "windows",
     "telegraf": "windows",
     "vcredist": "windows",
-    "nssm": "windows"
+    "nssm": "windows",
+    "python": "windows"
   },
   "exclude": [
     "erlang",
     "erts",
     "openstackservice",
-    "python",
     "boost-libs",
     "bootstrap",
     "boto",
