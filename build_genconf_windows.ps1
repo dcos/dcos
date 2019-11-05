@@ -23,7 +23,7 @@ echo "bsdtar: $bsdtar"
 echo "artifact_storage: $artifact_storage"
 dir $artifact_storage
 echo "win_release_tar: $win_release_tar"
-echo "current directory: $PWD"
+echo "Listing directory $PWD BEFORE Windows Tar Ball generation"
 dir
 
 & "$bsdtar" -C "$artifact_storage" -cvf "$win_release_tar" "package_lists" "packages"
@@ -62,3 +62,5 @@ exit `$?
 echo $win_sh_template | Set-Content -NoNewline -Path "$($artifact_out)";
 # Appending content of a win_release_tar file in a Byte format:
 Get-Content -Encoding Byte -ReadCount 512 $($win_release_tar) | Add-Content -Path "$($artifact_out)" -Encoding Byte;
+echo "Listing directory $PWD AFTER Windows Tar Ball generation"
+dir
