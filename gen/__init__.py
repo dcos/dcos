@@ -462,7 +462,7 @@ def get_dcosconfig_source_target_and_templates(
     else:
         config_package_names = ['dcos-config', 'dcos-metadata']
 
-    template_filenames = [dcos_config_yaml, cloud_config_yaml, 'dcos-metadata.yaml', dcos_services_yaml]
+    template_filenames = [dcos_config_yaml, 'dcos-config-windows.yaml', cloud_config_yaml, 'dcos-metadata.yaml', dcos_services_yaml]
 
     # TODO(cmaloney): Check there are no duplicates between templates and extra_template_files
     template_filenames += extra_templates
