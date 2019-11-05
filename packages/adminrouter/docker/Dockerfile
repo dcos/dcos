@@ -34,6 +34,8 @@ WORKDIR /usr/local/src/
 #### building:
 RUN set -ex \
     && bash -x -c 'for i in {1..5}; do apt-get update && break || sleep 2; done' \
+    && apt-get install -y software-properties-common \
+    && add-apt-repository -y ppa:git-core/ppa \
     && apt-get install -y --no-install-recommends \
         apt-file \
         dnsutils \
