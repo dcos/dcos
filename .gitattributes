@@ -1,1 +1,2 @@
 CHANGES.md merge=union
+*.ps1 text=auto eol=lf
