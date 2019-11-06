@@ -72,7 +72,7 @@ RUN set -ex \
 
 RUN set -ex \
     && bash -x -c 'for i in {1..5}; do apt-get update && break || sleep 2; done' \
-    && apt-get update -y --no-install-recommends \
+    && apt-get upgrade -y --no-install-recommends \
         git 
 
 # Upgrading pip/setuptools and making the upgrade actually apply in the
