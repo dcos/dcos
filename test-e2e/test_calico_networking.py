@@ -6,6 +6,9 @@ different configurations exposed to the operators are enabled.
 """
 import uuid
 from pathlib import Path
+from typing import Iterator
+
+import pytest
 
 from _pytest.fixtures import SubRequest
 from cluster_helpers import wait_for_dcos_oss
@@ -13,6 +16,24 @@ from dcos_e2e.backends import Docker
 from dcos_e2e.cluster import Cluster
 from dcos_e2e.node import Node, Output
 from passlib.hash import sha512_crypt
+
+
+superuser_username = str(uuid.uuid4())
+superuser_password = str(uuid.uuid4())
+
+
+def assert_system_unit_state(node: Node, unit_name: str, active: bool=True) -> None:
+    result = node.run(
+        args=["systemctl show {}".format(unit_name)],
+        output=Output.LOG_AND_CAPTURE,
+        shell=True,
+    )
+    unit_properties = result.stdout.strip().decode()
+    if active:
+        assert "ActiveState=active" in unit_properties
+    else:
+        assert "ActiveState=inactive" in unit_properties
+        assert "ConditionResult=no" in unit_properties
 
 
 def test_calico_disabled(docker_backend: Docker, artifact_path: Path,
@@ -39,34 +60,22 @@ def test_calico_disabled(docker_backend: Docker, artifact_path: Path,
             log_dir=log_dir,
         )
 
-        def _assert_system_unit_inactive(node: Node, unit_name: str) -> None:
-            result = node.run(
-                args=["systemctl show {}".format(unit_name)],
-                output=Output.LOG_AND_CAPTURE,
-                shell=True,
-            )
-            unit_properties = result.stdout.strip().decode()
-            # dcos calico node should be inactive as a result of condition
-            # check failure
-            assert "ActiveState=inactive" in unit_properties
-            assert "ConditionResult=no" in unit_properties
-
         calico_units = ["dcos-calico-felix", "dcos-calico-bird", "dcos-calico-confd"]
         for node in cluster.masters | cluster.agents | cluster.public_agents:
             for unit_name in calico_units:
-                _assert_system_unit_inactive(node, unit_name)
+                assert_system_unit_state(node, unit_name, active=False)
 
 
-def test_calico_vxlan(docker_backend: Docker, artifact_path: Path,
-                      request: SubRequest, log_dir: Path) -> None:
+@pytest.fixture(scope="module")
+def calico_ipip_cluster(docker_backend: Docker, artifact_path: Path,
+                        request: SubRequest, log_dir: Path) -> Iterator[Cluster]:
     with Cluster(
             cluster_backend=docker_backend,
             masters=1,
-            agents=2,
-            public_agents=1,
+            agents=0,
+            public_agents=0,
     ) as cluster:
-        superuser_username = str(uuid.uuid4())
-        superuser_password = str(uuid.uuid4())
+
         config = {
             "superuser_username": superuser_username,
             # We can hash the password with any `passlib`-based method here.
@@ -89,6 +98,10 @@ def test_calico_vxlan(docker_backend: Docker, artifact_path: Path,
             request=request,
             log_dir=log_dir,
         )
+        yield cluster
+
+
+def test_calico_ipip_container_connectivity(calico_ipip_cluster: Cluster) -> None:
 
         environment_variables = {
             "DCOS_LOGIN_UNAME":
@@ -96,23 +109,33 @@ def test_calico_vxlan(docker_backend: Docker, artifact_path: Path,
             "DCOS_LOGIN_PW":
             superuser_password,
             "MASTER_PUBLIC_IP":
-            list(cluster.masters)[0].public_ip_address,
+            list(calico_ipip_cluster.masters)[0].public_ip_address,
             "MASTERS_PRIVATE_IPS":
-            [node.private_ip_address for node in cluster.masters],
+            [node.private_ip_address for node in calico_ipip_cluster.masters],
             "PUBLIC_AGENTS_PRIVATE_IPS":
-            [node.public_ip_address for node in cluster.public_agents],
+            [node.public_ip_address for node in calico_ipip_cluster.public_agents],
             "PRIVATE_AGENTS_PRIVATE_IPS":
-            [node.private_ip_address for node in cluster.agents],
+            [node.private_ip_address for node in calico_ipip_cluster.agents],
         }
+
         pytest_command = [
             "pytest",
             "-vvv",
             "-s",
             "-x",
             "test_calico_networking.py",
+            "-k",
+            "test_calico",
         ]
-        cluster.run_with_test_environment(
+        calico_ipip_cluster.run_with_test_environment(
             args=pytest_command,
             env=environment_variables,
             output=Output.LOG_AND_CAPTURE,
         )
+
+
+def test_calico_ipip_unit_active(calico_ipip_cluster: Cluster) -> None:
+    calico_units = ["dcos-calico-felix", "dcos-calico-bird", "dcos-calico-confd"]
+    for node in calico_ipip_cluster.masters | calico_ipip_cluster.agents | calico_ipip_cluster.public_agents:
+        for unit_name in calico_units:
+            assert_system_unit_state(node, unit_name, active=True)

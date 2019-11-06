@@ -5,12 +5,19 @@ ConditionPathExists=/opt/mesosphere/etc/calico_enabled
 [Service]
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/calico-node.env
-ExecStart=/opt/mesosphere/bin/start-calico-felix.sh
+Environment=NODENAME=%H
+ExecStartPre=/bin/sh -c 'systemctl set-environment IP=$$(/opt/mesosphere/bin/detect_ip)'
+ExecStartPre=/usr/bin/mkdir -p /etc/calico
+ExecStartPre=/usr/bin/cp /opt/mesosphere/etc/calico/calicoctl.cfg /etc/calico/calicoctl.cfg
+ExecStartPre=/usr/bin/mkdir -p /var/lib/calico
+ExecStartPre=/usr/bin/echo $NODENAME > /var/lib/calico/nodename
+ExecStartPre=/usr/bin/cp /opt/mesosphere/active/calico/etc/profile.yaml /var/lib/calico/profile.yaml
+ExecStartPre=/opt/mesosphere/bin/calicoctl apply -f  /var/lib/calico/profile.yaml
+ExecStartPre=/opt/mesosphere/bin/calico-node -startup
+ExecStartPre=/opt/mesosphere/bin/calico-node -allocate-tunnel-addrs
+ExecStart=/opt/mesosphere/bin/calico-node -felix
 
 Restart=always
 StartLimitInterval=0
 KillSignal=SIGKILL
 RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
