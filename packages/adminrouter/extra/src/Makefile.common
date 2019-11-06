@@ -38,14 +38,6 @@ DEVKIT_BASE_DOCKER_OPTS := --name $(DEVKIT_NAME) \
 DEVKIT_DOCKER_OPTS := $(DEVKIT_BASE_DOCKER_OPTS) \
 	-v $(DCOSAR_AR_LOCAL_PATH):$(DCOSAR_AR_CTR_MOUNT)
 
-# Upgrad Git
-#
-
-apt-get install -y software-properties-common
-add-apt-repository -y ppa:git-core/ppa
-apt-get upgrade -y --no-install-recommends git
-
-
 .PHONY: clean-devkit-container
 clean-devkit-container:
 	@# `@` char only mutes stdout, here we need to mute stderr as well:
