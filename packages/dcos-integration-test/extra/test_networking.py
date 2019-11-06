@@ -239,6 +239,11 @@ def test_docker_image_availablity():
 @pytest.mark.parametrize('same_host', [True, False])
 def test_ipv6(dcos_api_session, same_host):
     ''' Testing autoip, containerip and *.mesos FQDN on ipv6 overlay network '''
+    argv = ['pip', 'freeze']
+    packages = subprocess.check_output(argv, stderr=subprocess.STDOUT).decode('utf-8').rstrip()
+
+    log.info('Python packages: {}'.format(packages))
+
     (hosts, origin_app, proxy_app) = \
         workload_test(dcos_api_session, marathon.Container.DOCKER,
                       marathon.Network.USER, marathon.Network.USER, True, same_host)
@@ -246,6 +251,7 @@ def test_ipv6(dcos_api_session, same_host):
     log.info("Origin app: {}".format(origin_app))
     origin_app.deploy(dcos_api_session)
     log.info("Proxy app: {}".format(proxy_app))
+
     proxy_app.deploy(dcos_api_session)
     origin_app.wait(dcos_api_session)
     proxy_app.wait(dcos_api_session)
