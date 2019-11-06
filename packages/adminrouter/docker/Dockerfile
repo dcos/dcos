@@ -68,6 +68,13 @@ RUN set -ex \
         python3-virtualenv \
         rsync
 
+# Upgrade Git
+
+RUN set -ex \
+    && bash -x -c 'for i in {1..5}; do apt-get update && break || sleep 2; done' \
+    && apt-get update -y --no-install-recommends \
+        git 
+
 # Upgrading pip/setuptools and making the upgrade actually apply in the
 # following filesystem layers works more reliable when using a virtualenv for
 # creating the Python environment, especially on overlayfs.
