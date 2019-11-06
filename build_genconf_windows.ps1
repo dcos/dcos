@@ -28,38 +28,8 @@ dir
 
 & "$bsdtar" -C "$artifact_storage" -cvf "$win_release_tar" "package_lists" "packages"
 
-# Set *win.sh template
-$win_sh_template=@"
-#!/bin/bash
-# variant: $($variant)
-#
-# All logging and tool output should be redirected to stderr
-# as the Docker container might output json that would
-# otherwise be tainted.
-#
-set -o errexit -o nounset -o pipefail
-
-# create genconf_win/serve dirs, if not extracted
-if [ ! -d genconf_win/serve ]; then
-    >&2 mkdir -p genconf_win/serve
-fi
-
-
-# extract payload into genconf_win/serve dirs, if not extracted
-if [ ! -f "./genconf_win/serve)" ]; then
-    >&2 echo Extracting windows relese tar artifact from this script
-    sed '1,/^#EOF#$/d' "`$0" | tar xv --directory ./genconf_win/serve
-fi
-trap - INT
-
-exit `$?
-
-#EOF#
-
-"@
-
-# Seting content of win.sh template to the file:
-echo $win_sh_template | Set-Content -NoNewline -Path "$($artifact_out)";
+# Seting content of .\gen\build_deploy\powershell\dcos_generate_config_win.sh.in template to the file:
+Get-Content -Path .\gen\build_deploy\powershell\dcos_generate_config_win.sh.in -Raw | Set-Content -NoNewline -Path "$($artifact_out)";
 # Appending content of a win_release_tar file in a Byte format:
 Get-Content -Encoding Byte -ReadCount 512 $($win_release_tar) | Add-Content -Path "$($artifact_out)" -Encoding Byte;
 echo "Listing directory $PWD AFTER Windows Tar Ball generation"
