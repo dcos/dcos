@@ -25,22 +25,22 @@ $myhome = $HOME.replace("\", "/")
 # should be published to. This default config makes the release tool push the
 # release to a folder in the current user's home directory.
 $config_yaml =
-"storage: `
-    azure: `
-     kind: azure_block_blob `
-     account_name: $env:AZURE_STORAGE_ACCOUNT `
-     account_key: $env:AZURE_STORAGE_ACCESS_KEY `
-     container: dcos `
-     download_url: https://dcos.azureedge.net/dcos/dcos-windows/ `
-    aws: `
-        kind: aws_s3 `
-        access_key_id: $env:AWS_ACCESS_KEY_ID `
-        secret_access_key: $env:AWS_SECRET_ACCESS_KEY `
-        bucket: downloads.dcos.io `
-        object_prefix: dcos/dcos-windows `
+"storage:
+    azure:
+     kind: azure_block_blob
+     account_name: $env:AZURE_STORAGE_ACCOUNT
+     account_key: $env:AZURE_STORAGE_ACCESS_KEY
+     container: dcos
+     download_url: https://dcos.azureedge.net/dcos/dcos-windows/
+    aws:
+        kind: aws_s3
+        access_key_id: $env:AWS_ACCESS_KEY_ID
+        secret_access_key: $env:AWS_SECRET_ACCESS_KEY
+        bucket: downloads.dcos.io
+        object_prefix: dcos/dcos-windows
         download_url: https://downloads.dcos.io/dcos/dcos-windows/
-options: `
-  preferred: aws `
+options:
+  preferred: aws
   cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos/dcos-windows"
    $config_yaml | Set-Content -Path "dcos-release.config.yaml"
 type dcos-release.config.yaml
@@ -62,12 +62,12 @@ mkdir -f $local_artifacts_dir
 
 ##Write DCOS installer locally
 $config_yaml =
-"storage: `
-   local: `
-    kind: local_path `
-    path: $local_artifacts_dir `
-options: `
-  preferred: local `
+"storage:
+   local:
+    kind: local_path
+    path: $local_artifacts_dir
+options:
+  preferred: local
   cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos"
 
    $config_yaml | Set-Content -Path "dcos-release.config.yaml"
