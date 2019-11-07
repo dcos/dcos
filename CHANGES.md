@@ -26,6 +26,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Replace [docker-gc](https://github.com/spotify/docker-gc) with `docker system prune`. (DCOS_OSS-5441)
 
+* Port the Mesos Fluent Bit container logger module to Windows. (DCOS-58622)
+
+* Port the Mesos open source metrics module to Windows. (DCOS-58008)
 
 ### Breaking changes
 
@@ -40,3 +43,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Remove the toybox package from DC/OS. Is was used only by Spartan.
 
 * Remove the dcos-history-service from DC/OS. (DCOS-58529)
+
+### Fixed and improved
+
+* Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
