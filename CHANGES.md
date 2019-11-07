@@ -43,6 +43,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Increase number of diagnostics fetchers (DCOS-51483)
 
+* DC/OS overlay networks should be compared by-value. (DCOS_OSS-5620)
+
 ### Security updates
 
 
