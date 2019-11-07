@@ -23,6 +23,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * [Marathon] Very-large Mesos TaskStatus updates no longer  cause Marathon to crash loop (MARATHON-8698)
 
+* DC/OS overlay networks should be compared by-value. (DCOS_OSS-5620)
+
+* Drop labels from Lashup's kv_message_queue_overflows_total metric. (DCOS_OSS-5634)
+
 
 
 ### Security updates
