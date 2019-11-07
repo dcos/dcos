@@ -15,3 +15,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * DC/OS overlay networks should be compared by-value. (DCOS_OSS-5620)
 
 * Drop labels from Lashup's kv_message_queue_overflows_total metric. (DCOS_OSS-5634)
+
+* Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
