@@ -5,7 +5,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0)
 * Signal now sends telemetry data every 5 minutes instead of every hour. This is to align the frequency with DC/OS Enterprise.
 
-* Updated to Mesos [1.7.3-dev](https://github.com/apache/mesos/blob/71685b5c807e4d4d1a5ebe33a3c3c0a2f824b9b4/CHANGELOG)
+* Updated to Mesos [1.7.3-dev](https://github.com/apache/mesos/blob/d8acd9cfacd2edf8500f07f63a8837aa0ddd14ba/CHANGELOG)
 
 * Metronome post-install configuration can be added to `/var/lib/dcos/metronome/environment` (DCOS_OSS-5509)
 
