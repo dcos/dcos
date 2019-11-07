@@ -2,6 +2,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 1.10.12 (in development)
 
+* Updated to Mesos [1.4.4-dev](https://github.com/apache/mesos/blob/f05058dad7219950fd9bdc2748ab9c9a79d6e7f1/CHANGELOG)
+
 ### Notable changes
 
 * Updated REX-Ray version to [rexray v0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4). (DCOS_OSS-4316, COPS-3961)
