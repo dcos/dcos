@@ -1,9 +1,7 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
 ## DC/OS 1.13.6
-## DC/OS 1.13.6 (in development)
 
-* Updated DC/OS UI to [1.13+v2.83.0](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.83.0).
 * Updated DC/OS UI to [1.13+v2.83.1](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.83.1).
 
 * Signal now sends telemetry data every 5 minutes instead of every hour. This is to align the frequency with DC/OS Enterprise.
