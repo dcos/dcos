@@ -45,6 +45,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * DC/OS overlay networks should be compared by-value. (DCOS_OSS-5620)
 
+* Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
+
 ### Security updates
 
 
