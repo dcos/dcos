@@ -4,7 +4,7 @@ Takes in a bunch of configuration files, as well as functions to calculate the v
 need to be put into the configuration.
 
 Operates strictly:
-  - All paramaters are strings. All things calculated / derived are strings.
+  - All parameters are strings. All things calculated / derived are strings.
   - Every given parameter must map to some real config option.
   - Every config option must be given only once.
   - Defaults can be overridden. If no default is given, the parameter must be specified
@@ -460,15 +460,14 @@ def get_dcosconfig_source_target_and_templates(
     if is_windows:
         config_package_names = ['dcos-config-windows', 'dcos-metadata']
     else:
-        config_package_names = ['dcos-config', 'dcos-config-win', 'dcos-metadata']
+        config_package_names = ['dcos-config', 'dcos-metadata']
 
-    template_filenames = [
-        dcos_config_yaml,
-        'dcos-config-win.yaml',
-        cloud_config_yaml,
-        'dcos-metadata.yaml',
-        dcos_services_yaml
-    ]
+    template_filenames = [dcos_config_yaml, cloud_config_yaml, 'dcos-metadata.yaml', dcos_services_yaml]
+
+    if user_arguments.get("enable_windows_agents") == 'true':
+        # Create an additional dcos-config-win setup package for Windows agents
+        config_package_names.append('dcos-config-win')
+        template_filenames.append('dcos-config-win.yaml')
 
     # TODO(cmaloney): Check there are no duplicates between templates and extra_template_files
     template_filenames += extra_templates
@@ -635,6 +634,14 @@ def generate(
 
     sources, targets, templates = get_dcosconfig_source_target_and_templates(
         user_arguments, extra_templates, extra_sources)
+
+    if user_arguments.get("enable_windows_agents") == 'true':
+        # Parse the dcos-config-windows.yaml file to check that contained
+        # variables are set.  Do not add template for evaluation, as that
+        # gets done on the agent node.
+        template = gen.template.parse_resources('dcos-config-windows.yaml')
+        target = template.target_from_ast()
+        extra_targets.append(target)
 
     resolver = validate_and_raise(sources, targets + extra_targets)
     argument_dict = get_final_arguments(resolver)
