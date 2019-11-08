@@ -1,6 +1,7 @@
 {
   "variants": {
     "mesos": "windows",
+    "winpanda" : "windows",
     "dcos-diagnostics": "windows",
     "adminrouter": "windows",
     "telegraf": "windows",
