@@ -28,6 +28,7 @@ import os
 import re
 import socket
 import string
+import textwrap
 from math import floor
 from subprocess import check_output
 
@@ -233,6 +234,12 @@ def calculate_mesos_log_directory_max_files(mesos_log_retention_mb):
     # Mesos log directory.  This maximum takes into account the number
     # of rotated logs that stay in the archive subdirectory.
     return str(25 + int(calculate_mesos_log_retention_count(mesos_log_retention_mb)))
+
+
+def calculate_windows_config_yaml():
+    from pkg_resources import resource_string
+    s = resource_string('gen', 'dcos-config-windows.yaml').decode('utf-8')
+    return textwrap.indent(s, prefix=('  ' * 3))
 
 
 def calculate_ip_detect_contents(ip_detect_filename):
@@ -1242,6 +1249,7 @@ entry = {
         'ui_banner_image_path': 'null',
         'ui_banner_dismissible': 'null',
         'ui_update_enabled': 'true',
+        'windows_config_yaml': calculate_windows_config_yaml,
         'dcos_net_cluster_identity': 'false',
         'dcos_net_rest_enable': "true",
         'dcos_net_watchdog': "true",
