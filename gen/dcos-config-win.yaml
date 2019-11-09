@@ -1,0 +1,9 @@
+package:
+  - path: /expanded.config.full.json
+    permissions: "0600"
+    content: |
+{{ expanded_config_full }}
+  - path: /dcos-config-win.yaml
+    permissions: "0600"
+    content: |
+{{ windows_config_yaml }}

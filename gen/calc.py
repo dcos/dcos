@@ -28,6 +28,7 @@ import os
 import re
 import socket
 import string
+import textwrap
 from math import floor
 from subprocess import check_output
 
@@ -233,6 +234,14 @@ def calculate_mesos_log_directory_max_files(mesos_log_retention_mb):
     # Mesos log directory.  This maximum takes into account the number
     # of rotated logs that stay in the archive subdirectory.
     return str(25 + int(calculate_mesos_log_retention_count(mesos_log_retention_mb)))
+
+
+def calculate_windows_config_yaml():
+    # Convert the resource file 'dcos-config-windows.yaml' into a YAML stanza
+    # that can be inserted into template file.
+    from pkg_resources import resource_string
+    s = resource_string('gen', 'dcos-config-windows.yaml').decode('utf-8')
+    return textwrap.indent(s, prefix=('  ' * 3))
 
 
 def calculate_ip_detect_contents(ip_detect_filename):
@@ -735,7 +744,7 @@ def validate_mesos_max_completed_tasks_per_framework(
 def validate_mesos_recovery_timeout(mesos_recovery_timeout):
     units = ['ns', 'us', 'ms', 'secs', 'mins', 'hrs', 'days', 'weeks']
 
-    match = re.match("([\d\.]+)(\w+)", mesos_recovery_timeout)
+    match = re.match(r"([\d\.]+)(\w+)", mesos_recovery_timeout)
     assert match is not None, "Error parsing 'mesos_recovery_timeout' value: {}.".format(mesos_recovery_timeout)
 
     value = match.group(1)
@@ -751,7 +760,7 @@ def validate_mesos_default_container_shm_size(
     if has_mesos_default_container_shm_size == 'true':
         units = ['B', 'KB', 'MB', 'GB', 'TB']
 
-        match = re.match("([\d\.]+)(\w+)", mesos_default_container_shm_size)
+        match = re.match(r"([\d\.]+)(\w+)", mesos_default_container_shm_size)
         assert match is not None, "Error parsing 'mesos_default_container_shm_size' value: {}.".format(
             mesos_default_container_shm_size)
 
@@ -1177,6 +1186,7 @@ entry = {
         lambda mesos_cni_root_dir_persist: validate_true_false(mesos_cni_root_dir_persist),
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
         validate_marathon_new_group_enforce_role,
+        lambda enable_windows_agents: validate_true_false(enable_windows_agents),
     ],
     'default': {
         'exhibitor_azure_account_key': '',
@@ -1242,6 +1252,7 @@ entry = {
         'ui_banner_image_path': 'null',
         'ui_banner_dismissible': 'null',
         'ui_update_enabled': 'true',
+        'windows_config_yaml': calculate_windows_config_yaml,
         'dcos_net_cluster_identity': 'false',
         'dcos_net_rest_enable': "true",
         'dcos_net_watchdog': "true",
@@ -1319,7 +1330,8 @@ entry = {
         'enable_mesos_ipv6_discovery': 'false',
         'log_offers': 'true',
         'mesos_cni_root_dir_persist': 'false',
-        'enable_mesos_input_plugin': 'true'
+        'enable_mesos_input_plugin': 'true',
+        'enable_windows_agents': 'false',
     },
     'must': {
         'fault_domain_enabled': 'false',
