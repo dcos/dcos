@@ -2,6 +2,8 @@
 #
 # Simple helper script to do a full local  build
 
+$ErrorActionPreference = "Stop";
+
 # Fail quickly if docker isn't working / up
 docker ps
 if ( $LASTEXITCODE -ne 0 ) {
@@ -14,7 +16,9 @@ if ( ! $tmpdir ) {
 }
 
 # Cleanup from previous build
-rm -recurse "$tmpdir/dcos_build_venv"
+if ( Test-Path "$tmpdir/dcos_build_venv" ) {
+    rm -recurse -force "$tmpdir/dcos_build_venv"
+}
 
 # Force Python stdout/err to be unbuffered.
 $env:PYTHONUNBUFFERED="notempty"
@@ -54,7 +58,18 @@ python -m venv "$tmpdir/dcos_build_venv"
 # Build a release of DC/OS
 release create $env:USERNAME local_build windows
 
-rm -fo dcos-release.config.yaml
+# If release create returns non-zero exit code, then Fail, Deactivate and remove vEnv:
+if ( $LASTEXITCODE -ne 0 ) {
+    $release_lastexitcode = $LASTEXITCODE
+    . "$tmpdir\dcos_build_venv\Scripts\deactivate.bat"
+    rm -r -fo "$tmpdir/dcos_build_venv"
+    Throw "The 'release create' command exited with error code: $release_lastexitcode"
+}
+
+# Remove previous dcos-release.config.yaml:
+if ( Test-Path dcos-release.config.yaml ) {
+    rm -fo dcos-release.config.yaml
+}
 
 # Creating temp dir, for instance:
 $local_artifacts_dir = "./packages/cache"
@@ -81,6 +96,14 @@ python -m venv "$tmpdir/dcos_build_venv"
 ./prep_local_windows.ps1
 # Build a release of DC/OS
 release create $env:USERNAME local_build windows
+
+# If release create returns non-zero exit code, then Fail, Deactivate and remove vEnv:
+if ( $LASTEXITCODE -ne 0 ) {
+    $release_lastexitcode = $LASTEXITCODE
+    . "$tmpdir\dcos_build_venv\Scripts\deactivate.bat"
+    rm -r -fo "$tmpdir/dcos_build_venv"
+    Throw "The 'release create' command exited with error code: $release_lastexitcode"
+}
 
 # Build tar ball for windows. 2 params: packages location and DC/OS variant:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& .\build_genconf_windows.ps1 '$local_artifacts_dir\testing'"
