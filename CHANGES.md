@@ -30,6 +30,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Port the Mesos open source metrics module to Windows. (DCOS-58008)
 
+* Switch to Mesos Operator Streaming API in DC/OS L4LB (DCOS_OSS-5464)
+
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
