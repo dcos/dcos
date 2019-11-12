@@ -3,7 +3,8 @@
     "erts",
     "openstackservice",
     "vcredist",
-    "nssm"
+    "nssm",
+    "winpanda"
   ],
   "core_package_list": [
     "dcos-image"
