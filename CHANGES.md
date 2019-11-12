@@ -32,6 +32,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Switch to Mesos Operator Streaming API in DC/OS L4LB (DCOS_OSS-5464)
 
+* Add etcd into DC/OS. (DCOS-59004)
+
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
