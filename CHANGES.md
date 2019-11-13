@@ -32,6 +32,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Switch to Mesos Operator Streaming API in DC/OS L4LB (DCOS_OSS-5464)
 
+* Update libpq to 9.6.15 (DCOS-59145)
+
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
