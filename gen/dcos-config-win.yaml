@@ -8,7 +8,13 @@ package:
     content: |
 {{ windows_config_yaml }}
 
-  # Config for bootstrap
+  - path: C:\dcos\opt\bin\detect_ip.ps1
+    content: |
+      $IPAddress = ([System.Net.Dns]::GetHostByName("master.mesos").AddressList[0]).IpAddressToString
+      (Find-NetRoute -RemoteIPAddress $IPAddress | Select-Object  Ipv4Address).Ipv4Address 
+  - path: C:\dcos\opt\bin\detect_ip_public.ps1
+    content: |
+      curl.exe -fsSL http://whatismyip.akamai.com/
   - path: C:/dcos/opt/etc/check_time.env
     content: |
         ENABLE_CHECK_TIME=true
