@@ -5,6 +5,7 @@ $pipDownloadPath = Join-Path $env:TEMP "get-pip.py"
 $pythonInstallDir = Join-Path $env:SystemDrive "Python36"
 $INSTALL_ARGS = @("/quiet InstallAllUsers=1 PrependPath=1 Include_test=0 TargetDir=$pythonInstallDir")
 
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 Invoke-WebRequest -UseBasicParsing -Uri $python_url -OutFile $pythonDownloadPath
 
 If(!(test-path $pythonInstallDir))
@@ -25,6 +26,8 @@ Throw "Failed to install $pythonDownloadPath"
 }
 
 [Environment]::SetEnvironmentVariable("PATH", "${env:path};${pythonInstallDir}\Scripts", "Machine") 
+
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 Invoke-WebRequest -UseBasicParsing -Uri $pip_url -OutFile $pipDownloadPath
 
 & $pythonInstallDir\python.exe $pipDownloadPath --no-warn-script-location
