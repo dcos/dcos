@@ -1,6 +1,8 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
-## DC/OS 1.11.13 (in development)
+## DC/OS 1.11.14 (in development)
+
+## DC/OS 1.11.13 (2019-11-14)
 
 * Updated to Mesos [1.5.4-dev](https://github.com/apache/mesos/blob/ea5e6e87eb5053dcfbcb11237902d3e2126c41cf/CHANGELOG)
 * Signal now sends telemetry data every 5 minutes instead of every hour. This is to align the frequency with DC/OS Enterprise.
