@@ -18,6 +18,7 @@ WorkingDirectory=/var/lib/dcos/etcd/
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=-/run/dcos/etc/etcd/zk-creds
 ExecStartPre=/usr/bin/mkdir -p /run/dcos/etcd/
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-etcd
 ExecStartPre=/bin/chown -R dcos_etcd /run/dcos/etcd/
 ExecStartPre=/opt/mesosphere/active/etcd/bin/etcd_discovery.py \
     --zk-addr 127.0.0.1:2181 \

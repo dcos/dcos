@@ -36,6 +36,10 @@ class TestJoinCluster:
             cluster_state_file=str(cluster_state_file),
             cluster_nodes_file=str(cluster_nodes_file),
             etcdctl_path=str(etcdctl_path),
+            secure=False,
+            ca_cert="",
+            etcd_client_tls_cert="",
+            etcd_client_tls_key="",
         )
 
         with contextlib.ExitStack() as stack:
@@ -63,7 +67,7 @@ class TestJoinCluster:
         ]
         member_list_args = base_args + ["member", "list", "-w", "json"]
         member_add_args = base_args + [
-            "member", "add", "etcd-1.2.3.4", "--peer-urls=http://1.2.3.4:2380",
+            "member", "add", "etcd-1.2.3.4", "--peer-urls=https://1.2.3.4:2380",
         ]
         endpoint_health = base_args + ["endpoint", "health"]
 
@@ -86,7 +90,7 @@ class TestJoinCluster:
                       "ID": 1301204472537744000,
                       "name": "etcd-1.1.1.1",
                       "peerURLs": [
-                        "http://1.1.1.1:2380"
+                        "https://1.1.1.1:2380"
                       ],
                       "clientURLs": [
                         "http://1.1.1.1:2379",
@@ -123,6 +127,10 @@ class TestJoinCluster:
             cluster_state_file=str(cluster_state_file),
             cluster_nodes_file=str(cluster_nodes_file),
             etcdctl_path=str(etcdctl_path),
+            secure=False,
+            ca_cert="",
+            etcd_client_tls_cert="",
+            etcd_client_tls_key="",
         )
 
         with contextlib.ExitStack() as stack:
@@ -160,22 +168,86 @@ class TestJoinCluster:
             "--endpoints",
             "http://1.1.1.1:2379",
         ]
-        base_args + ["member", "list", "-w", "json"]
-        base_args + ["endpoint", "health"]
+        member_list_args = base_args + ["member", "list", "-w", "json"]
+        endpoint_health = base_args + ["endpoint", "health"]
+        member_add_args = base_args + [
+            "member", "add", "etcd-1.2.3.4", "--peer-urls=https://1.2.3.4:2380",
+        ]
 
-        etcdctl_result = subprocess.CompletedProcess(
-            args=["foo", "bar"],
-            returncode=0,
-            stdout="foo stdout",
-            stderr="foo stderr",
-        )
-        subprocess_mock = mock.MagicMock(return_value=etcdctl_result)
+        # designated node is choosen from a healthy node by checking the return
+        # value of the endpoint
+        endpoint_health_cur_node = [
+            str(etcdctl_path), "--endpoints", "http://1.2.3.4:2379",
+            "endpoint", "health"
+        ]
+
+        def subprocess_sideeffect(args, stdout, stderr):
+            assert stdout is subprocess.PIPE
+            assert stderr is subprocess.PIPE
+
+            if args == member_list_args:
+                return subprocess.CompletedProcess(
+                    args=member_list_args,
+                    returncode=0,
+                    stdout='''{
+                  "header": {
+                    "cluster_id": 2953241377848662500,
+                    "member_id": 4079294043104093700,
+                    "raft_term": 17
+                  },
+                  "members": [
+                    {
+                      "ID": 1301204472537744000,
+                      "name": "etcd-1.1.1.1",
+                      "peerURLs": [
+                        "https://1.1.1.1:2380"
+                      ],
+                      "clientURLs": [
+                        "http://1.1.1.1:2379",
+                        "http://localhost:2379"
+                      ]
+                    }
+                  ]
+                }
+                ''',
+                    stderr="foo stderr",
+                )
+            elif args == member_add_args:
+                return subprocess.CompletedProcess(
+                    args=member_add_args,
+                    returncode=0,
+                    stdout="foo stdout",
+                    stderr="foo stderr",
+                )
+            elif args == endpoint_health:
+                return subprocess.CompletedProcess(
+                    args=member_add_args,
+                    returncode=0,
+                    stdout="foo stdout",
+                    stderr="foo stderr",
+                )
+            elif args == endpoint_health_cur_node:
+                return subprocess.CompletedProcess(
+                    args=member_add_args,
+                    returncode=1,
+                    stdout="foo stdout",
+                    stderr="foo stderr",
+                )
+            else:
+                pytest.fail(
+                    "unhandled arguments have been passed: {}".format(args))
+
+        subprocess_mock = mock.MagicMock(side_effect=subprocess_sideeffect)
         args = Namespace(
             etcd_data_dir=str(etcdctl_path),
             zk_addr="127.0.0.1:2181",
             cluster_state_file=str(cluster_state_file),
             cluster_nodes_file=str(cluster_nodes_file),
             etcdctl_path=str(etcdctl_path),
+            secure=False,
+            ca_cert="",
+            etcd_client_tls_cert="",
+            etcd_client_tls_key="",
         )
 
         with contextlib.ExitStack() as stack:
@@ -186,4 +258,20 @@ class TestJoinCluster:
             etd.join_cluster(args)
 
         detectip_mock.assert_called_once()
-        subprocess_mock.assert_not_called()
+        subprocess_mock.assert_has_calls([
+            mock.call(endpoint_health,
+                      stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE),
+            mock.call(endpoint_health_cur_node,
+                      stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE),
+            mock.call(member_list_args,
+                      stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE),
+            mock.call(member_list_args,
+                      stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE),
+            mock.call(member_add_args,
+                      stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE),
+        ])

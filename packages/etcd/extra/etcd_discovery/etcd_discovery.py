@@ -62,16 +62,20 @@ def zk_connect(zk_addr: str,
                zk_user: Optional[str] = None,
                zk_secret: Optional[str] = None) -> KazooClient:
     """Connect to ZooKeeper.
+
     On connection failure, the function attempts to reconnect indefinitely with
     exponential backoff up to 3 seconds. If a command fails, that command is
     retried every 300ms for 3 attempts before failing.
+
     These values are chosen to suit a human-interactive time.
+
     Args:
         zk_addr: The address to connect to
         zk_user: The username to use when connecting to ZooKeeper or `None`
             if no authentication is necessary.
         zk_secret: The secret to use when connecting to ZooKeeper or `None`
             if no authentication is necessary.
+
     Returns:
         A ZooKeeper client connection in the form of a `kazoo.client.KazooClient`.
     """
@@ -121,9 +125,11 @@ def zk_lock(zk: KazooClient, lock_path: str, contender_id: str,
     """
     This contextmanager takes a ZooKeeper lock, yields, then releases the lock.
     This lock behaves like an interprocess mutex lock.
+
     ZooKeeper allows one to read values without holding a lock, but there is no
     guarantee that you will read the latest value. To read the latest value,
     you must call `sync()` on a ZNode before calling `get()`.
+
     Args:
         zk:
             The client to use to communicate with ZooKeeper.
@@ -136,9 +142,11 @@ def zk_lock(zk: KazooClient, lock_path: str, contender_id: str,
             Time in seconds to wait for the lock to be acquired.
             If this time elapses before the lock is acquired, a
             `kazoo.exceptions.LockTimeout` exception is raised.
+
     Raises:
         kazoo.exceptions.LockTimeout:
             If the `timeout` is exceeded without the lock being acquired.
+
     """
     lock = zk.Lock(lock_path, contender_id)
     try:
@@ -165,13 +173,16 @@ def zk_lock(zk: KazooClient, lock_path: str, contender_id: str,
 def get_registered_nodes(zk: KazooClient, zk_path: str) -> List[str]:
     """
     Return the IPs of nodes that have registered in ZooKeeper.
+
     The ZNode `zk_path` is expected to exist, having been
     created during cluster bootstrap.
+
     Args:
         zk:
             The client to use to communicate with ZooKeeper.
         zk_path:
             The path of the ZNode to use for node registration.
+
     Returns:
         A list of internal IP addresses of nodes that have
         previously joined the etcd cluster.
@@ -195,7 +206,9 @@ def register_cluster_membership(zk: KazooClient, zk_path: str,
                                 ip: str) -> List[str]:
     """
     Add `ip` to the list of cluster members registered in ZooKeeper.
+
     The ZK lock must be held around the call to this function.
+
     Args:
         zk:
             The client to use to communicate with ZooKeeper.
@@ -225,7 +238,9 @@ def remove_cluster_membership(zk: KazooClient, zk_path: str,
                               ip: str) -> List[str]:
     """
     Remove `ip` from the list of cluster members registered in ZooKeeper.
+
     The ZK lock must be held around the call to this function.
+
     Args:
         zk:
             The client to use to communicate with ZooKeeper.
@@ -255,7 +270,7 @@ def dump_nodes_to_file(nodes: List[str], file_path: str) -> None:
     log.info("Writing nodes %s to file %s", ','.join(nodes), file_path)
     with open(file_path, 'w') as f:
         nodes_str = ','.join(
-            ["etcd-{ip}=http://{ip}:2380".format(ip=ip) for ip in nodes])
+            ["etcd-{ip}=https://{ip}:2380".format(ip=ip) for ip in nodes])
         f.write(nodes_str)
 
 
@@ -268,14 +283,29 @@ def dump_state_to_file(state: str, file_path: str) -> None:
 
 def parse_cmdline() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='DC/OS etcd node discovery')
+    parser.add_argument('--secure',
+                        action='store_true',
+                        help='enable ensure connection for etcd peers and clients.')
     parser.add_argument('--zk-addr',
                         action='store',
                         default='127.0.0.1:2181',
                         help='address of the ZK instance to connect to')
+    parser.add_argument('--etcd-client-tls-cert',
+                        action='store',
+                        default='',
+                        help='key used for connecting to etcd via etcdctl')
+    parser.add_argument('--etcd-client-tls-key',
+                        action='store',
+                        default='',
+                        help='certificate used for connecting to etcd via etcdctl')
     parser.add_argument('--etcdctl-path',
                         action='store',
                         default='/opt/mesosphere/active/etcd/bin/etcdctl',
                         help='path to etcdctl binary')
+    parser.add_argument('--ca-cert',
+                        action='store',
+                        default='',
+                        help='path to the CA certificate')
     subparsers = parser.add_subparsers(title='Subcommands', dest='subcommand')
 
     parser_joincluster = subparsers.add_parser('join-cluster')
@@ -303,11 +333,6 @@ def parse_cmdline() -> argparse.Namespace:
         action='store',
         default=detect_ip(),
         help="the IP address of the node to remove from the ensemble")
-    parser_leavecluster.add_argument(
-        '--etcd-address',
-        action='store',
-        default="http://localhost:2379",
-        help="the url of the etcd instance to connect to")
 
     return parser.parse_args()
 
@@ -332,11 +357,6 @@ def join_cluster(args: argparse.Namespace) -> None:
     zk_user = os.environ.get('DATASTORE_ZK_USER')
     zk_secret = os.environ.get('DATASTORE_ZK_SECRET')
     zk = zk_connect(zk_addr=args.zk_addr, zk_user=zk_user, zk_secret=zk_secret)
-
-    # Ensure that the ZNodes exist.
-    zk.ensure_path("/etcd")
-    zk.ensure_path(ZK_NODES_PATH)
-    zk.ensure_path(ZK_LOCK_PATH)
 
     nodes = []
 
@@ -365,9 +385,12 @@ def join_cluster(args: argparse.Namespace) -> None:
             dump_state_to_file("new", args.cluster_state_file)
         else:
             etcdctl = EtcdctlHelper(
-                private_ip,
+                args.secure,
                 nodes,
                 args.etcdctl_path,
+                args.ca_cert,
+                args.etcd_client_tls_cert,
+                args.etcd_client_tls_key,
             )
             if private_ip not in nodes:
                 # The problem here is that once we add given etcd to the
@@ -422,13 +445,19 @@ def join_cluster(args: argparse.Namespace) -> None:
 class EtcdctlHelper:
     def __init__(
             self,
-            private_ip: str,
+            secure: bool,
             nodes: List[str],
             etcdctl_path: str,
+            ca_cert: str,
+            etcd_client_tls_cert: str,
+            etcd_client_tls_key: str,
     ):
 
-        self._private_ip = private_ip
+        self.scheme = "https" if secure else "http"
+        self._ca_cert = ca_cert
         self._etcdctl_path = etcdctl_path
+        self._etcd_client_tls_cert = etcd_client_tls_cert
+        self._etcd_client_tls_key = etcd_client_tls_key
 
         # Choose one node from the list
         healthy_nodes = list(filter(self._is_node_healthy, nodes))
@@ -439,17 +468,18 @@ class EtcdctlHelper:
 
     def get_members(self) -> JsonTypeMembers:
         """ gets etcd cluster members
+
         an example of results of `member list -w json`
         [
           {
             'ID': 2080818695399562020,
             'name': 'etcd-10.0.4.116',
             'peerURLs': [
-              'http://10.0.4.116:2380'
+              'https://10.0.4.116:2380'
             ],
             'clientURLs': [
-              'http://10.0.4.116:2379',
-              'http://localhost:2379'
+              'https://10.0.4.116:2379',
+              'https://localhost:2379'
             ]
           }
         ]
@@ -496,7 +526,7 @@ class EtcdctlHelper:
                 "member",
                 "add",
                 "etcd-{}".format(node_ip),
-                "--peer-urls=http://{}:2380".format(node_ip),
+                "--peer-urls=https://{}:2380".format(node_ip),
             ],
         )
         result.check_returncode()
@@ -505,9 +535,10 @@ class EtcdctlHelper:
     def remove_member(self, node_ip: str) -> None:
         node_id = self.get_node_id(node_ip)
         if node_id == "":
-            raise ValueError(
+            log.warning(
                 "node {} is not a member yet so it cannot be removed".format(
                     node_ip))
+            return
 
         result = self._execute_etcdctl(
             self._designated_node,
@@ -523,10 +554,21 @@ class EtcdctlHelper:
 
     def _execute_etcdctl(self, endpoint_ip: str,
                          args: List[str]) -> subprocess.CompletedProcess:
+
         cmd = [
             self._etcdctl_path,
-            "--endpoints", "http://{}:2379".format(endpoint_ip),
+            "--endpoints", "{}://{}:2379".format(self.scheme, endpoint_ip)
         ]
+
+        if self.scheme == "https":
+            cmd.extend(
+                [
+                    "--cacert", self._ca_cert, "--cert",
+                    self._etcd_client_tls_cert, "--key",
+                    self._etcd_client_tls_key
+                ]
+            )
+
         cmd.extend(args)
         result = subprocess.run(
             cmd,
@@ -564,12 +606,21 @@ def leave_cluster(args: argparse.Namespace) -> None:
                                   zk_path=ZK_NODES_PATH,
                                   ip=args.node_ip)
 
-    etcdctl = EtcdctlHelper(
-        args.node_ip,
-        [args.etcd_address],
-        args.etcdctl_path,
-    )
-    etcdctl.remove_member(args.node_ip)
+        nodes = get_registered_nodes(zk=zk, zk_path=ZK_NODES_PATH)
+
+        if nodes:
+            # There is already at least one etcd node which we should join
+            log.info("Cluster has members that already registered: %s", nodes)
+
+        etcdctl = EtcdctlHelper(
+            args.secure,
+            nodes,
+            args.etcdctl_path,
+            args.ca_cert,
+            args.etcd_client_tls_cert,
+            args.etcd_client_tls_key,
+        )
+        etcdctl.remove_member(args.node_ip)
 
     log.info("removal complete")
 
