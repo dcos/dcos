@@ -1,6 +1,6 @@
 $ErrorActionPreference = "stop"
 New-Item -ItemType Directory "$env:PKG_PATH/bin/install"
-
+New-Item -ItemType Directory "$env:PKG_PATH/etc"
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 function Unzip {
     param([string]$zipfile, [string]$outpath)
