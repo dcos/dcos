@@ -12,6 +12,7 @@ ADD https://github.com/git-for-windows/git/releases/download/v2.16.1.windows.1/G
 COPY .\setup-git.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-git.ps1
 
+ADD https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe c:\temp\python-3.6.8-amd64.exe
 COPY .\setup-python36.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-python36.ps1
 
