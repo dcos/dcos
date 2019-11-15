@@ -1,0 +1,12 @@
+[service]
+servicename = dcos-diagnostics
+DisplayName = dcos-diagnostics
+Description = diagnostics windows-node
+Application = {{ path_to_package_dir }}\bin\dcos-diagnostics.exe
+AppDirectory = {{ path_to_package_dir }}\bin
+AppParameters = --config c:\dcos\opt\etc\dcos-diagnostics-config.json --role=agent daemon
+DependOnService = mesos-agent
+Start = SERVICE_AUTO_START
+AppStdout = {{ path_to_log_dir }}\dcos-diagnostics.log
+AppStderr = {{ path_to_log_dir }}\dcos-diagnostics.log
+AppEnvironmentExtra = DCOS_VERSION={{ dcos_version }}
