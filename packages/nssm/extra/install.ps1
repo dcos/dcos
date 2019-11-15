@@ -1,0 +1,1 @@
+& ..\..\bin\install\nssm.exe
