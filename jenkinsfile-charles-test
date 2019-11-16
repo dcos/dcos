@@ -1,0 +1,4 @@
+node("jenkins-jenkins-slave") {
+   sh "sup!"
+}
+
