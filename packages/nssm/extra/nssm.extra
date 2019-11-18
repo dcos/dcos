@@ -1,4 +1,4 @@
 
 install:
     exec_external_commands:
-        - ..\etc\install.ps1
+        - ..\etc\nssm.ps1

@@ -9,5 +9,5 @@ function Unzip {
 Unzip "c:\pkg\src\nssm\nssm-2.24.zip" "c:\pkg\src\nssm\"
 
 Copy-Item -Recurse -Path "c:/pkg/src/nssm/nssm-2.24/win64/*" "$env:PKG_PATH/bin/"
-Copy-Item "pkg/extra/package.extra" "$env:PKG_PATH/etc/"
-Copy-Item "pkg/extra/install.ps1" "$env:PKG_PATH/etc/"
+Copy-Item "pkg/extra/nssm.extra" "$env:PKG_PATH/etc/"
+Copy-Item "pkg/extra/nssm.ps1" "$env:PKG_PATH/etc/"
