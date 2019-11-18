@@ -51,7 +51,7 @@ DETECT_IP_SCRIPT = '/opt/mesosphere/bin/detect_ip'
 # script and verify the output` function that we want
 def detect_ip() -> str:
     machine_ip = subprocess.check_output(
-        [DETECT_IP_SCRIPT], stderr=subprocess.DEVNULL).decode('ascii').strip()
+        [DETECT_IP_SCRIPT], stderr=subprocess.STDOUT).decode('ascii').strip()
     # Validate IP address
     ipaddress.ip_address(machine_ip)
     log.info("private IP is `%s`", machine_ip)
