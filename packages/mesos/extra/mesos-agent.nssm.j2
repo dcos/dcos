@@ -1,6 +1,0 @@
-[service]
-Description = Mesos Agent
-serviceName = mesos-agent
-Application = {{ path_to_package_dir }}\mesos-agent.exe
-AppDirectory = {{ path_to_package_dir }}
-AppParameters = --master="zk://{{ master_ip }}:2181/mesos" --launcher_dir="{{ path_to_package_dir }}\mesos-binaries" --log_dir="{{ path_to_log_dir }}" --appc_store_dir="{{ path_to_dcos_dir }}\images" --work_dir="{{ path_to_dcos_dir }}work" --runtime_dir="{{ path_to_dcos_dir }}\work" --isolation="windows/cpu,windows/mem,filesystem/windows" --containerizers="mesos,docker" --attributes="os:windows" --ip={{ local_ip }} --hostname={{ local_ip }} --resources="ports:[10000-34000]" --executor_registration_timeout=10mins --fetcher_stall_timeout=10mins
