@@ -1,0 +1,29 @@
+[Unit]
+Description=etcd: Distributed K/V storage
+Documentation=https://docs.d2iq.com
+
+[Service]
+Type=notify
+# Run ExecStartPre with root perms
+PermissionsStartOnly=True
+User=dcos_etcd
+
+Restart=always
+RestartSec=10s
+
+StartLimitInterval=0
+LimitNOFILE=65536
+WorkingDirectory=/var/lib/dcos/etcd/
+
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=-/run/dcos/etc/etcd/zk-creds
+ExecStartPre=/usr/bin/mkdir -p /run/dcos/etcd/
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-etcd
+ExecStartPre=/bin/chown -R dcos_etcd /run/dcos/etcd/
+ExecStartPre=/opt/mesosphere/active/etcd/bin/etcd_discovery.py \
+    --zk-addr 127.0.0.1:2181 \
+    join-cluster \
+        --cluster-nodes-file /run/dcos/etcd/initial-nodes \
+        --cluster-state-file /run/dcos/etcd/initial-state \
+        --etcd-data-dir /var/lib/dcos/etcd/default.etcd/
+ExecStart=/opt/mesosphere/active/etcd/bin/etcd.sh
