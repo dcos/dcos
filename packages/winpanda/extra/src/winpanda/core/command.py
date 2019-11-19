@@ -6,10 +6,11 @@ import abc
 
 from common import logger
 from common.cli import CLI_COMMAND, CLI_CMDTARGET, CLI_CMDOPT
-import configparser as cfp
 from core import cmdconf
 from core import exceptions as cr_exc
-from core.package import PackageId, PackageManifest, Package
+from core.package.id import PackageId
+from core.package.manifest import PackageManifest
+from core.package.package import Package
 from svcm import exceptions as svcm_exc
 from svcm.nssm import WinSvcManagerNSSM, SVC_STATUS
 
@@ -119,15 +120,12 @@ class CmdSetup(Command):
                         dstor_pkgrepo_path=dstor_pkgrepo_path
                     )
                 except cr_exc.RCError as e:
-                    err_msg = (f'Execute: Add package:'
-                               f' {pkg_id.pkg_id}: {e}')
-                    raise cr_exc.SetupCommandError(err_msg)
+                    raise cr_exc.SetupCommandError(f'Execute: {e}')
 
                 try:
                     package = Package(
                         pkg_id=pkg_id,
-                        pkgrepo_dpath=self.config.inst_storage.pkgrepo_dpath,
-                        pkgactive_dpath=self.config.inst_storage.pkgactive_dpath,
+                        istor_nodes=self.config.inst_storage.istor_nodes,
                         cluster_conf=self.config.cluster_conf
                     )
                 except cr_exc.RCError as e:
@@ -135,53 +133,60 @@ class CmdSetup(Command):
                                f' {pkg_id.pkg_id}: {e}')
                     raise cr_exc.SetupCommandError(err_msg)
 
-                try:
-                    ret_code, stdout, stderr = package.svc_manager.status()
-                except svcm_exc.ServiceManagerCommandError as e:
-                    LOG.debug(
-                        f'{msg_src}: Execute: Get service status (initial):'
-                        f' {pkg_id.pkg_name}: {e}'
-                    )
-                    # Try to setup, as a service (expectedly) doesn't exist and
-                    # checking it's status naturally would yield an error.
-                    package.svc_manager.setup()
-                else:
-                    LOG.debug(
-                        f'{msg_src}: Execute: Get service status (initial):'
-                        f' {pkg_id.pkg_name}: stdout[{stdout}]'
-                        f' stderr[{stderr}]'
-                    )
-                    svc_status = str(stdout).strip().rstrip('\n')
-                    # Try to remove existing service
+                if package.svc_manager:
                     try:
-                        if svc_status == SVC_STATUS.RUNNING:
-                            package.svc_manager.stop()
-
-                        package.svc_manager.remove()
-                        LOG.debug(f'{msg_src}: Execute: Remove existing'
-                                  f' service: {pkg_id.pkg_name}: OK')
-                    except svcm_exc.ServiceManagerCommandError as e:
-                        err_msg = (f'Execute: Remove existing service:'
-                                   f' {pkg_id.pkg_name}: {e}')
-                        raise cr_exc.SetupCommandError(err_msg)
-                    # Setup a replacement service
-                    try:
-                        package.svc_manager.setup()
                         ret_code, stdout, stderr = package.svc_manager.status()
-                        svc_status = str(stdout).strip().rstrip('\n')
                     except svcm_exc.ServiceManagerCommandError as e:
-                        err_msg = (f'Execute: Setup replacement service:'
-                                   f' {pkg_id.pkg_name}: {e}')
-                        raise cr_exc.SetupCommandError(err_msg)
+                        LOG.debug(
+                            f'{msg_src}: Execute: Get service status'
+                            f' (initial): {pkg_id.pkg_name}: {e}'
+                        )
+                        # Try to setup, as a service (expectedly) doesn't exist
+                        # and checking it's status naturally would yield an
+                        # error.
+                        package.svc_manager.setup()
                     else:
-                        if svc_status != SVC_STATUS.STOPPED:
-                            err_msg = (
-                                f'Execute: Setup service: {pkg_id.pkg_name}'
-                                f' Invalid status: {svc_status}'
-                            )
-                            raise cr_exc.SetupCommandError(err_msg)
+                        LOG.debug(
+                            f'{msg_src}: Execute: Get service status (initial):'
+                            f' {pkg_id.pkg_name}: stdout[{stdout}]'
+                            f' stderr[{stderr}]'
+                        )
+                        svc_status = str(stdout).strip().rstrip('\n')
+                        # Try to remove existing service
+                        try:
+                            if svc_status == SVC_STATUS.RUNNING:
+                                package.svc_manager.stop()
 
-                LOG.debug(f'{msg_src}: Setup service: {pkg_id.pkg_name}: OK')
+                            package.svc_manager.remove()
+                            LOG.debug(f'{msg_src}: Execute: Remove existing'
+                                      f' service: {pkg_id.pkg_name}: OK')
+                        except svcm_exc.ServiceManagerCommandError as e:
+                            err_msg = (f'Execute: Remove existing service:'
+                                       f' {pkg_id.pkg_name}: {e}')
+                            raise cr_exc.SetupCommandError(err_msg)
+                        # Setup a replacement service
+                        try:
+                            package.svc_manager.setup()
+                            ret_code, stdout, stderr = (
+                                package.svc_manager.status()
+                            )
+                            svc_status = str(stdout).strip().rstrip('\n')
+                        except svcm_exc.ServiceManagerCommandError as e:
+                            err_msg = (f'Execute: Setup replacement service:'
+                                       f' {pkg_id.pkg_name}: {e}')
+                            raise cr_exc.SetupCommandError(err_msg)
+                        else:
+                            if svc_status != SVC_STATUS.STOPPED:
+                                err_msg = (
+                                    f'Execute: Setup service:'
+                                    f' {pkg_id.pkg_name}: Invalid status:'
+                                    f' {svc_status}'
+                                )
+                                raise cr_exc.SetupCommandError(err_msg)
+
+                    LOG.debug(
+                        f'{msg_src}: Setup service: {pkg_id.pkg_name}: OK'
+                    )
 
                 try:
                     package.manifest.save()
@@ -212,52 +217,57 @@ class CmdStart(Command):
         """Execute command."""
         msg_src = self.__class__.__name__
 
-        for pkg_manifest in self.config.inst_storage.get_pkgactive():
+        pkg_manifests = (
+            self.config.inst_storage.get_pkgactive(PackageManifest.load)
+        )
+
+        for pkg_manifest in pkg_manifests:
             pkg_id = pkg_manifest.pkg_id
             LOG.debug(f'{msg_src}: Execute: Manifest: {pkg_manifest.body}')
-            svc_conf = cfp.ConfigParser()
-            svc_conf.read_dict(pkg_manifest.svc_conf)
-            cluster_conf = cfp.ConfigParser()
-            cluster_conf.read_dict(self.config.cluster_conf)
-            svc_manager = WinSvcManagerNSSM(
-                svc_conf=svc_conf, cluster_conf=cluster_conf
-            )
 
-            try:
-                ret_code, stdout, stderr = svc_manager.status()
-            except svcm_exc.ServiceManagerCommandError as e:
-                err_msg = (f'Execute: Get service status (initial):'
-                           f' {pkg_id.pkg_name}: {e}')
-                raise cr_exc.StartCommandError(err_msg)
-            else:
-                LOG.debug(
-                    f'{msg_src}: Execute: Get service status (initial):'
-                    f' {pkg_id.pkg_name}: stdout[{stdout}] stderr[{stderr}]'
+            if pkg_manifest.pkg_svccfg:
+                svc_manager = WinSvcManagerNSSM(
+                    svc_conf=pkg_manifest.pkg_svccfg
                 )
-                svc_status = str(stdout).strip().rstrip('\n')
+            else:
+                svc_manager = None
 
-            if svc_status == SVC_STATUS.STOPPED:
+            if svc_manager:
                 try:
-                    svc_manager.start()
                     ret_code, stdout, stderr = svc_manager.status()
+                except svcm_exc.ServiceManagerCommandError as e:
+                    err_msg = (f'Execute: Get service status (initial):'
+                               f' {pkg_id.pkg_name}: {e}')
+                    raise cr_exc.StartCommandError(err_msg) from e
+                else:
                     LOG.debug(
-                        f'{msg_src}: Execute: Get service status (final):'
-                        f' {pkg_id.pkg_name}: stdout[{stdout}]'
-                        f' stderr[{stderr}]'
+                        f'{msg_src}: Execute: Get service status (initial):'
+                        f' {pkg_id.pkg_name}: stdout[{stdout}] stderr[{stderr}]'
                     )
                     svc_status = str(stdout).strip().rstrip('\n')
-                    if svc_status != SVC_STATUS.RUNNING:
-                        err_msg = (f'Execute: Service failed to start:'
-                                   f' {pkg_id.pkg_name}: {svc_status}')
-                        raise cr_exc.StartCommandError(err_msg)
-                except svcm_exc.ServiceManagerCommandError as e:
-                    err_msg = (f'Execute: Get service status (final):'
-                               f' {pkg_id.pkg_name}: {e}')
+
+                if svc_status == SVC_STATUS.STOPPED:
+                    try:
+                        svc_manager.start()
+                        ret_code, stdout, stderr = svc_manager.status()
+                        LOG.debug(
+                            f'{msg_src}: Execute: Get service status (final):'
+                            f' {pkg_id.pkg_name}: stdout[{stdout}]'
+                            f' stderr[{stderr}]'
+                        )
+                        svc_status = str(stdout).strip().rstrip('\n')
+                        if svc_status != SVC_STATUS.RUNNING:
+                            err_msg = (f'Execute: Service failed to start:'
+                                       f' {pkg_id.pkg_name}: {svc_status}')
+                            raise cr_exc.StartCommandError(err_msg)
+                    except svcm_exc.ServiceManagerCommandError as e:
+                        err_msg = (f'Execute: Get service status (final):'
+                                   f' {pkg_id.pkg_name}: {e}')
+                        raise cr_exc.StartCommandError(err_msg) from e
+                elif svc_status == SVC_STATUS.RUNNING:
+                    LOG.warning(f'{msg_src}: Execute: Service is already'
+                                f' running: {pkg_id.pkg_name}')
+                else:
+                    err_msg = (f'Execute: Invalid service status:'
+                               f' {pkg_id.pkg_name}: {svc_status}')
                     raise cr_exc.StartCommandError(err_msg)
-            elif svc_status == SVC_STATUS.RUNNING:
-                LOG.warning(f'{msg_src}: Execute: Service is already running:'
-                            f' {pkg_id.pkg_name}')
-            else:
-                err_msg = (f'Execute: Invalid service status:'
-                           f' {pkg_id.pkg_name}: {svc_status}')
-                raise cr_exc.StartCommandError(err_msg)

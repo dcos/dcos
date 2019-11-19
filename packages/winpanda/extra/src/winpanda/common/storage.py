@@ -38,7 +38,6 @@ import shutil
 from common import logger
 from common import utils as cm_utl
 from core import exceptions as cr_exc
-from core.package import PackageManifest
 
 
 LOG = logger.get_logger(__name__)
@@ -101,7 +100,7 @@ IStorNodes = namedtuple('IStorNodes', [
 
 
 class InstallationStorage:
-    """"""
+    """DC/OS installation storage manager."""
     def __init__(self,
                  drive=DCOS_INST_DRIVE_DFT,
                  root_dpath=DCOS_INST_ROOT_DPATH_DFT,
@@ -114,7 +113,7 @@ class InstallationStorage:
                  run_dpath=DCOS_INST_RUN_DPATH_DFT,
                  log_dpath=DCOS_INST_LOG_DPATH_DFT,
                  tmp_dpath=DCOS_INST_TMP_DPATH_DFT):
-        """DC/OS installation storage manager.
+        """Constructor.
 
         :param drive:           str, DC/OS installation drive spec (ex. 'c:')
         :param root_dpath:      str, DC/OS installation root dir path
@@ -197,7 +196,8 @@ class InstallationStorage:
             ISTOR_NODE.WORK: self.work_dpath,
             ISTOR_NODE.RUN: self.run_dpath,
             ISTOR_NODE.LOG: self.log_dpath,
-            ISTOR_NODE.TMP: self.tmp_dpath})
+            ISTOR_NODE.TMP: self.tmp_dpath
+        })
 
     def _inst_stor_is_clean_ready(self, clean=False):
         """Check if the DC/OS installation storage may be safely (re-)created
@@ -326,8 +326,17 @@ class InstallationStorage:
                         f' {type(e).__name__}: {e}'
                     )
 
-    def get_pkgactive(self):
-        """Retrieve set of manifests of active packages."""
+    def get_pkgactive(self, manifest_loader=None):
+        """Retrieve set of manifests of active packages.
+
+        :param manifest_loader: callable, package manifest loader
+        :return:                set, set of package manifest objects
+        """
+        assert callable(manifest_loader), (
+            f'Argument: manifest_loader:'
+            f' Got {type(manifest_loader).__name__} instead of callable'
+        )
+
         pkg_manifests = set()
 
         # Path('/path/does/not/exist').glob('*') yields []
@@ -336,7 +345,7 @@ class InstallationStorage:
 
             if abs_path.is_file():
                 try:
-                    pkg_manifests.add(PackageManifest.load(path))
+                    pkg_manifests.add(manifest_loader(path))
                 except cr_exc.RCError as e:
                     raise cr_exc.InstallationStorageError(
                         f'Get active package manifest:'
@@ -371,18 +380,16 @@ class InstallationStorage:
         """
         msg_src = self.__class__.__name__
         # Download a package tarball
+        pkg_url = self._make_pkg_url(pkg_id=pkg_id,
+                                     dstor_root_url=dstor_root_url,
+                                     dstor_pkgrepo_path=dstor_pkgrepo_path)
         try:
-            cm_utl.download(
-                self._make_pkg_url(pkg_id=pkg_id,
-                                   dstor_root_url=dstor_root_url,
-                                   dstor_pkgrepo_path=dstor_pkgrepo_path),
-                str(self.tmp_dpath)
-            )
-            LOG.debug(f'{msg_src}: Add package: Download: {pkg_id}')
+            cm_utl.download(pkg_url, str(self.tmp_dpath))
+            LOG.debug(f'{msg_src}: Add package: Download: {pkg_id}: {pkg_url}')
         except Exception as e:
             raise cr_exc.RCDownloadError(
-                f'Add package: {pkg_id}: {type(e).__name__}: {e}'
-            )
+                f'Add package: {pkg_id}: {pkg_url}: {type(e).__name__}: {e}'
+            ) from e
         # Unpack a package tarball
         pkgtarball_fpath = (
             self.tmp_dpath.joinpath(pkg_id.pkg_id).with_suffix('.tar.xz')
@@ -444,9 +451,6 @@ class InstallationStorage:
             else:
                 # Leave existing directories intact
                 pass
-
-
-
 
         # Workaround for dcos-diagnostics to be able to start
         # TODO: Remove this code after correct dcos-diagnostics configuration

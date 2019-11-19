@@ -9,13 +9,14 @@ from pathlib import Path
 import yaml
 
 from common import logger
+from core.rc_ctx import ResourceContext
 from core import exceptions as cr_exc
 
 
 LOG = logger.get_logger(__name__)
 
 
-def rc_load_json(fpath, emheading=None, render=False, **context):
+def rc_load_json(fpath, emheading=None, render=False, context=None):
     """Load JSON-formatted data from a resource file. Content of a resource
     file can be pre-processed by Jinja2 rendering engine before being passed to
     JSON-parser.
@@ -23,12 +24,21 @@ def rc_load_json(fpath, emheading=None, render=False, **context):
     :param fpath:     pathlib.Path, path to a source file.
     :param emheading: str, heading to be added to the exception's description
     :param render:    bool, perform template rendering
-    :param context:   dict, rendering context for jinja2.Temlate.render()
+    :param context:   ResourceContext, rendering context data object
     :return:          json obj, JSON-formatted data
     """
     assert isinstance(fpath, Path) and fpath.is_absolute(), (
         f'Argument: fpath: Absolute pathlib.Path is required: {fpath}'
     )
+
+    if context is None:
+        context_items = {}
+    else:
+        assert isinstance(context, ResourceContext), (
+            f'Argument: context:'
+            f' Got {type(context).__name__} instead of ResourceContext'
+        )
+        context_items = context.get_items(json_ready=True)
 
     try:
         if render is True:
@@ -36,7 +46,7 @@ def rc_load_json(fpath, emheading=None, render=False, **context):
                 loader=jj2.FileSystemLoader(str(fpath.parent))
             )
             jj2_tmpl = jj2_env.get_template(str(fpath.name))
-            json_str = jj2_tmpl.render(**context)
+            json_str = jj2_tmpl.render(**context_items)
             LOG.debug(f'rc_load_json(): json_str: {json_str}')
             j_body = json.loads(json_str, strict=False)
         else:
@@ -58,7 +68,7 @@ def rc_load_json(fpath, emheading=None, render=False, **context):
         return j_body
 
 
-def rc_load_ini(fpath, emheading=None, render=False, **context):
+def rc_load_ini(fpath, emheading=None, render=False, context=None):
     """Load INI-formatted data from a resource file. Content of a resource
     file can be pre-processed by Jinja2 rendering engine before being passed to
     INI-parser.
@@ -66,13 +76,22 @@ def rc_load_ini(fpath, emheading=None, render=False, **context):
     :param fpath:     pathlib.Path, path to a source file
     :param emheading: str, heading to be added to the exception's description
     :param render:    bool, perform template rendering
-    :param context:   dict, rendering context for jinja2.Temlate.render()
+    :param context:   ResourceContext, rendering context data object
     :return:          dict, configparser.ConfigParser.read_dict() compatible
                       data.
     """
     assert isinstance(fpath, Path) and fpath.is_absolute(), (
         f'Argument: fpath: Absolute pathlib.Path is required: {fpath}'
     )
+
+    if context is None:
+        context_items = {}
+    else:
+        assert isinstance(context, ResourceContext), (
+            f'Argument: context:'
+            f' Got {type(context).__name__} instead of ResourceContext'
+        )
+        context_items = context.get_items()
 
     cfg_parser = cfp.ConfigParser()
 
@@ -82,7 +101,7 @@ def rc_load_ini(fpath, emheading=None, render=False, **context):
                 loader=jj2.FileSystemLoader(str(fpath.parent))
             )
             jj2_tmpl = jj2_env.get_template(str(fpath.name))
-            ini_str = jj2_tmpl.render(**context)
+            ini_str = jj2_tmpl.render(**context_items)
             LOG.debug(f'rc_load_ini(): ini_str: {ini_str}')
             cfg_parser.read_string(ini_str, source=str(fpath))
         else:
@@ -104,7 +123,7 @@ def rc_load_ini(fpath, emheading=None, render=False, **context):
         return {k: dict(v) for k, v in cfg_parser.items()}
 
 
-def rc_load_yaml(fpath, emheading=None, render=False, **context):
+def rc_load_yaml(fpath, emheading=None, render=False, context=None):
     """Load YAML-formatted data from a resource file. Content of a resource
     file can be pre-processed by Jinja2 rendering engine before being passed to
     YAML-parser.
@@ -112,12 +131,21 @@ def rc_load_yaml(fpath, emheading=None, render=False, **context):
     :param fpath:     pathlib.Path, path to a source file.
     :param emheading: str, heading to be added to the exception's description
     :param render:    bool, perform template rendering
-    :param context:   dict, rendering context for jinja2.Temlate.render()
+    :param context:   ResourceContext, rendering context data object
     :return:          yaml obj, YAML-formatted data
     """
     assert isinstance(fpath, Path) and fpath.is_absolute(), (
         f'Argument: fpath: Absolute pathlib.Path is required: {fpath}'
     )
+
+    if context is None:
+        context_items = {}
+    else:
+        assert isinstance(context, ResourceContext), (
+            f'Argument: context:'
+            f' Got {type(context).__name__} instead of ResourceContext'
+        )
+        context_items = context.get_items()
 
     try:
         if render is True:
@@ -125,7 +153,7 @@ def rc_load_yaml(fpath, emheading=None, render=False, **context):
                 loader=jj2.FileSystemLoader(str(fpath.parent))
             )
             jj2_tmpl = jj2_env.get_template(str(fpath.name))
-            yaml_str = jj2_tmpl.render(**context)
+            yaml_str = jj2_tmpl.render(**context_items)
             LOG.debug(f'rc_load_yaml(): yaml_str: {yaml_str}')
             y_body = yaml.safe_load(yaml_str)
         else:
