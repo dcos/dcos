@@ -10,6 +10,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Marathon: the upgrade to DC/OS 2.0 would fail if Marathon had undergoing a deployment during the upgrade (MARATHON-8712)
+
+* Marathon: Pod statuses could fail to report properly with unlaunched resident pods are scaled down (MARATHON-8711)
+
 * dcos-net: task update leads to two DNS zone updates. (DCOS_OSS-5495)
 
 * DC/OS overlay networks should be compared by-value. (DCOS_OSS-5620)
