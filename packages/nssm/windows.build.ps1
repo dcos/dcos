@@ -1,6 +1,6 @@
 $ErrorActionPreference = "stop"
-New-Item -ItemType Directory "$env:PKG_PATH/bin/install"
-
+New-Item -ItemType Directory "$env:PKG_PATH/bin"
+New-Item -ItemType Directory "$env:PKG_PATH/etc"
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 function Unzip {
     param([string]$zipfile, [string]$outpath)
@@ -8,4 +8,6 @@ function Unzip {
 }
 Unzip "c:\pkg\src\nssm\nssm-2.24.zip" "c:\pkg\src\nssm\"
 
-Copy-Item -Recurse -Path "c:/pkg/src/nssm/nssm-2.24/win64/*" "$env:PKG_PATH/bin/install"
+Copy-Item -Recurse -Path "c:/pkg/src/nssm/nssm-2.24/win64/*" "$env:PKG_PATH/bin/"
+Copy-Item "pkg/extra/nssm.extra" "$env:PKG_PATH/etc/"
+Copy-Item "pkg/extra/nssm.ps1" "$env:PKG_PATH/etc/"
