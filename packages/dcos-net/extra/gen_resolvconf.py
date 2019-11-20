@@ -87,6 +87,14 @@ else:
     for ns in fallback_servers[:MAX_SERVER_COUNT]:
         contents += "nameserver {}\n".format(ns)
 
+# Don't change resolv.conf if it has the correct contents already. This is
+# especially important in Docker enviroments where an atomic overwrite using
+# `os.rename` is not possible (see below) and causes race conditions.
+with open(resolvconf_path, 'r') as f:
+    existing_contents = f.read()
+    if existing_contents == contents:
+        print("Not touching {} because it has proper contents.".format(resolvconf_path))
+        sys.exit(0)
 
 # Generate the resolv.conf config
 print('Updating {}'.format(resolvconf_path))

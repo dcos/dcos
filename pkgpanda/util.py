@@ -159,20 +159,20 @@ def _is_incomplete_download_error(exception):
     wait_random_min=1000,
     wait_random_max=2000,
     retry_on_exception=_is_incomplete_download_error)
-def _download_remote_file(out_filename, url, retries=4):
+def _download_remote_file(out_filename, url):
     with open(out_filename, "wb") as f:
         r = get_requests_retry_session().get(url, stream=True)
         r.raise_for_status()
-
-        content_length = int(r.headers['content-length'])
 
         total_bytes_read = 0
         for chunk in r.iter_content(chunk_size=4096):
             f.write(chunk)
             total_bytes_read += len(chunk)
 
-        if total_bytes_read != content_length:
-            raise IncompleteDownloadError(url, total_bytes_read, content_length)
+        if 'content-length' in r.headers:
+            content_length = int(r.headers['content-length'])
+            if total_bytes_read != content_length:
+                raise IncompleteDownloadError(url, total_bytes_read, content_length)
 
         return r
 

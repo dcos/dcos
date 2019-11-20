@@ -49,9 +49,9 @@ def try_shortcut():
     zk_pid = get_zk_pid()
     cmdline_path = '/proc/{}/cmdline'.format(zk_pid)
     try:
-        # Custom because the command line is ascii with `\0` as separator.
+        # Custom because the command line is ascii with `\x00` as separator.
         with open(cmdline_path, 'rb') as f:
-            cmd_line = f.read().split(b'\0')[:-1]
+            cmd_line = f.read().split(b'\x00')[:-1]
     except FileNotFoundError:
         log.info('Process no longer running (couldn\'t read the cmdline at: %s)', zk_pid)
         return False
@@ -110,7 +110,8 @@ def wait(master_count_filename):
 
     if len(serving) != cluster_size or len(leaders) != 1:
         msg_fmt = 'Expected {} servers and 1 leader, got {} servers and {} leaders'
-        raise Exception(msg_fmt.format(cluster_size, len(serving), len(leaders)))
+        log.error(msg_fmt.format(cluster_size, len(serving), len(leaders)))
+        sys.exit(1)
 
     # Local Zookeeper is up. Config should be stable, local zookeeper happy. Stash the PID so if
     # there is a restart we can come up quickly without requiring a new zookeeper quorum.

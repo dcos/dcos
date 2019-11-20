@@ -1,7 +1,7 @@
 {
   "single_source": {
     "kind": "url_extract",
-    "url": "https://downloads.mesosphere.io/dcos-ui/1.12%2Bdcos-ui-v2.26.11.tar.gz",
-    "sha1": "6e737f9c7a5fde54aea9d26b433ed1f12593c5be"
+    "url": "https://downloads.mesosphere.io/dcos-ui/1.12%2Bdcos-ui-v2.26.17.tar.gz",
+    "sha1": "5a30cd1a8790e87b6de8f5d1b20b4abb2b633515"
   }
 }

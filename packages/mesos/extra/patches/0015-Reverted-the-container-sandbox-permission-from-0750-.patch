@@ -1,8 +1,8 @@
-From 5755a3bb48b0e4fbd562ce1bb7cb82f1ae456811 Mon Sep 17 00:00:00 2001
+From 7b9d4889f2788ac5def5e959c4ed703d3b37db2e Mon Sep 17 00:00:00 2001
 From: Gilbert Song <songzihao1990@gmail.com>
 Date: Fri, 25 Jan 2019 10:40:07 -0800
-Subject: [PATCH] Reverted the container sandbox permission from 0750 back to
- 0755.
+Subject: [PATCH 15/16] Reverted the container sandbox permission from 0750
+ back to 0755.
 
 This patch is used to revert the sandbox permission semantic change
 in Mesos 1.6.0 (caused by this commit 04dd7f32). 04dd7f32 caused
@@ -23,12 +23,12 @@ landed.
  1 file changed, 7 deletions(-)
 
 diff --git a/src/slave/paths.cpp b/src/slave/paths.cpp
-index ed0b127..cbce598 100644
+index dc1003bbf..cbce59899 100644
 --- a/src/slave/paths.cpp
 +++ b/src/slave/paths.cpp
 @@ -789,13 +789,6 @@ Try<Nothing> createSandboxDirectory(
    }
-
+ 
  #ifndef __WINDOWS__
 -  // Since this is a sandbox directory containing private task data,
 -  // we want to ensure that it is not accessible to "others".
@@ -40,5 +40,6 @@ index ed0b127..cbce598 100644
    if (user.isSome()) {
      Try<Nothing> chown = os::chown(user.get(), directory);
      if (chown.isError()) {
---
-2.5.1
+-- 
+2.21.0
+

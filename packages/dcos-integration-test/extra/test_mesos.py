@@ -2,7 +2,6 @@ import copy
 import json
 import logging
 import os
-import subprocess
 import uuid
 
 import pytest
@@ -454,33 +453,3 @@ def reserved_disk(dcos_api_session):
                 'unreserve_resources': resources}
             r = dcos_api_session.post('/mesos/api/v1', json=request)
             assert r.status_code == 202, r.text
-
-
-def test_min_allocatable_resources(reserved_disk):
-    """Test that the Mesos master creates offers for just `disk` resources."""
-    # We use `mesos-execute` since e.g., Marathon cannot make use of disk-only
-    # offers.
-    expanded_config = test_helpers.get_expanded_config()
-    if expanded_config.get('security') == 'strict':
-        pytest.skip('Missing framework authentication for mesos-execute')
-
-    name = \
-        'test-min-test_min-allocatable-resources-{}'.format(uuid.uuid4().hex)
-
-    argv = [
-        '/opt/mesosphere/bin/mesos-execute',
-        '--resources=disk:32',
-        '--role=' + reserved_disk.role,
-        '--command=:',
-        '--master=leader.mesos:5050',
-        '--name={}'.format(name),
-        '--env={"LC_ALL":"C"}']
-
-    output = subprocess.check_output(
-        argv,
-        stderr=subprocess.STDOUT,
-        universal_newlines=True)
-
-    # If the framework received any status update it launched a task which
-    # means it was offered resources.
-    assert 'Received status update' in output, output

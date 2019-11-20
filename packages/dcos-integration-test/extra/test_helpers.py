@@ -1,13 +1,19 @@
 import copy
 import json
+import logging
+import subprocess
 import uuid
+
+import retrying
 
 from dcos_test_utils import marathon
 
-__maintainer__ = 'mellenburg'
+__maintainer__ = 'orsenthil'
 __contact__ = 'tools-infra-team@mesosphere.io'
 
 TEST_APP_NAME_FMT = 'integration-test-{}'
+
+log = logging.getLogger(__name__)
 
 
 def get_exhibitor_admin_password():
@@ -33,6 +39,18 @@ def get_expanded_config():
         # TODO: Remove this hack. https://jira.mesosphere.com/browse/QUALITY-1611
         expanded_config['exhibitor_admin_password'] = get_exhibitor_admin_password()
     return expanded_config
+
+
+@retrying.retry(wait_fixed=60 * 1000,       # wait for 60 seconds
+                retry_on_exception=lambda exc: isinstance(exc, subprocess.CalledProcessError),  # Called Process Error
+                stop_max_attempt_number=3)  # retry 3 times
+def docker_pull_image(image: str) -> bool:
+    log.info("\n Ensure docker image availability ahead of tests.")
+    try:
+        subprocess.run(["sudo", "docker", "pull", image], check=True)
+        return True
+    except retrying.RetryError:
+        return False
 
 
 def marathon_test_app_linux(
@@ -114,7 +132,7 @@ def marathon_test_app_linux(
     if container_type != marathon.Container.NONE:
         app['container'] = {
             'type': container_type.value,
-            'docker': {'image': 'debian:jessie'},
+            'docker': {'image': 'debian:stretch-slim'},
             'volumes': [{
                 'containerPath': '/opt/mesosphere',
                 'hostPath': '/opt/mesosphere',

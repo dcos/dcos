@@ -1,7 +1,7 @@
-From 52ba2fe898c2e749ad1992dbc62dc988c2996326 Mon Sep 17 00:00:00 2001
+From a4bb75b78fddd821af83b9013aa26506c43e757f Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Thu, 11 Oct 2018 15:40:37 +0200
-Subject: [PATCH] Introduced `logResponse` for http handlers.
+Subject: [PATCH 06/16] Introduced `logResponse` for http handlers.
 
 Currently we use `logRequest` function to log requests to endpoints
 in Mesos `MasterProcess`, `SlaveProcess`, and `FilesProcess`. Each
@@ -21,7 +21,7 @@ Review: https://reviews.apache.org/r/68993
  2 files changed, 26 insertions(+)
 
 diff --git a/src/common/http.cpp b/src/common/http.cpp
-index 81102d8..50c9b55 100644
+index 81102d845..50c9b558b 100644
 --- a/src/common/http.cpp
 +++ b/src/common/http.cpp
 @@ -32,6 +32,7 @@
@@ -52,7 +52,7 @@ index 81102d8..50c9b55 100644
 +
  }  // namespace mesos {
 diff --git a/src/common/http.hpp b/src/common/http.hpp
-index 0901a55..cc7f747 100644
+index 0901a5528..cc7f747d1 100644
 --- a/src/common/http.hpp
 +++ b/src/common/http.hpp
 @@ -338,6 +338,17 @@ Try<Nothing> initializeHttpAuthenticators(
@@ -74,5 +74,5 @@ index 0901a55..cc7f747 100644
  
  #endif // __COMMON_HTTP_HPP__
 -- 
-2.5.1
+2.21.0
 

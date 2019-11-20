@@ -1,7 +1,7 @@
-From 2ae174526cbcf02136acccccc8e278d96bd33b20 Mon Sep 17 00:00:00 2001
+From d7dbe9885b9bf360353b14da53239fc0784f4a04 Mon Sep 17 00:00:00 2001
 From: Joseph Wu <joseph@mesosphere.io>
 Date: Thu, 13 Dec 2018 16:34:24 -0800
-Subject: [PATCH] Refactored master and agent streaming connections.
+Subject: [PATCH 10/16] Refactored master and agent streaming connections.
 
 This moves the very similar `HttpConnection` classes inside the
 master and agent into a common header.  The refactored
@@ -18,23 +18,23 @@ for agent->executor heartbeats.
 Review: https://reviews.apache.org/r/69472/
 ---
  src/Makefile.am            |   1 +
- src/common/heartbeater.hpp | 138 ++++++++++++++++++++++++++++++++++++
- src/common/http.hpp        |  45 ++++++++++++
- src/master/framework.cpp   |  37 ++++------
- src/master/http.cpp        |  11 +--
- src/master/master.cpp      |  35 ++++++----
- src/master/master.hpp      | 169 +++++++++------------------------------------
+ src/common/heartbeater.hpp | 138 ++++++++++++++++++++++++++++++
+ src/common/http.hpp        |  45 ++++++++++
+ src/master/framework.cpp   |  37 ++++----
+ src/master/http.cpp        |  11 ++-
+ src/master/master.cpp      |  35 ++++----
+ src/master/master.hpp      | 169 +++++++------------------------------
  src/slave/http.cpp         |   4 +-
  src/slave/slave.cpp        |   2 +-
- src/slave/slave.hpp        |  39 +----------
+ src/slave/slave.hpp        |  39 +--------
  10 files changed, 264 insertions(+), 217 deletions(-)
  create mode 100644 src/common/heartbeater.hpp
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index eb50fc7..17caf02 100644
+index fb2a27e28..d4f28adb8 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -989,6 +989,7 @@ libmesos_no_3rdparty_la_SOURCES +=					\
+@@ -995,6 +995,7 @@ libmesos_no_3rdparty_la_SOURCES +=					\
    checks/health_checker.cpp						\
    common/attributes.cpp							\
    common/command_utils.cpp						\
@@ -44,7 +44,7 @@ index eb50fc7..17caf02 100644
    common/resources.cpp							\
 diff --git a/src/common/heartbeater.hpp b/src/common/heartbeater.hpp
 new file mode 100644
-index 0000000..f7c3a80
+index 000000000..f7c3a8016
 --- /dev/null
 +++ b/src/common/heartbeater.hpp
 @@ -0,0 +1,138 @@
@@ -187,7 +187,7 @@ index 0000000..f7c3a80
 +
 +#endif // __COMMON_HEARTBEATER_HPP__
 diff --git a/src/common/http.hpp b/src/common/http.hpp
-index cc7f747..954508f 100644
+index cc7f747d1..954508fc3 100644
 --- a/src/common/http.hpp
 +++ b/src/common/http.hpp
 @@ -36,7 +36,11 @@
@@ -251,7 +251,7 @@ index cc7f747..954508f 100644
  JSON::Object model(const hashmap<std::string, Resources>& roleResources);
  JSON::Object model(const Attributes& attributes);
 diff --git a/src/master/framework.cpp b/src/master/framework.cpp
-index 7cfe9f4..8589c6f 100644
+index 7cfe9f49c..8589c6ff6 100644
 --- a/src/master/framework.cpp
 +++ b/src/master/framework.cpp
 @@ -16,6 +16,7 @@
@@ -332,7 +332,7 @@ index 7cfe9f4..8589c6f 100644
  
  
 diff --git a/src/master/http.cpp b/src/master/http.cpp
-index e2773ed..0e2c2bb 100644
+index e2773ed78..0e2c2bb78 100644
 --- a/src/master/http.cpp
 +++ b/src/master/http.cpp
 @@ -838,7 +838,8 @@ Future<Response> Master::Http::subscribe(
@@ -371,10 +371,10 @@ index e2773ed..0e2c2bb 100644
  
      return ok;
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index bb49f10..1ec273b 100644
+index 392057583..a9dc4fc42 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
-@@ -1250,7 +1250,9 @@ void Master::finalize()
+@@ -1276,7 +1276,9 @@ void Master::finalize()
  }
  
  
@@ -385,7 +385,7 @@ index bb49f10..1ec273b 100644
  {
    foreachvalue (Framework* framework, frameworks.registered) {
      if (framework->http.isSome() && framework->http->writer == http.writer) {
-@@ -2529,7 +2531,7 @@ void Master::reregisterFramework(
+@@ -2587,7 +2589,7 @@ void Master::reregisterFramework(
  
  
  void Master::subscribe(
@@ -394,7 +394,7 @@ index bb49f10..1ec273b 100644
      const scheduler::Call::Subscribe& subscribe)
  {
    // TODO(anand): Authenticate the framework.
-@@ -2629,7 +2631,7 @@ void Master::subscribe(
+@@ -2687,7 +2689,7 @@ void Master::subscribe(
  
    // Need to disambiguate for the compiler.
    void (Master::*_subscribe)(
@@ -403,7 +403,7 @@ index bb49f10..1ec273b 100644
        const FrameworkInfo&,
        bool,
        const set<string>&,
-@@ -2647,7 +2649,7 @@ void Master::subscribe(
+@@ -2705,7 +2707,7 @@ void Master::subscribe(
  
  
  void Master::_subscribe(
@@ -412,7 +412,7 @@ index bb49f10..1ec273b 100644
      const FrameworkInfo& frameworkInfo,
      bool force,
      const set<string>& suppressedRoles,
-@@ -9971,7 +9973,8 @@ void Master::addFramework(
+@@ -10060,7 +10062,8 @@ void Master::addFramework(
      } else {
        CHECK_SOME(framework->http);
  
@@ -422,7 +422,7 @@ index bb49f10..1ec273b 100644
  
        http.closed()
          .onAny(defer(self(), &Self::exited, framework->id(), http));
-@@ -10061,7 +10064,7 @@ Try<Nothing> Master::activateRecoveredFramework(
+@@ -10157,7 +10160,7 @@ Try<Nothing> Master::activateRecoveredFramework(
      Framework* framework,
      const FrameworkInfo& frameworkInfo,
      const Option<UPID>& pid,
@@ -431,7 +431,7 @@ index bb49f10..1ec273b 100644
      const set<string>& suppressedRoles)
  {
    // Exactly one of `pid` or `http` must be provided.
-@@ -10139,7 +10142,9 @@ Try<Nothing> Master::activateRecoveredFramework(
+@@ -10235,7 +10238,9 @@ Try<Nothing> Master::activateRecoveredFramework(
  }
  
  
@@ -442,7 +442,7 @@ index bb49f10..1ec273b 100644
  {
    CHECK_NOTNULL(framework);
  
-@@ -12023,7 +12028,7 @@ void Master::Subscribers::Subscriber::send(
+@@ -12130,7 +12135,7 @@ void Master::Subscribers::Subscriber::send(
        if (approvers->approved<VIEW_TASK>(
                event->task_added().task(), *frameworkInfo) &&
            approvers->approved<VIEW_FRAMEWORK>(*frameworkInfo)) {
@@ -451,7 +451,7 @@ index bb49f10..1ec273b 100644
        }
        break;
      }
-@@ -12033,7 +12038,7 @@ void Master::Subscribers::Subscriber::send(
+@@ -12140,7 +12145,7 @@ void Master::Subscribers::Subscriber::send(
  
        if (approvers->approved<VIEW_TASK>(*task, *frameworkInfo) &&
            approvers->approved<VIEW_FRAMEWORK>(*frameworkInfo)) {
@@ -460,7 +460,7 @@ index bb49f10..1ec273b 100644
        }
        break;
      }
-@@ -12064,7 +12069,7 @@ void Master::Subscribers::Subscriber::send(
+@@ -12171,7 +12176,7 @@ void Master::Subscribers::Subscriber::send(
            }
          }
  
@@ -469,7 +469,7 @@ index bb49f10..1ec273b 100644
        }
        break;
      }
-@@ -12095,14 +12100,14 @@ void Master::Subscribers::Subscriber::send(
+@@ -12202,14 +12207,14 @@ void Master::Subscribers::Subscriber::send(
            }
          }
  
@@ -486,7 +486,7 @@ index bb49f10..1ec273b 100644
        }
        break;
      }
-@@ -12120,14 +12125,14 @@ void Master::Subscribers::Subscriber::send(
+@@ -12227,14 +12232,14 @@ void Master::Subscribers::Subscriber::send(
          }
        }
  
@@ -503,7 +503,7 @@ index bb49f10..1ec273b 100644
        break;
    }
  }
-@@ -12148,7 +12153,7 @@ void Master::exited(const id::UUID& id)
+@@ -12255,7 +12260,7 @@ void Master::exited(const id::UUID& id)
  
  
  void Master::subscribe(
@@ -513,10 +513,10 @@ index bb49f10..1ec273b 100644
  {
    LOG(INFO) << "Added subscriber " << http.streamId
 diff --git a/src/master/master.hpp b/src/master/master.hpp
-index b367aad..4118502 100644
+index 6830e3b63..23fb65b48 100644
 --- a/src/master/master.hpp
 +++ b/src/master/master.hpp
-@@ -75,6 +75,7 @@
+@@ -76,6 +76,7 @@
  #include <stout/try.hpp>
  #include <stout/uuid.hpp>
  
@@ -524,7 +524,7 @@ index b367aad..4118502 100644
  #include "common/http.hpp"
  #include "common/resources_utils.hpp"
  
-@@ -336,109 +337,6 @@ inline std::ostream& operator<<(std::ostream& stream, const Slave& slave)
+@@ -337,109 +338,6 @@ inline std::ostream& operator<<(std::ostream& stream, const Slave& slave)
  }
  
  
@@ -634,7 +634,7 @@ index b367aad..4118502 100644
  class Master : public ProtobufProcess<Master>
  {
  public:
-@@ -604,7 +502,10 @@ protected:
+@@ -610,7 +508,10 @@ protected:
    void consume(process::ExitedEvent&& event) override;
  
    void exited(const process::UPID& pid) override;
@@ -646,7 +646,7 @@ index b367aad..4118502 100644
    void _exited(Framework* framework);
  
    // Invoked upon noticing a subscriber disconnection.
-@@ -711,7 +612,7 @@ protected:
+@@ -717,7 +618,7 @@ protected:
        Framework* framework,
        const FrameworkInfo& frameworkInfo,
        const Option<process::UPID>& pid,
@@ -655,7 +655,7 @@ index b367aad..4118502 100644
        const std::set<std::string>& suppressedRoles);
  
    // Replace the scheduler for a framework with a new process ID, in
-@@ -720,7 +621,9 @@ protected:
+@@ -726,7 +627,9 @@ protected:
  
    // Replace the scheduler for a framework with a new HTTP connection,
    // in the event of a scheduler failover.
@@ -666,7 +666,7 @@ index b367aad..4118502 100644
  
    void _failoverFramework(Framework* framework);
  
-@@ -1081,11 +984,11 @@ private:
+@@ -1087,11 +990,11 @@ private:
        scheduler::Call&& call);
  
    void subscribe(
@@ -681,7 +681,7 @@ index b367aad..4118502 100644
        const FrameworkInfo& frameworkInfo,
        bool force,
        const std::set<std::string>& suppressedRoles,
-@@ -1104,7 +1007,7 @@ private:
+@@ -1110,7 +1013,7 @@ private:
  
    // Subscribes a client to the 'api/vX' endpoint.
    void subscribe(
@@ -690,7 +690,7 @@ index b367aad..4118502 100644
        const Option<process::http::authentication::Principal>& principal);
  
    void teardown(Framework* framework);
-@@ -2105,25 +2008,20 @@ private:
+@@ -2111,25 +2014,20 @@ private:
      struct Subscriber
      {
        Subscriber(
@@ -728,7 +728,7 @@ index b367aad..4118502 100644
  
        // Not copyable, not assignable.
        Subscriber(const Subscriber&) = delete;
-@@ -2144,14 +2042,10 @@ private:
+@@ -2156,14 +2054,10 @@ private:
          // after passing ownership to the `Subscriber` object. See MESOS-5843
          // for more details.
          http.close();
@@ -743,9 +743,9 @@ index b367aad..4118502 100644
 +      StreamingHttpConnection<v1::master::Event> http;
 +      ResponseHeartbeater<mesos::master::Event, v1::master::Event> heartbeater;
        const Option<process::http::authentication::Principal> principal;
-     };
  
-@@ -2338,7 +2232,7 @@ struct Framework
+       // We maintain a sequence to coordinate the creation of object approvers
+@@ -2354,7 +2248,7 @@ struct Framework
    Framework(Master* const master,
              const Flags& masterFlags,
              const FrameworkInfo& info,
@@ -754,7 +754,7 @@ index b367aad..4118502 100644
              const process::Time& time = process::Clock::now());
  
    Framework(Master* const master,
-@@ -2407,7 +2301,8 @@ struct Framework
+@@ -2423,7 +2317,8 @@ struct Framework
  
    void updateConnection(const process::UPID& newPid);
  
@@ -764,7 +764,7 @@ index b367aad..4118502 100644
  
    // Closes the HTTP connection and stops the heartbeat.
    //
-@@ -2439,7 +2334,7 @@ struct Framework
+@@ -2455,7 +2350,7 @@ struct Framework
    // (scheduler driver). At most one of `http` and `pid` will be set
    // according to the last connection made by the framework; neither
    // field will be set if the framework is in state `RECOVERED`.
@@ -773,7 +773,7 @@ index b367aad..4118502 100644
    Option<process::UPID> pid;
  
    State state;
-@@ -2520,7 +2415,7 @@ struct Framework
+@@ -2536,7 +2431,7 @@ struct Framework
    hashmap<SlaveID, Resources> offeredResources;
  
    // This is only set for HTTP frameworks.
@@ -783,7 +783,7 @@ index b367aad..4118502 100644
  
    // This is used for per-framwork metrics.
 diff --git a/src/slave/http.cpp b/src/slave/http.cpp
-index f7be16e..94aabba 100644
+index f7be16ebe..94aabba17 100644
 --- a/src/slave/http.cpp
 +++ b/src/slave/http.cpp
 @@ -837,7 +837,9 @@ Future<Response> Http::executor(
@@ -798,10 +798,10 @@ index f7be16e..94aabba 100644
  
        return ok;
 diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
-index 07066a7..ca7d0aa 100644
+index 97bb48f64..13c5ec6ee 100644
 --- a/src/slave/slave.cpp
 +++ b/src/slave/slave.cpp
-@@ -4644,7 +4644,7 @@ void Slave::operationStatusAcknowledgement(
+@@ -4627,7 +4627,7 @@ void Slave::operationStatusAcknowledgement(
  
  
  void Slave::subscribe(
@@ -811,7 +811,7 @@ index 07066a7..ca7d0aa 100644
      Framework* framework,
      Executor* executor)
 diff --git a/src/slave/slave.hpp b/src/slave/slave.hpp
-index 28d6590..344e1b2 100644
+index 8e5adc581..7e49809e5 100644
 --- a/src/slave/slave.hpp
 +++ b/src/slave/slave.hpp
 @@ -112,7 +112,6 @@ class TaskStatusUpdateManager;
@@ -882,5 +882,5 @@ index 28d6590..344e1b2 100644
  
    // Tasks can be found in one of the following four data structures:
 -- 
-2.5.1
+2.21.0
 

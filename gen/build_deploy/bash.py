@@ -443,52 +443,11 @@ function check_all() {
 
     check_docker_running
 
-    local docker_version=$(command -v docker >/dev/null 2>&1 && docker version 2>/dev/null | awk '
-        BEGIN {
-            version = 0
-            client_version = 0
-            server_version = 0
-        }
-        {
-            if($1 == "Server:") {
-                server = 1
-                client = 0
-            } else if($1 == "Client:") {
-                server = 0
-                client = 1
-            } else if ($1 == "Server" && $2 == "version:") {
-                server_version = $3
-            } else if ($1 == "Client" && $2 == "version:") {
-                client_version = $3
-            }
-            if(server && $1 == "Version:") {
-                server_version = $2
-            } else if(client && $1 == "Version:") {
-                client_version = $2
-            }
-        }
-        END {
-            if(client_version == server_version) {
-                version = client_version
-            } else {
-                cv_length = split(client_version, cv, ".")
-                sv_length = split(server_version, sv, ".")
+    local docker_version=$(command -v docker >/dev/null 2>&1 \
+        && docker version --format '{{{{printf "%s\\n%s" .Server.Version .Client.Version}}' \
+        | sort -V \
+        | head -n 1)
 
-                y = cv_length > sv_length ? cv_length : sv_length
-
-                for(i = 1; i <= y; i++) {
-                    if(cv[i] < sv[i]) {
-                        version = client_version
-                        break
-                    } else if(sv[i] < cv[i]) {
-                        version = server_version
-                        break
-                    }
-                }
-            }
-            print version
-        }
-    ')
     # CoreOS stable as of Aug 2015 has 1.6.2
     check docker 1.6 "$docker_version"
 
@@ -507,12 +466,6 @@ function check_all() {
     # compiler option string
     # Pick up just the first line of output and get the version from it
     check systemctl 200 $(systemctl --version | head -1 | cut -f2 -d' ') systemd
-
-    echo -e -n "Checking if group 'nogroup' exists: "
-    getent group nogroup > /dev/null
-    RC=$?
-    print_status $RC
-    (( OVERALL_RC += $RC ))
 
     # Run service check on master node only
     if [[ $AGENT_ONLY -eq 0 ]]; then

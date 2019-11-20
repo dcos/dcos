@@ -32,7 +32,7 @@
     "DefaultInstanceType" : {
       "Description" : "default instance",
       "Type" : "String",
-      "Default" : "m4.xlarge"
+      "Default" : "m5.large"
     }
 {% switch oauth_available %}
 {% case "true" %}
@@ -71,8 +71,7 @@
       },
       "StackCreationTimeout": {
           "default": "PT45M"
-      }
-    }
+      }}
   },
 
   "Conditions" : {
@@ -318,7 +317,7 @@
         "SourceDestCheck" : "false",
         "KeyName" : { "Ref" : "KeyName" },
         "ImageId" : { "Fn::FindInMap" : [ "NATAmi", { "Ref" : "AWS::Region" }, "default" ] },
-        "InstanceType" : "m4.large",
+        "InstanceType" : { "Ref" : "DefaultInstanceType" },
         "NetworkInterfaces" : [
           {
             "SubnetId" : { "Ref" : "PublicSubnet" },
@@ -482,7 +481,27 @@
                 "ec2:DescribeSnapshots",
                 "ec2:DescribeSnapshotAttribute",
                 "autoscaling:DescribeAutoScalingGroups",
-                "cloudwatch:PutMetricData"
+                "cloudwatch:PutMetricData",
+                "elasticloadbalancing:DescribeLoadBalancers",
+                "elasticloadbalancing:CreateLoadBalancer",
+                "elasticloadbalancing:DeleteLoadBalancer",
+                "elasticloadbalancing:DescribeListeners",
+                "elasticloadbalancing:CreateListener",
+                "elasticloadbalancing:DeleteListener",
+                "elasticloadbalancing:ModifyListener",
+                "elasticloadbalancing:CreateTargetGroup",
+                "elasticloadbalancing:DeleteTargetGroup",
+                "elasticloadbalancing:DescribeTargetGroups",
+                "elasticloadbalancing:ModifyTargetGroup",
+                "elasticloadbalancing:RegisterTargets",
+                "elasticloadbalancing:DeregisterTargets",
+                "elasticloadbalancing:DescribeTargetHealth",
+                "elasticloadbalancing:DescribeLoadBalancerAttributes",
+                "elasticloadbalancing:ModifyLoadBalancerAttributes",
+                "elasticloadbalancing:DescribeTags",
+                "elasticloadbalancing:AddTags",
+                "elasticloadbalancing:RemoveTags"
+
               ],
               "Effect": "Allow"
             }

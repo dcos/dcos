@@ -125,7 +125,10 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-mesos-master.service',
         'dcos-metronome.service',
         'dcos-signal.service',
+        'dcos-signal.timer',
         'dcos-oauth.service',
+        'dcos-diagnostics-mesos-state.service',
+        'dcos-diagnostics-mesos-state.timer',
     ]
     all_node_units = [
         'dcos-checks-api.service',
@@ -137,7 +140,6 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-net.service',
         'dcos-net-watchdog.service',
         'dcos-pkgpanda-api.service',
-        'dcos-signal.timer',
         'dcos-checks-poststart.service',
         'dcos-checks-poststart.timer',
         'dcos-telegraf.service',
@@ -291,6 +293,7 @@ def test_signal_service(dcos_api_session):
         'provider': expanded_config['provider'],
         'source': 'cluster',
         'clusterId': cluster_id,
+        'licenseId': '',
         'customerKey': customer_key,
         'environmentVersion': dcos_version,
         'variant': 'open'

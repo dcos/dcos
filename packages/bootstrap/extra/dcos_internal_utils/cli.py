@@ -5,7 +5,9 @@ import json
 import logging
 import os
 import random
+import shutil
 import sys
+from pathlib import Path
 
 from dcos_internal_utils import bootstrap
 from dcos_internal_utils import exhibitor
@@ -13,6 +15,31 @@ from dcos_internal_utils import exhibitor
 from pkgpanda.actions import apply_service_configuration
 
 log = logging.getLogger(__name__)
+
+
+def _known_exec_directory():
+    """
+    Returns a directory which we have told users to mark as ``exec``.
+    """
+    # This directory must be outside /tmp to support
+    # environments where /tmp is mounted noexec.
+    known_directory = Path('/var/lib/dcos/exec')
+    known_directory.mkdir(parents=True, exist_ok=True)
+    return known_directory
+
+
+def _create_private_directory(path, owner):
+    """
+    Create a directory which ``owner`` can create, modify and delete files in
+    but other non-root users cannot.
+
+    Args:
+        path (pathlib.Path): The path to the directory to create.
+        owner (str): The owner of the directory.
+    """
+    path.mkdir(exist_ok=True)
+    path.chmod(0o700)
+    shutil.chown(str(path), user=owner)
 
 
 def check_root(fun):
@@ -67,6 +94,21 @@ def dcos_oauth(b, opts):
     b.generate_oauth_secret('/var/lib/dcos/dcos-oauth/auth-token-secret')
 
 
+@check_root
+def dcos_history(b, opts):
+    # Permissions are restricted to the dcos_history user in case this
+    # directory contains sensitive data - we also want to avoid the security
+    # risk of other users writing to this directory.
+    # See https://jira.mesosphere.com/browse/DCOS-18350 for a related change to
+    # dcos-bouncer.
+
+    # The ``dcos_history_tmpdir`` directory path corresponds to the
+    # TMPDIR environment variable configured in the dcos-history.service file.
+    user = 'dcos_history'
+    dcos_history_tmpdir = _known_exec_directory() / user
+    _create_private_directory(path=dcos_history_tmpdir, owner=user)
+
+
 def noop(b, opts):
     return
 
@@ -85,7 +127,7 @@ bootstrappers = {
     'dcos-mesos-slave-public': noop,
     'dcos-cosmos': noop,
     'dcos-metronome': noop,
-    'dcos-history': noop,
+    'dcos-history': dcos_history,
     'dcos-mesos-dns': noop,
     'dcos-net': dcos_net,
     'dcos-telegraf-master': dcos_telegraf_master,
@@ -100,6 +142,9 @@ def get_roles():
 def main():
     opts = parse_args()
 
+    # Display the pid in each log message to distinguish concurrent runs
+    log_format = 'pid={}:[%(levelname)s] %(message)s'.format(os.getpid())
+    logging.basicConfig(format=log_format, level='INFO')
     logging.basicConfig(format='[%(levelname)s] %(message)s', level='INFO')
     log.setLevel(logging.DEBUG)
 
@@ -115,7 +160,7 @@ def main():
 
     for service in opts.services:
         if service not in bootstrappers:
-            log.error('Unknown service: {}'.format(service))
+            log.info('Unknown service: {}'.format(service))
             sys.exit(1)
         apply_service_configuration(service)
         log.debug('bootstrapping {}'.format(service))

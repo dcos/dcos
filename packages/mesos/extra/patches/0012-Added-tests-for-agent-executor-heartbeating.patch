@@ -1,7 +1,7 @@
-From 4e327f511152c422e44d216dae325bbb9f6128ed Mon Sep 17 00:00:00 2001
+From e103d94e0860fb21078fc8ec6d21a95fa13a7991 Mon Sep 17 00:00:00 2001
 From: Joseph Wu <joseph@mesosphere.io>
 Date: Thu, 13 Dec 2018 16:34:43 -0800
-Subject: [PATCH] Added tests for agent/executor heartbeating.
+Subject: [PATCH 12/16] Added tests for agent/executor heartbeating.
 
 This adds two separate tests which check if the Agent sends heartbeats
 to HTTP executors, and if the HTTP executor driver sends heartbeats
@@ -11,12 +11,12 @@ Review: https://reviews.apache.org/r/69474/
 ---
  src/examples/long_lived_executor.cpp  |   1 +
  src/examples/test_http_executor.cpp   |   4 +
- src/tests/executor_http_api_tests.cpp | 308 ++++++++++++++++++++++++++++++++++
+ src/tests/executor_http_api_tests.cpp | 308 ++++++++++++++++++++++++++
  src/tests/mesos.hpp                   |   2 +
  4 files changed, 315 insertions(+)
 
 diff --git a/src/examples/long_lived_executor.cpp b/src/examples/long_lived_executor.cpp
-index b87a806..8682870 100644
+index b87a80698..868287060 100644
 --- a/src/examples/long_lived_executor.cpp
 +++ b/src/examples/long_lived_executor.cpp
 @@ -132,6 +132,7 @@ protected:
@@ -28,7 +28,7 @@ index b87a806..8682870 100644
            break;
          }
 diff --git a/src/examples/test_http_executor.cpp b/src/examples/test_http_executor.cpp
-index e5f7cbb..0689c10 100644
+index e5f7cbb3b..0689c1072 100644
 --- a/src/examples/test_http_executor.cpp
 +++ b/src/examples/test_http_executor.cpp
 @@ -195,6 +195,10 @@ public:
@@ -43,7 +43,7 @@ index e5f7cbb..0689c10 100644
            LOG(WARNING) << "Received an UNKNOWN event and ignored";
            break;
 diff --git a/src/tests/executor_http_api_tests.cpp b/src/tests/executor_http_api_tests.cpp
-index a635e1a..99bcafb 100644
+index a635e1a3c..99bcafb65 100644
 --- a/src/tests/executor_http_api_tests.cpp
 +++ b/src/tests/executor_http_api_tests.cpp
 @@ -74,10 +74,22 @@ using recordio::Decoder;
@@ -373,7 +373,7 @@ index a635e1a..99bcafb 100644
  } // namespace internal {
  } // namespace mesos {
 diff --git a/src/tests/mesos.hpp b/src/tests/mesos.hpp
-index 60bd6e0..f965ef2 100644
+index 60bd6e098..f965ef2fd 100644
 --- a/src/tests/mesos.hpp
 +++ b/src/tests/mesos.hpp
 @@ -2780,6 +2780,8 @@ public:
@@ -386,5 +386,5 @@ index 60bd6e0..f965ef2 100644
            LOG(FATAL) << "Received unexpected UNKNOWN event";
            break;
 -- 
-2.5.1
+2.21.0
 

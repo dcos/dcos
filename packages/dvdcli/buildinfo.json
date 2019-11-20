@@ -3,7 +3,7 @@
   "single_source" : {
     "kind": "git",
     "git": "https://github.com/codedellemc/dvdcli.git",
-    "ref": "64827035b941029d01173822ca1fd1e80551cba4",
+    "ref": "7dede1486c87bef903bae9049e506af2049d734b",
     "ref_origin": "master"
   }
 }

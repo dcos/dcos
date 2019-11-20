@@ -596,6 +596,18 @@ def validate_adminrouter_tls_version_present(
     assert enabled_tls_flags_count > 0, msg
 
 
+def validate_adminrouter_x_frame_options(adminrouter_x_frame_options):
+    """
+    Provide a basic validation that checks that provided value starts with
+    one of the supported options: DENY, SAMEORIGIN, ALLOW-FROM
+    See: https://tools.ietf.org/html/rfc7034#section-2.1
+    """
+    msg = 'X-Frame-Options must be set to one of DENY, SAMEORIGIN, ALLOW-FROM'
+    regex = r"^(DENY|SAMEORIGIN|ALLOW-FROM[ \t].+)$"
+    match = re.match(regex, adminrouter_x_frame_options, re.IGNORECASE)
+    assert match is not None, msg
+
+
 def validate_s3_prefix(s3_prefix):
     # See DCOS_OSS-1353
     assert not s3_prefix.endswith('/'), "Must be a file path and cannot end in a /"
@@ -727,13 +739,13 @@ def calculate_check_config_contents(check_config, custom_checks, check_search_pa
 
 def calculate_check_config(check_time):
     # We consider only two timeouts:
-    # * 1s for immediate checks (such as checking for the presence of CLI utilities).
+    # * 5s for immediate checks (such as checking for the presence of CLI utilities).
     # * 30s for any check which is expected to take more than 1s.
     #
     # The 30s value was chosen arbitrarily. It may be increased in the future as required.
     # We chose not to use a value greater than 1min, as the checks are automatically executed
     # in parallel every minute.
-    instant_check_timeout = "1s"
+    instant_check_timeout = "5s"
     normal_check_timeout = "30s"
     check_config = {
         'node_checks': {
@@ -780,7 +792,7 @@ def calculate_check_config(check_time):
                 'ip_detect_script': {
                     'description': 'The IP detect script produces valid output',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', 'ip'],
-                    'timeout': instant_check_timeout
+                    'timeout': normal_check_timeout
                 },
                 'mesos_master_replog_synchronized': {
                     'description': 'The Mesos master has synchronized its replicated log',
@@ -791,7 +803,7 @@ def calculate_check_config(check_time):
                 'mesos_agent_registered_with_masters': {
                     'description': 'The Mesos agent has registered with the masters',
                     'cmd': ['/opt/mesosphere/bin/dcos-checks', '--role', 'agent', 'mesos-metrics'],
-                    'timeout': instant_check_timeout,
+                    'timeout': normal_check_timeout,
                     'roles': ['agent']
                 },
                 'journald_dir_permissions': {
@@ -964,6 +976,7 @@ entry = {
         validate_dcos_l4lb_min_named_ip6,
         validate_dcos_l4lb_max_named_ip6,
         validate_dcos_l4lb_enable_ipv6,
+        lambda dcos_l4lb_enable_ipset: validate_true_false(dcos_l4lb_enable_ipset),
         lambda dcos_dns_push_ops_timeout: validate_int_in_range(dcos_dns_push_ops_timeout, 50, 120000),
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
@@ -978,6 +991,7 @@ entry = {
         lambda adminrouter_tls_1_1_enabled: validate_true_false(adminrouter_tls_1_1_enabled),
         lambda adminrouter_tls_1_2_enabled: validate_true_false(adminrouter_tls_1_2_enabled),
         validate_adminrouter_tls_version_present,
+        validate_adminrouter_x_frame_options,
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
         validate_mesos_max_completed_tasks_per_framework,
         validate_mesos_recovery_timeout,
@@ -997,6 +1011,8 @@ entry = {
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
     ],
     'default': {
+        'exhibitor_azure_account_key': '',
+        'aws_secret_access_key': '',
         'bootstrap_tmp_dir': 'tmp',
         'bootstrap_variant': lambda: calculate_environment_variable('BOOTSTRAP_VARIANT'),
         'dns_bind_ip_reserved': '["198.51.100.4"]',
@@ -1009,6 +1025,7 @@ entry = {
         'adminrouter_tls_1_1_enabled': 'false',
         'adminrouter_tls_1_2_enabled': 'true',
         'adminrouter_tls_cipher_suite': '',
+        'adminrouter_x_frame_options': 'SAMEORIGIN',
         'intercom_enabled': 'true',
         'oauth_enabled': 'true',
         'oauth_available': 'true',
@@ -1080,6 +1097,7 @@ entry = {
         'dcos_l4lb_min_named_ip6': 'fd01:c::',
         'dcos_l4lb_max_named_ip6': 'fd01:c::ffff:ffff:ffff:ffff',
         'dcos_l4lb_enable_ipv6': 'false',
+        'dcos_l4lb_enable_ipset': 'true',
         'dcos_dns_push_ops_timeout': '1000',
         'no_proxy': '',
         'rexray_config_preset': '',
@@ -1168,6 +1186,8 @@ entry = {
     'secret': [
         'cluster_docker_credentials',
         'exhibitor_admin_password',
+        'exhibitor_azure_account_key',
+        'aws_secret_access_key'
     ],
     'conditional': {
         'master_discovery': {

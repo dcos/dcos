@@ -164,7 +164,8 @@ package:
             {min_named_ip, {{ dcos_l4lb_min_named_ip_erltuple }}},
             {max_named_ip, {{ dcos_l4lb_max_named_ip_erltuple }}},
             {min_named_ip6, {{ dcos_l4lb_min_named_ip6_erltuple }}},
-            {max_named_ip6, {{ dcos_l4lb_max_named_ip6_erltuple }}}
+            {max_named_ip6, {{ dcos_l4lb_max_named_ip6_erltuple }}},
+            {ipset_enabled, {{ dcos_l4lb_enable_ipset }}}
           ]
         },
         {dcos_overlay,
@@ -507,7 +508,7 @@ package:
       MESOS_FILTER_GPU_RESOURCES={{ gpus_are_scarce }}
       MESOS_HOSTNAME_LOOKUP=false
       MESOS_MAX_SLAVE_PING_TIMEOUTS=20
-      MESOS_MIN_ALLOCATABLE_RESOURCES=cpus:0.01;mem:32;ports:1|disk:32
+      MESOS_MIN_ALLOCATABLE_RESOURCES=cpus:0.01;mem:32;ports:1
       MESOS_MEMORY_PROFILING=true
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-master-modules
       MESOS_OFFER_TIMEOUT=2mins
@@ -680,6 +681,7 @@ package:
         "diagnostics-bundle-dir": "{{ diagnostics_bundles_dir }}",
         "endpoint-config": "/opt/mesosphere/etc/dcos-diagnostics-endpoint-config.json",
         "no-unix-socket": true,
+        "fetchers-count": 100,
         "agent-port": 61001
       }
   - path: /etc_slave/dcos-diagnostics-config.json
@@ -979,6 +981,9 @@ package:
                   "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/vips"]
               },
               {
+                  "Command": ["/opt/mesosphere/bin/curl", "-s", "-S", "http://localhost:62080/v1/records"]
+              },
+              {
                   "Command": ["timedatectl"]
               },
               {
@@ -988,10 +993,18 @@ package:
                   "Command": ["systemctl", "list-units", "dcos*"]
               },
               {
-                  "Command": ["sestatus"]
+                  "Command": ["sestatus"],
+                  "Optional": true
               },
               {
                   "Command": ["iptables-save"]
+              },
+              {
+                  "Command": ["ip6tables-save"]
+              },
+              {
+                  "Command": ["ipset", "list"],
+                  "Optional": true
               },
               {
                   "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
@@ -999,7 +1012,11 @@ package:
               },
               {
                   "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-slave.service -p MainPID| cut -d'=' -f2`/environ"],
-                  "Role": ["agent", "agent_public"]
+                  "Role": ["agent"]
+              },
+              {
+                  "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-slave-public.service -p MainPID| cut -d'=' -f2`/environ"],
+                  "Role": ["agent_public"]
               },
               {
                   "Command": ["docker", "--version"],
@@ -1011,6 +1028,10 @@ package:
               },
               {
                   "Command": ["/opt/mesosphere/bin/detect_ip"],
+                  "Role": ["master", "agent", "agent_public"]
+              },
+              {
+                  "Command": ["sysctl", "-a"],
                   "Role": ["master", "agent", "agent_public"]
               }
           ]
@@ -1191,6 +1212,10 @@ package:
 
       ssl_certificate includes/snakeoil.crt;
       ssl_certificate_key includes/snakeoil.key;
+  - path: /etc_master/adminrouter-ui-security.conf
+    content: |
+      # Browser security settings for the DC/OS UI
+      add_header X-Frame-Options "{{ adminrouter_x_frame_options }}";
   - path: /etc/adminrouter-tls-master.conf
     content: |
       # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
@@ -1299,7 +1324,7 @@ package:
         ## output, and will flush this buffer on a successful write. Oldest metrics
         ## are dropped first when this buffer fills.
         ## This buffer only fills when writes fail to output plugin(s).
-        metric_buffer_limit = 10000
+        metric_buffer_limit = 90000
         ## Collection jitter is used to jitter the collection by a random amount.
         ## Each plugin will sleep for a random time within jitter before collecting.
         ## This can be used to avoid many plugins querying things like sysfs at the
@@ -1362,6 +1387,8 @@ package:
       [[outputs.prometheus_client]]
         ## Address to listen on
         listen = ":61091"
+        ## Expiration interval for each metric before it's evicted from cache.
+        expiration_interval = "60s"
   - path: /etc_master/telegraf/telegraf.d/master.conf
     content: |
       # Additional Telegraf config for masters
@@ -1416,6 +1443,8 @@ package:
         user_agent = "Telegraf-dcos-containers"
       # Plugin for monitoring statsd metrics from mesos tasks
       [[inputs.dcos_statsd]]
+        ## The interval at which to collect metrics
+        interval = "30s"
         ## The address on which the command API should listen
         listen = "/run/dcos/telegraf/dcos_statsd.sock"
         ## The directory in which container information is stored

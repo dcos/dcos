@@ -1,19 +1,5 @@
-import os
-import stat
-
 import gen
 from gen.internals import Source, Target
-
-
-def validate_ssh_key_path(ssh_key_path):
-    assert os.path.isfile(ssh_key_path), 'could not find ssh private key: {}'.format(ssh_key_path)
-    assert stat.S_IMODE(
-        os.stat(ssh_key_path).st_mode) & (stat.S_IRWXG + stat.S_IRWXO) == 0, (
-            'ssh_key_path must be only read / write / executable by the owner. It may not be read / write / executable '
-            'by group, or other.')
-    with open(ssh_key_path) as fh:
-        assert 'ENCRYPTED' not in fh.read(), ('Encrypted SSH keys (which contain passphrases) '
-                                              'are not allowed. Use a key without a passphrase.')
 
 
 def compare_lists(first_json: str, second_json: str):
@@ -37,7 +23,6 @@ source = Source({
         lambda master_list, public_agent_list: compare_lists(master_list, public_agent_list),
         # the agent lists shouldn't contain any common items
         lambda agent_list, public_agent_list: compare_lists(agent_list, public_agent_list),
-        validate_ssh_key_path,
         lambda ssh_port: gen.calc.validate_int_in_range(ssh_port, 1, 32000),
         lambda ssh_parallelism: gen.calc.validate_int_in_range(ssh_parallelism, 1, 100)
     ],

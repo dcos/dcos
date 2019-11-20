@@ -1,7 +1,7 @@
-From 3570677514d4f08e1b81eac7ed54c5fce0aef2dc Mon Sep 17 00:00:00 2001
+From 8fcf6db6d06c3eb950d62c440786d987558fd2b4 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Mon, 13 Aug 2018 20:05:26 +0200
-Subject: [PATCH] Added 'received' timestamp into `process::Request`.
+Subject: [PATCH 04/16] Added 'received' timestamp into `process::Request`.
 
 This allows us to note when a request comes in and
 hence calculate request processing time.
@@ -13,7 +13,7 @@ Review: https://reviews.apache.org/r/68992
  1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/3rdparty/libprocess/include/process/http.hpp b/3rdparty/libprocess/include/process/http.hpp
-index fa66b0f..a1b0bb9 100644
+index fa66b0fe2..a1b0bb9e3 100644
 --- a/3rdparty/libprocess/include/process/http.hpp
 +++ b/3rdparty/libprocess/include/process/http.hpp
 @@ -27,6 +27,7 @@
@@ -43,5 +43,5 @@ index fa66b0f..a1b0bb9 100644
     * Returns whether the encoding is considered acceptable in the
     * response. See RFC 2616 section 14.3 for details.
 -- 
-2.5.1
+2.21.0
 

@@ -3,6 +3,7 @@ Description=DC/OS Checks API: Provides node and cluster checks
 
 [Service]
 Restart=always
+RestartSec=5
 StartLimitInterval=0
 
 LimitNOFILE=16384
@@ -15,4 +16,6 @@ User=dcos_check_runner
 SupplementaryGroups=dcos_adminrouter
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/dcos-check-runner.env
+# Ensure dns is ready
+ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStart=/opt/mesosphere/bin/dcos-check-runner http-server --config ${DCOS_DIAGNOSTICS_CONFIG_PATH}

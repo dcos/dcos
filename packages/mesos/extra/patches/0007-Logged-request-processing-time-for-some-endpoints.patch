@@ -1,7 +1,7 @@
-From c2666e429be69bf34fe62acbf3bab813211c8d5a Mon Sep 17 00:00:00 2001
+From 74a7fd63298ec92598427ffce2fd8c1cdd93aeb8 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Thu, 11 Oct 2018 15:58:41 +0200
-Subject: [PATCH] Logged request processing time for some endpoints.
+Subject: [PATCH 07/16] Logged request processing time for some endpoints.
 
 This patch leverages `logResponse()` function to print response status
 code together with the request processing time for some endpoints on
@@ -21,10 +21,10 @@ Review: https://reviews.apache.org/r/68994
  2 files changed, 28 insertions(+), 7 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 873d685..bb49f10 100644
+index 3f0c8c0ce..392057583 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
-@@ -903,7 +903,10 @@ void Master::initialize()
+@@ -929,7 +929,10 @@ void Master::initialize()
          [this](const process::http::Request& request,
                 const Option<Principal>& principal) {
            logRequest(request);
@@ -36,7 +36,7 @@ index 873d685..bb49f10 100644
          });
    route("/flags",
          READONLY_HTTP_AUTHENTICATION_REALM,
-@@ -963,7 +966,10 @@ void Master::initialize()
+@@ -989,7 +992,10 @@ void Master::initialize()
          [this](const process::http::Request& request,
                 const Option<Principal>& principal) {
            logRequest(request);
@@ -48,7 +48,7 @@ index 873d685..bb49f10 100644
          });
    // TODO(ijimenez): Remove this endpoint at the end of the
    // deprecation cycle on 0.26.
-@@ -981,7 +987,10 @@ void Master::initialize()
+@@ -1007,7 +1013,10 @@ void Master::initialize()
          [this](const process::http::Request& request,
                 const Option<Principal>& principal) {
            logRequest(request);
@@ -60,7 +60,7 @@ index 873d685..bb49f10 100644
          });
    route("/state-summary",
          READONLY_HTTP_AUTHENTICATION_REALM,
-@@ -989,7 +998,10 @@ void Master::initialize()
+@@ -1015,7 +1024,10 @@ void Master::initialize()
          [this](const process::http::Request& request,
                 const Option<Principal>& principal) {
            logRequest(request);
@@ -72,7 +72,7 @@ index 873d685..bb49f10 100644
          });
    // TODO(ijimenez): Remove this endpoint at the end of the
    // deprecation cycle.
-@@ -1007,7 +1019,10 @@ void Master::initialize()
+@@ -1033,7 +1045,10 @@ void Master::initialize()
          [this](const process::http::Request& request,
                 const Option<Principal>& principal) {
            logRequest(request);
@@ -85,10 +85,10 @@ index 873d685..bb49f10 100644
    route("/maintenance/schedule",
          READWRITE_HTTP_AUTHENTICATION_REALM,
 diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
-index 1d5dad5..07066a7 100644
+index f8aa7db2c..97bb48f64 100644
 --- a/src/slave/slave.cpp
 +++ b/src/slave/slave.cpp
-@@ -809,7 +809,10 @@ void Slave::initialize()
+@@ -803,7 +803,10 @@ void Slave::initialize()
          [this](const http::Request& request,
                 const Option<Principal>& principal) {
            logRequest(request);
@@ -100,7 +100,7 @@ index 1d5dad5..07066a7 100644
          });
    route("/flags",
          READONLY_HTTP_AUTHENTICATION_REALM,
-@@ -848,7 +851,10 @@ void Slave::initialize()
+@@ -842,7 +845,10 @@ void Slave::initialize()
          [this](const http::Request& request,
                 const Option<Principal>& principal) {
            logRequest(request);
@@ -113,5 +113,5 @@ index 1d5dad5..07066a7 100644
  
    const PID<Slave> slavePid = self();
 -- 
-2.5.1
+2.21.0
 

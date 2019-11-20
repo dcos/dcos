@@ -1,29 +1,146 @@
 ## DC/OS 1.12.3
 
-```
-* For any significant improvement to DC/OS add an entry to Fixed and Improved section.
-* For Security updates, please call out in Security updates section.
-* Add to the top of the existing list.
-* External Projects like Mesos and Marathon shall provide a link to their published changelogs.
+## DC/OS 1.12.5 (in development)
 
-Format of the entries must be.
+* Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0)
+* Signal now sends telemetry data every 5 minutes instead of every hour. This is to align the frequency with DC/OS Enterprise.
 
-* Entry with no-newlines. (DCOS_OSS_JIRA)
-<new-line>
-* Entry two with no-newlines. (DCOS_OSS_JIRA_2)
-```
+* Updated to Mesos [1.7.3-dev](https://github.com/apache/mesos/blob/d8acd9cfacd2edf8500f07f63a8837aa0ddd14ba/CHANGELOG)
 
-## DC/OS 1.12.3 (Next Release. Please Update News Entries in this Section).
+* Metronome post-install configuration can be added to `/var/lib/dcos/metronome/environment` (DCOS_OSS-5509)
+
+* Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
 
 ### Notable changes
 
+* Updated DC/OS UI to [1.12+v2.26.17](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.26.17).
 
-### Breaking changes
+* Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/tree/b8a73dd)
 
+### Fixed and improved
+
+* [Metronome] Querying run detail with embed=history, successfulFinishedRuns and failedFinishedRuns contains new field tasks which is an array of taskIds of that finished run. This will allow people to query task ids even for finished job runs.
+
+* [Metronome] Fixes metronome where it did not use the revive operation.
+
+* [Metronome] Updates to fix daylight saving issues.
+
+* Changed `dcos-zk backup` and `dcos-zk restore` to exit early if ZooKeeper is running. (DCOS_OSS-5353)
+
+* Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
+
+* The content of `/var/log/mesos-state.tar.gz` is now included in the diagnostics bundle. (DCOS-56403)
+
+* Prune VIPs with no backends in order to avoid unbounded growth of state and messages exchanged among `dcos-net` processes. (DCOS_OSS-5356)
+
+* DC/OS Net: Fix support for big sets in the ipset manager. (COPS-5229)
+
+* Added new diagnostics bundle REST API with performance improvements. (DCOS_OSS-5098)
+
+* Fixes increasing diagnostics job duration when job is done (DCOS_OSS-5494)
+
+* Remove nogroup creation. (COPS-5220)
+
+* Increase number of diagnostics fetchers (DCOS-51483)
+
+* DC/OS overlay networks should be compared by-value. (DCOS_OSS-5620)
+
+* Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
+
+### Security updates
+
+
+## DC/OS 1.12.4
+
+### Notable changes
+
+* Updated DC/OS UI to [1.12+v2.26.15](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.26.15)
+
+* ZooKeeper instances on master nodes can now be backed up and restored via a dedicated command line script `dcos-zk` that is shipped with DC/OS. (DCOS_OSS-5186)
+
+* Updated to [Mesos 1.7.3-dev](https://github.com/apache/mesos/blob/0f4e34b4dfe98178a7d94f5242041b5958eb7a24/CHANGELOG).
+
+* Updated to [Metronome 0.6.23](https://github.com/dcos/metronome/tree/be50099).
+
+* Updated to [Marathon 1.7.216](https://github.com/mesosphere/marathon/tree/9e2a9b579).
+
+* Updated REX-Ray to [version 0.11.4](https://github.com/rexray/rexray/releases/tag/v0.11.4). (DCOS_OSS-4316, COPS-3961)
+
+* Updated ZooKeeper to release [3.4.14](https://zookeeper.apache.org/doc/r3.4.14/releasenotes.html). (DCOS_OSS-5002)
+
+* Introduced a new DC/OS configuration variable `adminrouter_x_frame_options`, defaulting to `SAMEORIGIN`. This can be used for controlling the `X-Frame-Options` HTTP header sent with the DC/OS UI. (DCOS-49594)
+* Updated ref of dvdcli to fix dvdcli package build (DCOS-53581)
+
+* Updated urllib3 version to 1.24.2 due to: https://nvd.nist.gov/vuln/detail/CVE-2019-11324. (DCOS-52210)
+
+### Fixed and improved
+
+* `dcos_generate_config[ee].sh --validate-config` doesn't complain about missing deprecated `ssh_*` options anymore. (DCOS_OSS-5152)
+
+* Fixed undecoded framework names in metric tags. (DCOS_OSS-5039)
+
+* Fixed a bug as of which DC/OS checks may accidentally fail, pre-maturely reporting `network is unreachable`. (DCOS-47608)
+
+* Improved Cosmos to handle more transient errors behind the scenes, enhancing its fault tolerance. (DCOS-51139)
+
+* `docker-gc` now removes unused volumes. (DCOS_OSS-1502) CONF
+
+* Fixed a bug in Admin Router's service endpoint as of which the DCOS_SERVICE_REQUEST_BUFFERING setting was not adhered to in all cases. (DCOS_OSS-4999)
+
+* Consolidated Telegraf for workloads that emit a large number of metrics. (DCOS-50994)
+
+* Consolidated Mesos metric collection by tuning timeout constants used in the Telegraf Mesos metric plugin. (DCOS-50672)
+
+* Prefixed illegal Prometheus metric names with an underscore, to enhance compatibility with more metric generators. (COPS-4634, COPS-3067)
+
+* Fixed dcos-net-setup.py failing when systemd network directory did not exist. (DCOS-49711) CONF
+
+* Fixed a race condition in L4LB. (DCOS_OSS-4939)
+
+* [Marathon] Introduced global throttling for Marathon health checks (MARATHON-8596)
+
+* [Marathon] Do not fail on offers with RAW and BLOCK disk types (MARATHON-8590)
+
+* [Marathon] Map `tcp,udp` to `udp,tcp` during migration (MARATHON-8575)
+
+* [Marathon] Allow all users to execute /marathon/bin/marathon (MARATHON-8581)
+
+* [Marathon] Response asynchronously for all endpoints (MARATHON-8562)
+
+* [Marathon] Force expunge and Decommission all instances on service removal (DCOS-49521)
+
+* Conflict between VIP port and port mapping. (DCOS_OSS-4970)
+
+* CNAME records should appear before A/AAAA records. (DCOS_OSS-5108)
+
+* ipset protocol ignores a missing `match` flag on some kernel versions. (DCOS-52780)
+
+* Support large uploads for Admin Router service endpoint. (DCOS-52768)
+
+* Added Round-Robin DNS support. (DCOS_OSS-5118)
+
+* [Metronome] Missing request metrics in Metronome. (DCOS_OSS-5020)
+
+* [Metronome] Improve secrets validation to only point out unprovided secrets. (DCOS_OSS-5019)
+
+### Security updates
+
+* Updated to [OpenSSL 1.0.2r](https://www.openssl.org/news/openssl-1.0.2-notes.html). (DCOS_OSS-4868)
+
+* The configuration parameters `aws_secret_access_key` and `exhibitor_azure_account_key` for exhibitor are now marked as secret and will thus not be revealed in `user.config.yaml` on cluster nodes but will from now on appear only in `user.config.full.yaml` which has stricter read permissions and is not included in DC/OS Diagnostics bundles. (DCOS-51751)
+
+* Made it possible to install and run DC/OS with `/tmp` mounted with `noexec`. (DCOS-53077)
+
+
+## DC/OS 1.12.3 (2019-03-14)
+
+### Notable changes
 
 ### Fixed and improved
 
 * Include additional container metrics if provided (DCOS_OSS-4624)
+
+* Improved the performance of command health checks to increase scalability. (DCOS-53656)
 
 * Tighten permissions on ZooKeeper directories (DCOS-47687)
 
@@ -33,11 +150,13 @@ Format of the entries must be.
 
 * Telegraf: Fix a bug in the Mesos input plugin that could cause metrics to be mis-tagged (DCOS_OSS-4760)
 
-### Security Updates
+* Telegraf: Doubled the buffer limit to drop fewer metrics (DCOS-49277)
+* Telegraf: Increase the default polling interval to 20s (DCOS-49301)
+
+### Security updates
 
 
-
-## DC/OS 1.12.2
+## DC/OS 1.12.2 (2019-02-11)
 
 ### Notable changes
 
@@ -45,11 +164,9 @@ Format of the entries must be.
 
 * Add thisnode.thisdcos.directory dns zone (DCOS_OSS-4666)
 
-### Breaking changes
-
 ### Fixed and improved
 
-* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
+* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false. (DCOS-40539)
 
 * Expose a Mesos flag to allow the network CNI root directory to be persisted across host reboot. (DCOS_OSS-4667)
 
@@ -59,10 +176,10 @@ Format of the entries must be.
 
 * Make cluster identity configurable in dcos-net (DCOS_OSS-4620)
 
-### Security Updates
+### Security updates
 
 
-## DC/OS 1.12.1
+## DC/OS 1.12.1 (2019-01-03)
 
 ### Notable changes
 
@@ -71,8 +188,6 @@ Format of the entries must be.
 * Users can now supply additional Telegraf settings (DCOS-42214)
 
 * Bumped DC/OS UI to [1.12+v2.25.11](https://github.com/dcos/dcos-ui/releases/tag/1.12%2Bv2.25.11)
-
-### Breaking changes
 
 ### Fixed and improved
 
@@ -98,25 +213,12 @@ Format of the entries must be.
 
 * Number of concurrent subscribers to Mesos master operator API is now capped to 1000 by default, with a Mesos master flag to configure (DCOS_OSS-4164)
 
-### Security Updates
+### Security updates
 
 * Update Java to 8u192. (DCOS_OSS-4381)
 
 
-## DC/OS 1.12.0
-
-```
-* For any significant improvement to DC/OS add an entry to Fixed and Improved section.
-* For Security updates, please call out in Security updates section.
-* Add to the top of the existing list.
-* External Projects like Mesos and Marathon shall provide a link to their published changelogs.
-
-Format of the entries must be.
-
-* Entry with no-newlines. (DCOS_OSS_JIRA)
-<new-line>
-* Entry two with no-newlines. (DCOS_OSS_JIRA_2)
-```
+## DC/OS 1.12.0 (2018-10-25)
 
 ### What's new
 
@@ -140,13 +242,19 @@ Format of the entries must be.
 
 * Added a DC/OS API endpoint to distinguish the 'open' and 'enterprise' build variants. (DCOS_OSS-2283)
 
+* Updated DC/OS UI to 1.12+v2.25.10 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.25.10)
+
+* Updated Metronome to 0.5.0. (DCOS_OSS-2338)
+
+* Updated OTP version to 20.3.2 (DCOS_OSS-2378)
+
+* Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)
 
 ### Breaking changes
 
 * Removed the DC/OS web installer. (DCOS_OSS-2256)
 
-* Replaced dcos-metrics with Telegraf (DCOS_OSS-3714)
-
+* Replaced dcos-metrics with Telegraf. (DCOS_OSS-3714)
 
 ### Fixed and improved
 
@@ -191,18 +299,3 @@ Format of the entries must be.
 * Upgrade OTP version (DCOS_OSS-3655)
 
 * Marathon framework ID generation is now very conservative. [See more](https://github.com/mesosphere/marathon/blob/master/changelog.md#marathon-framework-id-generation-is-now-very-conservative) (MARATHON-8420)
-
-
-### Security Updates
-
-* Mark `dcos6` overlay network as disabled if `enable_ipv6` is set to false (DCOS-40539)
-
-### Notable changes
-
-* Updated DC/OS UI to 1.12+v2.25.10 [Changelog](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.25.10)
-
-* Updated Metronome to 0.5.0. (DCOS_OSS-2338)
-
-* Updated OTP version to 20.3.2 (DCOS_OSS-2378)
-
-* Updated REX-Ray version to 0.11.2 (DCOS_OSS-3597) [rexray v0.11.2](https://github.com/rexray/rexray/releases/tag/v0.11.2)

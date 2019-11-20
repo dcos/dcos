@@ -10,7 +10,7 @@ if (!$env:VIRTUAL_ENV) {
 }
 
 # Install the latest version of pip
-pip install -U pip
+python -m pip install -U pip
 
 # Install the packages in editable mode to the virtual environment.
 pip install -e $PWD

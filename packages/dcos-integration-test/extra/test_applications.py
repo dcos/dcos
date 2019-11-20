@@ -72,6 +72,11 @@ def deploy_test_app_and_check_windows(dcos_api_session, app: dict, test_uuid: st
             raise Exception(msg.format(r.status_code, r.reason, r.text))
 
 
+@pytest.mark.first
+def test_docker_image_availablity():
+    assert test_helpers.docker_pull_image("debian:stretch-slim"), "docker pull failed for image used in the test"
+
+
 def test_if_marathon_app_can_be_deployed(dcos_api_session):
     """Marathon app deployment integration test
 
@@ -167,7 +172,7 @@ def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_sess
             {
                 'name': 'ct1',
                 'resources': {'cpus': 0.1, 'mem': 32},
-                'image': {'kind': 'DOCKER', 'id': 'debian:jessie'},
+                'image': {'kind': 'DOCKER', 'id': 'debian:stretch-slim'},
                 'exec': {'command': {'shell': 'touch foo; while true; do sleep 1; done'}},
                 'healthcheck': {'command': {'shell': 'test -f foo'}}
             },

@@ -306,7 +306,7 @@ class TestUiRoot:
         assert resp.status_code == 200
         resp.encoding = 'utf-8'
         assert resp.text == uniq_content
-        verify_header(resp.headers.items(), 'X-Frame-Options', 'SAMEORIGIN')
+        verify_header(resp.headers.items(), 'X-Frame-Options', 'DENY')
 
 
 class TestMisc:

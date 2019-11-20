@@ -312,6 +312,7 @@ local function recursive_resolve(auth, path, marathon_cache, mesos_cache)
     local do_request_buffering = true
     local err_code = nil
     local err_text = nil
+    local service_name = ""
 
     -- Resolve all the services!
     for i = 1, RESOLVE_LIMIT do

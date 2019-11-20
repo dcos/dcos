@@ -1,9 +1,6 @@
 #!/bin/bash
-mkdir -p /pkg/src/github.com/dcos
-# Create the GOPATH for the go tool to work properly
-mv /pkg/src/dcos-diagnostics /pkg/src/github.com/dcos/
-cd /pkg/src/github.com/dcos/dcos-diagnostics/
-go get
+mv /pkg/src/dcos-diagnostics /
+cd /dcos-diagnostics
 make install
 # Copy the build from the bin to the correct place
 cp -r /pkg/bin/ "$PKG_PATH"
@@ -19,6 +16,9 @@ slave_public_socket_service=${PKG_PATH}/dcos.target.wants_slave_public/dcos-diag
 mkdir -p $(dirname $master_service)
 mkdir -p $(dirname $slave_service)
 mkdir -p $(dirname $slave_public_service)
+
+cp /pkg/extra/dcos-diagnostics-mesos-state.service "${PKG_PATH}/dcos.target.wants_master/dcos-diagnostics-mesos-state.service"
+cp /pkg/extra/dcos-diagnostics-mesos-state.timer "${PKG_PATH}/dcos.target.wants_master/dcos-diagnostics-mesos-state.timer"
 
 cp /pkg/extra/dcos-diagnostics-master.service "$master_service"
 cp /pkg/extra/dcos-diagnostics-agent.service "$slave_service"
