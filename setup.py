@@ -107,6 +107,7 @@ setup(
             'cloud-config.yaml',
             'cloud-config-windows.yaml',
             'dcos-config.yaml',
+            'dcos-config-win.yaml',
             'dcos-config-windows.yaml',
             'dcos-metadata.yaml',
             'dcos-services.yaml',

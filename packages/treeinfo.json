@@ -5,7 +5,8 @@
     "erts",
     "openstackservice",
     "vcredist",
-    "nssm"
+    "nssm",
+    "winpanda"
   ],
   "bootstrap_package_list": ["dcos-image"]
 }
