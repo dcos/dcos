@@ -56,15 +56,15 @@ class PackageManifest:
         self._context = ResourceContext(istor_nodes, cluster_conf, pkg_id)
 
         # Load package info descriptor
-        self._pkg_info = pkg_info if isinstance(pkg_info, dict) else (
+        self._pkg_info = pkg_info if pkg_info is not None else (
             self._load_pkg_info()
         )
         # Load package extra installation options descriptor
-        self._pkg_extcfg = pkg_extcfg if isinstance(pkg_extcfg, dict) else (
+        self._pkg_extcfg = pkg_extcfg if pkg_extcfg is not None else (
             self._load_pkg_extcfg()
         )
         # Load package system service options descriptor
-        self._pkg_svccfg = pkg_svccfg if isinstance(pkg_svccfg, dict) else (
+        self._pkg_svccfg = pkg_svccfg if pkg_svccfg is not None else (
                 self._load_pkg_svccfg()
         )
         # TODO: Add content verification (jsonschema) for self.body. Raise
@@ -86,6 +86,11 @@ class PackageManifest:
 
     @property
     def pkg_id(self):
+        """"""
+        return self._pkg_id
+
+    @property
+    def istor_nodes(self):
         """"""
         return self._pkg_id
 

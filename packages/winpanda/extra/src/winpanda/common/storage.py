@@ -34,6 +34,7 @@ from collections import namedtuple
 from pathlib import Path
 import posixpath
 import shutil
+import tempfile as tf
 
 from common import logger
 from common import utils as cm_utl
@@ -394,13 +395,67 @@ class InstallationStorage:
         pkgtarball_fpath = (
             self.tmp_dpath.joinpath(pkg_id.pkg_id).with_suffix('.tar.xz')
         )
+
         try:
-            cm_utl.unpack(str(pkgtarball_fpath), self.pkgrepo_dpath)
+            # Try to cleanup local package repository before trying to
+            # create a package installation directory there
+            pkg_inst_dpath = self.pkgrepo_dpath.joinpath(pkg_id.pkg_id)
+            try:
+                if pkg_inst_dpath.exists():
+                    if pkg_inst_dpath.is_dir():
+                        shutil.rmtree(str(pkg_inst_dpath))
+                    elif pkg_inst_dpath.is_file and (
+                        not pkg_inst_dpath.is_symlink()
+                    ):
+                        pkg_inst_dpath.unlink()
+                    else:
+                        raise cr_exc.InstallationStorageError(
+                            f'Add package: {pkg_id}: Auto-cleanup'
+                            f' package repository: Removing objects other than'
+                            f' regular directories and files is not supported'
+                        )
+                    LOG.debug(f'{msg_src}: Add package: {pkg_id}: Auto-cleanup:'
+                              f' {pkg_inst_dpath}')
+            except (OSError, RuntimeError) as e:
+                raise cr_exc.InstallationStorageError(
+                    f'Add package: {pkg_id}: Auto-cleanup: {pkg_inst_dpath}:'
+                    f' {type(e).__name__}: {e}'
+                ) from e
+
+            with tf.TemporaryDirectory(dir=str(self.tmp_dpath)) as temp_dpath:
+                cm_utl.unpack(str(pkgtarball_fpath), temp_dpath)
+
+                try:
+                    # Lookup for a directory named after the package ID
+                    src_dpath = [
+                        path for path in Path(temp_dpath).iterdir() if (
+                            path.name == pkg_id.pkg_id
+                        )
+                    ][0]
+                    if src_dpath.is_dir():
+                        shutil.copytree(
+                            str(src_dpath), str(pkg_inst_dpath)
+                        )
+                    else:
+                        # Only a directory may be named after the package ID,
+                        # otherwise a package structure is broken
+                        raise cr_exc.RCExtractError(
+                            f'Add package: {pkg_id}: Broken package structure'
+                        )
+                except IndexError:
+                    # Use the temporary directory as package's container
+                    shutil.copytree(
+                        temp_dpath, str(pkg_inst_dpath)
+                    )
+
             LOG.debug(f'{msg_src}: Add package: Extract: {pkg_id}')
         except Exception as e:
-            raise cr_exc.RCExtractError(
-                f'Add package: {pkg_id}: {type(e).__name__}: {e}'
-            )
+            if type(e) is not cr_exc.RCExtractError:
+                raise cr_exc.RCExtractError(
+                    f'Add package: {pkg_id}: {type(e).__name__}: {e}'
+                )
+            else:
+                raise
         finally:
             pkgtarball_fpath.unlink()
         # Create a work, runtime and log data directories for a package.

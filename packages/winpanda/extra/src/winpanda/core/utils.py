@@ -173,3 +173,20 @@ def rc_load_yaml(fpath, emheading=None, render=False, context=None):
         raise cr_exc.RCInvalidError(err_msg) from e
     else:
         return y_body
+
+
+def pkg_sort_by_deps(packages):
+    """Get a list of package manager objects sorted by mutual dependencies of
+    their associated DC/OS packages.
+    Ref:
+        [1] Topological sorting.
+            https://en.wikipedia.org/wiki/Topological_sorting
+
+    :param packages: list(Package), unordered sequence of DC/OS package manager
+                     objects
+    :return:         list(Package), ordered sequence of DC/OS package manager
+                     objects
+    """
+    # TODO: Implement topological sorting algorithm.
+
+    return packages
