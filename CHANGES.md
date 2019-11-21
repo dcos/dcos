@@ -40,6 +40,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Calico in DC/OS: introduced calico control panel services deployed on all agents and masters. (DCOS-58583)
 
+* Calico in DC/OS: introduced Calico network for Docker runtime. (DCOS-58584)
+
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
