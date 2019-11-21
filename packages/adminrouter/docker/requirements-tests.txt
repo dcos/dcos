@@ -16,3 +16,6 @@ pytest-repeat==0.4.1
 pytest-timeout==1.2.0
 pytest==3.2.1
 requests==2.20.1
+grpcio==1.25.0
+grpcio-tools==1.25.0
+grpcio-status==1.25.0

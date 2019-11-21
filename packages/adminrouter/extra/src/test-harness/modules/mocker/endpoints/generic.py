@@ -77,8 +77,6 @@ class Endpoint(abc.ABC):
         `result` can be anything that makes sense in particular function's case.
     """
     _context = None
-    _httpd_thread = None
-    _httpd = None
 
     def __init__(self, endpoint_id):
         """Initialize new Endpoint object
@@ -101,23 +99,6 @@ class Endpoint(abc.ABC):
     def id(self):
         """Return ID of the endpoint"""
         return self._context.data['endpoint_id']
-
-    def start(self):
-        """Start endpoint's threaded httpd server"""
-        log.debug("Starting endpoint `%s`", self.id)
-        self._httpd_thread.start()
-        self._httpd.startup_done.wait()
-
-    def stop(self):
-        """Perform cleanup of the endpoint threads
-
-        This method should be used right before destroying the Endpoint object.
-        It takes care of stopping internal httpd server.
-        """
-        log.debug("Stopping endpoint `%s`", self.id)
-        self._httpd.shutdown()
-        self._httpd_thread.join()
-        self._httpd.server_close()
 
     def reset(self, aux_data=None):
         """Reset endpoint to the default/good state
@@ -178,6 +159,42 @@ class Endpoint(abc.ABC):
             self._context.data["always_redirect"] = True
             self._context.data["redirect_target"] = aux_data
 
+    @abc.abstractmethod
+    def start(self):
+        pass
+
+    @abc.abstractmethod
+    def stop(self):
+        pass
+
+
+class HTTPEndpoint(Endpoint):
+    """HTTP-based endpoint base class, from which all HTTP-server like
+       endpoints must inherit.
+
+       This class represents common behaviour shared across all HTTP endpoints,
+       no matter the function or repository flavour (ee/open).
+    """
+    _httpd_thread = None
+    _httpd = None
+
+    def start(self):
+        """Start endpoint's threaded httpd server"""
+        log.debug("Starting endpoint `%s`", self.id)
+        self._httpd_thread.start()
+        self._httpd.startup_done.wait()
+
+    def stop(self):
+        """Perform cleanup of the endpoint threads
+
+        This method should be used right before destroying the Endpoint object.
+        It takes care of stopping internal httpd server.
+        """
+        log.debug("Stopping endpoint `%s`", self.id)
+        self._httpd.shutdown()
+        self._httpd_thread.join()
+        self._httpd.server_close()
+
 
 class StatefullHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     """Base class for all endpoint-internal httpd servers.
@@ -210,7 +227,7 @@ class StatefullHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         self.startup_done.set()
 
 
-class TcpIpHttpEndpoint(Endpoint):
+class TcpIpHttpEndpoint(HTTPEndpoint):
     """Base class for all endpoints that serve TCP/IP requests
 
         This class binds together HTTPd server code, http request handler and
@@ -226,6 +243,8 @@ class TcpIpHttpEndpoint(Endpoint):
             port (int): tcp port that httpd server will listen on
             ip (str): ip address that httpd server will listen on, by default
                 listen on all addresses
+            keyfile(str): path to the key of the certificate
+            certfile(str): path to the certificate to be used by server (if any)
         """
         if certfile is not None and keyfile is not None:
             endpoint_id = "https://{}:{}".format(ip, port)
@@ -292,7 +311,7 @@ class UnixSocketStatefulHTTPServer(StatefullHTTPServer):
 
 # http://stackoverflow.com/questions/21650370/setting-up-an-http-server-that-listens-over-a-file-socket
 # https://docs.python.org/3.3/library/socketserver.html
-class UnixSocketHTTPEndpoint(Endpoint):
+class UnixSocketHTTPEndpoint(HTTPEndpoint):
     """Base class for all endpoints that serve requests on the Unix socket
 
         This class binds together HTTPd server code, http request handler and
@@ -307,6 +326,8 @@ class UnixSocketHTTPEndpoint(Endpoint):
                 requests received by internal httpd server
             path (str): Unix socket path, that internal httpd server will listen
                 on
+            keyfile(str): path to the key of the certificate
+            certfile(str): path to the certificate to be used by server (if any)
         """
         if certfile is not None and keyfile is not None:
             endpoint_id = "https://{}".format(path)
