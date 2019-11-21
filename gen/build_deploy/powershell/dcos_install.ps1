@@ -6,28 +6,36 @@
 .DESCRIPTION
   The script will:
   - Create needed DC/OS directories on Windows machine
-  - Download *.zip achive from provided $url to C:\dcos
+  - Download prerequisites.zip achive from provided $url to C:\dcos
   - Extract the archive
-  - Install pre-requisites using choco: 7-zip, nssm, vcredist, git, python
-  - create ScheduledTask to execute RunOnce.ps1
-  - create RunOnce.ps1 which will contain executor for Winpanda and clean the parent ScheduledTask
+  - Install the pre-requisites: 7-zip
+  - Unpack from DC/OS Windows Installer : Python, Winpanda
+  - Create ScheduledTask to execute RunOnce.ps1
+  - Create RunOnce.ps1 which will contain executor for Winpanda and clean the parent ScheduledTask
+    !Note! RunOnce.ps1 is responsible to start Winpanda upon Windows reboot completion)
 
-.PARAMETER InitialDirectory
+.PARAMETER bootstrap_url
+  The url of Nginx web server started on Boostrrap agent to serve Windows installation files
+
+.PARAMETER version
+  DC/OS version
+
+.PARAMETER masters
+  A comma separated list of Master(s) IP addresses
+
+.PARAMETER baseDir
   The initial directory which this example script will use C:\dcos
 
-.PARAMETER Add
-  A switch parameter that will cause the example function to ADD content.
-
-Add or remove PARAMETERs as required.
-
 .NOTES
+    Updated: 2019-11-08       Extended startup parameters to acommodate correct script run.
     Updated: 2019-09-03       Added dcos-install.ps1 which is addressed to install pre-requisites on Windows agent and run Winpanda.
     Release Date: 2019-09-03
 
   Author: Sergii Matus
 
 .EXAMPLE
-#  .\dcos_install.ps1 https://dcos-win.s3.amazonaws.com/bootstrap.zip http://bootstrap.url "1.13.3/genconf_win/serve" "master1,master2"
+#  .\dcos_install.ps1 <bootstrap_url> <version> <masters>
+#  .\dcos_install.ps1 "http://int-bootstrap1-examplecluster.example.com:8080" "1.13.0" "master1,master2"
 
 # requires -version 2
 #>
@@ -36,10 +44,9 @@ Add or remove PARAMETERs as required.
 
 # PARAMETERS
 param (
-    [string] $url_prerequisites,
-    [string] $url_dcoswintarball,
-    [string] $bootstrap_endpoint,
-    [string] $masters
+    [Parameter(Mandatory=$true)] [string] $bootstrap_url,
+    [Parameter(Mandatory=$true)] [string] $version,
+    [Parameter(Mandatory=$true)] [string] $masters
 )
 
 # GLOBAL
@@ -126,9 +133,8 @@ function SetupDirectories() {
     $dirs = @(
         "$($basedir)",
         "$($basedir)\bootstrap",
-        "$($basedir)\chocolatey_offline",
-        "$($basedir)\conf",
-        "C:\winpanda"
+        "$($basedir)\bootstrap\prerequisites",
+        "$($basedir)\conf"
     )
     # setup
     Write-Log("Creating a directories structure:")
@@ -150,16 +156,18 @@ function Download([String] $url, [String] $file) {
     Write-Log("Download complete. Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)")
 }
 
-function ExtractTarXz($infile){
+function ExtractTarXz($infile, $outdir){
     if (-not (test-path "$env:ProgramFiles\7-Zip\7z.exe")) {
         throw "$env:ProgramFiles\7-Zip\7z.exe needed"
     }
-    Set-Alias sz "$env:ProgramFiles\7-Zip\7z.exe"
+    $sz = "$env:ProgramFiles\7-Zip\7z.exe"
     $Source = $infile
-    $Target = $(Split-Path -Path $infile)
+    $Target = $outdir
     Write-Log("Extracting $Source to $Target")
     $start_time = Get-Date
-    & cmd.exe "/C 7z x $Source -so | 7z x -aoa -si -ttar -o$Target"
+    $exec = ("`"{0}`" x `"{1}`" -so | `"{2}`" x -aoa -si -ttar -o`"{3}`"" -f $sz, $Source, $sz, $Target)
+    Write-Log("Running: cmd /c $exec")
+    & cmd /C $exec
     Write-Log("Extract complete. Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)")
 }
 
@@ -203,29 +211,36 @@ function CreateRunOnceScheduledTask($dir, $masters_ip, $winagent_ip) {
     }
 }
 
-function main($uri1, $uri2, $bootstrap_endpoint, $masters) {
+function main($url, $version, $masters) {
     SetupDirectories
 
-    # Downloading/Extracting bootstrap.zip out of AWS S3 bucket
-    Download $uri1 "bootstrap.zip"
-    $zipfile = "$($basedir)\bootstrap\bootstrap.zip"
-    ExtractBootstrapZip $zipfile "$($basedir)\chocolatey_offline"
+    Write-Log("Downloading/Extracting prerequisites.zip out of Bootstrap agent ...")
+    Download "$url/$version/genconf_win/serve/prerequisites/prerequisites.zip" "prerequisites.zip"
+    $zipfile = "$($basedir)\bootstrap\prerequisites.zip"
+    ExtractBootstrapZip $zipfile "$($basedir)\bootstrap\prerequisites"
 
-    ### The block for BETA Phase 1.1 ###
-    # Installing chocolatey. TO DO : remove in Phase 1.2
-    Write-Log("Installing Chocolatey now ...")
-    & "$($basedir)\chocolatey_offline\install_choco.ps1" 2>&1 | Out-File C:\dcos\var\log\dcos_install.log -Append
-    # Installing 7zip, Python3, NSSM, VCredist140
-    Write-Log("Chocolatey starts installing dependencies ...")
-    & cmd.exe "/C chocolatey install 7zip.install 7zip -s $($basedir)\chocolatey_offline --yes" 2>&1 | Out-File C:\dcos\var\log\dcos_install.log -Append
-    & cmd.exe "/C chocolatey install python3 -s $($basedir)\chocolatey_offline --yes" 2>&1 | Out-File C:\dcos\var\log\dcos_install.log -Append
-    ## TO DO : remove in Phase 1.2
-    & cmd.exe "/C chocolatey install nssm -s $($basedir)\chocolatey_offline --yes" 2>&1 | Out-File C:\dcos\var\log\dcos_install.log -Append
-    & cmd.exe "/C chocolatey install vcredist140 -s $($basedir)\chocolatey_offline --version=14.22.27821 --yes" 2>&1 | Out-File C:\dcos\var\log\dcos_install.log -Append
+    Write-Log("Installing 7zip from prerequisites.zip ...")
+    & cmd /c "start /wait $($basedir)\bootstrap\prerequisites\7z-x64.exe /S" 2>&1 | Out-File C:\dcos\var\log\dcos_install.log -Append
+
+	Write-Log("Checking proper versions from latest.package_list.json ...")
+	Download "$url/$version/genconf_win/serve/package_lists/latest.package_list.json" "latest.package_list.json"
+	$package_list_json = "$($basedir)\bootstrap\latest.package_list.json"
+	echo $(cat $package_list_json | ConvertFrom-Json) | Where-Object { $_ -Match "python"} | New-Variable -Name python_package
+	echo $(cat $package_list_json | ConvertFrom-Json) | Where-Object { $_ -Match "winpanda"} | New-Variable -Name winpanda_package
+
+	Write-Log("Installing Python from Bootstrap agent - $($python_package).tar.xz...")
+    Download "$url/$version/genconf_win/serve/packages/python/$($python_package).tar.xz" "python.tar.xz"
+    $pythontarfile = "$($basedir)\bootstrap\python.tar.xz"
+    ExtractTarXz $pythontarfile "C:\python36"
+	[Environment]::SetEnvironmentVariable("Path", "$env:Path;C:\python36")
+
+    Write-Log("Installing Winpanda from Bootstrap agent - $($winpanda_package).tar.xz ...")
+    Download "$url/$version/genconf_win/serve/packages/winpanda/$($winpanda_package).tar.xz" "winpanda.tar.xz"
+    $winpandatarfile = "$($basedir)\bootstrap\winpanda.tar.xz"
+    ExtractTarXz $winpandatarfile "C:\"
 
     # Fill up Ansible inventory content to cluster.conf
     Write-Log("MASTERS: $($masters)")
-
     [System.Array]$masterarray = $masters.split(",")
     $masternodecontent = ""
     for ($i=0; $i -lt $masterarray.length; $i++) {
@@ -233,10 +248,11 @@ function main($uri1, $uri2, $bootstrap_endpoint, $masters) {
     }
     $local_ip = (Get-WmiObject -Class Win32_NetworkAdapterConfiguration | where {$_.DefaultIPGateway -ne $null}).IPAddress | select-object -first 1
     Write-Log("Local IP: $($local_ip)")
-    $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($uri2)`nPkgRepoPath=$($bootstrap_endpoint)`nPkgListPath=latest.package_list.json`n[local]`nLocalPrivateIPAddr=$($local_ip)"
+    $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($bootstrap_url)`nPkgRepoPath=$($version)/genconf_win/serve`nPkgListPath=latest.package_list.json`n[local]`nLocalPrivateIPAddr=$($local_ip)"
     CreateWriteFile "$($basedir)\conf" "cluster.conf" $content
 
+    # Creating RunOnce scheduled task along with the RunOnce.ps1 script
     CreateRunOnceScheduledTask $basedir $masters $local_ip
 }
 
-main $url_prerequisites $url_dcoswintarball $bootstrap_endpoint $masters
+main $bootstrap_url $version $masters

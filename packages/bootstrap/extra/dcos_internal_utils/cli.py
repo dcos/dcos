@@ -162,6 +162,13 @@ def dcos_cockroach_config_change(b, opts):
     _create_private_directory(path=cockroach_tmpdir, owner=user)
 
 
+@check_root
+def dcos_etcd(b, opts):
+    b.zk.ensure_path("/etcd")
+    b.zk.ensure_path("/etcd/locking")
+    b.zk.ensure_path("/etcd/nodes")
+
+
 def noop(b, opts):
     return
 
@@ -169,6 +176,7 @@ def noop(b, opts):
 bootstrappers = {
     'dcos-adminrouter': dcos_adminrouter,
     'dcos-bouncer': dcos_bouncer,
+    'dcos-etcd': dcos_etcd,
     'dcos-signal': dcos_signal,
     'dcos-diagnostics-master': noop,
     'dcos-diagnostics-agent': noop,

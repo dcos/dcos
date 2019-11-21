@@ -1,3 +1,6 @@
 $ErrorActionPreference = "stop"
 New-Item -ItemType Directory "$env:PKG_PATH/bin/install"
+New-Item -ItemType Directory "$env:PKG_PATH/etc"
 Copy-Item -Recurse -Path "c:/pkg/src/vcredist/*" "$env:PKG_PATH/bin/install"
+Copy-Item "pkg/extra/vcredist.extra" "$env:PKG_PATH/etc/"
+Copy-Item "pkg/extra/vcredist.ps1" "$env:PKG_PATH/etc/"
