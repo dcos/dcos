@@ -198,6 +198,7 @@ class CmdConfigSetup(CommandConfig):
 
         :return: list, JSON-formatted data
         """
+        msg_src = self.__class__.__name__
         dstor_root_url = (
             self.cluster_conf.get('distribution-storage', {}).get(
                 'rooturl', ''
@@ -210,7 +211,7 @@ class CmdConfigSetup(CommandConfig):
         )
         # Unblock irrelevant local operations
         if self.cluster_conf_nop or dstor_pkglist_path == 'NOP':
-            LOG.info(f'{self.__class__.__name__}: ref_pkg_list: NOP')
+            LOG.info(f'{msg_src}: ref_pkg_list: NOP')
             return []
 
         rpl_url = posixpath.join(dstor_root_url, dstor_pkglist_path)
@@ -218,9 +219,12 @@ class CmdConfigSetup(CommandConfig):
 
         try:
             cm_utl.download(rpl_url, str(self.inst_storage.tmp_dpath))
+            LOG.debug(f'{msg_src}: Reference package list: Download:'
+                      f' {rpl_fname}: {rpl_url}')
         except Exception as e:
             raise cr_exc.RCDownloadError(
-                f'Reference package list: {rpl_fname}: {type(e).__name__}: {e}'
+                f'Reference package list: Download: {rpl_fname}: {rpl_url}:'
+                f' {type(e).__name__}: {e}'
             ) from e
 
         rpl_fpath = self.inst_storage.tmp_dpath.joinpath(rpl_fname)
