@@ -18,11 +18,13 @@ unpack(archive, "./tmp/Arc/")
 import os
 from pathlib import Path
 from pprint import pprint as pp
+import subprocess
 import tarfile
 
 from pySmartDL import SmartDL
 
 from common import logger
+from common import exceptions as cm_exc
 
 
 LOG = logger.get_logger(__name__)
@@ -95,3 +97,36 @@ def rmdir(path, recursive=False):
             LOG.debug(f'rmdir(): Remove directory: {path_}')
     else:
         LOG.debug(f'rmdir(): Path not found: {path_}')
+
+
+def run_external_command(cl_elements, timeout=30):
+    """Run external command.
+
+    :param cl_elements: list, elements of command line, beginning with
+                        executable name
+    :param timeout:     int|float, forcibly terminate execution, if this number
+                        seconds passed since execution was started
+    :return:            subprocess.CompletedProcess, results of sub-process
+                        execution
+    """
+    # cl_elements = cl_elements if isinstance(cl_elements, list) else []
+    timeout = timeout if isinstance(timeout, (int, float)) else 30
+
+    try:
+        subproc_run = subprocess.run(
+            cl_elements, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            timeout=timeout, check=True, universal_newlines=True
+        )
+    except subprocess.SubprocessError as e:
+        raise cm_exc.ExternalCommandError(
+            '{}: {}: Exit code[{}]: {}'.format(
+                cl_elements, type(e).__name__, e.returncode,
+                e.stderr.replace('\n', ' ')
+            )
+        )
+    except (OSError, ValueError) as e:
+        raise cm_exc.ExternalCommandError(
+            f'{cl_elements}: {type(e).__name__}: {e}'
+        )
+
+    return subproc_run

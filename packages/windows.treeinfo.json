@@ -40,6 +40,7 @@
     "dnspython",
     "docker-gc",
     "dvdcli",
+    "etcd",
     "exhibitor",
     "flask",
     "fluent-bit",

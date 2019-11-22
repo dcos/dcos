@@ -1,0 +1,4 @@
+
+install:
+    exec_external_commands:
+        - ..\etc\vcredist.ps1
