@@ -232,7 +232,8 @@ function main($url, $version, $masters) {
     Download "$url/$version/genconf_win/serve/packages/python/$($python_package).tar.xz" "python.tar.xz"
     $pythontarfile = "$($basedir)\bootstrap\python.tar.xz"
     ExtractTarXz $pythontarfile "C:\python36"
-	[Environment]::SetEnvironmentVariable("Path", "$env:Path;C:\python36")
+    setx PATH "$env:path;C:\python36;C:\python36\scripts" -m
+    & RefreshEnv.cmd
 
     Write-Log("Installing Winpanda from Bootstrap agent - $($winpanda_package).tar.xz ...")
     Download "$url/$version/genconf_win/serve/packages/winpanda/$($winpanda_package).tar.xz" "winpanda.tar.xz"
