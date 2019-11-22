@@ -12,6 +12,9 @@ ADD https://github.com/git-for-windows/git/releases/download/v2.16.1.windows.1/G
 COPY .\setup-git.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-git.ps1
 
+COPY .\setup-python36.ps1 \temp\
+RUN  powershell.exe -file c:\temp\setup-python36.ps1
+
 ADD https://cmake.org/files/v3.9/cmake-3.9.0-win64-x64.msi c:\temp\cmake-3.9.0-win64-x64.msi
 COPY .\setup-cmake.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-cmake.ps1
@@ -28,18 +31,19 @@ ADD http://erlang.org/download/otp_win64_19.3.exe c:\temp\otp_win64_19.3.exe
 COPY .\setup-erlang.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-erlang.ps1
 
-ADD https://golang.org/dl/go1.9.3.windows-amd64.zip c:\temp\go1.9.3.windows-amd64.zip
+ADD https://golang.org/dl/go1.13.3.windows-amd64.zip c:\temp\go1.13.3.windows-amd64.zip
 COPY .\setup-golang.ps1 \temp\
 RUN  powershell.exe -file c:\temp\setup-golang.ps1
 ENV GOPATH 'c:\gopath'
 
+ENV PYTHON_PATH 'C:\Python36'
 ENV GOLANG_PATH 'C:\gopath\bin;c:\go\bin'
 ENV GIT_PATH 'C:\Program Files\git\cmd'
 ENV CMAKE_PATH 'C:\Program Files\CMake\bin'
 ENV GNUWIN32_PATH 'C:\Program Files (x86)\GnuWin32\bin'
 ENV ERLANG_PATH 'C:\Program Files\erlang\bin'
 
-RUN setx /m PATH "%PATH%;C:\Bin;%GIT_PATH%;%CMAKE_PATH%;%GNUWIN32_PATH%;%ZIP_PATH%;%ERLANG_PATH%;%GOLANG_PATH%"
+RUN setx /m PATH "%PATH%;C:\Bin;%GIT_PATH%;%CMAKE_PATH%;%PYTHON_PATH%;%GNUWIN32_PATH%;%ZIP_PATH%;%ERLANG_PATH%;%GOLANG_PATH%"
 
 # Download useful tools to C:\Bin.
 ADD https://dist.nuget.org/win-x86-commandline/v4.1.0/nuget.exe C:\Bin\nuget.exe

@@ -1845,7 +1845,7 @@ The test can be split into a series of steps/stages:
   may be needed. In order to abstract it away, AR instance's `.make_url_from_path()`
   method should be used:
   ```python
-  url = ar.make_url_from_path('/dcos-history-service/foo/bar')
+  url = ar.make_url_from_path('/')
   resp = requests.get(url,
                       allow_redirects=False,
                       headers=valid_user_header)
@@ -1893,7 +1893,7 @@ The test can be split into a series of steps/stages:
                        cache_first_poll_delay=1,
                        )
 
-      url = ar.make_url_from_path('/dcos-history-service/foo/bar')
+      url = ar.make_url_from_path('/')
 
       # AR lifetime is equal to the lenght of this context manager's scope
       with GuardedSubprocess(ar):

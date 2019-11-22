@@ -28,6 +28,7 @@ import os
 import re
 import socket
 import string
+import textwrap
 from math import floor
 from subprocess import check_output
 
@@ -235,6 +236,14 @@ def calculate_mesos_log_directory_max_files(mesos_log_retention_mb):
     return str(25 + int(calculate_mesos_log_retention_count(mesos_log_retention_mb)))
 
 
+def calculate_windows_config_yaml():
+    # Convert the resource file 'dcos-config-windows.yaml' into a YAML stanza
+    # that can be inserted into template file.
+    from pkg_resources import resource_string
+    s = resource_string('gen', 'dcos-config-windows.yaml').decode('utf-8')
+    return textwrap.indent(s, prefix=('  ' * 3))
+
+
 def calculate_ip_detect_contents(ip_detect_filename):
     assert os.path.exists(ip_detect_filename), "ip-detect script `{}` must exist".format(ip_detect_filename)
     return yaml.dump(open(ip_detect_filename, encoding='utf-8').read())
@@ -389,20 +398,6 @@ def calculate_dcos_overlay_network_json(dcos_overlay_network, enable_ipv6):
         overlays.append(overlay)
     overlay_network['overlays'] = overlays
     return json.dumps(overlay_network)
-
-
-def calculate_dcos_dns_store_modes_term(dcos_dns_store_modes):
-    modes = json.loads(dcos_dns_store_modes)
-    return '[' + ', '.join(modes) + ']'
-
-
-def validate_dcos_dns_store_modes(dcos_dns_store_modes):
-    modes = json.loads(dcos_dns_store_modes)
-    assert isinstance(modes, list), "Must be a list"
-    for mode in modes:
-        assert mode in ['lww', 'set'], "Must be either lww or set"
-    assert 0 < len(modes), "Must not be empty"
-    assert len(modes) == len(set(modes)), "Must be unique"
 
 
 def validate_num_masters(num_masters):
@@ -735,7 +730,7 @@ def validate_mesos_max_completed_tasks_per_framework(
 def validate_mesos_recovery_timeout(mesos_recovery_timeout):
     units = ['ns', 'us', 'ms', 'secs', 'mins', 'hrs', 'days', 'weeks']
 
-    match = re.match("([\d\.]+)(\w+)", mesos_recovery_timeout)
+    match = re.match(r"([\d\.]+)(\w+)", mesos_recovery_timeout)
     assert match is not None, "Error parsing 'mesos_recovery_timeout' value: {}.".format(mesos_recovery_timeout)
 
     value = match.group(1)
@@ -751,7 +746,7 @@ def validate_mesos_default_container_shm_size(
     if has_mesos_default_container_shm_size == 'true':
         units = ['B', 'KB', 'MB', 'GB', 'TB']
 
-        match = re.match("([\d\.]+)(\w+)", mesos_default_container_shm_size)
+        match = re.match(r"([\d\.]+)(\w+)", mesos_default_container_shm_size)
         assert match is not None, "Error parsing 'mesos_default_container_shm_size' value: {}.".format(
             mesos_default_container_shm_size)
 
@@ -1136,8 +1131,7 @@ entry = {
         validate_dcos_l4lb_max_named_ip6,
         validate_dcos_l4lb_enable_ipv6,
         lambda dcos_l4lb_enable_ipset: validate_true_false(dcos_l4lb_enable_ipset),
-        lambda dcos_dns_push_ops_timeout: validate_int_in_range(dcos_dns_push_ops_timeout, 50, 120000),
-        validate_dcos_dns_store_modes,
+        lambda dcos_net_push_ops_timeout: validate_int_in_range(dcos_net_push_ops_timeout, 50, 120000),
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
         lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
@@ -1177,6 +1171,7 @@ entry = {
         lambda mesos_cni_root_dir_persist: validate_true_false(mesos_cni_root_dir_persist),
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
         validate_marathon_new_group_enforce_role,
+        lambda enable_windows_agents: validate_true_false(enable_windows_agents),
     ],
     'default': {
         'exhibitor_azure_account_key': '',
@@ -1242,6 +1237,7 @@ entry = {
         'ui_banner_image_path': 'null',
         'ui_banner_dismissible': 'null',
         'ui_update_enabled': 'true',
+        'windows_config_yaml': calculate_windows_config_yaml,
         'dcos_net_cluster_identity': 'false',
         'dcos_net_rest_enable': "true",
         'dcos_net_watchdog': "true",
@@ -1275,8 +1271,7 @@ entry = {
         'dcos_l4lb_max_named_ip6': 'fd01:c::ffff:ffff:ffff:ffff',
         'dcos_l4lb_enable_ipv6': 'true',
         'dcos_l4lb_enable_ipset': 'true',
-        'dcos_dns_push_ops_timeout': '1000',
-        'dcos_dns_store_modes': json.dumps(['lww', 'set']),
+        'dcos_net_push_ops_timeout': '1000',
         'no_proxy': '',
         'rexray_config_preset': '',
         'rexray_config': json.dumps({
@@ -1319,7 +1314,8 @@ entry = {
         'enable_mesos_ipv6_discovery': 'false',
         'log_offers': 'true',
         'mesos_cni_root_dir_persist': 'false',
-        'enable_mesos_input_plugin': 'true'
+        'enable_mesos_input_plugin': 'true',
+        'enable_windows_agents': 'false',
     },
     'must': {
         'fault_domain_enabled': 'false',
@@ -1354,7 +1350,6 @@ entry = {
         'dcos_l4lb_max_named_ip_erltuple': calculate_dcos_l4lb_max_named_ip_erltuple,
         'dcos_l4lb_min_named_ip6_erltuple': calculate_dcos_l4lb_min_named_ip6_erltuple,
         'dcos_l4lb_max_named_ip6_erltuple': calculate_dcos_l4lb_max_named_ip6_erltuple,
-        'dcos_dns_store_modes_term': calculate_dcos_dns_store_modes_term,
         'mesos_isolation': calculate_mesos_isolation,
         'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
         'has_mesos_seccomp_profile_name':

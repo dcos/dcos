@@ -5,7 +5,6 @@ import sys
 import requests
 
 from dcos_internal_utils import utils
-from pkgpanda.util import load_string, write_string
 
 log = logging.getLogger(__name__)
 
@@ -25,13 +24,13 @@ def get_zk_pid_mtime():
 
 
 def get_zk_pid():
-    return load_string(zk_pid_path)
+    return utils.read_file_line(zk_pid_path)
 
 
 def try_shortcut():
     try:
         # pid stat file exists, read the value out of it
-        stashed_pid_stat = int(load_string(stash_zk_pid_stat_mtime_path))
+        stashed_pid_stat = int(utils.read_file_line(stash_zk_pid_stat_mtime_path))
     except FileNotFoundError:
         log.info('No zk.pid last mtime found at %s', stash_zk_pid_stat_mtime_path)
         return False
@@ -117,4 +116,4 @@ def wait(master_count_filename):
     zk_pid_mtime = get_zk_pid_mtime()
     if zk_pid_mtime is not None:
         log.info('Stashing zk.pid mtime %s to %s', zk_pid_mtime, stash_zk_pid_stat_mtime_path)
-        write_string(stash_zk_pid_stat_mtime_path, str(zk_pid_mtime))
+        utils.write_string(stash_zk_pid_stat_mtime_path, str(zk_pid_mtime))

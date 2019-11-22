@@ -4,7 +4,9 @@
     "dcos-metrics",
     "erts",
     "openstackservice",
-    "spartan"
+    "vcredist",
+    "nssm",
+    "winpanda"
   ],
   "bootstrap_package_list": ["dcos-image"]
 }

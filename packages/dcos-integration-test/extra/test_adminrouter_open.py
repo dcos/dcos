@@ -127,7 +127,7 @@ def _marathon_container_network_nginx_app(port_index=0):
         'cpus': 0.1,
         'instances': 1,
         'mem': 64,
-        'networks': [{'mode': 'container', 'name': 'dcos'}],
+        'networks': [{'mode': 'container/bridge'}],
         'requirePorts': False,
         'labels': {
             'DCOS_SERVICE_NAME': 'nginx-{}'.format(app_id),

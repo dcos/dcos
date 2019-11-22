@@ -2,7 +2,9 @@
   "exclude": [
     "erts",
     "openstackservice",
-    "spartan"
+    "vcredist",
+    "nssm",
+    "winpanda"
   ],
   "core_package_list": [
     "dcos-image"

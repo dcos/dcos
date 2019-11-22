@@ -1,0 +1,26 @@
+{
+    "sources": {
+        "requests": {
+            "kind": "url",
+            "url": "https://files.pythonhosted.org/packages/51/bd/23c926cd341ea6b7dd0b2a00aba99ae0f828be89d72b2190f27c11d4b7fb/requests-2.22.0-py2.py3-none-any.whl",
+            "sha1": "e1fc28120002395fe1f2da9aacea4e15a449d9ee"
+        },
+        "pySmartDL": {
+            "kind": "url",
+            "url": "https://files.pythonhosted.org/packages/d3/f6/380afa85b46fed672ca0a510e7b0cfde328effa6d145fcf40e9ad10c6692/pySmartDL-1.3.2-py3-none-any.whl",
+            "sha1": "d66ec1e8efa200a74ea61d56580ad165c7a1f14e"
+        },
+        "docopt": {
+            "kind": "url",
+            "url": "https://www.piwheels.org/simple/docopt/docopt-0.6.2-py2.py3-none-any.whl",
+            "sha1": "226a3391b6c60e64bea22cc3ae64d52c4c834d87"
+        },
+        "jinja2": {
+            "kind": "url",
+            "url": "https://files.pythonhosted.org/packages/65/e0/eb35e762802015cab1ccee04e8a277b03f1d8e53da3ec3106882ec42558b/Jinja2-2.10.3-py2.py3-none-any.whl",
+            "sha1": "4111b038c0fc0870dcb1fae59157cab3eff63c5c"
+        }
+    },
+    "username": "dcos_winpanda",
+    "state_directory": true
+}
