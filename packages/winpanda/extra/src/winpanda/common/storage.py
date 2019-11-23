@@ -450,7 +450,7 @@ class InstallationStorage:
 
             LOG.debug(f'{msg_src}: Add package: Extract: {pkg_id}')
         except Exception as e:
-            if type(e) is not cr_exc.RCExtractError:
+            if not isinstance(e, cr_exc.RCExtractError):
                 raise cr_exc.RCExtractError(
                     f'Add package: {pkg_id}: {type(e).__name__}: {e}'
                 )
