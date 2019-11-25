@@ -89,14 +89,6 @@ package:
   # Config for Telegraf
   - path: C:/Program Files/Telegraf/telegraf.conf
     content: |
-      [global_tags]
-        # Tags to be applied to all metrics.
-        dcos_cluster_name="$DCOS_CLUSTER_NAME"
-        dcos_cluster_id="$DCOS_CLUSTER_ID"
-
-        fault_domain_zone="$FAULT_DOMAIN_ZONE"
-        fault_domain_region="$FAULT_DOMAIN_REGION"
-
       [agent]
         ## Default data collection interval for all inputs
         interval = "10s"
