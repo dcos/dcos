@@ -6,7 +6,6 @@ from common import logger
 from common import exceptions as cm_exc
 from common import utils as cm_utl
 from extm import exceptions as extm_exc
-import shlex
 
 
 LOG = logger.get_logger(__name__)
@@ -95,9 +94,8 @@ class PkgInstExtrasManager:
 
         for cmd_cl_def in cmd_cl_defs:
             try:
-                cl_elements = shlex.quote(cmd_cl_def)
-                cm_utl.run_external_command(cl_elements)
-                LOG.debug(f'{msg_src}: External command: {cl_elements}: OK')
+                cm_utl.run_external_command(cmd_cl_def)
+                LOG.debug(f'{msg_src}: External command: {cmd_cl_def}: OK')
             except cm_exc.ExternalCommandError as e:
                 raise extm_exc.InstExtrasManagerError(
                     f'{type(e).__name__}: {e}'

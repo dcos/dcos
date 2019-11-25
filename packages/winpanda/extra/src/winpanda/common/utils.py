@@ -102,16 +102,14 @@ def rmdir(path, recursive=False):
 def run_external_command(cl_elements, timeout=30):
     """Run external command.
 
-    :param cl_elements: list, elements of command line, beginning with
-                        executable name
+    :param cl_elements: str|list, string, representing a whole command line, or
+                        list of individual elements of command line, beginning
+                        with executable name
     :param timeout:     int|float, forcibly terminate execution, if this number
-                        seconds passed since execution was started
+                        of seconds passed since execution was started
     :return:            subprocess.CompletedProcess, results of sub-process
                         execution
     """
-    # cl_elements = cl_elements if isinstance(cl_elements, list) else []
-    timeout = timeout if isinstance(timeout, (int, float)) else 30
-
     try:
         subproc_run = subprocess.run(
             cl_elements, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
