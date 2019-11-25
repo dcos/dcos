@@ -10,9 +10,8 @@
   - Extract the archive
   - Install the pre-requisites: 7-zip
   - Unpack from DC/OS Windows Installer : Python, Winpanda
-  - Create ScheduledTask to execute RunOnce.ps1
-  - Create RunOnce.ps1 which will contain executor for Winpanda and clean the parent ScheduledTask
-    !Note! RunOnce.ps1 is responsible to start Winpanda upon Windows reboot completion)
+  - Set needed Env variables for Python
+  - Run Winpanda.py with flags: setup & start
 
 .PARAMETER bootstrap_url
   The url of Nginx web server started on Boostrrap agent to serve Windows installation files
@@ -27,6 +26,7 @@
   The initial directory which this example script will use C:\dcos
 
 .NOTES
+    Updated: 2019-11-22       Removed RunOnce.ps1 and Scheduled task logic. Fixed cluster.conf parameters. Added download of detect_ip*.ps1 scripts.
     Updated: 2019-11-08       Extended startup parameters to acommodate correct script run.
     Updated: 2019-09-03       Added dcos-install.ps1 which is addressed to install pre-requisites on Windows agent and run Winpanda.
     Release Date: 2019-09-03
@@ -134,7 +134,8 @@ function SetupDirectories() {
         "$($basedir)",
         "$($basedir)\bootstrap",
         "$($basedir)\bootstrap\prerequisites",
-        "$($basedir)\conf"
+        "$($basedir)\conf",
+		"$($basedir)\opt\bin"
     )
     # setup
     Write-Log("Creating a directories structure:")
@@ -194,20 +195,33 @@ function CreateWriteFile([String] $dir, [String] $file, [String] $content) {
     Get-Content "$($dir)\$($file)"
 }
 
-function CreateRunOnceScheduledTask($dir, $masters_ip, $winagent_ip) {
-    $destination = "$($dir)\RunOnce.ps1"
-    if (-not (Test-Path $destination) ) {
-        Write-Log("$($destination) missing. Creating")
-        $RunOnceScript_content = "Set-Location -Path 'C:\winpanda';`n& pip install virtualenv;`n& virtualenv .venv;`n& .venv\Scripts\activate;`n& pip install -r C:\winpanda\requirements.txt;`n& python C:\winpanda\bin\winpanda.py setup;`n& python C:\winpanda\bin\winpanda.py start`n#Remove a Scheduled task RunOnce, created while initial provision`nif(Get-ScheduledTask -TaskName `"RunOnce`" -TaskPath '\CustomTasks\' -ErrorAction Ignore) { Unregister-ScheduledTask -TaskName `"RunOnce`" -Confirm:`$False }`n"
-        CreateWriteFile "$($dir)" "RunOnce.ps1" $RunOnceScript_content
+function Add-EnvPath {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $Path,
 
-        Write-Log("Creating Scheduled Task to run Winpanda")
-        $action = New-ScheduledTaskAction -Execute '%systemroot%\System32\WindowsPowerShell\v1.0\powershell.exe' -Argument $destination
-        $trigger = New-ScheduledTaskTrigger -AtStartup
-        $principal = New-ScheduledTaskPrincipal -UserID "NT AUTHORITY\SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-        Register-ScheduledTask -TaskName 'RunOnce' -TaskPath '\CustomTasks\' -Action $action -Trigger $trigger -Principal $principal -Description 'Winpanda task to run once after winagent provision.' -ErrorAction Stop
-    } else {
-        Write-Log("$($dir)\RunOnce.ps1 already exists. Skipping")
+        [ValidateSet('Machine', 'User', 'Session')]
+        [string] $Container = 'Session'
+    )
+
+    if ($Container -ne 'Session') {
+        $containerMapping = @{
+            Machine = [EnvironmentVariableTarget]::Machine
+            User = [EnvironmentVariableTarget]::User
+        }
+        $containerType = $containerMapping[$Container]
+
+        $persistedPaths = [Environment]::GetEnvironmentVariable('Path', $containerType) -split ';'
+        if ($persistedPaths -notcontains $Path) {
+            $persistedPaths = $persistedPaths + $Path | where { $_ }
+            [Environment]::SetEnvironmentVariable('Path', $persistedPaths -join ';', $containerType)
+        }
+    }
+
+    $envPaths = $env:Path -split ';'
+    if ($envPaths -notcontains $Path) {
+        $envPaths = $envPaths + $Path | where { $_ }
+        $env:Path = $envPaths -join ';'
     }
 }
 
@@ -232,12 +246,20 @@ function main($url, $version, $masters) {
     Download "$url/$version/genconf_win/serve/packages/python/$($python_package).tar.xz" "python.tar.xz"
     $pythontarfile = "$($basedir)\bootstrap\python.tar.xz"
     ExtractTarXz $pythontarfile "C:\python36"
-	[Environment]::SetEnvironmentVariable("Path", "$env:Path;C:\python36")
+	Add-EnvPath "C:\python36" "Session";
+	Add-EnvPath "C:\python36" "Machine";
 
     Write-Log("Installing Winpanda from Bootstrap agent - $($winpanda_package).tar.xz ...")
     Download "$url/$version/genconf_win/serve/packages/winpanda/$($winpanda_package).tar.xz" "winpanda.tar.xz"
     $winpandatarfile = "$($basedir)\bootstrap\winpanda.tar.xz"
     ExtractTarXz $winpandatarfile "C:\"
+	[Environment]::SetEnvironmentVariable("PYTHONPATH", "C:\winpanda\lib\python36\site-packages", [System.EnvironmentVariableTarget]::Machine);
+	$env:PYTHONPATH="C:\winpanda\lib\python36\site-packages";
+
+    Write-Log("Downloading ip-detect scripts from Bootstrap agent ...")
+    Download "$url/$version/genconf_win/ip-detect.ps1" "detect_ip.ps1"
+    Download "$url/$version/genconf_win/ip-detect-public.ps1" "detect_ip_public.ps1"
+    Copy-Item -Path "$($basedir)\bootstrap\detect_ip*.ps1" -Destination "C:\dcos\opt\bin" -Recurse
 
     # Fill up Ansible inventory content to cluster.conf
     Write-Log("MASTERS: $($masters)")
@@ -248,11 +270,12 @@ function main($url, $version, $masters) {
     }
     $local_ip = (Get-WmiObject -Class Win32_NetworkAdapterConfiguration | where {$_.DefaultIPGateway -ne $null}).IPAddress | select-object -first 1
     Write-Log("Local IP: $($local_ip)")
-    $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($bootstrap_url)`nPkgRepoPath=$($version)/genconf_win/serve`nPkgListPath=latest.package_list.json`n[local]`nLocalPrivateIPAddr=$($local_ip)"
+    $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($bootstrap_url)`nPkgRepoPath=$($version)/genconf_win/serve/packages`nPkgListPath=$($version)/genconf_win/serve/package_lists/latest.package_list.json`n[local]`nLocalPrivateIPAddr=$($local_ip)"
     CreateWriteFile "$($basedir)\conf" "cluster.conf" $content
 
-    # Creating RunOnce scheduled task along with the RunOnce.ps1 script
-    CreateRunOnceScheduledTask $basedir $masters $local_ip
+    Write-Log("Running Winpanda.py ...")
+    & python C:\winpanda\bin\winpanda.py setup;
+    & python C:\winpanda\bin\winpanda.py start;
 }
 
 main $bootstrap_url $version $masters
