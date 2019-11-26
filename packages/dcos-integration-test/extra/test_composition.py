@@ -130,6 +130,7 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-cockroachdb-config-change.service',
         'dcos-cockroachdb-config-change.timer',
         'dcos-cosmos.service',
+        'dcos-etcd.service',
         'dcos-exhibitor.service',
         'dcos-log-master.service',
         'dcos-log-master.socket',

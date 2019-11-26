@@ -288,7 +288,7 @@ Pull requests automatically trigger a new DC/OS build and run several tests. The
 
 ### Required vs Non-Required Status checks
 
-A PR status check may be marked as **Required** or **Not-Required** (Default).The required status checks are neccessary for applying a ship-it label, which makes the PR eligible for merge.
+A PR status check may be marked as **Required** or **Not-Required** (Default). The required status checks are necessary for applying a ship-it label, which makes the PR eligible for merge.
 A non-required status check is completely informational, and the success or the failure of the status check does not, in any way, impact the merge of the PR.
 
 The required status checks are encoded in the repo's megebot-config (For .e.g: https://github.com/dcos/dcos/blob/master/mergebot-config.json#L38)
