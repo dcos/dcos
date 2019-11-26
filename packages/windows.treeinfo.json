@@ -13,7 +13,7 @@
     "erlang",
     "erts",
     "openstackservice",
-    "calico"
+    "calico",
     "boost-libs",
     "bootstrap",
     "boto",

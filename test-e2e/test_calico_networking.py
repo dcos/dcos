@@ -72,8 +72,8 @@ def calico_ipip_cluster(docker_backend: Docker, artifact_path: Path,
     with Cluster(
             cluster_backend=docker_backend,
             masters=1,
-            agents=0,
-            public_agents=0,
+            agents=2,
+            public_agents=1,
     ) as cluster:
 
         config = {
@@ -123,7 +123,7 @@ def test_calico_ipip_container_connectivity(calico_ipip_cluster: Cluster) -> Non
             "-vvv",
             "-s",
             "-x",
-            "test_calico_networking.py",
+            "test_networking.py",
             "-k",
             "test_calico",
         ]
