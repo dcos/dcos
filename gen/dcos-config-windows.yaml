@@ -195,7 +195,7 @@ package:
       [[inputs.mesos]]
       
         timeout = 100
-         slaves = ["http://{{ local_ip }}:5051"]
+         slaves = ["http://$DCOS_NODE_PRIVATE_IP:5051"]
          slave_collections = [
            "resources",
            "agent",
