@@ -6,7 +6,7 @@ ConditionPathExists=/opt/mesosphere/etc/calico_enabled
 [Service]
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/calico-node.env
-Environment=NODENAME=%H
+ExecStartPre=/bin/sh -c 'systemctl set-environment NODENAME=$$(/opt/mesosphere/bin/detect_ip)'
 ExecStartPre=/usr/bin/mkdir -p /etc/calico
 ExecStartPre=/usr/bin/cp -r /opt/mesosphere/active/calico/confd /etc/calico/confd
 ExecStart=/opt/mesosphere/bin/calico-node -confd
