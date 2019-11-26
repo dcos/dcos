@@ -4,7 +4,7 @@
   ],
   "single_source" : {
     "kind": "url_extract",
-    "url": "https://ftp.postgresql.org/pub/source/v9.6.9/postgresql-9.6.9.tar.gz",
-    "sha1": "f3f0aed64d5ec3cf2e1776c2b6aed5aa5185474e"
+    "url": "https://ftp.postgresql.org/pub/source/v9.6.15/postgresql-9.6.15.tar.gz",
+    "sha1": "4e9b362d968b7e5bdd88c8127f24b9a82eff5c59"
   }
 }
