@@ -30,8 +30,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Port the Mesos open source metrics module to Windows. (DCOS-58008)
 
-* Switch to Mesos Operator Streaming API in DC/OS L4LB (DCOS_OSS-5464)
-
 * Add etcd into DC/OS. (DCOS-59004)
 * Update libpq to 9.6.15 (DCOS-59145)
 

@@ -15,8 +15,6 @@ from pathlib import Path
 import re
 import subprocess
 
-import jinja2 as jj2
-
 from . import base
 from . import exceptions as svcm_exc
 from common import logger
@@ -101,12 +99,15 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
     def __init__(self, **svcm_opts):
         """Constructor."""
         super(WinSvcManagerNSSM, self).__init__(**svcm_opts)
-        self.cluster_conf = svcm_opts.get('cluster_conf', cfp.ConfigParser())
-        self.svc_conf = svcm_opts.get('svc_conf', cfp.ConfigParser())
-        assert isinstance(self.svc_conf, cfp.ConfigParser), (
+        _svc_conf = svcm_opts.get('svc_conf', {})
+
+        assert isinstance(_svc_conf, dict), (
             f'Argument: svc_conf:'
-            f' Got {type(self.svc_conf).__name__} instead of ConfigParser'
+            f' Got {type(self.svc_conf).__name__} instead of dict'
         )
+
+        self.svc_conf = cfp.ConfigParser()
+        self.svc_conf.read_dict(_svc_conf)
 
         self.exec_path = None  # System service manager executable path
 
@@ -235,36 +236,19 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
             )
         ]
         cmd = NSSMCommand.SET.value
-        mnode_ipaddrs = [
-            self.cluster_conf.get(sect, 'privateipaddr', fallback='127.0.0.1')
-            for sect in self.cluster_conf.sections() if
-            sect.startswith('master-node')
-        ]
-        master_ip = mnode_ipaddrs[0] if mnode_ipaddrs else '127.0.0.1'
-        local_ip = self.cluster_conf.get(
-            'local', 'privateipaddr', fallback='127.0.0.1'
-        )
 
         for pname in pnames_opt:
-            try:
-                pval = self.svc_conf.get(NSSMConfSection.SERVICE.value, pname)
-                if self._ws.search(pval):
-                    err_msg = (
-                        f'ServiceConfig: {self.svc_name}: Parameter value'
-                        f' string possibly requires quotation:'
-                        f' section[{NSSMConfSection.SERVICE.value}]'
-                        f' parameter[{pname}] value[{pval}]'
-                    )
-                    LOG.warning(err_msg)
-                pval = jj2.Template(pval).render(
-                    master_ip=master_ip, local_ip=local_ip
+            pval = self.svc_conf.get(NSSMConfSection.SERVICE.value, pname)
+            if self._ws.search(pval):
+                err_msg = (
+                    f'ServiceConfig: {self.svc_name}: Parameter value'
+                    f' string possibly requires quotation:'
+                    f' section[{NSSMConfSection.SERVICE.value}]'
+                    f' parameter[{pname}] value[{pval}]'
                 )
-                cmd_plist = [self.svc_name, pname, pval]
-                setup_pchain.append((cmd, cmd_plist))
-            except jj2.exceptions.TemplateError as e:
-                raise svcm_exc.ServiceConfigError(
-                    f'Variable parameters substitution: {type(e).__name__}: {e}'
-                )
+                LOG.warning(err_msg)
+            cmd_plist = [self.svc_name, pname, pval]
+            setup_pchain.append((cmd, cmd_plist))
 
         return setup_pchain
 
