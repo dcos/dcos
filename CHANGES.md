@@ -50,3 +50,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ### Fixed and improved
 
 * Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
+
+* Allow Admin Router to accept files up to 32GB, such as for uploading large packages to Package Registry. (DCOS-61233)
+
