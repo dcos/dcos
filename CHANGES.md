@@ -127,6 +127,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Prune VIPs with no backends in order to avoid unbounded growth of state and messages exchanged among `dcos-net` processes. (DCOS_OSS-5356)
 
 * DC/OS no longer increases the rate limit for journald logging.  Scale testing demonstrated that raising the limit overloads journald, causing problems for other components that see delayed or lost logs or, worse, hang until log buffers are read. The default of 10000 messages per 30 seconds appears to distinguish well between busy components and excessively verbose components. (DCOS-53763)
+* Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
+* Allow Admin Router to accept files up to 32GB, such as for uploading large packages to Package Registry. (DCOS-61233)
 
 * DC/OS Net: Fix support for big sets in the ipset manager. (COPS-5229)
 
