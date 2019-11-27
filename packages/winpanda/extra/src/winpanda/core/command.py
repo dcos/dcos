@@ -114,7 +114,8 @@ class CmdSetup(Command):
 
             # Add packages to the local package repository and initialize their
             # manager objects
-            packages_bulk = []
+            packages_bulk = {}
+
             for item in self.config.ref_pkg_list:
                 pkg_id = PackageId(pkg_id=item)
 
@@ -140,7 +141,7 @@ class CmdSetup(Command):
                                f' {pkg_id.pkg_id}: {e}')
                     raise cr_exc.SetupCommandError(err_msg) from e
 
-                packages_bulk.append(package)
+                packages_bulk[pkg_id.pkg_name] = package
 
             # Finalize package setup procedures taking package mutual
             # dependencies into account.
