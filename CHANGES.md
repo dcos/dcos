@@ -68,6 +68,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
 
 * Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
+* Allow Admin Router to accept files up to 32GB, such as for uploading large packages to Package Registry. (DCOS-61233)
 
 * Marathon launched too many tasks. (DCOS-62078)
 
