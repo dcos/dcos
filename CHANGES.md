@@ -12,7 +12,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
-* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/2a1c5d518b43be21673b2cfdf72fc2e60658a826/CHANGELOG)
+* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/d10a33acc426dda9e34db995f16450faf898bb3b/CHANGELOG)
 
 * Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
 
