@@ -17,8 +17,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt.utils import base64url_decode, bytes_to_number
 
-from dcos_internal_utils import bootstrap, exhibitor
-from pkgpanda.actions import apply_service_configuration
+from dcos_internal_utils import bootstrap, exhibitor, utils
 
 log = logging.getLogger(__name__)
 
@@ -146,21 +145,6 @@ def dcos_bouncer(b, opts):
 
 
 @check_root
-def dcos_history(b, opts):
-    # Permissions are restricted to the dcos_history user in case this
-    # directory contains sensitive data - we also want to avoid the security
-    # risk of other users writing to this directory.
-    # See https://jira.mesosphere.com/browse/DCOS-18350 for a related change to
-    # dcos-bouncer.
-
-    # The ``dcos_history_tmpdir`` directory path corresponds to the
-    # TMPDIR environment variable configured in the dcos-history.service file.
-    user = 'dcos_history'
-    dcos_history_tmpdir = _known_exec_directory() / user
-    _create_private_directory(path=dcos_history_tmpdir, owner=user)
-
-
-@check_root
 def dcos_cockroach_config_change(b, opts):
     # Permissions are restricted to the dcos_cockroach user in case this
     # directory contains sensitive data - we also want to avoid the security
@@ -178,6 +162,13 @@ def dcos_cockroach_config_change(b, opts):
     _create_private_directory(path=cockroach_tmpdir, owner=user)
 
 
+@check_root
+def dcos_etcd(b, opts):
+    b.zk.ensure_path("/etcd")
+    b.zk.ensure_path("/etcd/locking")
+    b.zk.ensure_path("/etcd/nodes")
+
+
 def noop(b, opts):
     return
 
@@ -185,6 +176,7 @@ def noop(b, opts):
 bootstrappers = {
     'dcos-adminrouter': dcos_adminrouter,
     'dcos-bouncer': dcos_bouncer,
+    'dcos-etcd': dcos_etcd,
     'dcos-signal': dcos_signal,
     'dcos-diagnostics-master': noop,
     'dcos-diagnostics-agent': noop,
@@ -200,7 +192,6 @@ bootstrappers = {
     'dcos-cockroach': noop,
     'dcos-cockroach-config-change': dcos_cockroach_config_change,
     'dcos-metronome': noop,
-    'dcos-history': dcos_history,
     'dcos-mesos-dns': noop,
     'dcos-net': dcos_net,
     'dcos-telegraf-master': dcos_telegraf_master,
@@ -235,7 +226,7 @@ def main():
         if service not in bootstrappers:
             log.error('Unknown service: {}'.format(service))
             sys.exit(1)
-        apply_service_configuration(service)
+        utils.apply_service_configuration(service)
         log.info('bootstrapping {}'.format(service))
         bootstrappers[service](b, opts)
 

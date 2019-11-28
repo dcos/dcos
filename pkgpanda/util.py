@@ -387,7 +387,7 @@ def _tar_filter(tar_info: tarfile.TarInfo) -> tarfile.TarInfo:
 def make_tar(result_filename, change_folder):
     tar_mode = ''
     if is_windows:
-        tar_mode = 'w:bz2'
+        tar_mode = 'w:gz'
     else:
         tar_mode = 'w:xz'
 

@@ -197,6 +197,10 @@ local function fetch_and_store_marathon_apps(auth_token)
 
        local tasks = app["tasks"]
 
+       if tasks == nil then
+           ngx.log(ngx.NOTICE, "No tasks for app '" .. appId .. "'")
+           goto continue
+       end
        -- Process only tasks in TASK_RUNNING state.
        -- From http://lua-users.org/wiki/TablesTutorial: "inside a pairs loop,
        -- it's safe to reassign existing keys or remove them"

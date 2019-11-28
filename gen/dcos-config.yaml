@@ -110,14 +110,10 @@ package:
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
-        {dcos_dns,
-          [
-            {push_ops_timeout, {{ dcos_dns_push_ops_timeout }}}
-          ]
-        },
         {dcos_net,
           [
-            {is_master, true}
+            {is_master, true},
+            {push_ops_timeout, {{ dcos_net_push_ops_timeout }}}
           ]
         },
         {dcos_l4lb,
@@ -155,11 +151,6 @@ package:
         {dcos_net,
           [
             {dist_port, 62501}
-          ]
-        },
-        {dcos_dns,
-          [
-            {store_modes, {{ dcos_dns_store_modes_term }}}
           ]
         },
         {dcos_l4lb,
@@ -268,7 +259,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
+            "file": "/opt/mesosphere/active/mesos/lib/mesos/liblogsink.so",
             "modules":
               [
                 {
@@ -291,7 +282,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
+            "file": "/opt/mesosphere/active/mesos/lib/mesos/liblogsink.so",
             "modules":
               [
                 {
@@ -316,7 +307,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
@@ -349,7 +340,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
@@ -372,7 +363,7 @@ package:
     content: |
       {
         "libraries": [ {
-          "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmetrics-module.so",
+          "file": "/opt/mesosphere/active/mesos/lib/mesos/libmetrics-module.so",
           "modules": [ {
             "name": "com_mesosphere_dcos_MetricsIsolatorModule",
             "parameters": [
@@ -389,7 +380,7 @@ package:
       {
         "libraries": [
           {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libjournaldlogger.so",
+            "file": "/opt/mesosphere/active/mesos/lib/mesos/libjournaldlogger.so",
             "modules": [
               {
                 "name": "com_mesosphere_mesos_JournaldLogger",
@@ -399,7 +390,7 @@ package:
                     "value": "{{ mesos_container_log_sink }}"
                   }, {
                     "key": "companion_dir",
-                    "value": "/opt/mesosphere/active/mesos-modules/bin/"
+                    "value": "/opt/mesosphere/active/mesos/bin/"
                   }, {
                     "key": "libprocess_num_worker_threads",
                     "value": "2"
@@ -436,7 +427,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libremovedockercfg.so",
+            "file": "/opt/mesosphere/active/mesos/lib/mesos/libremovedockercfg.so",
             "modules":
               [
                 {
@@ -1675,6 +1666,11 @@ package:
                   "Role": ["master"]
               },
               {
+                  "Port": {{ marathon_port }},
+                  "Uri": "/v2/pods/::status",
+                  "Role": ["master"]
+              },
+              {
                   "Port": {{ mesos_agent_port }},
                   "Uri": "/__processes__",
                   "Role":["agent", "agent_public"]
@@ -2140,9 +2136,6 @@ package:
     permissions: "0600"
     content: |
 {{ expanded_config_full }}
-  - path: /etc_master/dcos-history.env
-    content: |
-      STATE_SUMMARY_URI=http://leader.mesos:{{ mesos_master_port }}/state-summary
   - path: /etc_master/adminrouter-upstreams-open.conf
     content: |
       # Just for compatibility/uniformity with EE:
@@ -2455,8 +2448,6 @@ package:
         systemd_unit = "dcos-cosmos.service"
       [[inputs.procstat]]
         systemd_unit = "dcos-exhibitor.service"
-      [[inputs.procstat]]
-        systemd_unit = "dcos-history.service"
       [[inputs.procstat]]
         systemd_unit = "dcos-log-master.service"
       [[inputs.procstat]]

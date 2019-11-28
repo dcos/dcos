@@ -1,0 +1,9 @@
+{
+  "single_source" : {
+      "kind": "url_extract",
+      "url": "https://github.com/etcd-io/etcd/releases/download/v3.4.0/etcd-v3.4.0-linux-amd64.tar.gz",
+      "sha1": "af01072da1dd5c74d83ca45fe52c304afbce15a2"
+  },
+  "username": "dcos_etcd",
+  "state_directory": true
+}

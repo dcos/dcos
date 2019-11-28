@@ -1,0 +1,25 @@
+#!/bin/bash
+#
+# DC/OS Installer for Windows. Consist of packages, packages_lists, dcos_install.ps1, prerequisites.zip.
+#
+# All logging and tool output should be redirected to stderr
+# as the Docker container might output json that would
+# otherwise be tainted.
+#
+set -o errexit -o nounset -o pipefail
+
+# create genconf_win/serve dirs, if not extracted
+if [ ! -d genconf_win/serve ]; then
+    >&2 mkdir -p genconf_win/serve
+fi
+
+# extract payload into genconf_win/serve dirs, if not extracted
+if [ ! -f "./genconf_win/serve)" ]; then
+    >&2 echo Extracting windows relese tar artifact from this script
+    sed '1,/^#EOF#$/d' "$0" | tar xv --directory ./genconf_win/serve
+fi
+trap - INT
+
+exit $?
+
+#EOF#
