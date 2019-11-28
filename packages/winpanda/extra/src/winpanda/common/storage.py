@@ -15,6 +15,8 @@ Default local storage layout for DC/OS installation:
             +-<inst_run>/     # Package-specific/common runtime data
             +-<inst_log>/     # Package-specific/common log files
             +-<inst_tmp>/     # Package-specific/common temporary data
+        +-<inst_bin>/         # DC/OS installation shared executables dir
+        +-<inst_lib>/         # DC/OS installation shared libraries dir
 """
 # This is how the default DC/OS installation FS layout looks like
 # C:/                         # DC/OS installation drive
@@ -28,6 +30,8 @@ Default local storage layout for DC/OS installation:
 #       +-run/                # Package-specific/common runtime data
 #       +-log/                # Package-specific/common log files
 #       +-tmp/                # Package-specific/common temporary data
+#     +-bin/                  # DC/OS installation shared executables dir
+#     +-lib/                  # DC/OS installation shared libraries dir
 
 
 from collections import namedtuple
@@ -77,6 +81,14 @@ DCOS_INST_RUN_DPATH_DFT = 'run'
 # Package-specific/common temporary data
 DCOS_INST_TMP_DPATH_DFT = 'tmp'
 
+# >>>>>
+# DC/OS installation shared executables root directory
+DCOS_INST_BIN_DPATH_DFT = 'bin'
+
+# >>>>>
+# DC/OS installation shared libraries root directory
+DCOS_INST_LIB_DPATH_DFT = 'lib'
+
 
 class ISTOR_NODE:
     """DC/OS installation storage core node."""
@@ -91,12 +103,15 @@ class ISTOR_NODE:
     RUN = 'inst_run'
     LOG = 'inst_log'
     TMP = 'inst_tmp'
+    BIN = 'inst_bin'
+    LIB = 'inst_lib'
 
 
 IStorNodes = namedtuple('IStorNodes', [
     ISTOR_NODE.DRIVE, ISTOR_NODE.ROOT, ISTOR_NODE.CFG, ISTOR_NODE.PKGREPO,
     ISTOR_NODE.STATE, ISTOR_NODE.PKGACTIVE, ISTOR_NODE.VAR, ISTOR_NODE.WORK,
-    ISTOR_NODE.RUN, ISTOR_NODE.LOG, ISTOR_NODE.TMP
+    ISTOR_NODE.RUN, ISTOR_NODE.LOG, ISTOR_NODE.TMP, ISTOR_NODE.BIN,
+    ISTOR_NODE.LIB
 ])
 
 
@@ -113,7 +128,9 @@ class InstallationStorage:
                  work_dpath=DCOS_INST_WORK_DPATH_DFT,
                  run_dpath=DCOS_INST_RUN_DPATH_DFT,
                  log_dpath=DCOS_INST_LOG_DPATH_DFT,
-                 tmp_dpath=DCOS_INST_TMP_DPATH_DFT):
+                 tmp_dpath=DCOS_INST_TMP_DPATH_DFT,
+                 bin_dpath=DCOS_INST_BIN_DPATH_DFT,
+                 lib_dpath=DCOS_INST_LIB_DPATH_DFT):
         """Constructor.
 
         :param drive:           str, DC/OS installation drive spec (ex. 'c:')
@@ -131,6 +148,8 @@ class InstallationStorage:
                                 dir path
         :param tmp_dpath:       str, package-specific/common temporary data
                                 root dir path
+        :param bin_dpath:       str, shared executables root dir path
+        :param lib_dpath:       str, shared libraries root dir path
         """
         # Refine/verify drive specification
         drive_ = Path(f'{drive.strip(":")}:').drive
@@ -185,6 +204,14 @@ class InstallationStorage:
         tmp_dpath_ = Path(str(tmp_dpath))
         self.tmp_dpath = (tmp_dpath_ if tmp_dpath_.is_absolute() else
                           self.var_dpath.joinpath(tmp_dpath_))
+        # Construct DC/OS installation shared executables dir path
+        bin_dpath_ = Path(str(bin_dpath))
+        self.bin_dpath = (bin_dpath_ if bin_dpath_.is_absolute() else
+                          self.root_dpath.joinpath(bin_dpath_))
+        # Construct DC/OS installation shared libraries dir path
+        lib_dpath_ = Path(str(lib_dpath))
+        self.lib_dpath = (lib_dpath_ if lib_dpath_.is_absolute() else
+                          self.root_dpath.joinpath(lib_dpath_))
 
         self.istor_nodes = IStorNodes(**{
             ISTOR_NODE.DRIVE: self.drive,
@@ -197,7 +224,9 @@ class InstallationStorage:
             ISTOR_NODE.WORK: self.work_dpath,
             ISTOR_NODE.RUN: self.run_dpath,
             ISTOR_NODE.LOG: self.log_dpath,
-            ISTOR_NODE.TMP: self.tmp_dpath
+            ISTOR_NODE.TMP: self.tmp_dpath,
+            ISTOR_NODE.BIN: self.bin_dpath,
+            ISTOR_NODE.LIB: self.lib_dpath,
         })
 
     def _inst_stor_is_clean_ready(self, clean=False):

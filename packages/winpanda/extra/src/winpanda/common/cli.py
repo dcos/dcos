@@ -37,6 +37,7 @@ class CLI_CMDOPT:
     DSTOR_URL = 'dstor_url'
     DSTOR_PKGREPOPATH = 'dstor_pkgrepo_path'
     DSTOR_PKGLISTPATH = 'dstor_pkglist_path'
+    DSTOR_DCOSCFGPATH = 'dstor_dcoscfg_path'
     DCOS_CLUSTERCFGPATH = 'dcos_clustercfg_path'
 
 
@@ -75,6 +76,9 @@ Options:
                                     [default: ]
   --dstor-pkglist=<path>            DC/OS distribution storage reference
                                     package list path
+                                    [default: ]
+  --dstor-dcoscfg=<path>            DC/OS distribution storage aggregated DC/OS
+                                    configuration object path
                                     [default: ]
   --cluster-cfgfile=<path>          DC/OS cluster configuration options local
                                     file path

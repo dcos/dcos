@@ -71,7 +71,7 @@ class PackageManifest:
         #       ValueError, if conformance was not confirmed.
 
     def __str__(self):
-        return str(self._pkg_id)
+        return str(self.body)
 
     @property
     def body(self):

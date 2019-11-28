@@ -89,6 +89,30 @@ VALID_SVC_STATUSES = [getattr(SVC_STATUS, sname) for sname in
                         SVC_STATUS.__dict__ if not sname.startswith('__')]
 
 
+def _verify_svcm_executor(command):
+    """Discover/verify service manager executor instance.
+
+    :param command: callable, a method of the service manager that should be
+                    preceded by the discovery/verification procedure
+    :return:
+    """
+    def decorator(manager, *args, **kwargs):
+        """
+
+        :param manager: WindowsServiceManager, system service manager object
+        :param args:    tuple, positional arguments to a service management
+                        command
+        :param kwargs:  dict, keyword arguments to a service management command
+        :return:        object, result of a method being decorated
+        """
+        if manager.exec_path is None:
+            manager.exec_path = manager._verify_executor()
+
+        return command(manager, *args, **kwargs)
+
+    return decorator
+
+
 @base.svcm_type('nssm')
 class WinSvcManagerNSSM(base.WindowsServiceManager):
     """NSSM-based Windows service manager."""
@@ -117,9 +141,17 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
 
         self.verify_svcm_options()
 
+    def __str__(self):
+        return str({
+            'svc_conf': {k: dict(v) for k, v in self.svc_conf.items()},
+            'exec_path': str(self.exec_path),
+            'svc_name': self.svc_name,
+            'svc_exec': self.svc_exec,
+            'svc_pnames_bulk': self.svc_pnames_bulk,
+        })
+
     def verify_svcm_options(self):
         """Verify/refine Windows service manager options."""
-        self.exec_path = self._verify_executor()
         self._verify_svc_conf()
 
     def _verify_executor(self):
@@ -275,6 +307,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
 
         return subproc_run
 
+    @_verify_svcm_executor
     def setup(self):
         """Setup (register) configuration for a Windows service.
         """
@@ -304,6 +337,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         # TODO: Add a cleanup procedure for the case of unsuccessful service
         #       setup operation.
 
+    @_verify_svcm_executor
     def remove(self):
         """Remove configuration for a Windows service."""
         cl_elements = [
@@ -313,6 +347,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
 
         self._subproc_run(cl_elements=cl_elements)
 
+    @_verify_svcm_executor
     def enable(self):
         """Turn service's  auto-start flag on (start service at OS bootstrap).
         """
@@ -323,6 +358,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
 
         self._subproc_run(cl_elements=cl_elements)
 
+    @_verify_svcm_executor
     def disable(self):
         """Turn service's  auto-start flag off (do not start service at OS
         bootstrap).
@@ -334,6 +370,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
 
         self._subproc_run(cl_elements=cl_elements)
 
+    @_verify_svcm_executor
     def _primitive_command(self, command_name):
         """Primitive command template."""
         assert command_name in NSSMCommand.values_primitive(), (
