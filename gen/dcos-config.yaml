@@ -3033,7 +3033,7 @@ package:
       ETCD_CA_CERT_FILE={{ etcd_ca_cert_file }}
       ETCD_CERT_FILE={{ etcd_cert_file }}
       ETCD_KEY_FILE={{ etcd_key_file }}
-      CALICO_NO_DEFAULT_POOLS=false
+      NO_DEFAULT_POOLS=false
       CALICO_IPV4POOL_CIDR={{ calico_network_cidr }}
       CALICO_IPV4POOL_NAT_OUTGOING=true
       FELIX_IGNORELOOSERPF=true
