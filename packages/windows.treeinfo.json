@@ -21,6 +21,7 @@
     "check-time",
     "cni",
     "cockroach",
+    "conntrack-tools",
     "cosmos",
     "curl",
     "dcos-bootstrap-ca",
