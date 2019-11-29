@@ -1,5 +1,4 @@
-$oldpath = (Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH).path
-cd ..\bin
-$nssmlocation = Get-Location
-$newpath = "$oldpath;$nssmlocation"
-Set-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH -Value $newPath
+ param (
+    [string]$pkg_inst_dpath
+ )
+New-Item -ItemType SymbolicLink -Path "$Env:windir\nssm.exe" -Target "$pkg_inst_dpath\bin\nssm.exe"

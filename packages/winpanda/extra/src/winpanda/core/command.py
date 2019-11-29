@@ -3,6 +3,7 @@
 DC/OS package management command definitions.
 """
 import abc
+from pathlib import Path
 
 from common import logger
 from common.cli import CLI_COMMAND, CLI_CMDTARGET, CLI_CMDOPT
@@ -14,7 +15,8 @@ from core.package.package import Package
 from core import utils as cr_utl
 from extm import exceptions as extm_exc
 from svcm import exceptions as svcm_exc
-from svcm.nssm import WinSvcManagerNSSM, SVC_STATUS
+from svcm.nssm import SVC_STATUS
+
 
 LOG = logger.get_logger(__name__)
 
@@ -79,14 +81,14 @@ class CmdSetup(Command):
     """Setup command implementation."""
     def __init__(self, **cmd_opts):
         """"""
-        msg_src = self.__class__.__name__
+        self.msg_src = self.__class__.__name__
         super(CmdSetup, self).__init__(**cmd_opts)
         if self.cmd_opts.get(CLI_CMDOPT.CMD_TARGET) == CLI_CMDTARGET.STORAGE:
             # Deactivate cluster-related configuration steps
             self.cmd_opts[CLI_CMDOPT.DCOS_CLUSTERCFGPATH] = 'NOP'
 
         self.config = cmdconf.create(**self.cmd_opts)
-        LOG.debug(f'{msg_src}: cmd_opts: {self.cmd_opts}')
+        LOG.debug(f'{self.msg_src}: cmd_opts: {self.cmd_opts}')
 
     def verify_cmd_options(self):
         """Verify command options."""
@@ -94,8 +96,7 @@ class CmdSetup(Command):
 
     def execute(self):
         """Execute command."""
-        msg_src = self.__class__.__name__
-        LOG.debug(f'{msg_src}: Execute: Target:'
+        LOG.debug(f'{self.msg_src}: Execute: Target:'
                   f' {self.cmd_opts.get(CLI_CMDOPT.CMD_TARGET)}')
 
         if self.cmd_opts.get(CLI_CMDOPT.CMD_TARGET) == CLI_CMDTARGET.STORAGE:
@@ -113,7 +114,8 @@ class CmdSetup(Command):
 
             # Add packages to the local package repository and initialize their
             # manager objects
-            packages_bulk = []
+            packages_bulk = {}
+
             for item in self.config.ref_pkg_list:
                 pkg_id = PackageId(pkg_id=item)
 
@@ -124,7 +126,7 @@ class CmdSetup(Command):
                         dstor_pkgrepo_path=dstor_pkgrepo_path
                     )
                 except cr_exc.RCError as e:
-                    err_msg = (f'{msg_src}: Execute: Add package to local'
+                    err_msg = (f'{self.msg_src}: Execute: Add package to local'
                                f' repository: {pkg_id.pkg_id}: {e}')
                     raise cr_exc.SetupCommandError(err_msg) from e
 
@@ -135,11 +137,11 @@ class CmdSetup(Command):
                         cluster_conf=self.config.cluster_conf
                     )
                 except cr_exc.RCError as e:
-                    err_msg = (f'{msg_src}: Execute: Initialize package:'
+                    err_msg = (f'{self.msg_src}: Execute: Initialize package:'
                                f' {pkg_id.pkg_id}: {e}')
                     raise cr_exc.SetupCommandError(err_msg) from e
 
-                packages_bulk.append(package)
+                packages_bulk[pkg_id.pkg_name] = package
 
             # Finalize package setup procedures taking package mutual
             # dependencies into account.
@@ -150,12 +152,17 @@ class CmdSetup(Command):
                 try:
                     package.manifest.save()
                 except cr_exc.RCError as e:
-                    err_msg = (f'{msg_src}: Execute: Register package:'
+                    err_msg = (f'{self.msg_src}: Execute: Register package:'
                                f' {package.manifest.pkg_id.pkg_id}: {e}')
                     raise cr_exc.SetupCommandError(err_msg)
 
-                LOG.info(f'{msg_src}: Setup package:'
+                LOG.info(f'{self.msg_src}: Setup package:'
                          f' {package.manifest.pkg_id.pkg_id}: OK')
+
+            # Deploy DC/OS aggregated configuration object
+            # TODO: Remove pakage manifests in case of dcos_conf deployment
+            #       failure.
+            self._deploy_dcos_conf()
 
     def _handle_pkg_inst_extras(self, package):
         """Process package extra installation options.
@@ -164,10 +171,9 @@ class CmdSetup(Command):
         """
         msg_src = self.__class__.__name__
 
-        LOG.debug(f'{msg_src}: Handle extra install options:'
-                  f' ext_manager: {package.ext_manager}')
-
         if package.ext_manager:
+            LOG.debug(f'{msg_src}: Execute: Handle extra install options:'
+                      f' {package.manifest.pkg_id.pkg_name}: ...')
             try:
                 package.ext_manager.handle_install_extras()
             except extm_exc.InstExtrasManagerError as e:
@@ -175,8 +181,11 @@ class CmdSetup(Command):
                            f' {package.manifest.pkg_id.pkg_name}: {e}')
                 raise cr_exc.SetupCommandError(err_msg) from e
 
-        LOG.debug(f'{msg_src}: Handle extra install options:'
-                  f' {package.manifest.pkg_id.pkg_name}: OK')
+            LOG.debug(f'{msg_src}: Execute: Handle extra install options:'
+                      f' {package.manifest.pkg_id.pkg_name}: OK')
+        else:
+            LOG.debug(f'{msg_src}: Execute: Handle extra install options:'
+                      f' {package.manifest.pkg_id.pkg_name}: NOP')
 
     def _handle_pkg_svc_setup(self, package):
         """Execute steps on package service setup.
@@ -184,24 +193,28 @@ class CmdSetup(Command):
         :param package: Package, DC/OS package manager object
         """
         msg_src = self.__class__.__name__
+        pkg_id = package.manifest.pkg_id
 
         if package.svc_manager:
+            svc_name = package.svc_manager.svc_name
+            LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Setup service:'
+                      f' {svc_name}: ...')
             try:
                 ret_code, stdout, stderr = package.svc_manager.status()
             except svcm_exc.ServiceManagerCommandError as e:
-                LOG.debug(f'{msg_src}: Execute: Get initial service status:'
-                          f' {package.manifest.pkg_id.pkg_name}: {e}')
+                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Get initial'
+                          f' service status: {svc_name}: {e}')
                 # Try to setup, as a service (expectedly) doesn't exist and
                 # checking it's status naturally would yield an error.
                 try:
                     package.svc_manager.setup()
                 except svcm_exc.ServiceManagerCommandError as e:
-                    err_msg = (f'Execute: Setup service:'
-                               f' {package.manifest.pkg_id.pkg_name}: {e}')
+                    err_msg = (f'Execute: {pkg_id.pkg_name}: Setup service:'
+                               f' {svc_name}: {e}')
                     raise cr_exc.SetupCommandError(err_msg) from e
             else:
-                LOG.debug(f'{msg_src}: Execute: Get initial service status:'
-                          f' {package.manifest.pkg_id.pkg_name}:'
+                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Get initial'
+                          f' service status: {svc_name}:'
                           f' stdout[{stdout}] stderr[{stderr}]')
                 svc_status = str(stdout).strip().rstrip('\n')
                 # Try to remove existing service
@@ -210,11 +223,11 @@ class CmdSetup(Command):
                         package.svc_manager.stop()
 
                     package.svc_manager.remove()
-                    LOG.debug(f'{msg_src}: Execute: Remove existing service:'
-                              f' {package.manifest.pkg_id.pkg_name}: OK')
+                    LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Remove'
+                              f' existing service: {svc_name}: OK')
                 except svcm_exc.ServiceManagerCommandError as e:
-                    err_msg = (f'Execute: Remove existing service:'
-                               f' {package.manifest.pkg_id.pkg_name}: {e}')
+                    err_msg = (f'Execute: {pkg_id.pkg_name}: Remove existing'
+                               f' service: {svc_name}: {e}')
                     raise cr_exc.SetupCommandError(err_msg) from e
                 # Setup a replacement service
                 try:
@@ -222,18 +235,52 @@ class CmdSetup(Command):
                     ret_code, stdout, stderr = (package.svc_manager.status())
                     svc_status = str(stdout).strip().rstrip('\n')
                 except svcm_exc.ServiceManagerCommandError as e:
-                    err_msg = (f'Execute: Setup replacement service:'
-                               f' {package.manifest.pkg_id.pkg_name}: {e}')
+                    err_msg = (f'Execute: {pkg_id.pkg_name}: Setup replacement'
+                               f' service: {svc_name}: {e}')
                     raise cr_exc.SetupCommandError(err_msg) from e
                 else:
                     if svc_status != SVC_STATUS.STOPPED:
-                        err_msg = (f'Execute: Setup replacement service:'
-                                   f' {package.manifest.pkg_id.pkg_name}:'
+                        err_msg = (f'Execute: {pkg_id.pkg_name}: Setup'
+                                   f' replacement service: {svc_name}:'
                                    f' Invalid status: {svc_status}')
                         raise cr_exc.SetupCommandError(err_msg)
 
-            LOG.debug(f'{msg_src}: Setup service:'
-                      f' {package.manifest.pkg_id.pkg_name}: OK')
+            LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Setup service:'
+                      f' {svc_name}: OK')
+        else:
+            LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Setup service:'
+                      f' NOP')
+
+    def _deploy_dcos_conf(self):
+        """Deploy aggregated DC/OS configuration object."""
+        LOG.debug(f'{self.msg_src}: Execute: Deploy aggregated config: ...')
+
+        for element in self.config.dcos_conf.get('package', []):
+            target_path = Path(element.get('path'))
+            content = element.get('content')
+
+            if not target_path.parent.exists():
+                try:
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    LOG.debug(f'{self.msg_src}: Execute: Deploy aggregated'
+                              f' config: Create directory:'
+                              f' {target_path.parent}: OK')
+                except (OSError, RuntimeError) as e:
+                    err_msg = (f'Execute: Deploy aggregated config: Create'
+                               f' directory: {target_path.parent}:'
+                               f' {type(e).__name__}: {e}')
+                    raise cr_exc.SetupCommandError(err_msg) from e
+
+            try:
+                target_path.write_text(content)
+                LOG.debug(f'{self.msg_src}: Execute: Deploy aggregated config:'
+                          f'Save content: {target_path}: OK')
+            except (OSError, RuntimeError) as e:
+                err_msg = (f'Execute: Deploy aggregated config: Save content:'
+                           f' {target_path}: {type(e).__name__}: {e}')
+                raise cr_exc.SetupCommandError(err_msg) from e
+
+        LOG.debug(f'{self.msg_src}: Execute: Deploy aggregated config: OK')
 
 
 @command_type(CLI_COMMAND.START)
@@ -262,48 +309,57 @@ class CmdStart(Command):
 
         for package in cr_utl.pkg_sort_by_deps(packages_bulk):
             pkg_id = package.manifest.pkg_id
-            LOG.debug(f'{msg_src}: Execute: Package: {package.manifest.body}')
 
-            if package.manifest.pkg_svccfg:
+            if package.svc_manager:
+                svc_name = package.svc_manager.svc_name
+                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
+                          f' Start service: {svc_name}: ...')
                 try:
                     ret_code, stdout, stderr = package.svc_manager.status()
                 except svcm_exc.ServiceManagerCommandError as e:
-                    err_msg = (f'Execute: Get initial service status:'
-                               f' {pkg_id.pkg_name}: {e}')
+                    err_msg = (f'Execute: {pkg_id.pkg_name}: Get initial'
+                               f' service status: {svc_name}: {e}')
                     raise cr_exc.StartCommandError(err_msg) from e
                 else:
-                    LOG.debug(f'{msg_src}: Execute: Get initial service'
-                              f' status: {pkg_id.pkg_name}: stdout[{stdout}]'
-                              f' stderr[{stderr}]')
+                    LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Get'
+                              f' initial service status: {svc_name}:'
+                              f' stdout[{stdout}] stderr[{stderr}]')
                     svc_status = str(stdout).strip().rstrip('\n')
 
                 if svc_status == SVC_STATUS.STOPPED:
                     try:
                         package.svc_manager.start()
                     except svcm_exc.ServiceManagerCommandError as e:
-                        err_msg = (f'Execute: Start service:'
-                                   f' {pkg_id.pkg_name}: {e}')
+                        err_msg = (f'Execute: {pkg_id.pkg_name}: Start'
+                                   f' service: {svc_name}: {e}')
                         raise cr_exc.StartCommandError(err_msg) from e
 
                     try:
                         ret_code, stdout, stderr = package.svc_manager.status()
-                        LOG.debug(f'{msg_src}: Execute: Get final service'
-                                  f' status: {pkg_id.pkg_name}:'
+                        LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
+                                  f' Get final service status: {svc_name}:'
                                   f' stdout[{stdout}] stderr[{stderr}]')
                         svc_status = str(stdout).strip().rstrip('\n')
 
                         if svc_status != SVC_STATUS.RUNNING:
-                            err_msg = (f'Execute: Service failed to start:'
-                                       f' {pkg_id.pkg_name}: {svc_status}')
+                            err_msg = (f'Execute: {pkg_id.pkg_name}: Service'
+                                       f' failed to start: {svc_name}:'
+                                       f' {svc_status}')
                             raise cr_exc.StartCommandError(err_msg)
                     except svcm_exc.ServiceManagerCommandError as e:
-                        err_msg = (f'Execute: Get final service status:'
-                                   f' {pkg_id.pkg_name}: {e}')
+                        err_msg = (f'Execute: {pkg_id.pkg_name}: Get final'
+                                   f' service status: {svc_name}: {e}')
                         raise cr_exc.StartCommandError(err_msg) from e
                 elif svc_status == SVC_STATUS.RUNNING:
-                    LOG.warning(f'{msg_src}: Execute: Service is already'
-                                f' running: {pkg_id.pkg_name}')
+                    LOG.warning(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
+                                f' Service is already running: {svc_name}')
                 else:
-                    err_msg = (f'Execute: Invalid service status:'
-                               f' {pkg_id.pkg_name}: {svc_status}')
+                    err_msg = (f'Execute: {pkg_id.pkg_name}: Invalid service'
+                               f' status: {svc_name}: {svc_status}')
                     raise cr_exc.StartCommandError(err_msg)
+
+                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
+                          f' Start service: {svc_name}: OK')
+            else:
+                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
+                          f' Start service: NOP')
