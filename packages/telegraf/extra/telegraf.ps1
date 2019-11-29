@@ -18,7 +18,7 @@ Add-Content $conf '
   debug = false
   quiet = false
   logfile = ""
-  hostname = ''
+  hostname = ""
   omit_hostname = false
 [[inputs.cpu]]
   percpu = false
