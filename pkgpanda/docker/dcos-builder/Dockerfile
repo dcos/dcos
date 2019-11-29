@@ -41,7 +41,15 @@ RUN apt-get -qq update && apt-get -y install \
   wget \
   xutils-dev \
   xz-utils \
-  zlib1g-dev
+  zlib1g-dev \
+  bison \
+  flex \
+  libnfnetlink-dev \
+  libmnl-dev \
+  libnetfilter-conntrack-dev \
+  libnetfilter-cttimeout-dev \
+  libnetfilter-cthelper0-dev \
+  libnetfilter-queue-dev
 
 RUN ln -sf /usr/bin/cpp-4.8 /usr/bin/cpp && \
   ln -sf /usr/bin/g++-4.8 /usr/bin/g++ && \
