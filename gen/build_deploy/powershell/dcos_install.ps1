@@ -145,6 +145,7 @@ function SetupDirectories() {
         "$($basedir)\bootstrap",
         "$($basedir)\bootstrap\prerequisites",
 		"$($basedir)\bin",
+        "$($basedir)\etc",
         "$($vardir)",
         "$($vardir)\log"
     )
@@ -298,12 +299,12 @@ function main($url, $version, $masters) {
     $local_ip = (Get-WmiObject -Class Win32_NetworkAdapterConfiguration | where {$_.DefaultIPGateway -ne $null}).IPAddress | select-object -first 1
     Write-Log("Local IP: $($local_ip)")
     $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($bootstrap_url)/$($version)/genconf/serve`nPkgRepoPath=windows/packages`nPkgListPath=windows/package_lists/latest.package_list.json`nDcosClusterPkgInfoPath=cluster-package-info.json`n`n[local]`nPrivateIPAddr=$($local_ip)"
-    CreateWriteFile "C:\d2iq\dcos\etc" "cluster.conf" $content
+    CreateWriteFile "$($basedir)\etc" "cluster.conf" $content
 
     Write-Log("Running Winpanda.py setup ...")
-    & python.exe "$($basedir)\winpanda\bin\winpanda.py" setup | Out-File "$($vardir)\log\dcos_install.log" -Append;
+    & python.exe "$($basedir)\winpanda\bin\winpanda.py" --inst-root-dir="$($basedir)" setup | Out-File "$($vardir)\log\dcos_install.log" -Append;
     Write-Log("Running Winpanda.py start ...")
-    & python.exe "$($basedir)\winpanda\bin\winpanda.py" start | Out-File "$($vardir)\log\dcos_install.log" -Append;
+    & python.exe "$($basedir)\winpanda\bin\winpanda.py" --inst-root-dir="$($basedir)" start | Out-File "$($vardir)\log\dcos_install.log" -Append;
 }
 
 main $bootstrap_url $version $masters
