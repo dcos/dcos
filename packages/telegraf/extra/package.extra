@@ -1,3 +1,0 @@
-install:
-    exec_external_commands:
-        - {{ pkg_inst_dpath }}\etc\install.ps1 {{ pkg_inst_dpath }}

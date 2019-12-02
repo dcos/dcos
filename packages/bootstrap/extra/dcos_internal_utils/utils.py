@@ -1,75 +1,139 @@
-try:
-    import fcntl
-except ImportError:
-    pass
 import json
 import logging
 import os
 import platform
+import shutil
 import socket
 import stat
 import subprocess
-import sys
 import tempfile
-
-is_windows = platform.system() == "Windows"
-
-if not is_windows:
-    assert 'fcntl' in sys.modules
+from pathlib import Path
 
 log = logging.getLogger(__name__)
 
+is_windows = platform.system() == "Windows"
+is_linux = not is_windows
 
-# Copied from pkgpanda/util.py#L257-L262
-def load_json(filename):
+if is_windows:
+    _default_path = Path('c:\\d2iq\\dcos')
+    _paths_path = _default_path / 'etc' / 'paths.json'
+    if _paths_path.exists():
+        with _paths_path.open() as f:
+            paths = json.load(f)
+            install_path = Path(paths['install'])
+            var_path = Path(paths['var'])
+    else:
+        install_path = Path('c:\\dcos\\opt')
+        var_path = _default_path / 'var'
+
+    dcos_lib_path = var_path / 'lib'
+    dcos_run_path = var_path / 'run'
+    tmp_path = Path('C:\\Temp')
+else:
+    install_path = Path('/opt/mesosphere')
+    dcos_lib_path = Path('/var/lib/dcos')
+    dcos_run_path = Path('/run/dcos')
+    tmp_path = Path('/tmp')
+
+dcos_etc_path = install_path / 'etc'
+
+
+# Derived from pkgpanda/util.py#L257-L262
+def load_json(filepath):
     try:
-        with open(filename) as f:
+        with filepath.open() as f:
             return json.load(f)
     except ValueError as ex:
-        raise ValueError("Invalid JSON in {0}: {1}".format(filename, ex)) from ex
+        raise ValueError("Invalid JSON in {0}: {1}".format(filepath, ex)) from ex
 
 
-def read_file_line(filename):
-    with open(filename, 'r') as f:
+def read_file_text(filepath):
+    with filepath.open() as f:
         return f.read().strip()
 
 
-# Copied from pkgpanda/util.py#L292
-def write_string(filename, data):
-    """
-    Write a string to a file.
-    Overwrite any data in that file.
+def read_file_bytes(filepath):
+    with filepath.open('rb') as f:
+        return f.read()
 
-    We use an atomic write practice of creating a temporary file and then
-    moving that temporary file to the given ``filename``. This prevents race
-    conditions such as the file being read by another process after it is
-    opened here but not yet written to.
 
-    It also prevents us from creating or truncating a file before we fail to
-    write data to it because of low disk space.
+if is_windows:
+    def write_readonly_file(filepath, data):
+        # TODO - make this atomic
+        with filepath.open('wb') as f:
+            f.write(data)
 
-    If no file already exists at ``filename``, the new file is created with
-    permissions 0o644.
-    """
-    prefix = os.path.basename(filename)
-    tmp_file_dir = os.path.dirname(os.path.realpath(filename))
-    fd, temporary_filename = tempfile.mkstemp(prefix=prefix, dir=tmp_file_dir)
+    def write_private_file(filepath, data):
+        # TODO - make this atomic
+        with filepath.open('wb') as f:
+            f.write(data)
 
-    try:
-        permissions = os.stat(filename).st_mode
-    except FileNotFoundError:
-        permissions = 0o644
+    def write_public_file(filepath, data):
+        # TODO - make this atomic
+        with filepath.open('wb') as f:
+            f.write(data)
+else:
+    def write_readonly_file(filepath, data):
+        _write_file_bytes(filepath, data, 0o400)
 
-    try:
+    def write_private_file(filepath, data):
+        _write_file_bytes(filepath, data, 0o600)
+
+    def write_public_file(filepath, data):
+        _write_file_bytes(filepath, data, 0o644)
+
+    def _write_file_bytes(filepath, data, mode):
+        """
+        Set the contents of file to a byte string.
+
+        The code ensures an atomic write by creating a temporary file and then
+        moving that temporary file to the given ``filename``. This prevents race
+        conditions such as the file being read by another process after it is
+        created but not yet written to.
+
+        It also prevents an invalid file being created if the `write` fails (e.g.
+        because of low disk space).
+
+        The new file is created with permissions `mode`.
+        """
+        filename = str(filepath)
+        prefix = os.path.basename(filename)
+        tmp_file_dir = os.path.dirname(os.path.realpath(filename))
+        fd, temporary_filename = tempfile.mkstemp(prefix=prefix, dir=tmp_file_dir)
+        # `mkstemp` initially creates file with permissions 0o600
         try:
-            os.write(fd, data.encode())
-        finally:
-            os.close(fd)
-        os.chmod(temporary_filename, stat.S_IMODE(permissions))
-        os.replace(temporary_filename, filename)
-    except Exception:
-        os.remove(temporary_filename)
-        raise
+            try:
+                os.write(fd, data)
+            finally:
+                os.close(fd)
+            os.chmod(temporary_filename, stat.S_IMODE(mode))
+            os.replace(temporary_filename, filename)
+        except Exception:
+            os.remove(temporary_filename)
+            raise
+
+
+def write_file_on_mismatched_content(desired_content, target, write):
+    """
+    Write the contents to a new target.
+
+    The copy is atomic, ensuring that the target file never exists with
+    partial contents.  The code avoids writing the file if the contents
+    do not need to be updated.  The return value is a boolean indicating
+    whether the contents of the file changed.
+    """
+    if target.exists():
+        current_content = read_file_bytes(target)
+        if current_content == desired_content:
+            return False
+
+    write(target, desired_content)
+    return True
+
+
+def chown(path, user=None, group=None):
+    if is_linux:
+        shutil.chown(str(path), user, group)
 
 
 # Copied from gen/calc.py#L87-L102
@@ -93,60 +157,21 @@ def validate_ipv4_addresses(ips: list):
 
 
 def detect_ip():
-    cmd = ['/opt/mesosphere/bin/detect_ip']
+    if is_windows:
+        cmd = ['powershell', str(install_path / 'bin' / 'detect_ip.ps1')]
+    else:
+        cmd = [str(install_path / 'bin' / 'detect_ip')]
     machine_ip = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode('ascii').strip()
     validate_ipv4_addresses([machine_ip])
     return machine_ip
 
 
-class Directory:
-    def __init__(self, path):
-        self.path = path
-
-    def __enter__(self):
-        log.info('Opening {}'.format(self.path))
-        self.fd = os.open(self.path, os.O_RDONLY)
-        log.info('Opened {} with fd {}'.format(self.path, self.fd))
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        log.info('Closing {} with fd {}'.format(self.path, self.fd))
-        os.close(self.fd)
-
-    def lock(self):
-        return Flock(self.fd, fcntl.LOCK_EX)
-
-
-class Flock:
-    def __init__(self, fd, op):
-        (self.fd, self.op) = (fd, op)
-
-    def __enter__(self):
-        log.info('Locking fd {}'.format(self.fd))
-        # If the fcntl() fails, an IOError is raised.
-        fcntl.flock(self.fd, self.op)
-        log.info('Locked fd {}'.format(self.fd))
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        fcntl.flock(self.fd, fcntl.LOCK_UN)
-        log.info('Unlocked fd {}'.format(self.fd))
-
-
-# Copied from pkgpanda/constants.py
-if is_windows:
-    # windows specific directory locations
-    # Note that these are not yet final and are placeholders
-    install_root = 'c:\\opt\\mesosphere'
-else:
-    install_root = '/opt/mesosphere'
-
 DCOS_SERVICE_CONFIGURATION_FILE = "dcos-service-configuration.json"
-DCOS_SERVICE_CONFIGURATION_PATH = install_root + "/etc/" + DCOS_SERVICE_CONFIGURATION_FILE
+DCOS_SERVICE_CONFIGURATION_PATH = dcos_etc_path / DCOS_SERVICE_CONFIGURATION_FILE
 SYSCTL_SETTING_KEY = "sysctl"
 
 
-# Copied from pkgpanda/actions.py#L308-L327
+# Derived from pkgpanda/actions.py#L308-L327
 def _apply_sysctl(setting, service):
     try:
         subprocess.check_call(["sysctl", "-q", "-w", setting])
@@ -160,9 +185,7 @@ def _apply_sysctl_settings(sysctl_settings, service):
 
 
 def apply_service_configuration(service):
-    if not os.path.exists(DCOS_SERVICE_CONFIGURATION_PATH):
-        return
-
-    dcos_service_properties = load_json(DCOS_SERVICE_CONFIGURATION_PATH)
-    if SYSCTL_SETTING_KEY in dcos_service_properties:
-        _apply_sysctl_settings(dcos_service_properties[SYSCTL_SETTING_KEY], service)
+    if is_linux and DCOS_SERVICE_CONFIGURATION_PATH.exists():
+        dcos_service_properties = load_json(DCOS_SERVICE_CONFIGURATION_PATH)
+        if SYSCTL_SETTING_KEY in dcos_service_properties:
+            _apply_sysctl_settings(dcos_service_properties[SYSCTL_SETTING_KEY], service)

@@ -22,7 +22,12 @@ class RCCONTEXT_ITEM:
 
     DCOS_INST_DPATH = 'dcos_inst_dpath'
     DCOS_CFG_DPATH = 'dcos_cfg_dpath'
+    DCOS_WORK_DPATH = 'dcos_work_dpath'
+    DCOS_RUN_DPATH = 'dcos_run_dpath'
+    DCOS_LOG_DPATH = 'dcos_log_dpath'
     DCOS_TMP_DPATH = 'dcos_tmp_dpath'
+    DCOS_BIN_DPATH = 'dcos_bin_dpath'
+    DCOS_LIB_DPATH = 'dcos_lib_dpath'
 
     PKG_INST_DPATH = 'pkg_inst_dpath'
     PKG_LOG_DPATH = 'pkg_log_dpath'
@@ -98,10 +103,35 @@ class ResourceContext:
             )).strip('"') if json_ready else str(
                 getattr(self._istor_nodes, ISTOR_NODE.CFG)
             ),
+            RCCONTEXT_ITEM.DCOS_WORK_DPATH: json.dumps(str(
+                getattr(self._istor_nodes, ISTOR_NODE.WORK)
+            )).strip('"') if json_ready else str(
+                getattr(self._istor_nodes, ISTOR_NODE.WORK)
+            ),
+            RCCONTEXT_ITEM.DCOS_RUN_DPATH: json.dumps(str(
+                getattr(self._istor_nodes, ISTOR_NODE.RUN)
+            )).strip('"') if json_ready else str(
+                getattr(self._istor_nodes, ISTOR_NODE.RUN)
+            ),
+            RCCONTEXT_ITEM.DCOS_LOG_DPATH: json.dumps(str(
+                getattr(self._istor_nodes, ISTOR_NODE.LOG)
+            )).strip('"') if json_ready else str(
+                getattr(self._istor_nodes, ISTOR_NODE.LOG)
+            ),
             RCCONTEXT_ITEM.DCOS_TMP_DPATH: json.dumps(str(
                 getattr(self._istor_nodes, ISTOR_NODE.TMP)
             )).strip('"') if json_ready else str(
                 getattr(self._istor_nodes, ISTOR_NODE.TMP)
+            ),
+            RCCONTEXT_ITEM.DCOS_BIN_DPATH: json.dumps(str(
+                getattr(self._istor_nodes, ISTOR_NODE.BIN)
+            )).strip('"') if json_ready else str(
+                getattr(self._istor_nodes, ISTOR_NODE.BIN)
+            ),
+            RCCONTEXT_ITEM.DCOS_LIB_DPATH: json.dumps(str(
+                getattr(self._istor_nodes, ISTOR_NODE.LIB)
+            )).strip('"') if json_ready else str(
+                getattr(self._istor_nodes, ISTOR_NODE.LIB)
             ),
         }
 
@@ -198,10 +228,15 @@ class ResourceContext:
 
     def as_dict(self):
         """Construct the dict representation."""
-        return {
-            'istor_nodes': {
+        if self._istor_nodes is None:
+            istor_nodes = None
+        else:
+            istor_nodes = {
                 k: str(v) for k, v in self._istor_nodes._asdict().items()
-            },
+            }
+
+        return {
+            'istor_nodes': istor_nodes,
             'cluster_conf': self._cluster_conf,
             'pkg_id': self._pkg_id.pkg_id,
         }

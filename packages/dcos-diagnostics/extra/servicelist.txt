@@ -1,0 +1,4 @@
+WinRM
+mesos-agent
+docker
+telegraf

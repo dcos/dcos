@@ -8,15 +8,15 @@
 #
 set -o errexit -o nounset -o pipefail
 
-# create genconf_win/serve dirs, if not extracted
-if [ ! -d genconf_win/serve ]; then
-    >&2 mkdir -p genconf_win/serve
+# create genconf/serve/windows dirs, if not extracted
+if [ ! -d genconf/serve/windows ]; then
+    >&2 mkdir -p genconf/serve/windows
 fi
 
-# extract payload into genconf_win/serve dirs, if not extracted
-if [ ! -f "./genconf_win/serve)" ]; then
+# extract payload into genconf/serve/windows dirs, if not extracted
+if [ ! -f "./genconf/serve/windows)" ]; then
     >&2 echo Extracting windows relese tar artifact from this script
-    sed '1,/^#EOF#$/d' "$0" | tar xv --directory ./genconf_win/serve
+    sed '1,/^#EOF#$/d' "$0" | tar xv --directory ./genconf/serve/windows
 fi
 trap - INT
 

@@ -6,26 +6,30 @@
 .DESCRIPTION
   The script will:
   - Create needed DC/OS directories on Windows machine
-  - Download prerequisites.zip achive from provided $url to C:\dcos
+  - Download prerequisites.zip achive from provided $url to $install_dir
   - Extract the archive
   - Install the pre-requisites: 7-zip
-  - Unpack from DC/OS Windows Installer : Python, Winpanda
+  - Unpack from DC/OS Windows Installer following packages: Python, Winpanda
   - Set needed Env variables for Python
-  - Run Winpanda.py with flags: setup & start
+  - Run Winpanda.py with flags: Setup & Start
 
 .PARAMETER bootstrap_url
-  The url of Nginx web server started on Boostrrap agent to serve Windows installation files
+  [Required] The url of Nginx web server started on Boostrrap agent to serve Windows installation files
 
 .PARAMETER version
-  DC/OS version
+  [Required] DC/OS version
 
 .PARAMETER masters
-  A comma separated list of Master(s) IP addresses
+  [Required] A comma separated list of Master(s) IP addresses
 
-.PARAMETER baseDir
-  The initial directory which this example script will use C:\dcos
+.PARAMETER install_dir
+  [Optional] DC/OS installation root directory. Default value is C:\d2iq\dcos
+
+.PARAMETER var_dir
+  [Optional] DC/OS variable directory for a files created by bootstrap process, for logs stored. Default value is C:\d2iq\dcos\var
 
 .NOTES
+    Updated: 2019-11-29       Added install_dir and var_dir into path.json file for more flexible DC/OS configuration. Replaced conf dir with etc.
     Updated: 2019-11-22       Removed RunOnce.ps1 and Scheduled task logic. Fixed cluster.conf parameters. Added download of detect_ip*.ps1 scripts.
     Updated: 2019-11-08       Extended startup parameters to acommodate correct script run.
     Updated: 2019-09-03       Added dcos-install.ps1 which is addressed to install pre-requisites on Windows agent and run Winpanda.
@@ -46,11 +50,14 @@
 param (
     [Parameter(Mandatory=$true)] [string] $bootstrap_url,
     [Parameter(Mandatory=$true)] [string] $version,
-    [Parameter(Mandatory=$true)] [string] $masters
+    [Parameter(Mandatory=$true)] [string] $masters,
+    [Parameter(Mandatory=$false)][string] $install_dir = 'C:\d2iq\dcos',
+    [Parameter(Mandatory=$false)][string] $var_dir = 'C:\d2iq\dcos\var'
 )
 
 # GLOBAL
-$global:basedir = "C:\dcos"
+$global:basedir = "$($install_dir)"
+$global:vardir  = "$($var_dir)"
 
 $ErrorActionPreference = "Stop"
 
@@ -67,7 +74,7 @@ function Write-Log
 
         [Parameter(Mandatory=$false)]
         [Alias('LogPath')]
-        [string]$Path='C:\dcos\var\log\dcos_install.log',
+        [string]$Path="$($vardir)\log\dcos_install.log",
 
         [Parameter(Mandatory=$false)]
         [ValidateSet("Error","Warn","Info")]
@@ -131,11 +138,16 @@ function Write-Log
 function SetupDirectories() {
     # available directories
     $dirs = @(
+        "C:\d2iq",
+        "C:\d2iq\dcos",
+        "C:\d2iq\dcos\etc",
         "$($basedir)",
         "$($basedir)\bootstrap",
         "$($basedir)\bootstrap\prerequisites",
-        "$($basedir)\conf",
-		"$($basedir)\opt\bin"
+		"$($basedir)\bin",
+        "$($basedir)\etc",
+        "$($vardir)",
+        "$($vardir)\log"
     )
     # setup
     Write-Log("Creating a directories structure:")
@@ -225,41 +237,57 @@ function Add-EnvPath {
     }
 }
 
+function SetupPathJson {
+    $jsonDoc = [pscustomobject]@{
+        install = "$($basedir)"
+        var = "$($vardir)"
+    }
+    $pathsJson = "C:\d2iq\dcos\etc\paths.json"
+    if (-not (test-path "$($pathsJson)") ) {
+        Write-Log("$($pathsJson) doesn't exist, creating it")
+    }
+    else {
+        Remove-Item -Force $pathsJson
+    }
+    $jsonDoc | convertTo-Json | Out-File -FilePath "$($pathsJson)"
+}
+
 function main($url, $version, $masters) {
     SetupDirectories
+    SetupPathJson
 
     Write-Log("Downloading/Extracting prerequisites.zip out of Bootstrap agent ...")
-    Download "$url/$version/genconf_win/serve/prerequisites/prerequisites.zip" "prerequisites.zip"
+    Download "$url/$version/genconf/serve/windows/prerequisites/prerequisites.zip" "prerequisites.zip"
     $zipfile = "$($basedir)\bootstrap\prerequisites.zip"
     ExtractBootstrapZip $zipfile "$($basedir)\bootstrap\prerequisites"
 
     Write-Log("Installing 7zip from prerequisites.zip ...")
-    & cmd /c "start /wait $($basedir)\bootstrap\prerequisites\7z-x64.exe /S" 2>&1 | Out-File C:\dcos\var\log\dcos_install.log -Append
+    & cmd /c "start /wait $($basedir)\bootstrap\prerequisites\7z-x64.exe /S" 2>&1 | Out-File "$($vardir)\log\dcos_install.log" -Append;
 
 	Write-Log("Checking proper versions from latest.package_list.json ...")
-	Download "$url/$version/genconf_win/serve/package_lists/latest.package_list.json" "latest.package_list.json"
+	Download "$url/$version/genconf/serve/windows/package_lists/latest.package_list.json" "latest.package_list.json"
 	$package_list_json = "$($basedir)\bootstrap\latest.package_list.json"
 	echo $(cat $package_list_json | ConvertFrom-Json) | Where-Object { $_ -Match "python"} | New-Variable -Name python_package
 	echo $(cat $package_list_json | ConvertFrom-Json) | Where-Object { $_ -Match "winpanda"} | New-Variable -Name winpanda_package
 
 	Write-Log("Installing Python from Bootstrap agent - $($python_package).tar.xz...")
-    Download "$url/$version/genconf_win/serve/packages/python/$($python_package).tar.xz" "python.tar.xz"
+    Download "$url/$version/genconf/serve/windows/packages/python/$($python_package).tar.xz" "python.tar.xz"
     $pythontarfile = "$($basedir)\bootstrap\python.tar.xz"
     ExtractTarXz $pythontarfile "C:\python36"
 	Add-EnvPath "C:\python36" "Session";
 	Add-EnvPath "C:\python36" "Machine";
 
     Write-Log("Installing Winpanda from Bootstrap agent - $($winpanda_package).tar.xz ...")
-    Download "$url/$version/genconf_win/serve/packages/winpanda/$($winpanda_package).tar.xz" "winpanda.tar.xz"
+    Download "$url/$version/genconf/serve/windows/packages/winpanda/$($winpanda_package).tar.xz" "winpanda.tar.xz"
     $winpandatarfile = "$($basedir)\bootstrap\winpanda.tar.xz"
-    ExtractTarXz $winpandatarfile "C:\"
-	[Environment]::SetEnvironmentVariable("PYTHONPATH", "C:\winpanda\lib\python36\site-packages", [System.EnvironmentVariableTarget]::Machine);
-	$env:PYTHONPATH="C:\winpanda\lib\python36\site-packages";
+    ExtractTarXz $winpandatarfile "$($basedir)"
+	[Environment]::SetEnvironmentVariable("PYTHONPATH", "$($basedir)\winpanda\lib\python36\site-packages", [System.EnvironmentVariableTarget]::Machine);
+	$env:PYTHONPATH="$($basedir)\winpanda\lib\python36\site-packages";
 
     Write-Log("Downloading ip-detect scripts from Bootstrap agent ...")
-    Download "$url/$version/genconf_win/ip-detect.ps1" "detect_ip.ps1"
-    Download "$url/$version/genconf_win/ip-detect-public.ps1" "detect_ip_public.ps1"
-    Copy-Item -Path "$($basedir)\bootstrap\detect_ip*.ps1" -Destination "C:\dcos\opt\bin" -Recurse
+    Download "$url/$version/genconf/serve/windows/ip-detect.ps1" "detect_ip.ps1"
+    Download "$url/$version/genconf/serve/windows/ip-detect-public.ps1" "detect_ip_public.ps1"
+    Copy-Item -Path "$($basedir)\bootstrap\detect_ip*.ps1" -Destination "$($basedir)\bin" -Recurse
 
     # Fill up Ansible inventory content to cluster.conf
     Write-Log("MASTERS: $($masters)")
@@ -270,12 +298,13 @@ function main($url, $version, $masters) {
     }
     $local_ip = (Get-WmiObject -Class Win32_NetworkAdapterConfiguration | where {$_.DefaultIPGateway -ne $null}).IPAddress | select-object -first 1
     Write-Log("Local IP: $($local_ip)")
-    $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($bootstrap_url)`nPkgRepoPath=$($version)/genconf_win/serve/packages`nPkgListPath=$($version)/genconf_win/serve/package_lists/latest.package_list.json`n[local]`nLocalPrivateIPAddr=$($local_ip)"
-    CreateWriteFile "$($basedir)\conf" "cluster.conf" $content
+    $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($bootstrap_url)/$($version)/genconf/serve`nPkgRepoPath=windows/packages`nPkgListPath=windows/package_lists/latest.package_list.json`nDcosClusterPkgInfoPath=cluster-package-info.json`n`n[local]`nPrivateIPAddr=$($local_ip)"
+    CreateWriteFile "$($basedir)\etc" "cluster.conf" $content
 
-    Write-Log("Running Winpanda.py ...")
-    & python C:\winpanda\bin\winpanda.py setup;
-    & python C:\winpanda\bin\winpanda.py start;
+    Write-Log("Running Winpanda.py setup ...")
+    & python.exe "$($basedir)\winpanda\bin\winpanda.py" --inst-root-dir="$($basedir)" setup | Out-File "$($vardir)\log\dcos_install.log" -Append;
+    Write-Log("Running Winpanda.py start ...")
+    & python.exe "$($basedir)\winpanda\bin\winpanda.py" --inst-root-dir="$($basedir)" start | Out-File "$($vardir)\log\dcos_install.log" -Append;
 }
 
 main $bootstrap_url $version $masters
