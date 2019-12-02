@@ -36,7 +36,7 @@ local function validate_jwt_or_exit(proto)
         -- Catch-all, normally not reached:
         ngx.log(ngx.ERR, "Unexpected result from validate_jwt()")
         if proto == "grpc" then
-            return authcommon.exit_grpc(13, "internal error occured")
+            return authcommon.exit_grpc(13, "internal error occurred")
         else
             ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
             return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
