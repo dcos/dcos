@@ -19,8 +19,8 @@ LOG = logger.get_logger(__name__)
 class PackageManifest:
     """Package manifest container."""
     _pkginfo_fpath = 'pkginfo.json'
-    _pkg_extcfg_fpath = 'etc/{pkg_name}.extra'
-    _pkg_svccfg_fpath = 'etc/{pkg_name}.nssm'
+    _pkg_extcfg_fpath = 'etc/{pkg_name}.extra.j2'
+    _pkg_svccfg_fpath = 'etc/{pkg_name}.nssm.j2'
 
     def __init__(self, pkg_id, istor_nodes, cluster_conf,
                  pkg_info=None, pkg_extcfg=None, pkg_svccfg=None):
@@ -71,7 +71,7 @@ class PackageManifest:
         #       ValueError, if conformance was not confirmed.
 
     def __str__(self):
-        return str(self._pkg_id)
+        return str(self.body)
 
     @property
     def body(self):

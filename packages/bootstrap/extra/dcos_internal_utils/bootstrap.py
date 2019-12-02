@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 import uuid
 
@@ -45,36 +44,20 @@ class Bootstrapper(object):
     def __exit__(self, type, value, tb):
         self.close()
 
-    def cluster_id(self, path='/var/lib/dcos/cluster-id', readonly=False):
-        dirpath = os.path.dirname(os.path.abspath(path))
-        log.info('Opening {} for locking'.format(dirpath))
-        with utils.Directory(dirpath) as d:
-            log.info('Taking exclusive lock on {}'.format(dirpath))
-            with d.lock():
-                if readonly:
-                    zkid = None
-                else:
-                    zkid = str(uuid.uuid4()).encode('ascii')
+    def cluster_id(self, path=utils.dcos_lib_path / 'cluster-id', readonly=False):
+        if readonly:
+            zkid = None
+        else:
+            zkid = str(uuid.uuid4()).encode('ascii')
+        zkid = self._consensus('/cluster-id', zkid, ANYONE_READ)
+        zkid = zkid.decode('ascii')
 
-                zkid = self._consensus('/cluster-id', zkid, ANYONE_READ)
-                zkid = zkid.decode('ascii')
+        if utils.write_file_on_mismatched_content((zkid + '\n').encode('ascii'), path, utils.write_public_file):
+            log.info('Wrote cluster ID to {}'.format(path))
+        else:
+            log.info('Cluster ID in ZooKeeper and file are the same: {}'.format(zkid))
 
-                if os.path.exists(path):
-                    fileid = utils.read_file_line(path)
-                    if fileid == zkid:
-                        log.info('Cluster ID in ZooKeeper and file are the same: {}'.format(zkid))
-                        return zkid
-
-                log.info('Writing cluster ID from ZK to {} via rename'.format(path))
-
-                tmppath = path + '.tmp'
-                with open(tmppath, 'w') as f:
-                    f.write(zkid + '\n')
-                os.rename(tmppath, path)
-
-                log.info('Wrote cluster ID to {}'.format(path))
-
-                return zkid
+        return zkid
 
     def _consensus(self, path, value, acl=None):
         if value is not None:

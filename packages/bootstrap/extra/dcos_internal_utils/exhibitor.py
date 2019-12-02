@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 
 import requests
@@ -11,26 +10,26 @@ log = logging.getLogger(__name__)
 
 EXHIBITOR_STATUS_URL = 'http://127.0.0.1:8181/exhibitor/v1/cluster/status'
 
-zk_pid_path = "/var/lib/dcos/exhibitor/zk.pid"
-stash_zk_pid_stat_mtime_path = "/var/lib/dcos/bootstrap/exhibitor_pid_stat"
+zk_pid_path = utils.dcos_lib_path / 'exhibitor' / 'zk.pid'
+stash_zk_pid_stat_mtime_path = utils.dcos_lib_path / 'bootstrap' / 'exhibitor_pid_stat'
 
 
 def get_zk_pid_mtime():
     try:
-        return os.stat(zk_pid_path).st_mtime_ns
+        return zk_pid_path.stat().st_mtime_ns
     except FileNotFoundError:
         log.error("ZK pid file `%s` does not exist.", zk_pid_path)
         return None
 
 
 def get_zk_pid():
-    return utils.read_file_line(zk_pid_path)
+    return utils.read_file_text(zk_pid_path)
 
 
 def try_shortcut():
     try:
         # pid stat file exists, read the value out of it
-        stashed_pid_stat = int(utils.read_file_line(stash_zk_pid_stat_mtime_path))
+        stashed_pid_stat = int(utils.read_file_bytes(stash_zk_pid_stat_mtime_path).decode('utf8'))
     except FileNotFoundError:
         log.info('No zk.pid last mtime found at %s', stash_zk_pid_stat_mtime_path)
         return False
@@ -71,24 +70,27 @@ def try_shortcut():
 
 
 def wait(master_count_filename):
+    if not master_count_filename.exists():
+        # this is an agent
+        log.info("master_count file doesn't exist, not waiting")
+        return
+
     if try_shortcut():
         log.info("Shortcut succeeeded, assuming local zk is in good config state, not waiting for quorum.")
         return
     log.info('Shortcut failed, waiting for exhibitor to bring up zookeeper and stabilize')
 
-    if not os.path.exists(master_count_filename):
-        log.info("master_count file doesn't exist when it should. Hard failing.")
-        sys.exit(1)
-
-    cluster_size = int(utils.read_file_line(master_count_filename))
+    cluster_size = int(utils.read_file_text(master_count_filename))
     log.info('Expected cluster size: {}'.format(cluster_size))
 
     log.info('Waiting for ZooKeeper cluster to stabilize')
+
     try:
         response = requests.get(EXHIBITOR_STATUS_URL)
     except requests.exceptions.ConnectionError as ex:
         log.error('Could not connect to exhibitor: {}'.format(ex))
         sys.exit(1)
+
     if response.status_code != 200:
         log.error('Could not get exhibitor status: {}, Status code: {}'.format(
             EXHIBITOR_STATUS_URL, response.status_code))
@@ -109,11 +111,12 @@ def wait(master_count_filename):
 
     if len(serving) != cluster_size or len(leaders) != 1:
         msg_fmt = 'Expected {} servers and 1 leader, got {} servers and {} leaders'
-        raise Exception(msg_fmt.format(cluster_size, len(serving), len(leaders)))
+        log.error(msg_fmt.format(cluster_size, len(serving), len(leaders)))
+        sys.exit(1)
 
     # Local Zookeeper is up. Config should be stable, local zookeeper happy. Stash the PID so if
     # there is a restart we can come up quickly without requiring a new zookeeper quorum.
     zk_pid_mtime = get_zk_pid_mtime()
     if zk_pid_mtime is not None:
         log.info('Stashing zk.pid mtime %s to %s', zk_pid_mtime, stash_zk_pid_stat_mtime_path)
-        utils.write_string(stash_zk_pid_stat_mtime_path, str(zk_pid_mtime))
+        utils.write_private_file(stash_zk_pid_stat_mtime_path, str(zk_pid_mtime).encode('utf8'))

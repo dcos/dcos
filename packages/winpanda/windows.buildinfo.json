@@ -19,6 +19,11 @@
             "kind": "url",
             "url": "https://files.pythonhosted.org/packages/65/e0/eb35e762802015cab1ccee04e8a277b03f1d8e53da3ec3106882ec42558b/Jinja2-2.10.3-py2.py3-none-any.whl",
             "sha1": "4111b038c0fc0870dcb1fae59157cab3eff63c5c"
+        },
+        "PyYAML": {
+            "kind": "url",
+            "url": "https://files.pythonhosted.org/packages/76/da/60f8d638d81d64db4ed3c279c22eb3a1eebfcde6130fee678940e603b930/PyYAML-5.1.2-cp36-cp36m-win_amd64.whl",
+            "sha1": "0d32f171f47f04acfc61b34291fa43b03ca82ae6"
         }
     },
     "username": "dcos_winpanda",
