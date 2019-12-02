@@ -5,6 +5,7 @@ DC/OS package management command definitions.
 import abc
 from pathlib import Path
 
+from cfgm import exceptions as cfgm_exc
 from common import logger
 from common.cli import CLI_COMMAND, CLI_CMDTARGET, CLI_CMDOPT
 from core import cmdconf
@@ -146,6 +147,7 @@ class CmdSetup(Command):
             # Finalize package setup procedures taking package mutual
             # dependencies into account.
             for package in cr_utl.pkg_sort_by_deps(packages_bulk):
+                self._handle_pkg_cfg_setup(package)
                 self._handle_pkg_inst_extras(package)
                 self._handle_pkg_svc_setup(package)
 
@@ -163,6 +165,28 @@ class CmdSetup(Command):
             # TODO: Remove pakage manifests in case of dcos_conf deployment
             #       failure.
             self._deploy_dcos_conf()
+
+    def _handle_pkg_cfg_setup(self, package):
+        """Execute steps on package configuration files setup.
+
+        :param package: Package, DC/OS package manager object
+        """
+        pkg_id = package.manifest.pkg_id
+
+        LOG.debug(f'{self.msg_src}: Execute: {pkg_id.pkg_name}: Setup'
+                  f' configuration: ...')
+        try:
+            package.cfg_manager.setup_conf()
+        except cfgm_exc.PkgConfNotFoundError as e:
+            LOG.debug(f'{self.msg_src}: Execute: {pkg_id.pkg_name}: Setup'
+                      f' configuration: NOP')
+        except cfgm_exc.PkgConfManagerError as e:
+            err_msg = (f'Execute: {pkg_id.pkg_name}: Setup configuration:' 
+                       f'{type(e).__name__}: {e}')
+            raise cr_exc.SetupCommandError(err_msg) from e
+        else:
+            LOG.debug(f'{self.msg_src}: Execute: {pkg_id.pkg_name}: Setup'
+                      f' configuration: OK')
 
     def _handle_pkg_inst_extras(self, package):
         """Process package extra installation options.
