@@ -3,6 +3,7 @@
 DC/OS package controller and helper type definitions.
 """
 from .manifest import PackageManifest
+from cfgm.cfgm import PkgConfManager
 from common import logger
 from extm.extm import PkgInstExtrasManager
 from svcm.nssm import WinSvcManagerNSSM
@@ -24,7 +25,7 @@ class Package:
                              compatible data. DC/OS cluster setup parameters
         :param manifest:     PackageManifest, DC/OS package manifest object
         """
-        msg_src = self.__class__.__name__
+        self.msg_src = self.__class__.__name__
 
         if manifest is not None:
             assert isinstance(manifest, PackageManifest), (
@@ -34,8 +35,12 @@ class Package:
             self.manifest = manifest
         else:
             self.manifest = PackageManifest(pkg_id, istor_nodes, cluster_conf)
-        LOG.debug(f'{msg_src}: {self.manifest.pkg_id.pkg_id}: Manifest:'
+        LOG.debug(f'{self.msg_src}: {self.manifest.pkg_id.pkg_id}: Manifest:'
                   f' {self.manifest}')
+
+        self.cfg_manager = PkgConfManager(pkg_manifest=self.manifest)
+        LOG.debug(f'{self.msg_src}: {self.manifest.pkg_id.pkg_id}:'
+                  f' Package configuration manager: {self.cfg_manager}')
 
         if self.manifest.pkg_extcfg:
             self.ext_manager = PkgInstExtrasManager(
@@ -43,7 +48,7 @@ class Package:
             )
         else:
             self.ext_manager = None
-        LOG.debug(f'{msg_src}: {self.manifest.pkg_id.pkg_id}:'
+        LOG.debug(f'{self.msg_src}: {self.manifest.pkg_id.pkg_id}:'
                   f' Installation extras manager: {self.ext_manager}')
 
         if self.manifest.pkg_svccfg:
@@ -52,5 +57,5 @@ class Package:
             )
         else:
             self.svc_manager = None
-        LOG.debug(f'{msg_src}: {self.manifest.pkg_id.pkg_id}:'
+        LOG.debug(f'{self.msg_src}: {self.manifest.pkg_id.pkg_id}:'
                   f' Service manager: {self.svc_manager}')

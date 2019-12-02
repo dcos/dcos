@@ -21,7 +21,7 @@ Default local storage layout for DC/OS installation:
 # This is how the default DC/OS installation FS layout looks like
 # C:/                         # DC/OS installation drive
 #   +-dcos/                   # DC/OS installation root dir
-#     +-conf/                 # DC/OS installation config dir
+#     +-etc/                  # DC/OS installation config dir
 #     +-packages/             # DC/OS local package repository dir
 #     +-state/                # DC/OS installation state dir
 #       +-pkgactive/          # DC/OS active packages index
@@ -55,7 +55,7 @@ DCOS_INST_ROOT_DPATH_DFT = 'dcos'
 
 # >>>>>
 # DC/OS installation configuration root directory
-DCOS_INST_CFG_DPATH_DFT = 'conf'
+DCOS_INST_CFG_DPATH_DFT = 'etc'
 # DC/OS cluster configuration file
 DCOS_CLUSTERCFG_FNAME_DFT = 'cluster.conf'
 
