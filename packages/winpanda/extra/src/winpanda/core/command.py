@@ -305,7 +305,9 @@ class CmdStart(Command):
         pkg_manifests = (
             self.config.inst_storage.get_pkgactive(PackageManifest.load)
         )
-        packages_bulk = [Package(manifest=m) for m in pkg_manifests]
+        packages_bulk = {
+            m.pkg_id.pkg_name: Package(manifest=m) for m in pkg_manifests
+        }
 
         for package in cr_utl.pkg_sort_by_deps(packages_bulk):
             pkg_id = package.manifest.pkg_id
