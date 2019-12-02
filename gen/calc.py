@@ -1316,6 +1316,8 @@ entry = {
         'mesos_cni_root_dir_persist': 'false',
         'enable_mesos_input_plugin': 'true',
         'enable_windows_agents': 'false',
+        'windows_dcos_install_path': 'C:\\d2iq\\dcos',
+        'windows_dcos_var_path': 'C:\\d2iq\\dcos\\var',
     },
     'must': {
         'fault_domain_enabled': 'false',
