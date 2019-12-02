@@ -15,28 +15,26 @@ package:
     permissions: "0644"
     content: |
       {{ cluster_package_list_id }}
-  - path: C:\dcos\opt\bin\detect_ip.ps1
+  - path: {{ windows_dcos_install_path }}\bin\detect_ip.ps1
     content: |
       $IPAddress = ([System.Net.Dns]::GetHostByName("master.mesos").AddressList[0]).IpAddressToString
-      (Find-NetRoute -RemoteIPAddress $IPAddress | Select-Object  Ipv4Address).Ipv4Address 
-  - path: C:\dcos\opt\bin\detect_ip_public.ps1
+      (Find-NetRoute -RemoteIPAddress $IPAddress | Select-Object  Ipv4Address).Ipv4Address
+  - path: {{ windows_dcos_install_path }}\bin\detect_ip_public.ps1
     content: |
         (Invoke-WebRequest -uri "http://whatismyip.akamai.com/" -UseBasicParsing).Content
-  - path: C:\dcos\opt\etc\check_time.env
+  - path: {{ windows_dcos_install_path }}\check_time.env
     content: |
         ENABLE_CHECK_TIME=true
-
-  # Config for dcos-diagnostics
-  - path: C:\dcos\opt\etc\dcos-diagnostics-config.json
+  - path: {{ windows_dcos_install_path }}\dcos-diagnostics\dcos-diagnostics-config.json
     content: |
       {
         "role": "agent",
-        "endpoint-config": "C:\\dcos\\opt\\etc\\dcos-diagnostics-endpoint-config.json",
+        "endpoint-config": "{{ windows_dcos_install_path_json }}\\dcos-diagnostics\\dcos-diagnostics-endpoint-config.json",
         "agent-port": 1050,
         "port": 1050,
         "no-unix-socket": true
       }
-  - path: C:\dcos\opt\etc\dcos-diagnostics-endpoint-config.json
+  - path: {{ windows_dcos_install_path }}\dcos-diagnostics\dcos-diagnostics-endpoint-config.json
     content: |
       {
         "HTTPEndpoints": [
@@ -78,16 +76,14 @@ package:
         ],
         "LocalFiles": [
             {
-                "Location": "c:\\dcos\\mesos-logs\\mesos-agent.log",
+                "Location": "{{ windows_dcos_var_path_json }}\\mesos\\mesos-agent.log",
                 "Role": [ "agent" ]
             }
         ],
         "LocalCommands": [
         ]
       }
-
-  # Config for Telegraf
-  - path: C:/Program Files/Telegraf/telegraf.conf
+  - path: {{ windows_dcos_install_path }}\telegraf\telegraf.conf
     content: |
       [agent]
         ## Default data collection interval for all inputs
@@ -164,7 +160,6 @@ package:
       [[inputs.internal]]
         ## If true, collect telegraf memory stats.
         collect_memstats = true
-
            [[inputs.win_perf_counters.object]]
               ObjectName = "Processor"
               Instances = ["*"]
@@ -178,7 +173,6 @@ package:
               ]
               Measurement = "win_cpu"
               IncludeTotal=true
-
            [[inputs.win_perf_counters.object]]
               ObjectName = "Diagnostics"
               Instances = ["*"]
@@ -187,13 +181,11 @@ package:
                 "% Processor Time",
               ]
               Measurement = "dcos_diagnostics"
-
-
       [[inputs.docker]]
          endpoint = "ENV"
-      
+
       [[inputs.mesos]]
-      
+
         timeout = 100
          slaves = ["http://$DCOS_NODE_PRIVATE_IP:5051"]
          slave_collections = [
@@ -204,7 +196,6 @@ package:
            "tasks",
            "messages",
       ]
-
       [[outputs.prometheus_client]]
         ## Address to listen on
         listen = ":61091"
