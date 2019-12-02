@@ -3,7 +3,7 @@ package:
     content: |
       {
         "environment": {
-          "MESOS_IP_DISCOVERY_COMMAND": "c:\\opt\\mesosphere\\bin\\detect_ip.ps1",
+          "MESOS_IP_DISCOVERY_COMMAND": "{{ windows_dcos_install_path_json }}}\\bin\\detect_ip.ps1",
           "PROVIDER": "{{ provider }}"
         }
       }
@@ -31,7 +31,7 @@ package:
     content: |
       {
         "role": "agent",
-        "endpoint-config": "C:\\dcos\\opt\\etc\\dcos-diagnostics-endpoint-config.json",
+        "endpoint-config": "{{ windows_dcos_install_path_json }}\\etc\\dcos-diagnostics-endpoint-config.json",
         "agent-port": 1050,
         "port": 1050,
         "no-unix-socket": true
@@ -78,7 +78,7 @@ package:
         ],
         "LocalFiles": [
             {
-                "Location": "c:\\dcos\\mesos-logs\\mesos-agent.log",
+                "Location": "{{ windows_dcos_var_path_json }}\\mesos-logs\\mesos-agent.log",
                 "Role": [ "agent" ]
             }
         ],

@@ -104,8 +104,18 @@ def validate_ipv4_addresses(ips: list):
 
 
 def validate_absolute_path(path):
-    if not path.startswith('/'):
-        raise AssertionError('Must be an absolute filesystem path starting with /')
+    if not os.path.isabs(path):
+        raise AssertionError('Must be an absolute filesystem path')
+
+
+def calculate_json_escape(value):
+    """
+    Given a string, return the string escaped for interpolation into a JSON
+    string.  This is the JSON-escaped string without the double-quotes.
+    """
+    escaped = json.dumps(value)
+    assert len(escaped) >= 2 and escaped[0] == '"' and escaped[-1] == '"'
+    return escaped[1:-1]
 
 
 def valid_ipv6_address(ip6):
@@ -1382,7 +1392,10 @@ entry = {
             lambda marathon_new_group_enforce_role: calculate_set(marathon_new_group_enforce_role),
         'has_marathon_gpu_scheduling_behavior':
             lambda marathon_gpu_scheduling_behavior: calculate_set(marathon_gpu_scheduling_behavior),
-
+        'windows_dcos_install_path_json':
+            lambda windows_dcos_install_path: calculate_json_escape(windows_dcos_install_path),
+        'windows_dcos_var_path_json':
+            lambda windows_dcos_var_path: calculate_json_escape(windows_dcos_var_path),
     },
     'secret': [
         'cluster_docker_credentials',
