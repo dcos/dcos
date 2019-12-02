@@ -20,8 +20,8 @@ if is_windows:
     if _paths_path.exists():
         with _paths_path.open() as f:
             paths = json.load(f)
-            install_path = paths['install']
-            var_path = paths['var']
+            install_path = Path(paths['install'])
+            var_path = Path(paths['var'])
     else:
         install_path = Path('c:\\dcos\\opt')
         var_path = _default_path / 'var'
