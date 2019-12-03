@@ -10,13 +10,11 @@
   "greggomann": {"slack": "greg", "jira": "greg"},
   "jr0d": {"slack": "jared.rodriguez", "jira": "jaredrodriguez"},
   "jongiddy": {"slack": "jongiddy", "jira": "jonathangiddy"},
-  "mhrabovcin": {"slack": "martin", "jira": "mhrabovcin.c"},
   "mesosphere-mergebot": {"slack": "mergebot", "jira": "svc.mergebot"},
   "orlandohohmeier": {"slack": "orlando", "jira": "orlando"},
   "orsenthil" : {"slack": "skumaran", "jira": "skumaran"},
   "philipnrmn": {"slack": "philip", "jira": "philip"},
   "tillt": {"slack": "till", "jira": "till"},
-  "timaa2k": {"slack": "tweidner", "jira": "timweidner"},
   "timcharper": {"slack": "tharper", "jira": "tharper"},
   "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"},
   "vinodkone": {"slack": "vinodkone", "jira": "vinod"}
