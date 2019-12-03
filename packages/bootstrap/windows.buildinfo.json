@@ -17,8 +17,8 @@
         },
         "cryptography": {
             "kind": "url",
-            "url": "https://files.pythonhosted.org/packages/83/4d/f8f0ae3e5f586c0192c6dc32f9fb9b50f4151a84c4baa04deee41e93c2a0/cryptography-2.8-cp34-cp34m-win_amd64.whl",
-            "sha1": "adef405cbb456a183fd607750f9d014590aed370"
+            "url": "https://files.pythonhosted.org/packages/2a/e2/c97b90d6dcd9d55c1a9bc4e387c79a10e3b1050e44ae6a79245cab5562fc/cryptography-2.8-cp36-cp36m-win32.whl",
+            "sha1": "9b7b7bea121f61e8faf09586ac66e17ad42e167a"
         },
         "jinja2": {
             "kind": "url",

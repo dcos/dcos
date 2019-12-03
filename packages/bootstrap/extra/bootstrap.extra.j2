@@ -1,0 +1,3 @@
+install:
+    exec_external_commands:
+        - powershell -executionpolicy Bypass -File  {{ pkg_inst_dpath }}\etc\bootstrap.ps1 {{ pkg_inst_dpath }}
