@@ -20,20 +20,23 @@ LOG = logger.get_logger(__name__)
 class PackageManifest:
     """Package manifest container."""
     def __init__(self, pkg_id, istor_nodes, cluster_conf,
-                 pkg_info=None, pkg_extcfg=None, pkg_svccfg=None):
+                 pkg_info=None, pkg_extcfg=None, pkg_svccfg=None,
+                 extra_context=None):
         """Constructor.
 
-        :param pkg_id:       PackageId, package ID
-        :param istor_nodes:  IStorNodes, DC/OS installation storage nodes (set
-                             of pathlib.Path objects)
-        :param cluster_conf: dict, configparser.ConfigParser.read_dict()
-                             compatible data. DC/OS cluster setup parameters
-        :param pkg_info:     dict, package info descriptor from DC/OS package
-                             build system
-        :param pkg_extcfg:   dict, extra package installation options
-        :param pkg_svccfg:   dict, package system service options
-                             (configparser.ConfigParser.read_dict() compatible)
-        # :param context:    dict, package resources rendering context
+        :param pkg_id:        PackageId, package ID
+        :param istor_nodes:   IStorNodes, DC/OS installation storage nodes (set
+                              of pathlib.Path objects)
+        :param cluster_conf:  dict, configparser.ConfigParser.read_dict()
+                              compatible data. DC/OS cluster setup parameters
+        :param pkg_info:      dict, package info descriptor from DC/OS package
+                              build system
+        :param pkg_extcfg:    dict, extra package installation options
+        :param pkg_svccfg:    dict, configparser.ConfigParser.read_dict()
+                              compatible. Package system service options
+
+        :param extra_context: dict, extra 'key=value' data to be added to the
+                              resource rendering context
         """
         assert isinstance(pkg_id, PackageId), (
             f'Argument: pkg_id:'
@@ -50,7 +53,10 @@ class PackageManifest:
 
         self._pkg_id = pkg_id
         self._istor_nodes = istor_nodes
-        self._context = ResourceContext(istor_nodes, cluster_conf, pkg_id)
+        self._context = ResourceContext(
+            istor_nodes=istor_nodes, cluster_conf=cluster_conf,
+            pkg_id=pkg_id, extra_values=extra_context
+        )
 
         # Load package info descriptor
         self._pkg_info = pkg_info if pkg_info is not None else (
@@ -223,3 +229,11 @@ class PackageManifest:
             raise cr_exc.RCError(err_msg) from e
 
         LOG.debug(f'Package manifest: Save: {fpath}')
+
+    def update_context(self, values=None):
+        """Update context data.
+
+        :param values: dict, 'key=value' data to be added to / updated in the
+                             resource rendering context.
+        """
+        self._context.update(values=values)

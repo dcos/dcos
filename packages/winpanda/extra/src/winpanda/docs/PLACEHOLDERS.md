@@ -4,8 +4,10 @@ VARIABLE PLACEHOLDER NAMES RECOGNIZED BY THE WINPANDA APPLICATION
 >_**NOTE.**_
     Currently all the variable placeholder names described in this document may
   be used in per DC/OS package _&lt;package_name&gt;.nssm.j2_ and
-  _&lt;package_name&gt;.extra.j2_ configuration files and also in DC/OS
-  aggregated configuration object - _dcos-config-windows.yaml_
+  _&lt;package_name&gt;.extra.j2_ configuration files. The DC/OS aggregated
+  configuration object - _dcos-config-windows.yaml_ cannot use variables from
+  the _PACKAGE CONTEXT_ (section 2.2), as it's not specific to processing a
+  particular package.
 
 -------------------------------------------------------------------------------
 
@@ -22,13 +24,13 @@ VARIABLE PLACEHOLDER NAMES RECOGNIZED BY THE WINPANDA APPLICATION
   also available for use in the _DCOS GENERAL CONTEXT_.
 
 
-** {{ master_priv_ipaddr }} ** - master node's private IP-address
+**{{ master_priv_ipaddr }}** - master node's private IP-address
                                  (substitution example "172.16.7.46")
 
-** {{ local_priv_ipaddr }} **  - local (agent) node's private IP-address
+**{{ local_priv_ipaddr }}**  - local (agent) node's private IP-address
                                  (substitution example "172.16.3.63")
 
-** {{ zk_client_port }} **     - zookeeper client port (on which zookeeper
+**{{ zk_client_port }}**     - zookeeper client port (on which zookeeper
                                  listens)
                                  (substitution example "2181")
 

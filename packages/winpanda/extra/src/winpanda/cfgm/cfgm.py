@@ -2,10 +2,11 @@
 
 DC/OS package configuration files manager definition.
 """
-import jinja2 as j2
 from pathlib import Path
 import shutil
 import tempfile as tf
+
+import jinja2 as j2
 
 from cfgm import exceptions as cfgm_exc
 from common import logger
