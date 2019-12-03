@@ -27,16 +27,16 @@ package:
         ENABLE_CHECK_TIME=true
 
   # Config for dcos-diagnostics
-  - path: {{ windows_dcos_install_path }}\etc\dcos-diagnostics-config.json
+  - path: {{ windows_dcos_install_path }}\etc\dcos-diagnostics\dcos-diagnostics-config.json
     content: |
       {
         "role": "agent",
-        "endpoint-config": "{{ windows_dcos_install_path_json }}\\etc\\dcos-diagnostics-endpoint-config.json",
+        "endpoint-config": "{{ windows_dcos_install_path_json }}\\etc\\dcos-diagnostics\\dcos-diagnostics-endpoint-config.json",
         "agent-port": 1050,
         "port": 1050,
         "no-unix-socket": true
       }
-  - path: {{ windows_dcos_install_path }}\etc\dcos-diagnostics-endpoint-config.json
+  - path: {{ windows_dcos_install_path }}\etc\dcos-diagnostics\dcos-diagnostics-endpoint-config.json
     content: |
       {
         "HTTPEndpoints": [
@@ -87,7 +87,7 @@ package:
       }
 
   # Config for Telegraf
-  - path: C:/Program Files/Telegraf/telegraf.conf
+  - path: {{ windows_dcos_install_path }}\etc\telegraf\telegraf.conf
     content: |
       [agent]
         ## Default data collection interval for all inputs
