@@ -15,15 +15,17 @@ LOG = logger.get_logger(__name__)
 class Package:
     """Package manager."""
     def __init__(self, pkg_id=None, istor_nodes=None, cluster_conf=None,
-                 manifest=None):
+                 extra_context=None, manifest=None):
         """Constructor.
 
-        :param pkg_id:       PackageId, package ID
-        :param istor_nodes:  IStorNodes, DC/OS installation storage nodes (set
-                             of pathlib.Path objects)
-        :param cluster_conf: dict, configparser.ConfigParser.read_dict()
-                             compatible data. DC/OS cluster setup parameters
-        :param manifest:     PackageManifest, DC/OS package manifest object
+        :param pkg_id:        PackageId, package ID
+        :param istor_nodes:   IStorNodes, DC/OS installation storage nodes (set
+                              of pathlib.Path objects)
+        :param cluster_conf:  dict, configparser.ConfigParser.read_dict()
+                              compatible data. DC/OS cluster setup parameters
+        :param extra_context: dict, extra 'key=value' data to be added to the
+                              resource rendering context
+        :param manifest:      PackageManifest, DC/OS package manifest object
         """
         self.msg_src = self.__class__.__name__
 
@@ -34,7 +36,11 @@ class Package:
             )
             self.manifest = manifest
         else:
-            self.manifest = PackageManifest(pkg_id, istor_nodes, cluster_conf)
+            self.manifest = PackageManifest(
+                pkg_id=pkg_id, istor_nodes=istor_nodes,
+                cluster_conf=cluster_conf, extra_context=extra_context
+            )
+
         LOG.debug(f'{self.msg_src}: {self.manifest.pkg_id.pkg_id}: Manifest:'
                   f' {self.manifest}')
 
