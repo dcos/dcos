@@ -183,39 +183,40 @@ class PkgConfManager:
         if '.j2' in src_fpath.suffixes[-1:]:
             dst_fname = src_fpath.stem
             json_ready = '.json' in src_fpath.suffixes[-2:-1]
+            if context is None:
+                context_items = {}
+            else:
+                assert isinstance(context, ResourceContext), (
+                    f'Argument: context:'
+                    f' Got {type(context).__name__} instead of ResourceContext'
+                )
+
+                context_items = context.get_items(json_ready=json_ready)
+
+            try:
+                j2_env = j2.Environment(
+                    loader=j2.FileSystemLoader(str(src_fpath.parent))
+                )
+                j2_tmpl = j2_env.get_template(str(src_fpath.name))
+                rendered_str = j2_tmpl.render(**context_items)
+                LOG.debug(f'{self.msg_src}: Process configuration file:'
+                          f' {src_fpath}: Rendered content: {rendered_str}')
+
+                dst_fpath = tmp_dpath.joinpath(dst_fname)
+                dst_fpath.write_text(rendered_str)
+                LOG.debug(f'{self.msg_src}: Process configuration file:'
+                          f' {src_fpath}: Save: {dst_fpath}')
+            except (FileNotFoundError, j2.TemplateNotFound) as e:
+                err_msg = f'Load: {src_fpath}'
+                raise cfgm_exc.PkgConfFileNotFoundError(err_msg) from e
+            except (OSError, RuntimeError) as e:
+                err_msg = f'Load: {src_fpath}: {type(e).__name__}: {e}'
+                raise cfgm_exc.PkgConfError(err_msg) from e
+            except j2.TemplateError as e:
+                err_msg = f'Load: {src_fpath}: {type(e).__name__}: {e}'
+                raise cfgm_exc.PkgConfFileInvalidError(err_msg) from e
         else:
-            dst_fname = src_fpath.name
-            json_ready = '.json' in src_fpath.suffixes[-1:]
-
-        if context is None:
-            context_items = {}
-        else:
-            assert isinstance(context, ResourceContext), (
-                f'Argument: context:'
-                f' Got {type(context).__name__} instead of ResourceContext'
-            )
-
-            context_items = context.get_items(json_ready=json_ready)
-
-        try:
-            j2_env = j2.Environment(
-                loader=j2.FileSystemLoader(str(src_fpath.parent))
-            )
-            j2_tmpl = j2_env.get_template(str(src_fpath.name))
-            rendered_str = j2_tmpl.render(**context_items)
-            LOG.debug(f'{self.msg_src}: Process configuration file:'
-                      f' {src_fpath}: Rendered content: {rendered_str}')
-
-            dst_fpath = tmp_dpath.joinpath(dst_fname)
-            dst_fpath.write_text(rendered_str)
-            LOG.debug(f'{self.msg_src}: Process configuration file:'
-                      f' {src_fpath}: Save: {dst_fpath}')
-        except (FileNotFoundError, j2.TemplateNotFound) as e:
-            err_msg = f'Load: {src_fpath}'
-            raise cfgm_exc.PkgConfFileNotFoundError(err_msg) from e
-        except (OSError, RuntimeError) as e:
-            err_msg = f'Load: {src_fpath}: {type(e).__name__}: {e}'
-            raise cfgm_exc.PkgConfError(err_msg) from e
-        except j2.TemplateError as e:
-            err_msg = f'Load: {src_fpath}: {type(e).__name__}: {e}'
-            raise cfgm_exc.PkgConfFileInvalidError(err_msg) from e
+            with src_fpath.open() as f:
+                contents = f.read()
+            dst_fpath = tmp_dpath.joinpath(src_fpath.name)
+            dst_fpath.write_text(contents)
