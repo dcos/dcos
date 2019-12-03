@@ -29,6 +29,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
 
+* Use Golang 1.10.8 to build CockroachDB. (DCOS-61502)
+
 
 ### Security updates
 
