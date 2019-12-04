@@ -7,7 +7,7 @@ from pathlib import Path
 
 # Package's installation config files
 
-PKG_CFG_DNAME = 'etc'
+PKG_CFG_DNAME = 'conf'
 
 # Package info descriptor file
 PKG_INFO_FPATH = 'pkginfo.json'

@@ -1,6 +1,6 @@
 $ErrorActionPreference = "stop"
 New-Item -ItemType Directory "$env:PKG_PATH/bin"
-New-Item -ItemType Directory "$env:PKG_PATH/etc"
+New-Item -ItemType Directory "$env:PKG_PATH/conf"
 new-item -Path "c:\gopath\src\github.com\influxdata" -type directory
 copy-item -recurse  -Path C:\pkg\src\telegraf -Destination c:\gopath\src\github.com\influxdata\
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -15,5 +15,5 @@ $env:GOOS="windows"
 $env:GOARCH="386"
 go build .\cmd\telegraf\
 Copy-Item -Path "telegraf.exe" -Destination "$env:PKG_PATH/bin/"
-Copy-Item "c:\pkg\extra\telegraf.extra.j2" "$env:PKG_PATH/etc/"
-Copy-Item "c:\pkg\extra\telegraf.ps1" "$env:PKG_PATH/etc/"
+Copy-Item "c:\pkg\extra\telegraf.extra.j2" "$env:PKG_PATH/conf/"
+Copy-Item "c:\pkg\extra\telegraf.ps1" "$env:PKG_PATH/conf/"
