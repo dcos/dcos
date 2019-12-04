@@ -21,3 +21,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Drop labels from Lashup's kv_message_queue_overflows_total metric. (DCOS_OSS-5634)
 
 * Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
+
+* Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
+
