@@ -150,6 +150,9 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-diagnostics-mesos-state.timer',
     ]
     all_node_units = [
+        'dcos-calico-bird.service',
+        'dcos-calico-felix.service',
+        'dcos-calico-confd.service',
         'dcos-checks-api.service',
         'dcos-checks-api.socket',
         'dcos-diagnostics.service',
