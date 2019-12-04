@@ -218,5 +218,5 @@ class PkgConfManager:
         else:
             with src_fpath.open() as f:
                 contents = f.read()
-            dst_fpath = tmp_dpath.joinpath(src_fpath.name)
+            dst_fname = tmp_dpath.joinpath(src_fpath.name)
             dst_fpath.write_text(contents)
