@@ -12,6 +12,7 @@
   },
   "exclude": [
     "erlang",
+    "calico",
     "boost-libs",
     "boto",
     "bouncer",
