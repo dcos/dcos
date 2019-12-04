@@ -13,7 +13,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
-* Updated DC/OS UI to [1.12+v2.26.17](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.26.17).
+* Updated DC/OS UI to [1.12+v2.26.18](https://github.com/dcos/dcos-ui/releases/tag/1.12+v2.26.18).
 
 * Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/tree/b8a73dd)
 
