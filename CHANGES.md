@@ -299,3 +299,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Upgrade OTP version (DCOS_OSS-3655)
 
 * Marathon framework ID generation is now very conservative. [See more](https://github.com/mesosphere/marathon/blob/master/changelog.md#marathon-framework-id-generation-is-now-very-conservative) (MARATHON-8420)
+
+* Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
+
