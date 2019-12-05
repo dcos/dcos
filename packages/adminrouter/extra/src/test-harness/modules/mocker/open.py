@@ -7,8 +7,8 @@ Management code for DC/OS mocks used by Open AR instances.
 import logging
 
 from mocker.common import MockerBase
-from mocker.endpoints.open.iam import IamEndpoint
 from mocker.endpoints.grpc import GRPCEndpoint
+from mocker.endpoints.open.iam import IamEndpoint
 
 log = logging.getLogger(__name__)
 

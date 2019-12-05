@@ -124,8 +124,8 @@ class TestMetadata:
             self, master_ar_process_perclass, valid_user_header):
         url = master_ar_process_perclass.make_url_from_path('/metadata')
         filter_regexp = {
-            'Traceback \(most recent call last\):': SearchCriteria(1, True),
-            ("FileNotFoundError: \[Errno 2\] No such file or directory:"
+            r'Traceback \(most recent call last\):': SearchCriteria(1, True),
+            (r"FileNotFoundError: \[Errno 2\] No such file or directory:"
              " '/usr/local/detect_ip_public_data.txt'"): SearchCriteria(1, True),
         }
         lbf = LineBufferFilter(filter_regexp,

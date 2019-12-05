@@ -2,14 +2,14 @@
 
 """gRPC mock endpoint"""
 
+import logging
+import time
 from concurrent import futures
 
-import logging
 import grpc
-import time
-
-from grpc_status import rpc_status
 from google.rpc import code_pb2, status_pb2
+from grpc_status import rpc_status
+
 from mocker.endpoints import generic, grpc_endpoint_pb2, grpc_endpoint_pb2_grpc
 
 # pylint: disable=C0103
@@ -54,8 +54,7 @@ class MockServiceServicer(grpc_endpoint_pb2_grpc.MockServiceServicer):
 
 
 class GRPCEndpoint(generic.Endpoint):
-    """gRPC server mock endpoint
-    """
+    """gRPC server mock endpoint"""
     def __init__(self, port, ip='', keyfile=None, certfile=None, cafile=None):
         """Initialize new GRPCEndpoint object
 

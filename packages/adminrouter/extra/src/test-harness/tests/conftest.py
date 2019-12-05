@@ -5,19 +5,19 @@
 
 import json
 import os
-import grpc
 import pathlib
 
+import grpc
 import pyroute2
 import pytest
 from jwt.utils import base64url_decode, base64url_encode
 
 import generic_test_code.common
 from mocker.dns import DcosDnsServer
+from mocker.endpoints import grpc_endpoint_pb2_grpc
 from mocker.jwt import generate_rs256_jwt
 from runner.common import LogCatcher, SyslogMock
 from util import add_lo_ipaddr, ar_listen_link_setup, del_lo_ipaddr
-from mocker.endpoints import grpc_endpoint_pb2_grpc
 
 
 @pytest.fixture()
