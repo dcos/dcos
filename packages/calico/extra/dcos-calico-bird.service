@@ -6,6 +6,7 @@ ConditionPathExists=/opt/mesosphere/etc/calico/calico_enabled
 [Service]
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/calico/calico-node.env
+EnvironmentFile=/opt/mesosphere/etc/calico/calico-node-datastore.env
 ExecStartPre=/usr/bin/mkdir -p /var/run/calico
 ExecStart=/opt/mesosphere/bin/bird -R -s /var/run/calico/bird.ctl -d \
 	-c /etc/calico/confd/config/bird.cfg

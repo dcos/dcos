@@ -1123,7 +1123,7 @@ def validate_vxlan_port(vxlan_port):
 
 
 def validate_vxlan_vni(vxlan_vni):
-    validate_int_in_range(vxlan_vni, 4096, 16777215)
+    validate_int_in_range(vxlan_vni, 1, 16777215)
     # dcos overlay use fixed VXLAN VNI 1024 assigned by the master module of dcos overlay network
     # https://github.com/dcos/dcos-mesos-modules/blob/master/overlay/master.cpp#L1544
     assert vxlan_vni != 1024, 'VXLAN VNI {} should not conflict with that of dcos overlay'
@@ -1397,12 +1397,6 @@ entry = {
         'calico_vxlan_port': '64001',
         'calico_vxlan_vni': '4096',
         'calico_vxlan_mtu': '1410',
-        'etcd_endpoints': 'http://master.dcos.thisdcos.directory:2379',
-        # etcd related certificates are set empty to reuse the configurations
-        # defined in dcos-config.yaml in dcos-enterprise
-        'etcd_ca_cert_file': '',
-        'etcd_key_file': '',
-        'etcd_cert_file': '',
     },
     'must': {
         'fault_domain_enabled': 'false',
