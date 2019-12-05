@@ -207,7 +207,7 @@ class PkgConfManager:
                       f' {src_fpath}: Rendered content: {rendered_str}')
 
             dst_fpath = tmp_dpath.joinpath(dst_fname)
-            dst_fpath.write_text(rendered_str)
+            dst_fpath.write_text(rendered_str, encoding='utf-8')
             LOG.debug(f'{self.msg_src}: Process configuration file:'
                       f' {src_fpath}: Save: {dst_fpath}')
         except (FileNotFoundError, j2.TemplateNotFound) as e:
