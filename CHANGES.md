@@ -5,7 +5,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Updated DC/OS UI to [1.13+v2.83.3](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.83.3).
 
 * Signal now sends telemetry data every 5 minutes instead of every hour. This is to align the frequency with DC/OS Enterprise.
-* Updated to Mesos [1.8.2-dev](https://github.com/apache/mesos/blob/0744bb6185cd181a8f4ab678a9220c5359f0e0f9/CHANGELOG)
+
+* Updated to Mesos [1.8.2-dev](https://github.com/apache/mesos/blob/c7c716dbc9ee4363ba6267591585b9984d8920b8/CHANGELOG)
 
 
 ### Notable changes
@@ -30,6 +31,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
 
 * Use Golang 1.10.8 to build CockroachDB. (DCOS-61502)
+* [Mesos] Support quoted realms in WWW-Authenticate header (DCOS-61529)
 
 
 ### Security updates
