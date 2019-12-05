@@ -3018,10 +3018,7 @@ package:
         "delegate": {
           "cniVersion": "0.1.0",
           "type": "calico",
-          "etcd_endpoints": "{{ etcd_endpoints }}",
-          "etcd_key_file":"{{ etcd_key_file }}",
-          "etcd_cert_file":"{{ etcd_cert_file }}",
-          "etcd_ca_cert_file":"{{ etcd_ca_cert_file }}",
+          "etcd_endpoints": "http://master.dcos.thisdcos.directory:2379",
           "ipam": {
             "type": "calico-ipam"
           }
@@ -3029,10 +3026,6 @@ package:
       }
   - path: /etc/calico/calico-node.env
     content: |
-      ETCD_ENDPOINTS={{ etcd_endpoints }}
-      ETCD_CA_CERT_FILE={{ etcd_ca_cert_file }}
-      ETCD_CERT_FILE={{ etcd_cert_file }}
-      ETCD_KEY_FILE={{ etcd_key_file }}
       NO_DEFAULT_POOLS=false
       CALICO_IPV4POOL_CIDR={{ calico_network_cidr }}
       CALICO_IPV4POOL_NAT_OUTGOING=true
@@ -3052,6 +3045,9 @@ package:
       FELIX_VXLANPORT={{ calico_vxlan_port }}
       FELIX_VXLANVNI={{ calico_vxlan_vni }}
 {% endswitch %}
+  - path: /etc/calico/calico-node-datastore.env
+    content: |
+      ETCD_ENDPOINTS=http://master.dcos.thisdcos.directory:2379
 {% switch calico_vxlan_enabled %}
 {% case "false" %}
   - path: /etc/calico/bird_enabled
@@ -3065,9 +3061,6 @@ package:
       metadata:
       spec:
         datastoreType: etcdv3
-        etcdEndpoints: {{ etcd_endpoints }}
-        etcdKeyFile: {{ etcd_key_file }}
-        etcdCertFile: {{ etcd_cert_file }}
-        etcdCACertFile: {{ etcd_ca_cert_file }}
+        etcdEndpoints: http://master.dcos.thisdcos.directory:2379
 {% case "false" %}
 {% endswitch %}
