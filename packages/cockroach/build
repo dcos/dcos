@@ -2,6 +2,10 @@
 
 set -ex
 
+# We're building custom version of cockroachdb 2.0 becuase it is statically linked
+# against `ncurses` library. We cannot rely on having ncurses available on host
+# OS and require to link it against DC/OS provided version.
+
 # Support https sources in apt
 apt-get -y update
 apt-get -y install apt-transport-https software-properties-common
@@ -25,9 +29,13 @@ update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 40
 update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-6 40
 update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 40
 
-GOLANG_VERSION=1.11.5
+# Build cockroachdb with Golang version 1.10.x. Do not upgrade to 1.11.x and newer.
+# The reason is change in 1.11 https://github.com/golang/go/issues/24808 that causes
+# vendored GRPC library to enter state where it cannot re-open TCP connection.
+# See: https://jira.mesosphere.com/browse/DCOS-61502
+GOLANG_VERSION=1.10.8
 GOLANG_DOWNLOAD_URL=https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
-GOLANG_DOWNLOAD_SHA256=ff54aafedff961eb94792487e827515da683d61a5f9482f668008832631e5d25
+GOLANG_DOWNLOAD_SHA256=d8626fb6f9a3ab397d88c483b576be41fa81eefcec2fd18562c87626dbb3c39e
 
 rm -rf /usr/local/go
 curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz
