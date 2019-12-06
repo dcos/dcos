@@ -10,6 +10,7 @@ import jinja2 as j2
 from cfgm import exceptions as cfgm_exc
 from common import logger
 from common.cli import CLI_COMMAND, CLI_CMDTARGET, CLI_CMDOPT
+from common import utils as cm_utl
 from core import cmdconf
 from core import exceptions as cr_exc
 from core.package.id import PackageId
@@ -339,11 +340,11 @@ class CmdStart(Command):
     """Start command implementation."""
     def __init__(self, **cmd_opts):
         """Constructor."""
-        msg_src = self.__class__.__name__
+        self.msg_src = self.__class__.__name__
         super(CmdStart, self).__init__(**cmd_opts)
 
         self.config = cmdconf.create(**self.cmd_opts)
-        LOG.debug(f'{msg_src}: cmd_opts: {self.cmd_opts}')
+        LOG.debug(f'{self.msg_src}: cmd_opts: {self.cmd_opts}')
 
     def verify_cmd_options(self):
         """Verify command options."""
@@ -351,8 +352,6 @@ class CmdStart(Command):
 
     def execute(self):
         """Execute command."""
-        msg_src = self.__class__.__name__
-
         pkg_manifests = (
             self.config.inst_storage.get_pkgactive(PackageManifest.load)
         )
@@ -362,57 +361,76 @@ class CmdStart(Command):
 
         for package in cr_utl.pkg_sort_by_deps(packages_bulk):
             pkg_id = package.manifest.pkg_id
+            mheading = f'{self.msg_src}: Execute: {pkg_id.pkg_name}'
 
             if package.svc_manager:
                 svc_name = package.svc_manager.svc_name
-                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
-                          f' Start service: {svc_name}: ...')
+                LOG.debug(f'{mheading}: Start service: {svc_name}: ...')
+
                 try:
-                    ret_code, stdout, stderr = package.svc_manager.status()
-                except svcm_exc.ServiceManagerCommandError as e:
-                    err_msg = (f'Execute: {pkg_id.pkg_name}: Get initial'
-                               f' service status: {svc_name}: {e}')
-                    raise cr_exc.StartCommandError(err_msg) from e
+                    self.service_start(package.svc_manager)
+                except (svcm_exc.ServiceError,
+                        svcm_exc.ServiceManagerError) as e:
+                    LOG.error(f'{mheading}: Start service:'
+                              f' {type(e).__name__}: {e}')
                 else:
-                    LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Get'
-                              f' initial service status: {svc_name}:'
-                              f' stdout[{stdout}] stderr[{stderr}]')
-                    svc_status = str(stdout).strip().rstrip('\n')
-
-                if svc_status == SVC_STATUS.STOPPED:
-                    try:
-                        package.svc_manager.start()
-                    except svcm_exc.ServiceManagerCommandError as e:
-                        err_msg = (f'Execute: {pkg_id.pkg_name}: Start'
-                                   f' service: {svc_name}: {e}')
-                        raise cr_exc.StartCommandError(err_msg) from e
-
-                    try:
-                        ret_code, stdout, stderr = package.svc_manager.status()
-                        LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
-                                  f' Get final service status: {svc_name}:'
-                                  f' stdout[{stdout}] stderr[{stderr}]')
-                        svc_status = str(stdout).strip().rstrip('\n')
-
-                        if svc_status != SVC_STATUS.RUNNING:
-                            err_msg = (f'Execute: {pkg_id.pkg_name}: Service'
-                                       f' failed to start: {svc_name}:'
-                                       f' {svc_status}')
-                            raise cr_exc.StartCommandError(err_msg)
-                    except svcm_exc.ServiceManagerCommandError as e:
-                        err_msg = (f'Execute: {pkg_id.pkg_name}: Get final'
-                                   f' service status: {svc_name}: {e}')
-                        raise cr_exc.StartCommandError(err_msg) from e
-                elif svc_status == SVC_STATUS.RUNNING:
-                    LOG.warning(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
-                                f' Service is already running: {svc_name}')
-                else:
-                    err_msg = (f'Execute: {pkg_id.pkg_name}: Invalid service'
-                               f' status: {svc_name}: {svc_status}')
-                    raise cr_exc.StartCommandError(err_msg)
-
-                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
-                          f' Start service: {svc_name}: OK')
+                    LOG.debug(f'{mheading}: Start service: {svc_name}: OK')
             else:
-                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
-                          f' Start service: NOP')
+                LOG.debug(f'{mheading}: Start service: NOP')
+
+    @cm_utl.retry_on_exc((svcm_exc.ServiceManagerCommandError,
+                          svcm_exc.ServiceFluctuantError), max_attempts=3)
+    def service_start(self, svc_manager):
+        """Start a system service.
+
+        :param svc_manager: WindowsServiceManager, service manager object
+        """
+        svc_name = svc_manager.svc_name
+
+        # Discover initial service status
+        try:
+            ret_code, stdout, stderr = svc_manager.status()
+        except svcm_exc.ServiceManagerCommandError as e:
+            err_msg = f'Get initial service status: {svc_name}: {e}'
+            raise type(e)(err_msg) from e  # Subject to retry
+        else:
+            log_msg = (f'Get initial service status: {svc_name}:'
+                       f'stdout[{stdout}] stderr[{stderr}]')
+            LOG.debug(log_msg)
+            svc_status = str(stdout).strip().rstrip('\n')
+
+        # Manage service appropriately to its status
+        if svc_status == SVC_STATUS.STOPPED:
+            # Start a service
+            try:
+                svc_manager.start()
+            except svcm_exc.ServiceManagerCommandError as e:
+                err_msg = f'Start service: {svc_name}: {e}'
+                raise type(e)(err_msg) from e  # Subject to retry
+            # Verify that service is running
+            try:
+                ret_code, stdout, stderr = svc_manager.status()
+                LOG.debug(f'Get final service status: {svc_name}:'
+                          f'stdout[{stdout}] stderr[{stderr}]')
+                svc_status = str(stdout).strip().rstrip('\n')
+
+                if svc_status == SVC_STATUS.START_PENDING:
+                    msg = f'Service is starting: {svc_name}'
+                    LOG.debug(msg)
+                    svcm_exc.ServiceFluctuantError(msg)  # Subject to retry
+                elif svc_status != SVC_STATUS.RUNNING:
+                    err_msg = (f'Start service: {svc_name}: Failed:'
+                               f' {svc_status}')
+                    raise svcm_exc.ServiceHardError(err_msg)
+            except svcm_exc.ServiceManagerCommandError as e:
+                err_msg = f'Get final service status: {svc_name}: {e}'
+                raise type(e)(err_msg) from e  # Subject to retry
+        elif svc_status == SVC_STATUS.START_PENDING:
+            msg = f'Service is starting: {svc_name}: ...'
+            LOG.debug(msg)
+            raise svcm_exc.ServiceFluctuantError(msg)  # Subject to retry
+        elif svc_status == SVC_STATUS.RUNNING:
+            LOG.debug(f'Service is already running: {svc_name}')
+        else:
+            err_msg = f'Invalid service status: {svc_name}: {svc_status}'
+            raise svcm_exc.ServiceHardError(err_msg)
