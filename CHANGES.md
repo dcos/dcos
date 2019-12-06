@@ -289,3 +289,6 @@ No breaking changes are known to date.
 * Allow the DC/OS installer to be used when there is a space in its path. (DCOS_OSS-4429)
 
 * Added a warning to the installer to let the user know in case kernel modules required by the DC/OS storage service are not loaded. (DCOS-49088)
+
+* Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
+
