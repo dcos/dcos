@@ -1,0 +1,4 @@
+install:
+    exec_external_commands:
+        - powershell -noprofile -executionpolicy Bypass -File {{ pkg_inst_dpath }}\conf\nssm.ps1 {{ pkg_inst_dpath }}
+

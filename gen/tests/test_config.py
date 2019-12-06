@@ -869,24 +869,24 @@ def test_validate_mesos_work_dir():
     validate_error(
         {'mesos_master_work_dir': 'foo'},
         'mesos_master_work_dir',
-        'Must be an absolute filesystem path starting with /',
+        'Must be an absolute filesystem path',
     )
     validate_error(
         {'mesos_agent_work_dir': 'foo'},
         'mesos_agent_work_dir',
-        'Must be an absolute filesystem path starting with /',
+        'Must be an absolute filesystem path',
     )
 
     # Empty work dir.
     validate_error(
         {'mesos_master_work_dir': ''},
         'mesos_master_work_dir',
-        'Must be an absolute filesystem path starting with /',
+        'Must be an absolute filesystem path',
     )
     validate_error(
         {'mesos_agent_work_dir': ''},
         'mesos_agent_work_dir',
-        'Must be an absolute filesystem path starting with /',
+        'Must be an absolute filesystem path',
     )
 
 

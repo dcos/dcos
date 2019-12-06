@@ -5,10 +5,7 @@ import json
 import logging
 import os
 import random
-import shutil
-import stat
 import sys
-import tempfile
 from pathlib import Path
 
 import cryptography.hazmat.backends
@@ -28,7 +25,7 @@ def _known_exec_directory():
     """
     # This directory must be outside /tmp to support
     # environments where /tmp is mounted noexec.
-    known_directory = Path('/var/lib/dcos/exec')
+    known_directory = utils.dcos_lib_path / 'exec'
     known_directory.mkdir(parents=True, exist_ok=True)
     return known_directory
 
@@ -43,13 +40,15 @@ def _create_private_directory(path, owner):
         owner (str): The owner of the directory.
     """
     path.mkdir(exist_ok=True)
-    path.chmod(0o700)
-    shutil.chown(str(path), user=owner)
+    utils.chown(path, user=owner)
+    if utils.is_linux:
+        # TODO: Windows equivalent
+        path.chmod(0o700)
 
 
 def check_root(fun):
     def wrapper(b, opts):
-        if os.getuid() != 0:
+        if utils.is_linux and os.getuid() != 0:
             log.error('bootstrap must be run as root')
             sys.exit(1)
         fun(b, opts)
@@ -90,10 +89,11 @@ def dcos_adminrouter(b, opts):
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo)
 
-    os.makedirs('/run/dcos/dcos-adminrouter', exist_ok=True)
-    pubkey_path = '/run/dcos/dcos-adminrouter/auth-token-verification-key'
-    _write_file_bytes(pubkey_path, pubkey_pem_bytes, 0o644)
-    shutil.chown(pubkey_path, user='dcos_adminrouter')
+    rundir = utils.dcos_run_path / 'dcos-adminrouter'
+    rundir.mkdir(parents=True, exist_ok=True)
+    pubkey_path = rundir / 'auth-token-verification-key'
+    utils.write_public_file(pubkey_path, pubkey_pem_bytes)
+    utils.chown(pubkey_path, user='dcos_adminrouter')
 
 
 @check_root
@@ -131,8 +131,9 @@ def dcos_net_agent(b, opts):
 
 @check_root
 def dcos_bouncer(b, opts):
-    os.makedirs('/run/dcos/dcos-bouncer', exist_ok=True)
-    shutil.chown('/run/dcos/dcos-bouncer', user='dcos_bouncer')
+    rundir = utils.dcos_run_path / 'dcos-bouncer'
+    rundir.mkdir(parents=True, exist_ok=True)
+    utils.chown('/run/dcos/dcos-bouncer', user='dcos_bouncer')
     # Permissions are restricted to the dcos_bouncer user as this directory
     # contains sensitive data.  See
     # https://jira.mesosphere.com/browse/DCOS-18350
@@ -201,7 +202,7 @@ bootstrappers = {
 
 
 def get_roles():
-    return os.listdir('/opt/mesosphere/etc/roles')
+    return os.listdir(str(utils.dcos_etc_path / 'roles'))
 
 
 def main():
@@ -234,7 +235,7 @@ def main():
 def get_zookeeper_address_agent():
     if os.getenv('MASTER_SOURCE') == 'master_list':
         # dcos-net agents with static master list
-        with open('/opt/mesosphere/etc/master_list', 'r') as f:
+        with (utils.dcos_etc_path / 'master_list').open() as f:
             master_list = json.load(f)
         assert len(master_list) > 0
         return random.choice(master_list) + ':2181'
@@ -270,41 +271,7 @@ def parse_args():
         help='Host string passed to Kazoo client constructor.')
     parser.add_argument(
         '--master_count',
-        type=str,
-        default='/opt/mesosphere/etc/master_count',
+        type=Path,
+        default=utils.dcos_etc_path / 'master_count',
         help='File with number of master servers')
     return parser.parse_args()
-
-
-def _write_file_bytes(path, data, mode):
-    """
-    Atomically write `data` to `path` using the file permissions
-    `stat.S_IMODE(mode)`.
-
-    File consumers can rely on seeing valid file contents once they are able to
-    open the file. This is achieved by performing all relevant operations on a
-    temporary file followed by a `os.replace()` which, if successful, renames to
-    the desired path (and overwrites upon conflict) in an atomic operation (on
-    both, Windows, and Linux).
-
-    If acting on the temporary file fails (be it writing, closing, chmodding,
-    replacing) an attempt is performed to remove the temporary file; and the
-    original exception is re-raised.
-    """
-    assert isinstance(data, bytes)
-
-    basename = os.path.basename(path)
-    tmpfile_dir = os.path.dirname(os.path.realpath(path))
-
-    fd, tmpfile_path = tempfile.mkstemp(prefix=basename, dir=tmpfile_dir)
-
-    try:
-        try:
-            os.write(fd, data)
-        finally:
-            os.close(fd)
-        os.chmod(tmpfile_path, stat.S_IMODE(mode))
-        os.replace(tmpfile_path, path)
-    except Exception:
-        os.remove(tmpfile_path)
-        raise
