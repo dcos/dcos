@@ -19,7 +19,7 @@ function Unzip {
 
 Unzip "c:\pkg\src\OpenResty\openresty-1.15.8.2-win64.zip" "c:/Temp/openresty"
 
-Copy-Item -Recurse -Path "$TempFolder\openresty\openresty-1.15.8.2-win64\*" "$env:PKG_PATH\bin\"
+Copy-Item -Recurse -Path "C:\Temp\openresty\openresty-1.15.8.2-win64\*" "$env:PKG_PATH\bin\"
 
 Copy-Item -Recurse -Path "C:\pkg\build\extra\src\*" "$env:PKG_PATH\etc\"
 Move-item -Path "$env:PKG_PATH\etc\includes" -Destination "$env:PKG_PATH\conf"
