@@ -94,6 +94,7 @@ class DCOSInstallationManager:
             CLI_CMDOPT.DSTOR_URL: self.cli_args.get('--dstor-url'),
             CLI_CMDOPT.DSTOR_PKGREPOPATH: self.cli_args.get('--dstor-pkgrepo'),
             CLI_CMDOPT.DSTOR_PKGLISTPATH: self.cli_args.get('--dstor-pkglist'),
+            CLI_CMDOPT.DSTOR_DCOSCFGPATH: self.cli_args.get('--dstor-dcoscfg'),
             CLI_CMDOPT.DCOS_CLUSTERCFGPATH: self.cli_args.get(
                 '--cluster-cfgfile'
             )

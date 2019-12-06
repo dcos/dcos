@@ -6,7 +6,6 @@ from common import logger
 from common import exceptions as cm_exc
 from common import utils as cm_utl
 from extm import exceptions as extm_exc
-import shlex
 
 
 LOG = logger.get_logger(__name__)
@@ -37,14 +36,14 @@ class PkgInstExtrasManager:
 
         self.ext_conf = ext_conf
 
+    def __str__(self):
+        return str({
+            'ext_conf': self.ext_conf,
+        })
+
     def handle_install_extras(self):
         """DC/OS package install extra options handler."""
-        msg_src = self.__class__.__name__
-        LOG.debug(f'{msg_src}: Config: {self.ext_conf}')
-
         install_sect = self.ext_conf.get(EXTCFG_SECTION.INSTALL, {})
-        LOG.debug(f'{msg_src}: Config: {EXTCFG_SECTION.INSTALL}:'
-                  f' {install_sect}')
 
         if not isinstance(install_sect, dict):
             raise extm_exc.InstExtrasManagerConfigError(
@@ -52,8 +51,6 @@ class PkgInstExtrasManager:
                 f' {EXTCFG_SECTION.INSTALL}: {install_sect}'
             )
         exec_ext_cmd_opt = install_sect.get(EXTCFG_OPTION.EXEC_EXT_CMD, [])
-        LOG.debug(f'{msg_src}: Config: {EXTCFG_SECTION.INSTALL}:'
-                  f' {EXTCFG_OPTION.EXEC_EXT_CMD}: {exec_ext_cmd_opt}')
 
         if not isinstance(exec_ext_cmd_opt, list):
             raise extm_exc.InstExtrasManagerConfigError(
@@ -66,7 +63,6 @@ class PkgInstExtrasManager:
 
     def handle_uninstall_extras(self):
         """DC/OS package uninstall extra options handler."""
-        msg_src = self.__class__.__name__
         uninstall_sect = self.ext_conf.get(EXTCFG_SECTION.UNINSTALL, {})
 
         if not isinstance(uninstall_sect, dict):
@@ -95,9 +91,8 @@ class PkgInstExtrasManager:
 
         for cmd_cl_def in cmd_cl_defs:
             try:
-                cl_elements = shlex.quote(cmd_cl_def)
-                cm_utl.run_external_command(cl_elements)
-                LOG.debug(f'{msg_src}: External command: {cl_elements}: OK')
+                cm_utl.run_external_command(cmd_cl_def)
+                LOG.debug(f'{msg_src}: External command: {cmd_cl_def}: OK')
             except cm_exc.ExternalCommandError as e:
                 raise extm_exc.InstExtrasManagerError(
                     f'{type(e).__name__}: {e}'

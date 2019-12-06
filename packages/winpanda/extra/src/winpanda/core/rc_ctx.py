@@ -22,7 +22,12 @@ class RCCONTEXT_ITEM:
 
     DCOS_INST_DPATH = 'dcos_inst_dpath'
     DCOS_CFG_DPATH = 'dcos_cfg_dpath'
+    DCOS_WORK_DPATH = 'dcos_work_dpath'
+    DCOS_RUN_DPATH = 'dcos_run_dpath'
+    DCOS_LOG_DPATH = 'dcos_log_dpath'
     DCOS_TMP_DPATH = 'dcos_tmp_dpath'
+    DCOS_BIN_DPATH = 'dcos_bin_dpath'
+    DCOS_LIB_DPATH = 'dcos_lib_dpath'
 
     PKG_INST_DPATH = 'pkg_inst_dpath'
     PKG_LOG_DPATH = 'pkg_log_dpath'
@@ -33,7 +38,8 @@ class RCCONTEXT_ITEM:
 
 class ResourceContext:
     """Resource rendering context manager."""
-    def __init__(self, istor_nodes=None, cluster_conf=None, pkg_id=None):
+    def __init__(self, istor_nodes=None, cluster_conf=None, pkg_id=None,
+                 extra_values=None):
         """Constructor.
 
         :param istor_nodes:  IStorNodes, DC/OS installation storage nodes (set
@@ -41,6 +47,8 @@ class ResourceContext:
         :param cluster_conf: dict, configparser.ConfigParser.read_dict()
                              compatible data. DC/OS cluster setup parameters
         :param pkg_id:       PackageId, package ID
+        :param extra_values: dict, extra 'key=value' data to be added to the
+                             resource rendering context.
         """
         if istor_nodes is not None:
             assert isinstance(istor_nodes, IStorNodes), (
@@ -56,10 +64,16 @@ class ResourceContext:
             assert isinstance(pkg_id, PackageId), (
                 f'Argument: pkg_id: PackageId is required: {pkg_id}'
             )
+        if extra_values is not None:
+            assert isinstance(extra_values, dict), (
+                f'Argument: extra_values:'
+                f'Got {type(extra_values).__name__} instead of dict'
+            )
 
         self._istor_nodes = istor_nodes
         self._cluster_conf = cluster_conf
         self._pkg_id = pkg_id
+        self._extra_values = extra_values
 
     def get_items(self, json_ready=False):
         """Get resource rendering context items.
@@ -69,7 +83,8 @@ class ResourceContext:
         """
         retrievers = (self._get_istor_items,
                       self._get_cluster_conf_items,
-                      self._get_pkg_items)
+                      self._get_pkg_items,
+                      self._get_extra_items)
         items = {}
 
         for retriever in retrievers:
@@ -98,10 +113,35 @@ class ResourceContext:
             )).strip('"') if json_ready else str(
                 getattr(self._istor_nodes, ISTOR_NODE.CFG)
             ),
+            RCCONTEXT_ITEM.DCOS_WORK_DPATH: json.dumps(str(
+                getattr(self._istor_nodes, ISTOR_NODE.WORK)
+            )).strip('"') if json_ready else str(
+                getattr(self._istor_nodes, ISTOR_NODE.WORK)
+            ),
+            RCCONTEXT_ITEM.DCOS_RUN_DPATH: json.dumps(str(
+                getattr(self._istor_nodes, ISTOR_NODE.RUN)
+            )).strip('"') if json_ready else str(
+                getattr(self._istor_nodes, ISTOR_NODE.RUN)
+            ),
+            RCCONTEXT_ITEM.DCOS_LOG_DPATH: json.dumps(str(
+                getattr(self._istor_nodes, ISTOR_NODE.LOG)
+            )).strip('"') if json_ready else str(
+                getattr(self._istor_nodes, ISTOR_NODE.LOG)
+            ),
             RCCONTEXT_ITEM.DCOS_TMP_DPATH: json.dumps(str(
                 getattr(self._istor_nodes, ISTOR_NODE.TMP)
             )).strip('"') if json_ready else str(
                 getattr(self._istor_nodes, ISTOR_NODE.TMP)
+            ),
+            RCCONTEXT_ITEM.DCOS_BIN_DPATH: json.dumps(str(
+                getattr(self._istor_nodes, ISTOR_NODE.BIN)
+            )).strip('"') if json_ready else str(
+                getattr(self._istor_nodes, ISTOR_NODE.BIN)
+            ),
+            RCCONTEXT_ITEM.DCOS_LIB_DPATH: json.dumps(str(
+                getattr(self._istor_nodes, ISTOR_NODE.LIB)
+            )).strip('"') if json_ready else str(
+                getattr(self._istor_nodes, ISTOR_NODE.LIB)
             ),
         }
 
@@ -196,12 +236,48 @@ class ResourceContext:
 
         return items
 
+    def _get_extra_items(self, json_ready=False):
+        """Extract resource rendering context items from provided extra
+        'key=value' map.
+
+        :param json_ready: bool, get JSON-compatible context items, if True
+        :return:           dict, set of resource rendering context items
+        """
+        if self._extra_values is None:
+            return {}
+
+        items = {
+            k: json.dumps(str(v)).strip('"') if json_ready else str(v) for
+            k, v in self._extra_values.items()
+        }
+
+        return items
+
     def as_dict(self):
         """Construct the dict representation."""
-        return {
-            'istor_nodes': {
+        if self._istor_nodes is None:
+            istor_nodes = None
+        else:
+            istor_nodes = {
                 k: str(v) for k, v in self._istor_nodes._asdict().items()
-            },
+            }
+
+        return {
+            'istor_nodes': istor_nodes,
             'cluster_conf': self._cluster_conf,
             'pkg_id': self._pkg_id.pkg_id,
+            'extra_values': self._extra_values
         }
+
+    def update(self, values=None):
+        """Update context data.
+
+        :param values: dict, 'key=value' data to be added to / updated in the
+                             resource rendering context.
+        """
+        if values is not None:
+            assert isinstance(values, dict), (
+                f'Argument: values:'
+                f'Got {type(values).__name__} instead of dict'
+            )
+            self._extra_values.update(values)

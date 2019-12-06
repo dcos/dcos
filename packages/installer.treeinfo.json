@@ -1,7 +1,5 @@
 {
   "exclude": [
-    "erts",
-    "openstackservice",
     "vcredist",
     "nssm",
     "winpanda"
