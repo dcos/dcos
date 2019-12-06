@@ -50,3 +50,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ### Fixed and improved
 
 * Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
+
+* Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
+
