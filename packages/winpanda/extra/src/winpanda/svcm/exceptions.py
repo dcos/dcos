@@ -45,11 +45,11 @@ class ServiceSetupError(ServiceError):
     pass
 
 
-class ServiceFluctuantError(ServiceError):
+class ServiceTransientError(ServiceError):
     """Service intermittent error."""
     pass
 
 
-class ServiceHardError(ServiceError):
+class ServicePersistentError(ServiceError):
     """Service steady error."""
     pass

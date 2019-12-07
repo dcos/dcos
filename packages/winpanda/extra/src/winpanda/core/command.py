@@ -184,7 +184,7 @@ class CmdSetup(Command):
             LOG.debug(f'{self.msg_src}: Execute: {pkg_id.pkg_name}: Setup'
                       f' configuration: NOP')
         except cfgm_exc.PkgConfManagerError as e:
-            err_msg = (f'Execute: {pkg_id.pkg_name}: Setup configuration:' 
+            err_msg = (f'Execute: {pkg_id.pkg_name}: Setup configuration:'
                        f'{type(e).__name__}: {e}')
             raise cr_exc.SetupCommandError(err_msg) from e
         else:
@@ -379,7 +379,7 @@ class CmdStart(Command):
                 LOG.debug(f'{mheading}: Start service: NOP')
 
     @cm_utl.retry_on_exc((svcm_exc.ServiceManagerCommandError,
-                          svcm_exc.ServiceFluctuantError), max_attempts=3)
+                          svcm_exc.ServiceTransientError), max_attempts=3)
     def service_start(self, svc_manager):
         """Start a system service.
 
@@ -417,20 +417,20 @@ class CmdStart(Command):
                 if svc_status == SVC_STATUS.START_PENDING:
                     msg = f'Service is starting: {svc_name}'
                     LOG.debug(msg)
-                    svcm_exc.ServiceFluctuantError(msg)  # Subject to retry
+                    raise svcm_exc.ServiceTransientError(msg)  # Subject to retry
                 elif svc_status != SVC_STATUS.RUNNING:
                     err_msg = (f'Start service: {svc_name}: Failed:'
                                f' {svc_status}')
-                    raise svcm_exc.ServiceHardError(err_msg)
+                    raise svcm_exc.ServicePersistentError(err_msg)
             except svcm_exc.ServiceManagerCommandError as e:
                 err_msg = f'Get final service status: {svc_name}: {e}'
                 raise type(e)(err_msg) from e  # Subject to retry
         elif svc_status == SVC_STATUS.START_PENDING:
             msg = f'Service is starting: {svc_name}: ...'
             LOG.debug(msg)
-            raise svcm_exc.ServiceFluctuantError(msg)  # Subject to retry
+            raise svcm_exc.ServiceTransientError(msg)  # Subject to retry
         elif svc_status == SVC_STATUS.RUNNING:
             LOG.debug(f'Service is already running: {svc_name}')
         else:
             err_msg = f'Invalid service status: {svc_name}: {svc_status}'
-            raise svcm_exc.ServiceHardError(err_msg)
+            raise svcm_exc.ServicePersistentError(err_msg)
