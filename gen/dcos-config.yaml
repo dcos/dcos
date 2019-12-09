@@ -1876,6 +1876,9 @@ package:
               {
                   "Command": ["sysctl", "-a"],
                   "Role": ["master", "agent", "agent_public"]
+              },
+              {
+                  "Command": ["df"]
               }
           ]
         }
