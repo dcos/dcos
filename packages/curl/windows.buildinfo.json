@@ -1,0 +1,7 @@
+{
+  "single_source": {
+    "kind": "url",
+    "url": "https://curl.haxx.se/windows/dl-7.67.0_4/curl-7.67.0_4-win64-mingw.zip",
+    "sha1": "e1c6da5e0d5433fbebeca666584a23a487bbebe1"
+  }
+}

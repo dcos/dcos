@@ -1,7 +1,8 @@
 {
   "variants": {
+    "curl": "windows",
     "mesos": "windows",
-    "winpanda" : "windows",
+    "winpanda": "windows",
     "dcos-diagnostics": "windows",
     "adminrouter": "windows",
     "telegraf": "windows",
@@ -20,7 +21,6 @@
     "cni",
     "cockroach",
     "cosmos",
-    "curl",
     "dcos-bootstrap-ca",
     "dcos-check-runner",
     "dcos-checks",
