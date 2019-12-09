@@ -81,6 +81,7 @@ class NSSMConfSection(enum.Enum):
 class SVC_STATUS:
     """System service status."""
     STOPPED = 'SERVICE_STOPPED'
+    START_PENDING = 'SERVICE_START_PENDING'
     RUNNING = 'SERVICE_RUNNING'
     PAUSED = 'SERVICE_PAUSED'
 

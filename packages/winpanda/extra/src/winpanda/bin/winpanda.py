@@ -107,7 +107,13 @@ class DCOSInstallationManager:
 def main():
     """"""
     log_level = LOG_LEVEL.DEBUG
-    log_fpath = Path('.', cm_const.APP_LOG_FNAME)
+    # log_fpath = Path('.', cm_const.APP_LOG_FNAME)
+    log_fpath = Path('C:\\d2iq\\dcos\\var\\log\\winpanda',
+                     cm_const.APP_LOG_FNAME)
+    try:
+        log_fpath.parent.mkdir(parents=True, exist_ok=True)
+    except (OSError, RuntimeError):
+        log_fpath = Path('.', cm_const.APP_LOG_FNAME)
     logger.master_setup(
         log_level=log_level, file_path=log_fpath,
         file_size=cm_const.APP_LOG_FSIZE_MAX,
