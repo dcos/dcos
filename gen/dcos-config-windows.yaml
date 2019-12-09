@@ -1,20 +1,12 @@
 package:
-  - path: c:\pkginfo.json
+  - path: {{ windows_dcos_install_path }}\etc\pkginfo.json
     content: |
       {
         "environment": {
-          "MESOS_IP_DISCOVERY_COMMAND": "{{ windows_dcos_install_path_json }}}\\bin\\detect_ip.ps1",
+          "MESOS_IP_DISCOVERY_COMMAND": "{{ windows_dcos_install_path_json }}\\bin\\detect_ip.ps1",
           "PROVIDER": "{{ provider }}"
         }
       }
-  - path: c:\etc\mesosphere\setup-flags\repository-url
-    permissions: "0644"
-    content: |
-      {{ bootstrap_url }}
-  - path: c:\etc\mesosphere\setup-flags\cluster-package-list
-    permissions: "0644"
-    content: |
-      {{ cluster_package_list_id }}
   - path: {{ windows_dcos_install_path }}\bin\detect_ip.ps1
     content: |
       $IPAddress = ([System.Net.Dns]::GetHostByName("master.mesos").AddressList[0]).IpAddressToString
@@ -32,7 +24,7 @@ package:
       {
         "role": "agent",
         "endpoint-config": "{{ windows_dcos_install_path_json }}\\etc\\dcos-diagnostics\\dcos-diagnostics-endpoint-config.json",
-        "agent-port": 1050,
+        "agent-port": 61001,
         "port": 1050,
         "no-unix-socket": true
       }
@@ -78,7 +70,7 @@ package:
         ],
         "LocalFiles": [
             {
-                "Location": "{{ windows_dcos_var_path_json }}\\mesos-logs\\mesos-agent.log",
+                "Location": "{{ windows_dcos_var_path_json }}\\mesos\\mesos-agent.log",
                 "Role": [ "agent" ]
             }
         ],
