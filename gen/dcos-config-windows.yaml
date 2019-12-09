@@ -1,4 +1,12 @@
 package:
+  - path: {{ windows_dcos_install_path }}\etc\pkginfo.json
+    content: |
+      {
+        "environment": {
+          "MESOS_IP_DISCOVERY_COMMAND": "{{ windows_dcos_install_path_json }}\\bin\\detect_ip.ps1",
+          "PROVIDER": "{{ provider }}"
+        }
+      }
   - path: {{ windows_dcos_install_path }}\bin\detect_ip.ps1
     content: |
       $IPAddress = ([System.Net.Dns]::GetHostByName("master.mesos").AddressList[0]).IpAddressToString
