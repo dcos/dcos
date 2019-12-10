@@ -3002,10 +3002,6 @@ package:
           Port 61092
           Chunk_Size 32
           Buffer_Size 64
-{% switch calico_enabled %}
-{% case "true" %}
-  - path: /etc/calico/calico_enabled
-    content: ""
   - path: /etc/dcos/network/cni/calico.conf
     content: |
       {
@@ -3062,5 +3058,3 @@ package:
       spec:
         datastoreType: etcdv3
         etcdEndpoints: http://master.dcos.thisdcos.directory:2379
-{% case "false" %}
-{% endswitch %}
