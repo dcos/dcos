@@ -1,8 +1,8 @@
 [service]
 DisplayName = dcos-diagnostics
 Description = DC/OS Diagnostics For Windows Agent Node
-Application = {{ dcos_inst_dpath }}\bin\dcos-diagnostics.exe
-AppDirectory = {{ dcos_inst_dpath }}\bin
+Application = {{ pkg_inst_dpath }}\bin\dcos-diagnostics.exe
+AppDirectory = {{ pkg_inst_dpath }}\bin
 AppParameters = --config {{ dcos_cfg_dpath }}\dcos-diagnostics\dcos-diagnostics-config.json --role=agent daemon
 Start = SERVICE_AUTO_START
 AppStdout = {{ pkg_log_dpath }}\dcos-diagnostics.log

@@ -5,13 +5,14 @@ Command configuration object definitions.
 import abc
 from pathlib import Path
 import posixpath
+import re
+import tempfile as tf
 
 from common import constants as cm_const
 from common import logger
 from common.cli import CLI_COMMAND, CLI_CMDOPT, CLI_CMDTARGET
-from common.storage import InstallationStorage, ISTOR_NODE
+from common.storage import InstallationStorage
 from core import exceptions as cr_exc
-from core.rc_ctx import ResourceContext
 from core import utils as cr_utl
 
 from common import utils as cm_utl
@@ -252,13 +253,20 @@ class CmdConfigSetup(CommandConfig):
         """Get the DC/OS aggregated configuration object.
 
         :return: dict, set of DC/OS shared and package specific configuration
-                 objects:
-                     {
-                         'package': {[
-                             {'path': <str>, 'content': <str>},
+                 templates coupled with 'key=value' substitution data
+                 container:
+                 {
+                    'template': {
+                        'package': [
+                            {'path': <str>, 'content': <str>},
                              ...
-                         ]}
-                     }
+                        ]
+                    },
+                    'values': {
+                        key: value,
+                        ...
+                    }
+                 }
         """
 
         dstor_root_url = (
@@ -266,62 +274,152 @@ class CmdConfigSetup(CommandConfig):
                 'rooturl', ''
             )
         )
-        dstor_dcoscfg_path = (
+        dstor_linux_pkg_index_path = (
             self.cluster_conf.get('distribution-storage', {}).get(
-                'dcoscfgpath', ''
+                'dcosclusterpkginfopath', ''
             )
         )
+        dcos_conf_pkg_name = 'dcos-config-win'
+        template_fname = 'dcos-config-windows.yaml'
+        values_fname = 'expanded.config.full.json'
+
         # Unblock irrelevant local operations
-        if self.cluster_conf_nop or dstor_dcoscfg_path == 'NOP':
+        if self.cluster_conf_nop or dstor_linux_pkg_index_path == 'NOP':
             LOG.info(f'{self.msg_src}: dcos_conf: NOP')
             return {}
 
-        dcoscfg_url = posixpath.join(dstor_root_url, dstor_dcoscfg_path)
-        dcoscfg_fname = Path(dstor_dcoscfg_path).name
+        # Linux package index direct URL
+        lpi_url = posixpath.join(dstor_root_url, dstor_linux_pkg_index_path)
+        lpi_fname = Path(dstor_linux_pkg_index_path).name
 
         try:
-            cm_utl.download(dcoscfg_url, str(self.inst_storage.tmp_dpath))
-            LOG.debug(f'{self.msg_src}: DC/OS aggregated config: Download:'
-                      f' {dcoscfg_fname}: {dcoscfg_url}')
+            cm_utl.download(lpi_url, str(self.inst_storage.tmp_dpath))
+            LOG.debug(f'{self.msg_src}: DC/OS Linux package index: Download:'
+                      f' {lpi_fname}: {lpi_url}')
         except Exception as e:
             raise cr_exc.RCDownloadError(
-                f'DC/OS aggregated config: Download: {dcoscfg_fname}:'
-                f' {dcoscfg_url}: {type(e).__name__}: {e}'
+                f'DC/OS Linux package index: Download: {lpi_fname}:'
+                f' {lpi_url}: {type(e).__name__}: {e}'
             ) from e
 
-        dcoscfg_fpath = self.inst_storage.tmp_dpath.joinpath(dcoscfg_fname)
+        lpi_fpath = self.inst_storage.tmp_dpath.joinpath(lpi_fname)
 
         try:
-            dcos_conf = cr_utl.rc_load_yaml(
-                dcoscfg_fpath,
-                emheading=f'DC/OS aggregated config: {dcoscfg_fname}',
-                render=True,
-                context=ResourceContext(
-                    istor_nodes=self.inst_storage.istor_nodes,
-                    cluster_conf=self.cluster_conf
-                )
+            lpi = cr_utl.rc_load_json(
+                lpi_fpath,
+                emheading=f'DC/OS Linux package index: {lpi_fname}'
             )
 
-            if (not isinstance(dcos_conf, dict) or not
-                    isinstance(dcos_conf.get('package'), list)):
+            if (not isinstance(lpi, dict) or not
+                    isinstance(lpi.get(dcos_conf_pkg_name), dict)):
                 raise cr_exc.RCInvalidError(
-                    f'DC/OS aggregated config: {dcos_conf}'
+                    f'DC/OS Linux package index: {lpi}'
                 )
 
-            for element in dcos_conf.get('package'):
-                if (not isinstance(element, dict) or not
-                        isinstance(element.get('path'), str) or not
-                        isinstance(element.get('content'), str)):
-                    raise cr_exc.RCElementError(
-                        f'DC/OS aggregated config: {element}'
-                    )
-
-            return dcos_conf
-
+            dstor_dcoscfg_pkg_path = lpi.get(dcos_conf_pkg_name).get(
+                'filename'
+            )
+            if not isinstance(dstor_dcoscfg_pkg_path, str):
+                raise cr_exc.RCElementError(
+                    f'DC/OS Linux package index: DC/OS config package'
+                    f' distribution storage path: {dstor_dcoscfg_pkg_path}'
+                )
         except cr_exc.RCError as e:
             raise e
         finally:
-            dcoscfg_fpath.unlink()
+            lpi_fpath.unlink()
+
+        dcoscfg_pkg_url = posixpath.join(
+            dstor_root_url, dstor_dcoscfg_pkg_path
+        )
+        dcoscfg_pkg_fname = Path(dstor_dcoscfg_pkg_path).name
+
+        # Download DC/OS aggregated configuration package ...
+        try:
+            cm_utl.download(dcoscfg_pkg_url, str(self.inst_storage.tmp_dpath))
+            LOG.debug(f'{self.msg_src}: DC/OS aggregated config: Download:'
+                      f' {dcoscfg_pkg_fname}: {dcoscfg_pkg_url}')
+        except Exception as e:
+            raise cr_exc.RCDownloadError(
+                f'DC/OS aggregated config: Download: {dcoscfg_pkg_fname}:'
+                f' {dcoscfg_pkg_url}: {type(e).__name__}: {e}'
+            ) from e
+
+        dcoscfg_pkg_fpath = self.inst_storage.tmp_dpath.joinpath(
+            dcoscfg_pkg_fname
+        )
+
+        try:
+            with tf.TemporaryDirectory(
+                dir=str(self.inst_storage.tmp_dpath)
+            ) as tmp_dpath:
+                cm_utl.unpack(str(dcoscfg_pkg_fpath), tmp_dpath)
+                LOG.debug(f'{self.msg_src}: DC/OS aggregated config: Extract:'
+                          f' OK')
+
+                values_fpath = Path(tmp_dpath).joinpath(values_fname)
+                values = cr_utl.rc_load_json(
+                    values_fpath,
+                    emheading=f'DC/OS aggregated config: Values: {values_fname}'
+                )
+                template_fpath = Path(tmp_dpath).joinpath(template_fname)
+                template = self.load_dcos_conf_templete(template_fpath)
+        except Exception as e:
+            if not isinstance(e, cr_exc.RCError):
+                raise cr_exc.RCExtractError(
+                    f'DC/OS aggregated config: {type(e).__name__}: {e}'
+                )
+            else:
+                raise
+        else:
+            return {'template': template, 'values': values}
+        finally:
+            dcoscfg_pkg_fpath.unlink()
+
+    @staticmethod
+    def load_dcos_conf_templete(fpath):
+        """Load the DC/OS aggregated configuration template from disk.
+
+        :param fpath: pathlib.Path, path to template
+        """
+        p_key = re.compile(r' *- path: (?P<g1>.*)')
+        c_key = re.compile(r' *content: [|].*')
+        h_key = re.compile(r' *#.*$')
+
+        with fpath.open() as fp:
+
+            aggregator = {'package': []}
+            path = ''
+            content = []
+
+            for line in fp:
+                pk_match = p_key.match(line)
+                ck_match = c_key.match(line)
+                hk_match = h_key.match(line)
+
+                if pk_match:
+
+                    if path:
+                        item = {'path': path, 'content': ''.join(content)}
+                        aggregator['package'].append(item)
+                        path = pk_match.group('g1')
+                        content = []
+                    else:
+                        path = pk_match.group('g1')
+                elif ck_match:
+                    continue
+                elif hk_match:
+                    continue
+                else:
+                    if not path:
+                        continue
+                    else:
+                        content.append(line.strip(' '))
+
+            item = {'path': path, 'content': ''.join(content)}
+            aggregator['package'].append(item)
+
+        return aggregator
 
 
 @cmdconf_type(CLI_COMMAND.START)

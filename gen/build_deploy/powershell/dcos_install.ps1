@@ -237,24 +237,45 @@ function Add-EnvPath {
     }
 }
 
-function SetupPathJson {
+function SetupPathJson([String] $pathsJson) {
     $jsonDoc = [pscustomobject]@{
         install = "$($basedir)"
         var = "$($vardir)"
     }
-    $pathsJson = "C:\d2iq\dcos\etc\paths.json"
     if (-not (test-path "$($pathsJson)") ) {
         Write-Log("$($pathsJson) doesn't exist, creating it")
+        [System.IO.File]::WriteAllLines($pathsJson, ($jsonDoc | convertTo-Json))
     }
     else {
-        Remove-Item -Force $pathsJson
-    }
-    $jsonDoc | convertTo-Json | Out-File -FilePath "$($pathsJson)"
+        Write-Log("$($pathsJson) already exists, checking if such contains correct values")
+        $previousJsonDoc = [System.IO.File]::ReadAllLines( ( Resolve-Path $pathsJson ) ) | ConvertFrom-Json
+        Write-Verbose "JSON File Opened ."
+	    if (-not (($previousJsonDoc.install -eq $jsonDoc.install) -and ($previousJsonDoc.var -eq $jsonDoc.var))) {
+	    	Write-Log("$($pathsJson) doesn't match to expected, changing it.")
+	    	Write-Verbose "Opening JSON file for write (locking) ..."
+            while ($true) {
+                try {
+                    $file = [System.IO.StreamWriter] ([string] $pathsJson)
+                    Write-Verbose "JSON File Opened and Locked."
+                    break
+                }
+	    		catch {
+                    Write-Warning "Error Opening/Locking JSON File: $($Error[0].Exception.InnerException.Message)"
+                    Write-Verbose "Trying again ..."
+                    Start-Sleep -Milliseconds 1000
+                }
+            }
+            Write-Verbose "Writing JSON ..."
+            $file.WriteLine($($jsonDoc | ConvertTo-Json))
+            Write-Verbose "Closing JSON ..."
+            $file.Close()
+        }
+	}
 }
 
 function main($url, $version, $masters) {
     SetupDirectories
-    SetupPathJson
+    SetupPathJson "C:\d2iq\dcos\etc\paths.json"
 
     Write-Log("Downloading/Extracting prerequisites.zip out of Bootstrap agent ...")
     Download "$url/$version/genconf/serve/windows/prerequisites/prerequisites.zip" "prerequisites.zip"

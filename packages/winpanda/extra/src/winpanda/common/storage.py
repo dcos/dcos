@@ -21,7 +21,7 @@ Default local storage layout for DC/OS installation:
 # This is how the default DC/OS installation FS layout looks like
 # C:/                         # DC/OS installation drive
 #   +-dcos/                   # DC/OS installation root dir
-#     +-conf/                 # DC/OS installation config dir
+#     +-etc/                  # DC/OS installation config dir
 #     +-packages/             # DC/OS local package repository dir
 #     +-state/                # DC/OS installation state dir
 #       +-pkgactive/          # DC/OS active packages index
@@ -55,7 +55,7 @@ DCOS_INST_ROOT_DPATH_DFT = 'dcos'
 
 # >>>>>
 # DC/OS installation configuration root directory
-DCOS_INST_CFG_DPATH_DFT = 'conf'
+DCOS_INST_CFG_DPATH_DFT = 'etc'
 # DC/OS cluster configuration file
 DCOS_CLUSTERCFG_FNAME_DFT = 'cluster.conf'
 
@@ -160,58 +160,18 @@ class InstallationStorage:
             raise cr_exc.InstallationStorageError(
                 f'Invalid drive specification: {drive}'
             )
-        # Construct DC/OS installation root dir path
-        root_dpath_ = Path(str(root_dpath))
-        self.root_dpath = (root_dpath_ if root_dpath_.is_absolute() else
-                           Path(self.drive).joinpath(root_dpath_))
-        # Construct DC/OS installation configuration dir path
-        cfg_dpath_ = Path(str(cfg_dpath))
-        self.cfg_dpath = (cfg_dpath_ if cfg_dpath_.is_absolute() else
-                          self.root_dpath.joinpath(cfg_dpath_))
-        # Construct DC/OS installation local package repository dir path
-        pkgrepo_dpath_ = Path(str(pkgrepo_dpath))
-        self.pkgrepo_dpath = (
-            pkgrepo_dpath_ if pkgrepo_dpath_.is_absolute() else
-            self.root_dpath.joinpath(pkgrepo_dpath_)
-        )
-        # Construct DC/OS installation state dir path
-        state_dpath_ = Path(str(state_dpath))
-        self.state_dpath = (state_dpath_ if state_dpath_.is_absolute() else
-                            self.root_dpath.joinpath(state_dpath_))
-        # Construct DC/OS installation active packages index dir path
-        pkgactive_dpath_ = Path(str(pkgactive_dpath))
-        self.pkgactive_dpath = (
-            pkgactive_dpath_ if pkgactive_dpath_.is_absolute() else
-            self.state_dpath.joinpath(pkgactive_dpath_)
-        )
-        # Construct DC/OS installation variable data root dir path
-        var_dpath_ = Path(str(var_dpath))
-        self.var_dpath = (var_dpath_ if var_dpath_.is_absolute() else
-                          self.root_dpath.joinpath(var_dpath_))
-        # Construct DC/OS installation package-specific work dirs root dir path
-        work_dpath_ = Path(str(work_dpath))
-        self.work_dpath = (work_dpath_ if work_dpath_.is_absolute() else
-                           self.var_dpath.joinpath(work_dpath_))
-        # Construct DC/OS installation runtime data root dir path
-        run_dpath_ = Path(str(run_dpath))
-        self.run_dpath = (run_dpath_ if run_dpath_.is_absolute() else
-                          self.var_dpath.joinpath(run_dpath_))
-        # Construct DC/OS installation logging data root dir path
-        log_dpath_ = Path(str(log_dpath))
-        self.log_dpath = (log_dpath_ if log_dpath_.is_absolute() else
-                          self.var_dpath.joinpath(log_dpath_))
-        # Construct DC/OS installation temporary data root dir path
-        tmp_dpath_ = Path(str(tmp_dpath))
-        self.tmp_dpath = (tmp_dpath_ if tmp_dpath_.is_absolute() else
-                          self.var_dpath.joinpath(tmp_dpath_))
-        # Construct DC/OS installation shared executables dir path
-        bin_dpath_ = Path(str(bin_dpath))
-        self.bin_dpath = (bin_dpath_ if bin_dpath_.is_absolute() else
-                          self.root_dpath.joinpath(bin_dpath_))
-        # Construct DC/OS installation shared libraries dir path
-        lib_dpath_ = Path(str(lib_dpath))
-        self.lib_dpath = (lib_dpath_ if lib_dpath_.is_absolute() else
-                          self.root_dpath.joinpath(lib_dpath_))
+        self.root_dpath = self.drive.joinpath(root_dpath)
+        self.cfg_dpath = self.root_dpath.joinpath(cfg_dpath)
+        self.pkgrepo_dpath = self.root_dpath.joinpath(pkgrepo_dpath)
+        self.state_dpath = self.root_dpath.joinpath(state_dpath)
+        self.pkgactive_dpath = self.state_dpath.joinpath(pkgactive_dpath)
+        self.var_dpath = self.root_dpath.joinpath(var_dpath)
+        self.work_dpath = self.var_dpath.joinpath(work_dpath)
+        self.run_dpath = self.var_dpath.joinpath(run_dpath)
+        self.log_dpath = self.var_dpath.joinpath(log_dpath)
+        self.tmp_dpath = self.var_dpath.joinpath(tmp_dpath)
+        self.bin_dpath = self.root_dpath.joinpath(bin_dpath)
+        self.lib_dpath = self.root_dpath.joinpath(lib_dpath)
 
         self.istor_nodes = IStorNodes(**{
             ISTOR_NODE.DRIVE: self.drive,

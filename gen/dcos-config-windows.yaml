@@ -1,42 +1,34 @@
 package:
-  - path: c:\pkginfo.json
+  - path: {{ windows_dcos_install_path }}\etc\pkginfo.json
     content: |
       {
         "environment": {
-          "MESOS_IP_DISCOVERY_COMMAND": "c:\\opt\\mesosphere\\bin\\detect_ip.ps1",
+          "MESOS_IP_DISCOVERY_COMMAND": "{{ windows_dcos_install_path_json }}\\bin\\detect_ip.ps1",
           "PROVIDER": "{{ provider }}"
         }
       }
-  - path: c:\etc\mesosphere\setup-flags\repository-url
-    permissions: "0644"
-    content: |
-      {{ bootstrap_url }}
-  - path: c:\etc\mesosphere\setup-flags\cluster-package-list
-    permissions: "0644"
-    content: |
-      {{ cluster_package_list_id }}
-  - path: C:\dcos\opt\bin\detect_ip.ps1
+  - path: {{ windows_dcos_install_path }}\bin\detect_ip.ps1
     content: |
       $IPAddress = ([System.Net.Dns]::GetHostByName("master.mesos").AddressList[0]).IpAddressToString
-      (Find-NetRoute -RemoteIPAddress $IPAddress | Select-Object  Ipv4Address).Ipv4Address 
-  - path: C:\dcos\opt\bin\detect_ip_public.ps1
+      (Find-NetRoute -RemoteIPAddress $IPAddress | Select-Object  Ipv4Address).Ipv4Address
+  - path: {{ windows_dcos_install_path }}\bin\detect_ip_public.ps1
     content: |
         (Invoke-WebRequest -uri "http://whatismyip.akamai.com/" -UseBasicParsing).Content
-  - path: C:\dcos\opt\etc\check_time.env
+  - path: {{ windows_dcos_install_path }}\etc\check_time.env
     content: |
         ENABLE_CHECK_TIME=true
 
   # Config for dcos-diagnostics
-  - path: C:\dcos\opt\etc\dcos-diagnostics-config.json
+  - path: {{ windows_dcos_install_path }}\etc\dcos-diagnostics\dcos-diagnostics-config.json
     content: |
       {
         "role": "agent",
-        "endpoint-config": "C:\\dcos\\opt\\etc\\dcos-diagnostics-endpoint-config.json",
-        "agent-port": 1050,
+        "endpoint-config": "{{ windows_dcos_install_path_json }}\\etc\\dcos-diagnostics\\dcos-diagnostics-endpoint-config.json",
+        "agent-port": 61001,
         "port": 1050,
         "no-unix-socket": true
       }
-  - path: C:\dcos\opt\etc\dcos-diagnostics-endpoint-config.json
+  - path: {{ windows_dcos_install_path }}\etc\dcos-diagnostics\dcos-diagnostics-endpoint-config.json
     content: |
       {
         "HTTPEndpoints": [
@@ -78,7 +70,7 @@ package:
         ],
         "LocalFiles": [
             {
-                "Location": "c:\\dcos\\mesos-logs\\mesos-agent.log",
+                "Location": "{{ windows_dcos_var_path_json }}\\mesos\\mesos-agent.log",
                 "Role": [ "agent" ]
             }
         ],
@@ -87,7 +79,7 @@ package:
       }
 
   # Config for Telegraf
-  - path: C:/Program Files/Telegraf/telegraf.conf
+  - path: {{ windows_dcos_install_path }}\etc\telegraf\telegraf.conf
     content: |
       [agent]
         ## Default data collection interval for all inputs
@@ -191,9 +183,9 @@ package:
 
       [[inputs.docker]]
          endpoint = "ENV"
-      
+
       [[inputs.mesos]]
-      
+
         timeout = 100
          slaves = ["http://$DCOS_NODE_PRIVATE_IP:5051"]
          slave_collections = [

@@ -11,8 +11,6 @@
   },
   "exclude": [
     "erlang",
-    "erts",
-    "openstackservice",
     "boost-libs",
     "bootstrap",
     "boto",
