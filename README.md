@@ -9,7 +9,7 @@ Like traditional operating systems, DC/OS is system software that manages comput
 
 Unlike traditional operating systems, DC/OS spans multiple machines within a network, aggregating their resources to maximize utilization by distributed applications.
 
-To learn more, see the [DC/OS Overview](https://dcos.io/docs/latest/overview/).
+To learn more, see the [DC/OS Overview](https://docs.d2iq.com/mesosphere/dcos/latest/overview/).
 
 
 # How Do I...?
