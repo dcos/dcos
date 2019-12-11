@@ -3014,6 +3014,7 @@ package:
         "delegate": {
           "cniVersion": "0.1.0",
           "type": "calico",
+          "mtu": {{ calico_veth_mtu }},
           "etcd_endpoints": "http://master.dcos.thisdcos.directory:2379",
           "ipam": {
             "type": "calico-ipam"
