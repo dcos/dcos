@@ -24,6 +24,16 @@
             "kind": "url",
             "url": "https://files.pythonhosted.org/packages/87/8b/6a9f14b5f781697e51259d81657e6048fd31a113229cf346880bb7545565/PyJWT-1.7.1-py2.py3-none-any.whl",
             "sha1": "c279f764ba3bf3b21b29e5a12dfd2ea7dead4ab5"
+        },
+        "pycparser": {
+            "kind": "url",
+            "url": "https://www.piwheels.org/simple/pycparser/pycparser-2.19-py2.py3-none-any.whl",
+            "sha1": "177430b052189023368073f7f47214e9f7765187"
+        },
+        "cffi": {
+            "kind": "url",
+            "url": "https://files.pythonhosted.org/packages/bb/21/a8d20753c9831366a05df8468453d1ae615024c0400714ee658b27b786df/cffi-1.13.2-cp36-cp36m-win32.whl",
+            "sha1": "5c6fe7a16cec00fa8c828affa2f6a173bda04e94"
         }
     },
     "username": "dcos_winpanda",
