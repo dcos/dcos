@@ -7,12 +7,12 @@
     "telegraf": "windows",
     "vcredist": "windows",
     "nssm": "windows",
+	"bootstrap": "windows",
     "python": "windows"
   },
   "exclude": [
     "erlang",
     "boost-libs",
-    "bootstrap",
     "boto",
     "bouncer",
     "bouncer-deps",
