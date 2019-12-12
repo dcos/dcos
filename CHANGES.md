@@ -31,7 +31,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Port the Mesos open source metrics module to Windows. (DCOS-58008)
 
 * Add etcd into DC/OS. (DCOS-59004)
+
 * Update libpq to 9.6.15 (DCOS-59145)
+
+* Enable proxing of gRPC requests through Admin Router (DCOS-59091)
 
 ### Breaking changes
 

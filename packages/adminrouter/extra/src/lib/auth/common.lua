@@ -45,6 +45,20 @@ local function exit_403()
     return ngx.exit(ngx.HTTP_FORBIDDEN)
 end
 
+-- See the page below for more details on the codes:
+-- https://github.com/grpc/grpc/blob/2c6a7e1f19a899e88d2050a1cb5d05079598e880/doc/http-grpc-status-mapping.md
+-- https://github.com/grpc/grpc/blob/2c6a7e1f19a899e88d2050a1cb5d05079598e880/doc/statuscodes.md
+-- or a shorter version:
+-- https://gist.github.com/hamakn/708b9802ca845eb59f3975dbb3ae2a01
+local function exit_grpc(code, message)
+    ngx.status = ngx.HTTP_OK
+    ngx.header["grpc-status"] = code
+    ngx.header["Content-Length"] = 0
+    ngx.header["Content-Type"] = "application/grpc"
+    ngx.header["grpc-message"] = message
+    return ngx.exit(ngx.HTTP_OK)
+end
+
 local function validate_jwt(auth_token_verification_key)
     -- Admin Router is a DC/OS authenticator. A DC/OS authenticator is an entity
     -- which implements the correct procedure for verifying DC/OS authentication
@@ -174,6 +188,7 @@ end
 local _M = {}
 _M.exit_401 = exit_401
 _M.exit_403 = exit_403
+_M.exit_grpc = exit_grpc
 _M.validate_jwt = validate_jwt
 
 

@@ -5,13 +5,16 @@
 
 import json
 import os
+import pathlib
 
+import grpc
 import pyroute2
 import pytest
 from jwt.utils import base64url_decode, base64url_encode
 
 import generic_test_code.common
 from mocker.dns import DcosDnsServer
+from mocker.endpoints import grpc_endpoint_pb2_grpc
 from mocker.jwt import generate_rs256_jwt
 from runner.common import LogCatcher, SyslogMock
 from util import add_lo_ipaddr, ar_listen_link_setup, del_lo_ipaddr
@@ -343,3 +346,18 @@ def forged_user_header(jwt_generator):
 
     header = {'Authorization': 'token={}'.format(forged_token)}
     return header
+
+
+@pytest.fixture(scope='function')
+def grpc_stub(repo_is_ee):
+    if repo_is_ee:
+        channel_credential = grpc.ssl_channel_credentials(
+            root_certificates=pathlib.Path(
+                '/run/dcos/pki/CA/ca-bundle.crt').read_bytes(),
+            )
+        channel = grpc.secure_channel('localhost:12379', channel_credential)
+    else:
+        channel = grpc.insecure_channel('localhost:12379')
+    with channel:
+        stub = grpc_endpoint_pb2_grpc.MockServiceStub(channel)
+        yield stub
