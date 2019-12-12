@@ -143,7 +143,7 @@ function util.set_leader_host(leader_name, local_upstream, skip_prefix_iflocal)
         else
             ngx.req.set_header("DCOS-Forwarded", "true")
         end
-        ngx.var.leader_host = DEFAULT_SCHEME .. mleader["leader_ip"]
+        ngx.var.leader_host = init.DEFAULT_SCHEME .. mleader["leader_ip"]
     end
 
     ngx.log(ngx.DEBUG, leader_name .. " leader addr from cache: " .. ngx.var.leader_host)
