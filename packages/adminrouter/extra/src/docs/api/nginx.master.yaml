@@ -83,18 +83,6 @@ routes:
       path: 'http://$backend/acs/api/v1/auth/'
       backend: iam
     path: /acs/api/v1/auth/
-  /internal/acs/api/v1/:
-    group: Authentication
-    matcher: path
-    description: 'Access Control Service policy query (unauthenticated, internal-only)'
-    proxy:
-      path: 'http://$backend/internal/acs/api/v1/'
-      backend: iam
-    rewrites:
-      - regex: ^/internal/(.*)
-        replacement: /$1
-        type: break
-    path: /internal/acs/api/v1/
   /login:
     group: Authentication
     matcher: exact
@@ -245,6 +233,10 @@ routes:
     lua:
       file: conf/lib/metadata.lua
     path: /metadata
+  /assets:
+    group: Other
+    matcher: path
+    path: /assets
   /internal/mesos_dns/:
     group: Other
     matcher: path

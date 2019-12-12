@@ -163,8 +163,8 @@ class TestUpstreamsEnvVarBehaviour:
         filter_regexp = {
             'Marathon upstream: http://127.0.0.1:8080': SearchCriteria(1, True),
             'Request url: http://127.0.0.1:8080/v2/leader': SearchCriteria(1, True),
-            ('Request url: http://127.0.0.1:8080/v2/apps'
-             '\?embed=apps\.tasks\&label=DCOS_SERVICE_NAME'): SearchCriteria(1, True),
+            (r'Request url: http://127.0.0.1:8080/v2/apps'
+             r'\?embed=apps\.tasks\&label=DCOS_SERVICE_NAME'): SearchCriteria(1, True),
         }
 
         ar = nginx_class(upstream_marathon="http://127.0.0.1:8080")
@@ -198,8 +198,8 @@ class TestUpstreamsEnvVarBehaviour:
         filter_regexp = {
             'Marathon upstream: http://127.0.0.2:8080': SearchCriteria(1, True),
             'Request url: http://127.0.0.2:8080/v2/leader': SearchCriteria(1, True),
-            ('Request url: http://127.0.0.2:8080/v2/apps'
-             '\?embed=apps\.tasks\&label=DCOS_SERVICE_NAME'): SearchCriteria(1, True),
+            (r'Request url: http://127.0.0.2:8080/v2/apps'
+             r'\?embed=apps\.tasks\&label=DCOS_SERVICE_NAME'): SearchCriteria(1, True),
         }
         ar = nginx_class(upstream_marathon="http://127.0.0.2:8080")
 
