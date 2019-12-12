@@ -626,7 +626,7 @@ authentication and/or authorization features across the two variants. Example:
 
 ```
 res.access_lashupkey_endpoint = function()
-    return res.do_authn_and_authz_or_exit()
+    return res.do_authn_and_authz_or_exit_http()
 end
 ```
 
@@ -1328,7 +1328,7 @@ Steps are as follows:
   Open it is going to be:
   ```python
   res.access_schmetterlingdb_endpoint = function()
-    return res.do_authn_and_authz_or_exit()
+    return res.do_authn_and_authz_or_exit_http()
   end
   ```
   and the endpoint configuration will now look like this:

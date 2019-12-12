@@ -147,7 +147,7 @@ end
 local function fetch_and_store_marathon_apps(auth_token)
     -- Access Marathon through localhost.
     ngx.log(ngx.NOTICE, "Cache Marathon app state")
-    local appsRes, err = request(UPSTREAM_MARATHON .. "/v2/apps?embed=apps.tasks&label=DCOS_SERVICE_NAME",
+    local appsRes, err = request(init.UPSTREAM_MARATHON .. "/v2/apps?embed=apps.tasks&label=DCOS_SERVICE_NAME",
                                  false,
                                  auth_token)
 
@@ -362,12 +362,12 @@ function store_leader_data(leader_name, leader_ip)
 
     local mleader
 
-    if HOST_IP == 'unknown' or leader_ip == 'unknown' then
+    if init.HOST_IP == 'unknown' or leader_ip == 'unknown' then
         ngx.log(ngx.ERR,
         "Private IP address of the host is unknown, aborting cache-entry creation for ".. leader_name .. " leader")
         mleader = '{"is_local": "unknown", "leader_ip": null}'
-    elseif leader_ip == HOST_IP then
-        mleader = '{"is_local": "yes", "leader_ip": "'.. HOST_IP ..'"}'
+    elseif leader_ip == init.HOST_IP then
+        mleader = '{"is_local": "yes", "leader_ip": "'.. init.HOST_IP ..'"}'
         ngx.log(ngx.INFO, leader_name .. " leader is local")
     else
         mleader = '{"is_local": "no", "leader_ip": "'.. leader_ip ..'"}'
@@ -424,7 +424,7 @@ end
 
 local function fetch_and_store_marathon_leader(auth_token)
     local leader_ip = fetch_generic_leader(
-        UPSTREAM_MARATHON .. "/v2/leader", "marathon", auth_token)
+        init.UPSTREAM_MARATHON .. "/v2/leader", "marathon", auth_token)
 
     if leader_ip ~= nil then
         store_leader_data("marathon", leader_ip)
@@ -435,7 +435,7 @@ end
 local function fetch_and_store_state_mesos(auth_token)
     -- Fetch state JSON summary from Mesos. If successful, store to SHM cache.
     -- Expected to run within lock context.
-    local response, err = request(UPSTREAM_MESOS .. "/master/state-summary",
+    local response, err = request(init.UPSTREAM_MESOS .. "/master/state-summary",
                                   false,
                                   auth_token)
 

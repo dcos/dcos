@@ -11,7 +11,7 @@ local function resolve()
     if agent_pid ~= nil then
         local split_pid = agent_pid:split("@")
         local host_port = split_pid[2]:split(":")
-        ngx.var.agentaddr = DEFAULT_SCHEME .. host_port[1]
+        ngx.var.agentaddr = init.DEFAULT_SCHEME .. host_port[1]
         ngx.var.agentport = host_port[2]
 
         ngx.log(

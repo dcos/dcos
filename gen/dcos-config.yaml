@@ -1876,6 +1876,9 @@ package:
               {
                   "Command": ["sysctl", "-a"],
                   "Role": ["master", "agent", "agent_public"]
+              },
+              {
+                  "Command": ["df"]
               }
           ]
         }
@@ -2146,9 +2149,6 @@ package:
     content: |
       listen 80 default_server;
       listen 443 ssl default_server;
-
-      ssl_certificate includes/snakeoil.crt;
-      ssl_certificate_key includes/snakeoil.key;
   - path: /etc_master/adminrouter-ui-security.conf
     content: |
       # Browser security settings for the DC/OS UI

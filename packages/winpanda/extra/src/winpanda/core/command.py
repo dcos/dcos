@@ -11,6 +11,7 @@ from cfgm import exceptions as cfgm_exc
 from common import logger
 from common.cli import CLI_COMMAND, CLI_CMDTARGET, CLI_CMDOPT
 from common import utils as cm_utl
+from common.storage import ISTOR_NODE
 from core import cmdconf
 from core import exceptions as cr_exc
 from core.package.id import PackageId
@@ -117,9 +118,6 @@ class CmdSetup(Command):
                 'distribution-storage', {}
             ).get('pkgrepopath', '')
 
-            # Deploy DC/OS aggregated configuration object
-            self._deploy_dcos_conf()
-
             # Add packages to the local package repository and initialize their
             # manager objects
             packages_bulk = {}
@@ -155,6 +153,7 @@ class CmdSetup(Command):
             # Finalize package setup procedures taking package mutual
             # dependencies into account.
             for package in cr_utl.pkg_sort_by_deps(packages_bulk):
+                self._handle_pkg_dir_setup(package)
                 self._handle_pkg_cfg_setup(package)
                 self._handle_pkg_inst_extras(package)
                 self._handle_pkg_svc_setup(package)
@@ -168,6 +167,28 @@ class CmdSetup(Command):
 
                 LOG.info(f'{self.msg_src}: Setup package:'
                          f' {package.manifest.pkg_id.pkg_id}: OK')
+
+            # Deploy DC/OS aggregated configuration object
+            self._deploy_dcos_conf()
+
+    def _handle_pkg_dir_setup(self, package):
+        """Transfer files from special directories into location.
+
+        :param package: Package, DC/OS package manager object
+        """
+        pkg_path = getattr(
+            package.manifest.istor_nodes, ISTOR_NODE.PKGREPO
+        ).joinpath(package.manifest.pkg_id.pkg_id)
+        root = getattr(
+            package.manifest.istor_nodes, ISTOR_NODE.ROOT
+        )
+
+        for name in ('bin', 'etc', 'include', 'lib'):
+            srcdir = pkg_path / name
+            if srcdir.exists():
+                dstdir = root / name
+                dstdir.mkdir(exist_ok=True)
+                cm_utl.transfer_files(str(srcdir), str(dstdir))
 
     def _handle_pkg_cfg_setup(self, package):
         """Execute steps on package configuration files setup.
@@ -322,11 +343,20 @@ class CmdSetup(Command):
                                f' directory: {dst_fpath.parent}:'
                                f' {type(e).__name__}: {e}')
                     raise cr_exc.SetupCommandError(err_msg) from e
+            elif not dst_fpath.parent.is_dir():
+                err_msg = (f'Execute: Deploy aggregated config: Save content:'
+                           f' {dst_fpath}: Existing parent is not a directory:'
+                           f' {dst_fpath.parent}')
+                raise cr_exc.SetupCommandError(err_msg)
+            elif dst_fpath.exists():
+                err_msg = (f'Execute: Deploy aggregated config: Save content:'
+                           f' {dst_fpath}: Same-named file already exists!')
+                raise cr_exc.SetupCommandError(err_msg)
 
             try:
                 dst_fpath.write_text(rendered_content)
                 LOG.debug(f'{self.msg_src}: Execute: Deploy aggregated config:'
-                          f'Save content: {dst_fpath}: OK')
+                          f' Save content: {dst_fpath}: OK')
             except (OSError, RuntimeError) as e:
                 err_msg = (f'Execute: Deploy aggregated config: Save content:'
                            f' {dst_fpath}: {type(e).__name__}: {e}')
