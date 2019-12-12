@@ -707,93 +707,6 @@
             </table>
           </div>
         </li>
-        <li class="route route-type-proxy">
-          <div class="heading">
-            <h3>
-              <span class="route-type">Proxy</span>
-              <span class="route-path"><code>/internal/acs/api/v1/</code></span>
-            </h3>
-            <span class="route-desc">Access Control Service policy query (unauthenticated, internal-only)</span>
-          </div>
-          <div class="route-meta" style="display:none">
-            <table>
-              <tr>
-                <td>
-                  Rewrite:
-                </td>
-                <td>
-                  <table>
-                    <tr>
-                      <td>
-                        Regex:
-                      </td>
-                      <td>
-                        <code>^/internal/(.*)</code>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        Replacement:
-                      </td>
-                      <td>
-                        <code>/$1</code>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        Type:
-                      </td>
-                      <td>
-                        <code>break</code>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  Proxy:
-                </td>
-                <td>
-                  <table>
-                    <tr>
-                      <td>
-                        Path:
-                      </td>
-                      <td>
-                        <code>http://$backend/internal/acs/api/v1/</code>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        Server:
-                      </td>
-                      <td>
-                        <code>127.0.0.1:8101</code>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        Backend:
-                      </td>
-                      <td>
-                        DC/OS Authentication (OAuth)
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        API Reference:
-                      </td>
-                      <td>
-                        <a href="https://docs.mesosphere.com/1.12/security/ent/iam-api/">https://docs.mesosphere.com/1.12/security/ent/iam-api/</a>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </div>
-        </li>
         <li class="route route-type-redirect">
           <div class="heading">
             <h3>
@@ -1611,6 +1524,14 @@
         <span class="options"><a href="#other" class="toggle-route-group" data-id="other">Show/Hide</a> </span>
       </div>
       <ul id="routes-other" class="routes">
+        <li class="route route-type-unknown">
+          <div class="heading">
+            <h3>
+              <span class="route-type">Unknown</span>
+              <span class="route-path"><code>/assets</code></span>
+            </h3>
+          </div>
+        </li>
         <li class="route route-type-proxy">
           <div class="heading">
             <h3>

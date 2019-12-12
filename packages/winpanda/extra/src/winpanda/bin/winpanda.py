@@ -94,6 +94,7 @@ class DCOSInstallationManager:
             CLI_CMDOPT.DSTOR_URL: self.cli_args.get('--dstor-url'),
             CLI_CMDOPT.DSTOR_PKGREPOPATH: self.cli_args.get('--dstor-pkgrepo'),
             CLI_CMDOPT.DSTOR_PKGLISTPATH: self.cli_args.get('--dstor-pkglist'),
+            CLI_CMDOPT.DSTOR_DCOSCFGPATH: self.cli_args.get('--dstor-dcoscfg'),
             CLI_CMDOPT.DCOS_CLUSTERCFGPATH: self.cli_args.get(
                 '--cluster-cfgfile'
             )
@@ -106,7 +107,13 @@ class DCOSInstallationManager:
 def main():
     """"""
     log_level = LOG_LEVEL.DEBUG
-    log_fpath = Path('.', cm_const.APP_LOG_FNAME)
+    # log_fpath = Path('.', cm_const.APP_LOG_FNAME)
+    log_fpath = Path('C:\\d2iq\\dcos\\var\\log\\winpanda',
+                     cm_const.APP_LOG_FNAME)
+    try:
+        log_fpath.parent.mkdir(parents=True, exist_ok=True)
+    except (OSError, RuntimeError):
+        log_fpath = Path('.', cm_const.APP_LOG_FNAME)
     logger.master_setup(
         log_level=log_level, file_path=log_fpath,
         file_size=cm_const.APP_LOG_FSIZE_MAX,
