@@ -171,7 +171,7 @@ class TestAuthnJWTValidator:
             jwt_generator,
             ):
         log_messages = {
-            "Invalid token. Reason: Missing one of claims - \[ uid \]":
+            r"Invalid token. Reason: Missing one of claims - \[ uid \]":
                 SearchCriteria(1, True),
             }
 

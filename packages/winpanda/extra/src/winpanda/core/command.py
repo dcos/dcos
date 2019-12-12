@@ -117,9 +117,6 @@ class CmdSetup(Command):
                 'distribution-storage', {}
             ).get('pkgrepopath', '')
 
-            # Deploy DC/OS aggregated configuration object
-            self._deploy_dcos_conf()
-
             # Add packages to the local package repository and initialize their
             # manager objects
             packages_bulk = {}
@@ -168,6 +165,9 @@ class CmdSetup(Command):
 
                 LOG.info(f'{self.msg_src}: Setup package:'
                          f' {package.manifest.pkg_id.pkg_id}: OK')
+
+            # Deploy DC/OS aggregated configuration object
+            self._deploy_dcos_conf()
 
     def _handle_pkg_cfg_setup(self, package):
         """Execute steps on package configuration files setup.
@@ -322,11 +322,20 @@ class CmdSetup(Command):
                                f' directory: {dst_fpath.parent}:'
                                f' {type(e).__name__}: {e}')
                     raise cr_exc.SetupCommandError(err_msg) from e
+            elif not dst_fpath.parent.is_dir():
+                err_msg = (f'Execute: Deploy aggregated config: Save content:'
+                           f' {dst_fpath}: Existing parent is not a directory:'
+                           f' {dst_fpath.parent}')
+                raise cr_exc.SetupCommandError(err_msg)
+            elif dst_fpath.exists():
+                err_msg = (f'Execute: Deploy aggregated config: Save content:'
+                           f' {dst_fpath}: Same-named file already exists!')
+                raise cr_exc.SetupCommandError(err_msg)
 
             try:
                 dst_fpath.write_text(rendered_content)
                 LOG.debug(f'{self.msg_src}: Execute: Deploy aggregated config:'
-                          f'Save content: {dst_fpath}: OK')
+                          f' Save content: {dst_fpath}: OK')
             except (OSError, RuntimeError) as e:
                 err_msg = (f'Execute: Deploy aggregated config: Save content:'
                            f' {dst_fpath}: {type(e).__name__}: {e}')
