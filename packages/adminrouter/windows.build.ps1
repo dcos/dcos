@@ -24,5 +24,5 @@ Copy-Item -Recurse -Path "C:\Temp\openresty\openresty-1.15.8.2-win64\*" "$env:PK
 Copy-Item -Recurse -Path "C:\pkg\build\extra\src\*" "$env:PKG_PATH\etc\"
 Move-item -Path "$env:PKG_PATH\etc\includes" -Destination "$env:PKG_PATH\conf"
 Move-item -Path "$env:PKG_PATH\etc\mime.types" -Destination "$env:PKG_PATH\conf"
-Copy-Item "C:\pkg\build\dcos-adminrouter.nssm" "$env:PKG_PATH\conf\dcos-adminrouter.nssm.j2"
+Copy-Item "C:\pkg\build\adminrouter.nssm" "$env:PKG_PATH\conf\adminrouter.nssm.j2"
 Copy-Item "$env:PKG_PATH\etc\nginx.agent.windows.conf" "$env:PKG_PATH\conf\nginx.conf"
