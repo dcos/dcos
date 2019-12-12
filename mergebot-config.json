@@ -31,9 +31,9 @@
         "enabled": true,
         "interactive": false,
         "fix_version_map": {
-            "master": "DC/OS 1.15.0",
-            "2.0":  "DC/OS 1.14.1",
-            "1.13": "DC/OS 1.13.6",
+            "master": "DC/OS 2.1.0",
+            "2.0":  "DC/OS 2.0.2",
+            "1.13": "DC/OS 1.13.7",
             "1.12": "DC/OS 1.12.5",
             "1.11": "DC/OS 1.11.14",
             "1.10": "DC/OS 1.10.12"

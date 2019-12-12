@@ -458,7 +458,7 @@ def get_dcosconfig_source_target_and_templates(
     # There are separate configuration files for windows vs non-windows as a lot
     # of configuration on windows will be different.
     if is_windows:
-        config_package_names = ['dcos-config-windows', 'dcos-metadata']
+        config_package_names = ['dcos-metadata']
     else:
         config_package_names = ['dcos-config', 'dcos-metadata']
 

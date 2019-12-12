@@ -180,5 +180,5 @@ Start-MesosBuild
 New-Item -itemtype directory "$env:PKG_PATH\bin"
 Copy-Item -Path "$MESOS_BUILD_DIR\src\*" -Destination "$env:PKG_PATH\bin\" -Filter "*.exe"
 
-New-Item -ItemType Directory "$env:PKG_PATH/etc"
-Copy-Item "pkg/extra/mesos.nssm.j2" "$env:PKG_PATH/etc/"
+New-Item -ItemType Directory "$env:PKG_PATH/conf"
+Copy-Item "pkg/extra/mesos.nssm.j2" "$env:PKG_PATH/conf/"

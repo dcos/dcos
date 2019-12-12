@@ -24,7 +24,7 @@ class TestCache:
             self, nginx_class, mocker, valid_user_header):
         filter_regexp = {
             'Executing cache refresh triggered by timer': SearchCriteria(1, False),
-            'Cache `[\s\w]+` empty. Fetching.': SearchCriteria(3, True),
+            r'Cache `[\s\w]+` empty. Fetching.': SearchCriteria(3, True),
             'Mesos state cache has been successfully updated': SearchCriteria(1, True),
             'Marathon apps cache has been successfully updated': SearchCriteria(1, True),
             'marathon leader cache has been successfully updated': SearchCriteria(1, True),
@@ -65,7 +65,7 @@ class TestCache:
             self, nginx_class, mocker, valid_user_header):
         filter_regexp = {
             'Executing cache refresh triggered by timer': SearchCriteria(3, False),
-            'Cache `[\s\w]+` expired. Refresh.': SearchCriteria(8, True),
+            r'Cache `[\s\w]+` expired. Refresh.': SearchCriteria(8, True),
             'Mesos state cache has been successfully updated': SearchCriteria(3, True),
             'Marathon apps cache has been successfully updated': SearchCriteria(3, True),
             'marathon leader cache has been successfully updated': SearchCriteria(3, True),
@@ -112,7 +112,7 @@ class TestCache:
         """...right after Nginx has started."""
         filter_regexp = {
             'Executing cache refresh triggered by request': SearchCriteria(1, True),
-            'Cache `[\s\w]+` empty. Fetching.': SearchCriteria(3, True),
+            r'Cache `[\s\w]+` empty. Fetching.': SearchCriteria(3, True),
             'Mesos state cache has been successfully updated': SearchCriteria(1, True),
             'Marathon apps cache has been successfully updated': SearchCriteria(1, True),
             'marathon leader cache has been successfully updated': SearchCriteria(1, True),
@@ -735,9 +735,9 @@ class TestCache:
 class TestCacheMesosLeader:
     def test_if_unset_hostip_var_is_handled(self, nginx_class, valid_user_header):
         filter_regexp = {
-            'Private IP address of the host is unknown, ' +
-            'aborting cache-entry creation for mesos leader':
-                SearchCriteria(1, True),
+            ('Private IP address of the host is unknown, '
+                'aborting cache-entry creation for mesos leader'):
+                    SearchCriteria(1, True),
             'mesos leader cache has been successfully updated':
                 SearchCriteria(1, True),
         }
@@ -790,18 +790,18 @@ class TestCacheMesosLeader:
             'Failed to instantiate the resolver': SearchCriteria(0, True),
             'mesos leader is non-local: `{}`'.format(nonlocal_leader_ip):
                 SearchCriteria(1, True),
-            'Private IP address of the host is unknown, ' +
-            'aborting cache-entry creation for mesos leader':
-                SearchCriteria(0, True),
+            ('Private IP address of the host is unknown, '
+                'aborting cache-entry creation for mesos leader'):
+                    SearchCriteria(0, True),
             'mesos leader cache has been successfully updated':
                 SearchCriteria(1, True),
         }
         filter_regexp_post = {
             'Failed to instantiate the resolver': SearchCriteria(0, True),
             'mesos leader is local': SearchCriteria(1, True),
-            'Private IP address of the host is unknown, ' +
-            'aborting cache-entry creation for mesos leader':
-                SearchCriteria(0, True),
+            ('Private IP address of the host is unknown, '
+                'aborting cache-entry creation for mesos leader'):
+                    SearchCriteria(0, True),
             'mesos leader cache has been successfully updated':
                 SearchCriteria(1, True),
         }
