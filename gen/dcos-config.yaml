@@ -1850,6 +1850,25 @@ package:
                   "Optional": true
               },
               {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "node", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "ippools", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "profile", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "workloadendpoints", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "node", "status"],
+              },
+              {
                   "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
                   "Role": ["master"]
               },
