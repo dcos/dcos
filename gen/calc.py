@@ -410,8 +410,9 @@ def validate_dcos_overlay_network(dcos_overlay_network):
             gen.internals.validate_one_of(overlay['enabled'], [True, False])
 
 
-def validate_net_overlap(dcos_overlay_network, dcos_overlay_enable,
-                         calico_network_cidr):
+def validate_overlay_networks_not_overlap(dcos_overlay_network,
+                                          dcos_overlay_enable,
+                                          calico_network_cidr):
     """ checks the subnets used for dcos overlay do not overlap calico network
 
     We assume the basic validations, like subnet cidr, have been done.
@@ -1114,13 +1115,6 @@ def validate_custom_checks(custom_checks, check_config):
         raise AssertionError(msg)
 
 
-def validate_vxlan_port(vxlan_port):
-    validate_int_in_range(vxlan_port, 1025, 65535)
-    # dcos-net use fixed VXLAN UDP port 64000
-    # https://github.com/dcos/dcos-mesos-modules/blob/master/overlay/master.cpp#L1544
-    assert vxlan_port != 64000, 'VXLAN UDP port {} should not conflict with that of dcos-net'.format(vxlan_port)
-
-
 def validate_vxlan_vni(vxlan_vni):
     validate_int_in_range(vxlan_vni, 1, 16777215)
     # dcos overlay use fixed VXLAN VNI 1024 assigned by the master module of dcos overlay network
@@ -1240,9 +1234,9 @@ entry = {
         lambda calico_veth_mtu: validate_int_in_range(calico_veth_mtu, 552, None),
         lambda calico_vxlan_mtu: validate_int_in_range(calico_vxlan_mtu, 552, None),
         lambda calico_vxlan_enabled: validate_true_false(calico_vxlan_enabled),
-        lambda calico_vxlan_port: validate_vxlan_port(calico_vxlan_port),
+        lambda calico_vxlan_port: validate_int_in_range(calico_vxlan_port, 1025, 65535),
         lambda calico_vxlan_vni: validate_vxlan_vni(calico_vxlan_vni),
-        validate_net_overlap,
+        validate_overlay_networks_not_overlap,
     ],
     'default': {
         'exhibitor_azure_account_key': '',
@@ -1394,7 +1388,7 @@ entry = {
         'calico_veth_mtu': '1500',
         'calico_vxlan_mtu': '1450',
         'calico_vxlan_enabled': 'true',
-        'calico_vxlan_port': '64001',
+        'calico_vxlan_port': '64000',
         'calico_vxlan_vni': '4096',
     },
     'must': {
