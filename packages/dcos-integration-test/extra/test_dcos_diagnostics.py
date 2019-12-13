@@ -411,7 +411,8 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
     bundles = diagnostics.get_diagnostics_reports()
     assert bundle in bundles, 'not found {} in {}'.format(bundle, bundles)
 
-    expected_common_files = ['dmesg_-T.output',
+    expected_common_files = ['df.output',
+                             'dmesg_-T.output',
                              'ip_addr.output',
                              'ip_route.output',
                              'ps_aux_ww_Z.output',

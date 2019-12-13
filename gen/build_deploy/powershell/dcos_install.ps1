@@ -324,8 +324,16 @@ function main($url, $version, $masters) {
 
     Write-Log("Running Winpanda.py setup ...")
     & python.exe "$($basedir)\winpanda\bin\winpanda.py" --inst-root-dir="$($basedir)" setup | Out-File "$($vardir)\log\dcos_install.log" -Append;
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log("ERROR: command `'& python.exe `"$($basedir)\winpanda\bin\winpanda.py`" --inst-root-dir=`"$($basedir)`" setup`' failed, please check the winpanda.log");
+		exit 1
+    }
     Write-Log("Running Winpanda.py start ...")
     & python.exe "$($basedir)\winpanda\bin\winpanda.py" --inst-root-dir="$($basedir)" start | Out-File "$($vardir)\log\dcos_install.log" -Append;
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log("ERROR: command `'& python.exe `"$($basedir)\winpanda\bin\winpanda.py`" --inst-root-dir=`"$($basedir)`" start`' failed, please check the winpanda.log");
+		exit 1
+    }
 }
 
 main $bootstrap_url $version $masters
