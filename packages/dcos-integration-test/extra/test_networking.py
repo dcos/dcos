@@ -350,7 +350,7 @@ def test_vip(dcos_api_session,
             for proxy_net in list(marathon.Network)]
 
 
-@pytest.mark.parametrize('container', [marathon.Container.MESOS, Container.POD])
+@pytest.mark.parametrize('container', list(marathon.Container) + [Container.POD])
 @pytest.mark.parametrize('vip_net', [marathon.Network.USER])
 @pytest.mark.parametrize('proxy_net', [marathon.Network.USER])
 def test_calico_vip(dcos_api_session,
@@ -833,7 +833,7 @@ def test_dcos_net_cluster_identity(dcos_api_session):
     assert cluster_id == cookie, "cluster_id: {}, cookie: {}".format(cluster_id, cookie)
 
 
-@pytest.mark.parametrize('container', [marathon.Container.MESOS])
+@pytest.mark.parametrize('container', list(marathon.Container))
 def test_calico_container_ip_in_network_cidr(container, dcos_api_session):
     expanded_config = test_helpers.get_expanded_config()
     network_cidr = expanded_config["calico_network_cidr"]
