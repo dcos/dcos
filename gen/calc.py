@@ -1237,6 +1237,7 @@ entry = {
         lambda calico_vxlan_port: validate_int_in_range(calico_vxlan_port, 1025, 65535),
         lambda calico_vxlan_vni: validate_vxlan_vni(calico_vxlan_vni),
         validate_overlay_networks_not_overlap,
+        lambda calico_felix_prometheusmetrics_port: validate_port(calico_felix_prometheusmetrics_port),
     ],
     'default': {
         'exhibitor_azure_account_key': '',
@@ -1390,6 +1391,7 @@ entry = {
         'calico_vxlan_enabled': 'true',
         'calico_vxlan_port': '64000',
         'calico_vxlan_vni': '4096',
+        'calico_felix_prometheusmetrics_port': '62091',
     },
     'must': {
         'fault_domain_enabled': 'false',
