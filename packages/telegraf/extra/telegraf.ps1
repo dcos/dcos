@@ -11,21 +11,18 @@ $env:DCOS_NODE_PRIVATE_IP=$local_ip;
 
 & $pkg_inst_dpath\bin\telegraf.exe --config $dcos_conf_dpath\telegraf\telegraf.conf --service install
 
+# set the Service Recovery options to "Restart the Service" every time the service crashes
 function Set-ServiceRecovery{
     [alias('Set-Recovery')]
     param
     (
         [string] [Parameter(Mandatory=$true)] $ServiceDisplayName,
-        [string] $action1 = "restart",
-        [int] $time1 =  30000, 
-        [string] $action2 = "restart",
-        [int] $time2 =  30000,
-        [string] $actionLast = "restart",
-        [int] $timeLast = 30000, 
-        [int] $resetCounter = 4000 
+        [string] $action = "restart", 
+        [int] $time =  30000, # in miliseconds
+        [int] $resetCounter = 4000 # in seconds
     )
     $services = Get-CimInstance -ClassName 'Win32_Service' | Where-Object {$_.DisplayName -imatch $ServiceDisplayName}
-    $action = $action1+"/"+$time1+"/"+$action2+"/"+$time2+"/"+$actionLast+"/"+$timeLast
+    $action = $action+"/"+$time+"/"+$action+"/"+$time+"/"+$action+"/"+$time
     foreach ($service in $services){
         $output = sc.exe $serverPath failure $($service.Name) actions= $action reset= $resetCounter
     }
