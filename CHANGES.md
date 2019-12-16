@@ -42,6 +42,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Calico in DC/OS: introduced Calico network for Docker runtime. (DCOS-58584)
 
+* Calico in DC/OS: adding metrics for Calico components. (DCOS-60156)
+
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
