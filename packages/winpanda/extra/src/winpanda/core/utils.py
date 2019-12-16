@@ -189,7 +189,7 @@ def pkg_sort_by_deps(packages):
                      objects
     """
     msg_src = 'pkg_sort_by_deps()'
-    pkg_names_order_base = ['vcredist', 'nssm']
+    pkg_names_order_base = ['vcredist', 'nssm', 'bootstrap']
     LOG.debug(f'{msg_src}: pkg_names_order_base: {pkg_names_order_base}')
 
     pkg_names_provided = set(packages)
@@ -209,7 +209,8 @@ def pkg_sort_by_deps(packages):
     if pkg_names_missed:
         raise cm_exc.InstallationError(
             f'Resolve DC/OS packages mutual dependencies: Required packages'
-            f' missed in the reference DC/OS package list: {pkg_names_missed}'
+            f' not found within DC/OS installation local package repository:'
+            f' {pkg_names_missed}'
         )
 
     packages_sorted = [

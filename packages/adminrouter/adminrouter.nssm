@@ -1,0 +1,10 @@
+[service]
+DisplayName = adminrouter
+Description = Adminrouter
+Application = {{ pkg_inst_dpath }}\bin\nginx.exe
+AppDirectory = {{ pkg_inst_dpath }}\bin
+AppParameters = -c {{ pkg_shrcfg_dpath }}\nginx.agent.windows.conf
+Start = SERVICE_AUTO_START
+AppStdout = {{ pkg_log_dpath }}\adminrouter-nssm.log
+AppStderr = {{ pkg_log_dpath }}\adminrouter-nssm.log
+AppEnvironmentExtra = AUTH_ERROR_PAGE_DIR_PATH={{ pkg_inst_dpath }}\etc\errorpages

@@ -7,13 +7,6 @@ package:
           "PROVIDER": "{{ provider }}"
         }
       }
-  - path: {{ windows_dcos_install_path }}\bin\detect_ip.ps1
-    content: |
-      $IPAddress = ([System.Net.Dns]::GetHostByName("master.mesos").AddressList[0]).IpAddressToString
-      (Find-NetRoute -RemoteIPAddress $IPAddress | Select-Object  Ipv4Address).Ipv4Address
-  - path: {{ windows_dcos_install_path }}\bin\detect_ip_public.ps1
-    content: |
-        (Invoke-WebRequest -uri "http://whatismyip.akamai.com/" -UseBasicParsing).Content
   - path: {{ windows_dcos_install_path }}\etc\check_time.env
     content: |
         ENABLE_CHECK_TIME=true

@@ -192,3 +192,17 @@ def retry_on_exc(exceptions=(Exception,), max_attempts=0,
 
     return decorator
 
+
+def transfer_files(src, dst):
+    """
+    Transfer files from one directory to another on the same partition.
+    """
+    for name in os.listdir(src):
+        src_path = os.path.join(src, name)
+        if os.path.isdir(src_path):
+            dstdir = os.path.join(dst, name)
+            if not os.path.isdir(dstdir):
+                os.mkdir(dstdir)
+            transfer_files(src_path, dstdir)
+        else:
+            os.link(src_path, os.path.join(dst, name))

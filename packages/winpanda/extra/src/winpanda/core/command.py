@@ -11,6 +11,7 @@ from cfgm import exceptions as cfgm_exc
 from common import logger
 from common.cli import CLI_COMMAND, CLI_CMDTARGET, CLI_CMDOPT
 from common import utils as cm_utl
+from common.storage import ISTOR_NODE
 from core import cmdconf
 from core import exceptions as cr_exc
 from core.package.id import PackageId
@@ -152,6 +153,7 @@ class CmdSetup(Command):
             # Finalize package setup procedures taking package mutual
             # dependencies into account.
             for package in cr_utl.pkg_sort_by_deps(packages_bulk):
+                self._handle_pkg_dir_setup(package)
                 self._handle_pkg_cfg_setup(package)
                 self._handle_pkg_inst_extras(package)
                 self._handle_pkg_svc_setup(package)
@@ -168,6 +170,25 @@ class CmdSetup(Command):
 
             # Deploy DC/OS aggregated configuration object
             self._deploy_dcos_conf()
+
+    def _handle_pkg_dir_setup(self, package):
+        """Transfer files from special directories into location.
+
+        :param package: Package, DC/OS package manager object
+        """
+        pkg_path = getattr(
+            package.manifest.istor_nodes, ISTOR_NODE.PKGREPO
+        ).joinpath(package.manifest.pkg_id.pkg_id)
+        root = getattr(
+            package.manifest.istor_nodes, ISTOR_NODE.ROOT
+        )
+
+        for name in ('bin', 'etc', 'include', 'lib'):
+            srcdir = pkg_path / name
+            if srcdir.exists():
+                dstdir = root / name
+                dstdir.mkdir(exist_ok=True)
+                cm_utl.transfer_files(str(srcdir), str(dstdir))
 
     def _handle_pkg_cfg_setup(self, package):
         """Execute steps on package configuration files setup.
