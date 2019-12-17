@@ -71,36 +71,37 @@ class PkgConfManager:
                            f' {pkg_cfg_dpath}')
                 raise cfgm_exc.PkgConfInvalidError(err_msg)
             else:
+                # Try to cleanup DC/OS shared configuration directory before
+                # trying to create a package-specific configuration directory
+                # there
                 try:
-                    # Try to cleanup DC/OS shared configuration directory
-                    # before trying to create a package-specific configuration
-                    # directory there
-                    try:
-                        if pkg_shrcfg_dpath.exists():
-                            if pkg_shrcfg_dpath.is_dir():
-                                shutil.rmtree(str(pkg_shrcfg_dpath))
-                            elif pkg_shrcfg_dpath.is_file and (
-                                not pkg_shrcfg_dpath.is_symlink()
-                            ):
-                                pkg_shrcfg_dpath.unlink()
-                            else:
-                                raise cr_exc.InstallationStorageError(
-                                    f'Setup configuration: {pkg_id}:'
-                                    f' Auto-cleanup shared configuration'
-                                    f' directory : Removing objects other than'
-                                    f' regular directories and files is not'
-                                    f' supported'
-                                )
-                            LOG.debug(
-                                f'{self.msg_src}: Setup configuration:'
-                                f' {pkg_id}: Auto-cleanup: {pkg_shrcfg_dpath}'
+                    if pkg_shrcfg_dpath.exists():
+                        if pkg_shrcfg_dpath.is_dir():
+                            shutil.rmtree(str(pkg_shrcfg_dpath))
+                        elif pkg_shrcfg_dpath.is_file and (
+                            not pkg_shrcfg_dpath.is_symlink()
+                        ):
+                            pkg_shrcfg_dpath.unlink()
+                        else:
+                            raise cr_exc.InstallationStorageError(
+                                f'Setup configuration: {pkg_id.pkg_name}:'
+                                f' Auto-cleanup: Removing objects other than'
+                                f' regular directories and files is not'
+                                f' supported: {pkg_shrcfg_dpath}'
                             )
-                    except (OSError, RuntimeError) as e:
-                        raise cr_exc.InstallationStorageError(
-                            f'Setup configuration: {pkg_id}: Auto-cleanup:'
-                            f' {pkg_shrcfg_dpath}: {type(e).__name__}: {e}'
-                        ) from e
+                        LOG.debug(
+                            f'{self.msg_src}: Setup configuration:'
+                            f' {pkg_id.pkg_name}: Auto-cleanup:'
+                            f' {pkg_shrcfg_dpath}'
+                        )
+                except (OSError, RuntimeError) as e:
+                    raise cr_exc.InstallationStorageError(
+                        f'Setup configuration: {pkg_id.pkg_name}:'
+                        f' Auto-cleanup: {pkg_shrcfg_dpath}:'
+                        f' {type(e).__name__}: {e}'
+                    ) from e
 
+                try:
                     with tf.TemporaryDirectory(dir=str(inst_tmp_dpath)) as tdp:
 
                         self._process_pkgconf_srcdir(
@@ -109,9 +110,14 @@ class PkgConfManager:
                             context=pkg_context
                         )
                         shutil.copytree(tdp, str(pkg_shrcfg_dpath))
-                except Exception as e:
-                    err_msg = (f'Process configuration sources:'
-                               f' {type(e).__name__}: {e}')
+                        LOG.debug(
+                            f'{self.msg_src}: Setup configuration:'
+                            f' {pkg_id.pkg_name}: Save: {pkg_shrcfg_dpath}: OK'
+                        )
+                except (OSError, RuntimeError) as e:
+                    err_msg = (f'Setup configuration: {pkg_id.pkg_name}:'
+                               f' Process configuration sources:'
+                               f' {pkg_cfg_dpath}: {type(e).__name__}: {e}')
                     raise cfgm_exc.PkgConfManagerError(err_msg)
         else:
             err_msg = f'Source directory: Not found: {pkg_cfg_dpath}'
