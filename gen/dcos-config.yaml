@@ -1333,7 +1333,7 @@ package:
   - path: /etc/mesos-slave-common
     content: |
       GLOG_drop_log_memory=false
-      MESOS_CGROUPS_ENABLE_CFS=true
+      MESOS_CGROUPS_ENABLE_CFS={{ mesos_cgroups_enable_cfs }}
       MESOS_CGROUPS_LIMIT_SWAP=false
       # The order of containerizers affects the order of certain operations
       # on the agent.  See https://github.com/dcos/dcos/pull/4988 before
