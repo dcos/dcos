@@ -1,13 +1,32 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
-
-## DC/OS 1.13.6 (in development)
+## DC/OS 1.13.7 (in development)
 
 * Updated DC/OS UI to [1.13+v2.83.3](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.83.3).
 
-* Signal now sends telemetry data every 5 minutes instead of every hour. This is to align the frequency with DC/OS Enterprise.
-
 * Updated to Mesos [1.8.2-dev](https://github.com/apache/mesos/blob/c7c716dbc9ee4363ba6267591585b9984d8920b8/CHANGELOG)
 
+### Fixed and improved
+
+* DC/OS overlay networks should be compared by-value. (DCOS_OSS-5620)
+
+* Drop labels from Lashup's kv_message_queue_overflows_total metric. (DCOS_OSS-5634)
+
+* Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
+
+* Use Golang 1.10.8 to build CockroachDB. (DCOS-61502)
+* [Mesos] Support quoted realms in WWW-Authenticate header (DCOS-61529)
+
+### What's new
+
+* Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
+
+## DC/OS 1.13.6
+
+* Updated DC/OS UI to [1.13+v2.83.1](https://github.com/dcos/dcos-ui/releases/tag/1.13+v2.83.1).
+
+* Signal now sends telemetry data every 5 minutes instead of every hour. This is to align the frequency with DC/OS Enterprise.
+
+* Updated to Mesos [1.8.2-dev](https://github.com/apache/mesos/blob/91e6cef51e98bc4a4daca6f4941d9f0121046d76/CHANGELOG)
 
 ### Notable changes
 
@@ -23,16 +42,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Marathon pod instances are now included in the DC/OS diagnostic bundle (DCOS_OSS-5616)
 
 * [Marathon] Very-large Mesos TaskStatus updates no longer  cause Marathon to crash loop (MARATHON-8698)
-
-* DC/OS overlay networks should be compared by-value. (DCOS_OSS-5620)
-
-* Drop labels from Lashup's kv_message_queue_overflows_total metric. (DCOS_OSS-5634)
-
-* Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
-
-* Use Golang 1.10.8 to build CockroachDB. (DCOS-61502)
-* [Mesos] Support quoted realms in WWW-Authenticate header (DCOS-61529)
-
 
 ### Security updates
 
@@ -291,6 +300,3 @@ No breaking changes are known to date.
 * Allow the DC/OS installer to be used when there is a space in its path. (DCOS_OSS-4429)
 
 * Added a warning to the installer to let the user know in case kernel modules required by the DC/OS storage service are not loaded. (DCOS-49088)
-
-* Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
-
