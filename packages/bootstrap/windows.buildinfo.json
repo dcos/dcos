@@ -1,4 +1,7 @@
 {
+    "requires": [
+        "python",
+    ],
     "sources": {
         "requests": {
             "kind": "url",
