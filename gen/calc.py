@@ -761,18 +761,20 @@ def calculate_fair_sharing_excluded_resource_names(gpus_are_scarce):
     return ''
 
 
-def calculate_has_mesos_max_completed_tasks_per_framework(mesos_max_completed_tasks_per_framework):
-    return calculate_set(mesos_max_completed_tasks_per_framework)
+def validate_mesos_max_completed_frameworks(mesos_max_completed_frameworks):
+    try:
+        int(mesos_max_completed_frameworks)
+    except ValueError as ex:
+        raise AssertionError("Error parsing 'mesos_max_completed_frameworks' "
+                             "parameter as an integer: {}".format(ex)) from ex
 
 
-def validate_mesos_max_completed_tasks_per_framework(
-        mesos_max_completed_tasks_per_framework, has_mesos_max_completed_tasks_per_framework):
-    if has_mesos_max_completed_tasks_per_framework == 'true':
-        try:
-            int(mesos_max_completed_tasks_per_framework)
-        except ValueError as ex:
-            raise AssertionError("Error parsing 'mesos_max_completed_tasks_per_framework' "
-                                 "parameter as an integer: {}".format(ex)) from ex
+def validate_mesos_max_completed_tasks_per_framework(mesos_max_completed_tasks_per_framework):
+    try:
+        int(mesos_max_completed_tasks_per_framework)
+    except ValueError as ex:
+        raise AssertionError("Error parsing 'mesos_max_completed_tasks_per_framework' "
+                             "parameter as an integer: {}".format(ex)) from ex
 
 
 def validate_mesos_recovery_timeout(mesos_recovery_timeout):
@@ -1204,6 +1206,7 @@ entry = {
         validate_adminrouter_tls_version_present,
         validate_adminrouter_x_frame_options,
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
+        validate_mesos_max_completed_frameworks,
         validate_mesos_max_completed_tasks_per_framework,
         validate_mesos_recovery_timeout,
         validate_metronome_gpu_scheduling_behavior,
@@ -1280,6 +1283,7 @@ entry = {
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
         'mesos_container_log_sink': 'fluentbit+logrotate',
+        'mesos_max_completed_frameworks': '10',
         'mesos_max_completed_tasks_per_framework': '100',
         'mesos_recovery_timeout': '24hrs',
         'mesos_seccomp_enabled': 'true',
@@ -1428,7 +1432,6 @@ entry = {
         'dcos_l4lb_min_named_ip6_erltuple': calculate_dcos_l4lb_min_named_ip6_erltuple,
         'dcos_l4lb_max_named_ip6_erltuple': calculate_dcos_l4lb_max_named_ip6_erltuple,
         'mesos_isolation': calculate_mesos_isolation,
-        'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
         'has_mesos_seccomp_profile_name':
             lambda mesos_seccomp_profile_name: calculate_set(mesos_seccomp_profile_name),
         'has_mesos_default_container_shm_size':
