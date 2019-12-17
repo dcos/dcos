@@ -1280,7 +1280,7 @@ entry = {
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
         'mesos_container_log_sink': 'fluentbit+logrotate',
-        'mesos_max_completed_tasks_per_framework': '',
+        'mesos_max_completed_tasks_per_framework': '100',
         'mesos_recovery_timeout': '24hrs',
         'mesos_seccomp_enabled': 'true',
         'mesos_seccomp_profile_name': 'default.json',
