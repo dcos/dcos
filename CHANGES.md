@@ -56,3 +56,4 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
 
+* Marathon launched too many tasks. (DCOS-62078)
