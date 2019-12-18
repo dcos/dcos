@@ -8,6 +8,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to Mesos [1.8.2-dev](https://github.com/apache/mesos/blob/c7c716dbc9ee4363ba6267591585b9984d8920b8/CHANGELOG)
 
+* Update Marathon to [1.8.232](https://github.com/mesosphere/marathon/commit/d3517aee0dfe495e2bdce34bdfc0e6f10345371b)
+
 
 ### Notable changes
 
