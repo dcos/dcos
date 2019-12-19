@@ -25,3 +25,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
 
 * Mesos: support quoted realms in WWW-Authenticate headers. (DCOS-61529)
+
+* Build Admin Router without SSE4.2 instructions to work on older CPUs. (DCOS_OSS-5643)

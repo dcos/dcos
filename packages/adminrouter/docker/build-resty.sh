@@ -15,6 +15,7 @@ cd $OPENRESTY_DIR
     --without-mail_smtp_module \
     --with-http_ssl_module \
     --with-luajit \
+    --with-luajit-xcflags='-mno-sse4.2' \
     "$@"
 
 make -j${NUM_CORES}
