@@ -16,9 +16,6 @@
 .PARAMETER bootstrap_url
   [Required] The url of Nginx web server started on Boostrrap agent to serve Windows installation files
 
-.PARAMETER version
-  [Required] DC/OS version
-
 .PARAMETER masters
   [Required] A comma separated list of Master(s) IP addresses
 
@@ -38,8 +35,8 @@
   Author: Sergii Matus
 
 .EXAMPLE
-#  .\dcos_install.ps1 <bootstrap_url> <version> <masters>
-#  .\dcos_install.ps1 "http://int-bootstrap1-examplecluster.example.com:8080" "1.13.0" "master1,master2"
+#  .\dcos_install.ps1 <bootstrap_url> <masters>
+#  .\dcos_install.ps1 "http://int-bootstrap1-examplecluster.example.com:8080/<version>/genconf/serve" "master1,master2"
 
 # requires -version 2
 #>
@@ -49,7 +46,6 @@
 # PARAMETERS
 param (
     [Parameter(Mandatory=$true)] [string] $bootstrap_url,
-    [Parameter(Mandatory=$true)] [string] $version,
     [Parameter(Mandatory=$true)] [string] $masters,
     [Parameter(Mandatory=$false)][string] $install_dir = 'C:\d2iq\dcos',
     [Parameter(Mandatory=$false)][string] $var_dir = 'C:\d2iq\dcos\var'
@@ -273,12 +269,12 @@ function SetupPathJson([String] $pathsJson) {
 	}
 }
 
-function main($url, $version, $masters) {
+function main($url, $masters) {
     SetupDirectories
     SetupPathJson "C:\d2iq\dcos\etc\paths.json"
 
     Write-Log("Downloading/Extracting prerequisites.zip out of Bootstrap agent ...")
-    Download "$url/$version/genconf/serve/windows/prerequisites/prerequisites.zip" "prerequisites.zip"
+    Download "$url/windows/prerequisites/prerequisites.zip" "prerequisites.zip"
     $zipfile = "$($basedir)\bootstrap\prerequisites.zip"
     ExtractBootstrapZip $zipfile "$($basedir)\bootstrap\prerequisites"
 
@@ -286,28 +282,28 @@ function main($url, $version, $masters) {
     & cmd /c "start /wait $($basedir)\bootstrap\prerequisites\7z-x64.exe /S" 2>&1 | Out-File "$($vardir)\log\dcos_install.log" -Append;
 
 	Write-Log("Checking proper versions from latest.package_list.json ...")
-	Download "$url/$version/genconf/serve/windows/package_lists/latest.package_list.json" "latest.package_list.json"
+	Download "$url/windows/package_lists/latest.package_list.json" "latest.package_list.json"
 	$package_list_json = "$($basedir)\bootstrap\latest.package_list.json"
 	echo $(cat $package_list_json | ConvertFrom-Json) | Where-Object { $_ -Match "python"} | New-Variable -Name python_package
 	echo $(cat $package_list_json | ConvertFrom-Json) | Where-Object { $_ -Match "winpanda"} | New-Variable -Name winpanda_package
 
 	Write-Log("Installing Python from Bootstrap agent - $($python_package).tar.xz...")
-    Download "$url/$version/genconf/serve/windows/packages/python/$($python_package).tar.xz" "python.tar.xz"
+    Download "$url/windows/packages/python/$($python_package).tar.xz" "python.tar.xz"
     $pythontarfile = "$($basedir)\bootstrap\python.tar.xz"
     ExtractTarXz $pythontarfile "C:\python36"
 	Add-EnvPath "C:\python36" "Session";
 	Add-EnvPath "C:\python36" "Machine";
 
     Write-Log("Installing Winpanda from Bootstrap agent - $($winpanda_package).tar.xz ...")
-    Download "$url/$version/genconf/serve/windows/packages/winpanda/$($winpanda_package).tar.xz" "winpanda.tar.xz"
+    Download "$url/windows/packages/winpanda/$($winpanda_package).tar.xz" "winpanda.tar.xz"
     $winpandatarfile = "$($basedir)\bootstrap\winpanda.tar.xz"
     ExtractTarXz $winpandatarfile "$($basedir)"
 	[Environment]::SetEnvironmentVariable("PYTHONPATH", "$($basedir)\winpanda\lib\python36\site-packages", [System.EnvironmentVariableTarget]::Machine);
 	$env:PYTHONPATH="$($basedir)\winpanda\lib\python36\site-packages";
 
     Write-Log("Downloading ip-detect scripts from Bootstrap agent ...")
-    Download "$url/$version/genconf/serve/windows/ip-detect.ps1" "detect_ip.ps1"
-    Download "$url/$version/genconf/serve/windows/ip-detect-public.ps1" "detect_ip_public.ps1"
+    Download "$url/windows/ip-detect.ps1" "detect_ip.ps1"
+    Download "$url/windows/ip-detect-public.ps1" "detect_ip_public.ps1"
     Copy-Item -Path "$($basedir)\bootstrap\detect_ip*.ps1" -Destination "$($basedir)\bin" -Recurse
 
     # Fill up Ansible inventory content to cluster.conf
@@ -319,7 +315,7 @@ function main($url, $version, $masters) {
     }
     $local_ip = (Get-WmiObject -Class Win32_NetworkAdapterConfiguration | where {$_.DefaultIPGateway -ne $null}).IPAddress | select-object -first 1
     Write-Log("Local IP: $($local_ip)")
-    $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($bootstrap_url)/$($version)/genconf/serve`nPkgRepoPath=windows/packages`nPkgListPath=windows/package_lists/latest.package_list.json`nDcosClusterPkgInfoPath=cluster-package-info.json`n`n[local]`nPrivateIPAddr=$($local_ip)"
+    $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($url)`nPkgRepoPath=windows/packages`nPkgListPath=windows/package_lists/latest.package_list.json`nDcosClusterPkgInfoPath=cluster-package-info.json`n`n[local]`nPrivateIPAddr=$($local_ip)"
     CreateWriteFile "$($basedir)\etc" "cluster.conf" $content
 
     Write-Log("Running Winpanda.py setup ...")
@@ -336,4 +332,4 @@ function main($url, $version, $masters) {
     }
 }
 
-main $bootstrap_url $version $masters
+main $bootstrap_url $masters
