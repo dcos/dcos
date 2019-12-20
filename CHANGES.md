@@ -17,6 +17,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to [Metronome 0.6.33](https://github.com/dcos/metronome/tree/b8a73dd)
 
+* Added user controlled environment file for Mesos processes (DCOS-49092)
+
 ### Fixed and improved
 
 * [Metronome] Querying run detail with embed=history, successfulFinishedRuns and failedFinishedRuns contains new field tasks which is an array of taskIds of that finished run. This will allow people to query task ids even for finished job runs.
@@ -301,4 +303,3 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Marathon framework ID generation is now very conservative. [See more](https://github.com/mesosphere/marathon/blob/master/changelog.md#marathon-framework-id-generation-is-now-very-conservative) (MARATHON-8420)
 
 * Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
-
