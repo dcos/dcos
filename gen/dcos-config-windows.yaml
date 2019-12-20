@@ -196,4 +196,19 @@ package:
         ## Expiration interval for each metric before it's evicted from cache.
         expiration_interval = "60s"
       # Read metrics from DC/OS Net Prometheus endpoint.
+  - path: {{ windows_dcos_install_path }}\etc\mesos\domain.json
+    content: |
+      {
+        "fault_domain":
+          {
+            "region":
+              {
+                "name": "windows"
+              },
+            "zone":
+              {
+                "name": "windows"
+              }
+          }
+      }
 
