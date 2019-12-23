@@ -360,8 +360,8 @@ def test_calico_vip(dcos_api_session,
                     ipv6: bool=False,
                     with_port_mapping_app=True):
     '''Test VIPs between the following source and destination configurations:
-        * containers: DOCKER, UCR and NONE
-        * networks: USER, BRIDGE, HOST
+        * containers: UCR and POD
+        * networks: USER
         * agents: source and destnations on same agent or different agents
         * vips: named and unnamed vip
 

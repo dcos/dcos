@@ -12,5 +12,5 @@ ExecStart=/opt/mesosphere/bin/bird -R -s /var/run/calico/bird.ctl -d \
 
 Restart=always
 StartLimitInterval=0
-KillSignal=SIGKILL
+KillSignal=SIGTERM
 RestartSec=5

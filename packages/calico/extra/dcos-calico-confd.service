@@ -13,5 +13,5 @@ ExecStart=/opt/mesosphere/bin/calico-node -confd
 
 Restart=always
 StartLimitInterval=0
-KillSignal=SIGKILL
+KillSignal=SIGTERM
 RestartSec=5

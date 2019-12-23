@@ -10,5 +10,5 @@ ExecStart=/opt/mesosphere/bin/start-calico-felix.sh
 
 Restart=always
 StartLimitInterval=0
-KillSignal=SIGKILL
+KillSignal=SIGTERM
 RestartSec=5
