@@ -2,7 +2,7 @@
 
 @Library('sec_ci_libs@v2-latest') _
 
-def master_branches = ["master", ] as String[]
+def master_branches = ["masterr", ] as String[]
 
 if (master_branches.contains(env.BRANCH_NAME)) {
     // Rebuild main branch once a day
