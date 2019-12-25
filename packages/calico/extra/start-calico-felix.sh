@@ -2,19 +2,33 @@
 
 set -xe
 
+DEFAULT_PROFILE_NAME="calico"
+NODENAME_FILE='/var/lib/calico/nodename'
 export NODENAME=`/opt/mesosphere/bin/detect_ip`
 export IP=`/opt/mesosphere/bin/detect_ip`
+
 mkdir -p /etc/calico
 mkdir -p /var/lib/calico
 
 cp /opt/mesosphere/etc/calico/calicoctl.cfg /etc/calico/calicoctl.cfg
 cp /opt/mesosphere/active/calico/etc/profile.yaml /var/lib/calico/profile.yaml
-/opt/mesosphere/bin/calicoctl apply -f  /var/lib/calico/profile.yaml
+
+# /var/lib/calico/nodename is used to determine whether or not the current node
+# has been initialized.
+# the default calico profile is created only:
+# 1. current calico node is not intialized
+# 2. calico profile does not exist
+# FIXME: we assume that calico profile will not be deleted, otherwise adding or
+# replacing a new node will create a default profile when calico profile does
+# not exist.
+if [ ! -f $NODENAME_FILE ]; then
+	/opt/mesosphere/bin/calicoctl get profile $DEFAULT_PROFILE_NAME || /opt/mesosphere/bin/calicoctl apply -f /var/lib/calico/profile.yaml
+fi
 
 # initialize a calico node and network devices.
 # reference:
 # https://github.com/projectcalico/node/blob/master/filesystem/etc/rc.local
-echo $NODENAME > /var/lib/calico/nodename
+echo $NODENAME > $NODENAME_FILE
 /opt/mesosphere/bin/calico-node -startup
 /opt/mesosphere/bin/calico-node -allocate-tunnel-addrs
 
