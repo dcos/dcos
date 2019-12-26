@@ -36,6 +36,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Enable proxing of gRPC requests through Admin Router (DCOS-59091)
 
+* Calico in DC/OS: introduced Calico network for mesos UCR. (DCOS-58582)
+
+* Calico in DC/OS: introduced calico control panel services deployed on all agents and masters. (DCOS-58583)
+
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
