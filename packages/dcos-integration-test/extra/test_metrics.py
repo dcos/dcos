@@ -2,6 +2,7 @@ import contextlib
 import copy
 import logging
 import re
+import sys
 import uuid
 
 import pytest
@@ -463,6 +464,12 @@ def check_statsd_app_metrics(dcos_api_session, marathon_app, node, expected_metr
                         assert sample[2] == val
                         if len(expected_copy) == 0:
                             return
+            sys.stderr.write(
+                "%r\n%r\n" % (
+                    expected_metrics,
+                    expected_copy,
+                )
+            )
             raise Exception('Expected statsd metrics not found')
         check_statsd_metrics()
 
