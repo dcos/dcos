@@ -115,7 +115,7 @@ package:
         ## Run telegraf in quiet mode (error log messages only).
         quiet = false
         ## Specify the log file name. The empty string means to log to stderr.
-        logfile = ""
+        logfile = "{{ windows_dcos_install_path_json }}\\var\\log\\telegraf\\telegraf.log"
         ## Override default hostname, if empty use os.Hostname()
         hostname = ''
         ## If set to true, do no set the "host" tag in the telegraf agent.
