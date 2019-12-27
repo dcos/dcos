@@ -1,7 +1,12 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
 
-## DC/OS 1.12.4 (2019-06-17 CF)
+## DC/OS 1.12.4.1
+
+* Fix preflight check for CentOS 8.0 (COPS-5604)
+
+
+## DC/OS 1.12.4 (in development)
 
 ### Notable changes
 
