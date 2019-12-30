@@ -183,7 +183,7 @@ def test_metrics_master_calico(dcos_api_session):
             for sample in family.samples:
                 if sample[0].startswith('felix') and sample[1].get('dcos_component_name') == 'DC/OS Calico':
                     return
-        raise Exception('Expected DC/OS Calico felix* metric not found')
+        raise Exception('Expected DC/OS Calico felix* metric on master nodes not found')
 
     _check_calico_metrics()
 
@@ -198,7 +198,7 @@ def test_metrics_agents_calico(dcos_api_session):
             for sample in family.samples:
                 if sample[0].startswith('felix') and sample[1].get('dcos_component_name') == 'DC/OS Calico':
                     return
-        raise Exception('Expected Mesos mesos_overlay_slave_registering metric not found')
+        raise Exception('Expected DC/OS Calico felix* metric on agent nodes not found')
 
     nodes = get_agents(dcos_api_session)
     for node in nodes:
