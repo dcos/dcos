@@ -2614,6 +2614,13 @@ package:
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "DC/OS Diagnostics"
+      # Read metrics from DC/OS Calico Node Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://localhost:62091/metrics"]
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Calico"
       # Read exhibitor status metrics from HTTP endpoint
       [[inputs.http]]
         name_override = "exhibitor_status"
@@ -3056,6 +3063,8 @@ package:
       CALICO_IPV4POOL_NAT_OUTGOING=true
       FELIX_IGNORELOOSERPF=true
       FELIX_LOGFILEPATH=none
+      FELIX_PROMETHEUSMETRICSENABLED=true
+      FELIX_PROMETHEUSMETRICSPORT=62091
 {% switch calico_vxlan_enabled %}
 {% case "false" %}
       FELIX_IPINIPMTU={{ calico_ipinip_mtu }}
