@@ -18,6 +18,7 @@ EnvironmentFile=-/opt/mesosphere/etc/mesos-slave-common-extras
 EnvironmentFile=-/var/lib/dcos/mesos-slave-common
 EnvironmentFile=-/var/lib/dcos/mesos-resources
 EnvironmentFile=-/run/dcos/etc/mesos-slave-public
+EnvironmentFile=-/etc/mesosphere/mesos/agent-public.env
 ExecStartPre=/bin/ping -c1 ready.spartan
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-mesos-slave-public
 ExecStartPre=/opt/mesosphere/bin/make_disk_resources.py /var/lib/dcos/mesos-resources
