@@ -12,6 +12,7 @@
   },
   "exclude": [
     "erlang",
+    "calico",
     "boost-libs",
     "boto",
     "bouncer",
@@ -19,6 +20,7 @@
     "check-time",
     "cni",
     "cockroach",
+    "conntrack-tools",
     "cosmos",
     "curl",
     "dcos-bootstrap-ca",

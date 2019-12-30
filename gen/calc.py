@@ -29,6 +29,7 @@ import re
 import socket
 import string
 import textwrap
+from enum import IntEnum
 from math import floor
 from subprocess import check_output
 
@@ -322,81 +323,118 @@ def validate_network_default_name(overlay_network_default_name, dcos_overlay_net
             overlay_network_default_name))
 
 
-def validate_dcos_ucr_default_bridge_subnet(dcos_ucr_default_bridge_subnet):
+class IPVersion(IntEnum):
+    IPv4 = 4
+    IPv6 = 6
+
+
+def validate_config_subnet(config_name, subnet, version=IPVersion.IPv4):
     try:
-        ipaddress.ip_network(dcos_ucr_default_bridge_subnet)
+        network = ipaddress.ip_network(subnet)
+        if (version == IPVersion.IPv4 and not isinstance(network, ipaddress.IPv4Network)) or \
+                (version == IPVersion.IPv6 and not isinstance(network, ipaddress.IPv6Network)):
+            raise ValueError("IP version not match")
     except ValueError as ex:
-        raise AssertionError(
-            "Incorrect value for dcos_ucr_default_bridge_subnet: {}."
-            " Only IPv4 subnets are allowed".format(dcos_ucr_default_bridge_subnet)) from ex
+        err_msg = "Incorrect value for {}: {}. Only IPv{} subnets are allowed".format(
+            config_name, subnet, version)
+        raise AssertionError(err_msg) from ex
 
 
 def validate_dcos_overlay_network(dcos_overlay_network):
+    # a validate dcos_overlay_network is in such a format:
+    # dcos_overlay_network :
+    #   vtep_subnet: 44.128.0.0/20
+    #   vtep_subnet6: fd01:a::/64
+    #   vtep_mac_oui: 70:B3:D5:00:00:00
+    #   overlays:
+    #     - name: dcos
+    #       subnet: 9.0.0.0/8
+    #       prefix: 24
+    #     - name: dcos6
+    #       subnet6: fd01:b::/64
+    #       prefix6: 80
     try:
         overlay_network = json.loads(dcos_overlay_network)
     except ValueError as ex:
-        raise AssertionError("Provided input was not valid JSON: {}".format(dcos_overlay_network)) from ex
+        raise AssertionError("Provided input was not valid JSON: {}".format(
+            dcos_overlay_network)) from ex
 
     assert 'overlays' in overlay_network, (
-        'Missing "overlays" in overlay configuration {}'.format(overlay_network))
+        'Missing "overlays" in overlay configuration {}'.format(
+            overlay_network))
 
     assert len(overlay_network['overlays']) > 0, (
-        '"Overlays" network configuration is empty: {}'.format(overlay_network))
+        '"Overlays" network configuration is empty: {}'.format(overlay_network)
+    )
+
+    assert 'vtep_mac_oui' in overlay_network.keys(), (
+        'Missing "vtep_mac_oui" in overlay configuration {}'.format(
+            overlay_network))
+
+    # Check the VTEP IP is present in the overlay configuration
+    assert 'vtep_subnet' in overlay_network, (
+        'Missing "vtep_subnet" in overlay configuration {}'.format(
+            overlay_network))
+    validate_config_subnet('vtep_subnet', overlay_network['vtep_subnet'])
+
+    # Check the VTEP IP6 is present in the overlay configuration
+    assert 'vtep_subnet6' in overlay_network, (
+        'Missing "vtep_subnet6" in overlay configuration {}'.format(
+            overlay_network))
+    validate_config_subnet("vtep_subnet6", overlay_network['vtep_subnet6'],
+                           IPVersion.IPv6)
+
+    vtep_mtu = overlay_network.get('vtep_mtu', 1500)
+    validate_int_in_range(vtep_mtu, 552, None)
 
     for overlay in overlay_network['overlays']:
         assert 'name' in overlay, (
             'Missing "name" in overlay configuration: {}'.format(overlay))
 
-        assert (len(overlay['name']) <= 13), (
-            "Overlay name cannot exceed 13 characters:{}".format(overlay['name']))
+        assert (len(overlay['name']) <=
+                13), ("Overlay name cannot exceed 13 characters: {}".format(
+                    overlay['name']))
 
         assert ('subnet' in overlay or 'subnet6' in overlay), (
-            'Missing "subnet" or "subnet6" in overlay configuration:{}'.format(overlay))
-
-        assert 'vtep_mac_oui' in overlay_network.keys(), (
-            'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
-
-        vtep_mtu = overlay_network.get('vtep_mtu', 1500)
-        validate_int_in_range(vtep_mtu, 552, None)
+            'Missing "subnet" or "subnet6" in overlay configuration: {}'.format(
+                overlay))
 
         if 'subnet' in overlay:
-            # Check the VTEP IP is present in the overlay configuration
-            assert 'vtep_subnet' in overlay_network, (
-                'Missing "vtep_subnet" in overlay configuration {}'.format(overlay_network))
-
-            try:
-                ipaddress.ip_network(overlay_network['vtep_subnet'])
-            except ValueError as ex:
-                raise AssertionError(
-                    "Incorrect value for vtep_subnet: {}."
-                    " Only IPv4 values are allowed".format(overlay_network['vtep_subnet'])) from ex
-            try:
-                ipaddress.ip_network(overlay['subnet'])
-            except ValueError as ex:
-                raise AssertionError(
-                    "Incorrect value for overlay subnet {}."
-                    " Only IPv4 values are allowed".format(overlay['subnet'])) from ex
+            validate_config_subnet('overlay subnet', overlay['subnet'])
 
         if 'subnet6' in overlay:
-            # Check the VTEP IP6 is present in the overlay configuration
-            assert 'vtep_subnet6' in overlay_network, (
-                'Missing "vtep_subnet6" in overlay configuration {}'.format(overlay_network))
-
-            try:
-                ipaddress.ip_network(overlay_network['vtep_subnet6'])
-            except ValueError as ex:
-                raise AssertionError(
-                    "Incorrect value for vtep_subnet6: {}."
-                    " Only IPv6 values are allowed".format(overlay_network['vtep_subnet6'])) from ex
-            try:
-                ipaddress.ip_network(overlay['subnet6'])
-            except ValueError as ex:
-                raise AssertionError(
-                    "Incorrect value for overlay subnet6 {}."
-                    " Only IPv6 values are allowed".format(overlay_network['subnet6'])) from ex
+            validate_config_subnet("subnet6", overlay['subnet6'],
+                                   IPVersion.IPv6)
 
         if 'enabled' in overlay:
             gen.internals.validate_one_of(overlay['enabled'], [True, False])
+
+
+def validate_overlay_networks_not_overlap(dcos_overlay_network,
+                                          dcos_overlay_enable,
+                                          calico_network_cidr):
+    """ checks the subnets used for dcos overlay do not overlap calico network
+
+    We assume the basic validations, like subnet cidr, have been done.
+    """
+    if dcos_overlay_enable.lower() != "true":
+        return
+    try:
+        overlay_network = json.loads(dcos_overlay_network)
+    except ValueError as ex:
+        raise AssertionError("Provided input was not valid JSON: {}".format(
+            dcos_overlay_network)) from ex
+    _calico_network_cidr = ipaddress.ip_network(calico_network_cidr)
+    overlay_subnets = [
+        ipaddress.ip_network(overlay["subnet"])
+        for overlay in overlay_network['overlays'] if "subnet" in overlay
+    ]
+    for overlay_subnet in overlay_subnets:
+        if not isinstance(overlay_subnet, ipaddress.IPv4Network):
+            continue
+        assert not overlay_subnet.overlaps(_calico_network_cidr), \
+            "overlay subnet {} overlaps calico network {}".format(
+                overlay_subnet, calico_network_cidr)
 
 
 def calculate_dcos_overlay_network_json(dcos_overlay_network, enable_ipv6):
@@ -1077,6 +1115,13 @@ def validate_custom_checks(custom_checks, check_config):
         raise AssertionError(msg)
 
 
+def validate_vxlan_vni(vxlan_vni):
+    validate_int_in_range(vxlan_vni, 1, 16777215)
+    # dcos overlay use fixed VXLAN VNI 1024 assigned by the master module of dcos overlay network
+    # https://github.com/dcos/dcos-mesos-modules/blob/master/overlay/master.cpp#L1544
+    assert vxlan_vni != 1024, 'VXLAN VNI {} should not conflict with that of dcos overlay'
+
+
 def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
     if os.path.exists(fault_domain_detect_filename):
         return yaml.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
@@ -1122,7 +1167,8 @@ entry = {
         validate_os_type,
         validate_dcos_overlay_network,
         lambda dcos_overlay_network_json: validate_dcos_overlay_network(dcos_overlay_network_json),
-        validate_dcos_ucr_default_bridge_subnet,
+        lambda dcos_ucr_default_bridge_subnet: validate_config_subnet(
+            "dcos_ucr_default_bridge_subnet", dcos_ucr_default_bridge_subnet),
         lambda dcos_net_cluster_identity: validate_true_false(dcos_net_cluster_identity),
         lambda dcos_net_rest_enable: validate_true_false(dcos_net_rest_enable),
         lambda dcos_net_watchdog: validate_true_false(dcos_net_watchdog),
@@ -1182,6 +1228,15 @@ entry = {
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
         validate_marathon_new_group_enforce_role,
         lambda enable_windows_agents: validate_true_false(enable_windows_agents),
+        lambda calico_network_cidr: validate_config_subnet(
+            "calico_network_cidr", calico_network_cidr),
+        lambda calico_ipinip_mtu: validate_int_in_range(calico_ipinip_mtu, 552, None),
+        lambda calico_veth_mtu: validate_int_in_range(calico_veth_mtu, 552, None),
+        lambda calico_vxlan_mtu: validate_int_in_range(calico_vxlan_mtu, 552, None),
+        lambda calico_vxlan_enabled: validate_true_false(calico_vxlan_enabled),
+        lambda calico_vxlan_port: validate_int_in_range(calico_vxlan_port, 1025, 65535),
+        lambda calico_vxlan_vni: validate_vxlan_vni(calico_vxlan_vni),
+        validate_overlay_networks_not_overlap,
     ],
     'default': {
         'exhibitor_azure_account_key': '',
@@ -1328,6 +1383,13 @@ entry = {
         'enable_windows_agents': 'false',
         'windows_dcos_install_path': 'C:\\d2iq\\dcos',
         'windows_dcos_var_path': 'C:\\d2iq\\dcos\\var',
+        'calico_network_cidr': '192.168.0.0/16',
+        'calico_ipinip_mtu': '1480',
+        'calico_veth_mtu': '1500',
+        'calico_vxlan_mtu': '1450',
+        'calico_vxlan_enabled': 'true',
+        'calico_vxlan_port': '64000',
+        'calico_vxlan_vni': '4096',
     },
     'must': {
         'fault_domain_enabled': 'false',
