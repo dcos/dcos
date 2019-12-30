@@ -6,14 +6,30 @@
 
 ## Command line parametres
 
-```
-Usage:
-  winpanda {cmd_setup} [options]
-  winpanda {cmd_teardown} [options]
-  winpanda {cmd_start} [options]
-  winpanda {cmd_stop} [options]
 
-Options:
+ ### Usage:
+ ```
+  winpanda {setup} [options]
+  winpanda {teardown} [options]
+  winpanda {start} [options]
+  winpanda {stop} [options]
+```
+
+### Commands:
+
+* Setup - This command  doing following in sequence.
+    1. Reads cluster.conf from etc folder of inst_root looks for bootstrap node configured there.
+    2. Then downloads packages.
+    3. Unpacks  to  filesystem.
+    4. Makes substitution of dcos-config-windows.yaml.
+    5. Executes extra and NSSM config files.
+* Start - Just starts MSSM and SC services.
+* Stop - Just stops all dcos services.
+* Teardown - .
+
+### Options:
+
+```
   --target=<target>                 target operational scope for a command
                                     (choose from: {valid_cmd_targets})
                                     [default: {default_cmd_target}]
@@ -70,12 +86,54 @@ Default local storage layout for DC/OS installation:
         +-<inst_bin>/         # DC/OS installation shared executables dir
         +-<inst_lib>/         # DC/OS installation shared libraries dir
 ```
+## Pakage structure
+
+```text
+<pkg name><Guid>/
+    +-bin                     # Package binnaries folder
+    +-conf                    # Package config templates folder
+    +-lib                     # More related to  Linux but may include package sharable libs
+    +-include                 # Aditional package files.
+```
+
+## cluster.conf
+
+**cluster.conf** file contains data that winpanda uses for windows node setup in **INI** format
+Example:
+
+```ini
+[master-node-1]
+PrivateIPAddr=172.16.15.90
+ZookeeperListenerPort=2181
+
+[distribution-storage]
+RootUrl=http://172.16.15.186:8080/2.1.0/genconf/serve
+PkgRepoPath=windows/packages
+PkgListPath=windows/package_lists/latest.package_list.json
+DcosClusterPkgInfoPath=cluster-package-info.json
+
+[local]
+PrivateIPAddr=172.16.15.248
+
+
+```
+Default location is in
+
+```text
+<inst_drive>:/<inst_root>/<inst_cfg>/
+
+```
+
+Also it can be set with **--cluster-cfgfile** option
 
 ## Usage cases
+
+### Run finpanda setup from 
+
+
 
 ## Apendix
 
 * [Placeholders](PLACEHOLDERS.md)
 * [Pkgpanda docs](../../../../../../pkgpanda/docs/readme.md)
-# Internals
--------------------------------------------------------------------------------
+
