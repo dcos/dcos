@@ -505,7 +505,8 @@ def test_metrics_agent_statsd(dcos_api_session):
         ]),
         'container': {
             'type': 'MESOS',
-            'docker': {'image': 'library/alpine'}
+            # pin image to working version - https://jira.mesosphere.com/browse/DCOS-62478
+            'docker': {'image': 'library/alpine:3.10.3'}
         },
         'networks': [{'mode': 'host'}],
     }
