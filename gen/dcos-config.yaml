@@ -2437,6 +2437,13 @@ package:
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "DC/OS Net"
+      # Read metrics from DC/OS Calico Node Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://localhost:62091/metrics"]
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Calico"
       # Read metrics from Fluent Bit Prometheus endpoint
       [[inputs.prometheus]]
         ## An array of urls to scrape metrics from.
@@ -2614,13 +2621,6 @@ package:
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "DC/OS Diagnostics"
-      # Read metrics from DC/OS Calico Node Prometheus endpoint.
-      [[inputs.prometheus]]
-        ## An array of urls to scrape metrics from.
-        urls = ["http://localhost:62091/metrics"]
-        ## Apply DC/OS component name tag according to the documentation.
-        [inputs.prometheus.tags]
-          dcos-component-name = "DC/OS Calico"
       # Read exhibitor status metrics from HTTP endpoint
       [[inputs.http]]
         name_override = "exhibitor_status"
