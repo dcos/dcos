@@ -121,7 +121,10 @@ def test_windows_install(
     subs = (
         (re.compile(r'( *cluster_name *= *").*"'), r'\1test_windows_install"'),
         (re.compile(r'( *owner *= *").*"'), r'\1test-e2e"'),
-        (re.compile(r'( *ssh_public_key_file *= *").*"'), r'\1' + re.escape(str(ssh_cert)) + '"'),
+        (
+            re.compile(r'( *ssh_public_key_file *= *").*"'),
+            r'\1' + str(ssh_cert).replace('\\', '\\\\') + '"'
+        ),
     )
 
     lineno = 1
