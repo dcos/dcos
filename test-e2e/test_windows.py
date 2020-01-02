@@ -101,13 +101,23 @@ def test_windows_install(
     main_template = tmp_path / 'main.tf.in'
     _download_file(maintf_url, main_template)
 
+    ssh_key = tmp_path / 'ssh'
+    ssh_cert = ssh_key.with_suffix('.pub')
+    subprocess.run(
+        (
+            'ssh-keygen',
+            '-t', 'rsa',        # RSA key only
+            '-f' str(ssh_key),  # filename of key file
+            '-N', ''            # empty passphrase
+        ),
+        check=True
+    )
+
     subs = (
         (re.compile(r'( *cluster_name *= *").*"'), r'\1test_windows_install"'),
         (re.compile(r'( *owner *= *").*"'), r'\1test-e2e"'),
-        (re.compile(r'( *ssh_public_key_file *= *").*"'), r'\1~/.ssh/id_rsa.pub"'),
+        (re.compile(r'( *ssh_public_key_file *= *").*"'), r'\1' + re.escape(str(ssh_cert)) + '"'),
     )
-
-    subprocess.run(('/bin/ls', '~/.ssh'))
 
     main_tf = tmp_path / 'main.tf'
     with main_template.open() as src:
@@ -117,9 +127,9 @@ def test_windows_install(
                     line = pat.sub(repl, line)
                 dst.write(line)
 
-    subprocess.run(('./terraform', 'init'), check=True)
+    subprocess.run(('./terraform', 'init'), cwd=str(tmp_path), check=True)
 
     try:
-        subprocess.run(('./terraform', 'apply', '-auto-approve'), check=True)
+        subprocess.run(('./terraform', 'apply', '-auto-approve'), cwd=str(tmp_path), check=True)
     finally:
-        subprocess.run(('./terraform', 'destroy', '-auto-approve'), check=True)
+        subprocess.run(('./terraform', 'destroy', '-auto-approve'), cwd=str(tmp_path), check=True)
