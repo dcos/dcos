@@ -107,7 +107,7 @@ def test_windows_install(
         (
             'ssh-keygen',
             '-t', 'rsa',        # RSA key only
-            '-f' str(ssh_key),  # filename of key file
+            '-f', str(ssh_key),  # filename of key file
             '-N', ''            # empty passphrase
         ),
         check=True
