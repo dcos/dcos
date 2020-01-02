@@ -26,6 +26,7 @@ def workspace_dir() -> Path:
     return tmp_dir_path / subpath
 
 
+# This test can be removed as part of https://jira.mesosphere.com/browse/DCOS_OSS-5818
 def test_windows_agents(
     workspace_dir: Path,
     artifact_path: Path,
@@ -33,14 +34,11 @@ def test_windows_agents(
     log_dir: Path,
 ) -> None:
     """
-    Enabling Windows agents creates additional configuration package
+    DC/OS contains additional Windows configuration package
     and does not break Linux installation.
     """
     docker_backend = Docker(workspace_dir=workspace_dir)
 
-    config = {
-        'enable_windows_agents': True,
-    }
     with Cluster(
         cluster_backend=docker_backend,
         agents=0,
@@ -48,10 +46,7 @@ def test_windows_agents(
     ) as cluster:
         cluster.install_dcos_from_path(
             dcos_installer=artifact_path,
-            dcos_config={
-                **cluster.base_config,
-                **config,
-            },
+            dcos_config=cluster.base_config,
             output=Output.LOG_AND_CAPTURE,
             ip_detect_path=docker_backend.ip_detect_path,
         )
