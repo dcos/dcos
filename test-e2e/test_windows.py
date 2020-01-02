@@ -92,6 +92,10 @@ def test_windows_install(
 
     subprocess.run(('unzip', str(terraform_zip)), check=True)
 
+    terraform = str(tmp_path / 'terraform')
+
+    assert terraform.exists()
+
     terraform_zip.unlink()
 
     maintf_url = (
@@ -127,9 +131,9 @@ def test_windows_install(
                     line = pat.sub(repl, line)
                 dst.write(line)
 
-    subprocess.run(('./terraform', 'init'), cwd=str(tmp_path), check=True)
+    subprocess.run((terraform, 'init'), cwd=str(tmp_path), check=True)
 
     try:
-        subprocess.run(('./terraform', 'apply', '-auto-approve'), cwd=str(tmp_path), check=True)
+        subprocess.run((terraform, 'apply', '-auto-approve'), cwd=str(tmp_path), check=True)
     finally:
-        subprocess.run(('./terraform', 'destroy', '-auto-approve'), cwd=str(tmp_path), check=True)
+        subprocess.run((terraform, 'destroy', '-auto-approve'), cwd=str(tmp_path), check=True)
