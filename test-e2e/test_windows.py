@@ -1,6 +1,8 @@
 import os
 import random
+import requests
 import string
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -69,3 +71,50 @@ def test_windows_agents(
             request=request,
             log_dir=log_dir,
         )
+
+def _download_file(url, path):
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        with open(path, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                if chunk: # filter out keep-alive new chunks
+                    f.write(chunk)
+
+def test_windows_install(
+    tmp_path: Path,
+) -> None:
+    terraform_url = 'https://github.com/fatz/terraform/releases/download/v0.11.14-mesosphere/linux_amd64.zip'
+    terraform_zip = tmp_path / 'terraform.zip'
+    _download_file(terraform_url, terraform_zip)
+
+    subprocess.run(('unzip', str(terraform_zip)), check=True)
+
+    terraform_zip.unlink()
+
+    maintf_url = 'https://raw.githubusercontent.com/sergiimatusEPAM/examples/feature/windows-beta-support/aws/windows-agent/main.tf'
+    main_template = tmp_path / 'main.tf.in'
+    _download_file(maintf_url, main_template)
+
+    subs = (
+        (re.compile(r'( *cluster_name *= *").*"'), r'\1test_windows_install"'),
+        (re.compile(r'( *owner *= *").*"'), r'\1test-e2e"'),
+        (re.compile(r'( *ssh_public_key_file *= *").*"'), r'\1~/.ssh/id_rsa.pub"'),
+    )
+
+    subprocess.run(('/bin/ls', '~/.ssh'))
+
+    main_tf = tmp_path / 'main.tf'
+    with open(main_template) as src:
+        with open(main_tf, 'w') as dst:
+            for line in src:
+                for pat, repl in subs:
+                    line = pat.sub(repl, line)
+                dst.write(line)
+
+    subprocess.run(('./terraform', 'init'), check=True)
+
+    try:
+        subprocess.run(('./terraform', 'apply', '-auto-approve'), check=True)
+    finally:
+        subprocess.run(('./terraform', 'destroy', '-auto-approve'), check=True)
+
