@@ -3,6 +3,7 @@ import random
 import re
 import string
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -110,9 +111,9 @@ def test_windows_install(
     subprocess.run(
         (
             'ssh-keygen',
-            '-t', 'rsa',        # RSA key only
+            '-t', 'rsa',         # RSA key only
             '-f', str(ssh_key),  # filename of key file
-            '-N', ''            # empty passphrase
+            '-N', ''             # empty passphrase
         ),
         check=True
     )
@@ -123,12 +124,16 @@ def test_windows_install(
         (re.compile(r'( *ssh_public_key_file *= *").*"'), r'\1' + re.escape(str(ssh_cert)) + '"'),
     )
 
+    lineno = 1
+
     main_tf = tmp_path / 'main.tf'
     with main_template.open() as src:
         with main_tf.open('w') as dst:
             for line in src:
                 for pat, repl in subs:
                     line = pat.sub(repl, line)
+                sys.stderr.write('%d\t%s' % (lineno, line))
+                lineno += 1
                 dst.write(line)
 
     subprocess.run((str(terraform), 'init'), cwd=str(tmp_path), check=True)
