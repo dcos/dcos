@@ -1,5 +1,14 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
+## DC/OS 1.12.6 (In development)
+
+### Notable changes
+
+### Fixed and improved
+
+### Security updates
+
+
 ## DC/OS 1.12.5 (2019-01-02)
 
 * Updated Signal service to release [1.6.0](https://github.com/dcos/dcos-signal/releases/tag/1.6.0)
