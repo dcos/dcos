@@ -110,8 +110,8 @@ def test_windows_install(
     subprocess.run(('/bin/ls', '~/.ssh'))
 
     main_tf = tmp_path / 'main.tf'
-    with open(main_template) as src:
-        with open(main_tf, 'w') as dst:
+    with main_template.open() as src:
+        with main_tf.open('w') as dst:
             for line in src:
                 for pat, repl in subs:
                     line = pat.sub(repl, line)
