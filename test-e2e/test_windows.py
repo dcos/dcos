@@ -90,7 +90,7 @@ def test_windows_install(
     terraform_zip = tmp_path / 'terraform.zip'
     _download_file(terraform_url, terraform_zip)
 
-    subprocess.run(('unzip', str(terraform_zip)), check=True)
+    subprocess.run(('unzip', str(terraform_zip)), cwd=str(tmp_path), check=True)
 
     terraform = tmp_path / 'terraform'
 
