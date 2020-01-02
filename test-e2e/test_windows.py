@@ -118,12 +118,19 @@ def test_windows_install(
         check=True
     )
 
+    license_txt = tmp_path / 'license.txt'
+    license_txt.write_text(os.environ['DCOS_LICENSE'])
+
     subs = (
         (re.compile(r'( *cluster_name *= *").*"'), r'\1test_windows_install"'),
         (re.compile(r'( *owner *= *").*"'), r'\1test-e2e"'),
         (
             re.compile(r'( *ssh_public_key_file *= *").*"'),
             r'\1' + str(ssh_cert).replace('\\', '\\\\') + '"'
+        ),
+        (
+            re.compile(r'( *dcos_license_key_contents = ").*"$'),
+            r'\1${file("' + str(license_txt).replace('\\', '\\\\') + '")}"'
         ),
     )
 
