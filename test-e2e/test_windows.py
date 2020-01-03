@@ -155,10 +155,10 @@ def test_windows_install(
     try:
         subprocess.run(
             (str(terraform), 'apply', '-auto-approve'),
-            cwd=str(tmp_path), env=cred_env, check=True
+            cwd=str(tmp_path), env=creds_env, check=True
         )
     finally:
         subprocess.run(
             (str(terraform), 'destroy', '-auto-approve'),
-            cwd=str(tmp_path), env=cred_env, check=True
+            cwd=str(tmp_path), env=creds_env, check=True
         )
