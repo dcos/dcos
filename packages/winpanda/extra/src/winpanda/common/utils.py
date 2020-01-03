@@ -117,11 +117,17 @@ def run_external_command(cl_elements, timeout=30):
             cl_elements, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             timeout=timeout, check=True, universal_newlines=True
         )
-    except subprocess.SubprocessError as e:
+    except subprocess.CalledProcessError as e:
         raise cm_exc.ExternalCommandError(
             '{}: {}: Exit code[{}]: {}'.format(
                 cl_elements, type(e).__name__, e.returncode,
                 e.stderr.replace('\n', ' ')
+            )
+        )
+    except subprocess.SubprocessError as e:
+        raise cm_exc.ExternalCommandError(
+            '{}: {}: {}'.format(
+                cl_elements, type(e).__name__, str(e)
             )
         )
     except (OSError, ValueError) as e:

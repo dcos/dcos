@@ -52,6 +52,7 @@
                     "teamcity/dcos/build/dcos",
                     "teamcity/dcos/build/tox",
                     "teamcity/dcos/build/dcosWindows",
+                    "teamcity/dcos/build/tox/windows",
                     "continuous-integration/jenkins/pr-head",
                     "teamcity/dcos/test/aws/cloudformation/simple",
                     "teamcity/dcos/test/test-e2e/group1",
