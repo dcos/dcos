@@ -134,6 +134,10 @@ def test_windows_install(
         ),
     )
 
+    creds_env = os.environ.copy()
+    creds_env['AWS_ACCESS_KEY_ID'] = os.environ['AWS_TESTING_ACCESS_KEY_ID']
+    creds_env['AWS_SECRET_ACCESS_KEY'] = os.environ['AWS_TESTING_SECRET_ACCESS_KEY']
+
     lineno = 1
 
     main_tf = tmp_path / 'main.tf'
@@ -149,6 +153,12 @@ def test_windows_install(
     subprocess.run((str(terraform), 'init'), cwd=str(tmp_path), check=True)
 
     try:
-        subprocess.run((str(terraform), 'apply', '-auto-approve'), cwd=str(tmp_path), check=True)
+        subprocess.run(
+            (str(terraform), 'apply', '-auto-approve'),
+            cwd=str(tmp_path), env=cred_env, check=True
+        )
     finally:
-        subprocess.run((str(terraform), 'destroy', '-auto-approve'), cwd=str(tmp_path), check=True)
+        subprocess.run(
+            (str(terraform), 'destroy', '-auto-approve'),
+            cwd=str(tmp_path), env=cred_env, check=True
+        )
