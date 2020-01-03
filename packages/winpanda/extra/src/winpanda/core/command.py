@@ -152,9 +152,20 @@ class CmdSetup(Command):
 
             # Finalize package setup procedures taking package mutual
             # dependencies into account.
-            for package in cr_utl.pkg_sort_by_deps(packages_bulk):
+
+            packages_sorted_by_deps = cr_utl.pkg_sort_by_deps(packages_bulk)
+
+            # Prepare base per package configuration objects
+            for package in packages_sorted_by_deps:
                 self._handle_pkg_dir_setup(package)
                 self._handle_pkg_cfg_setup(package)
+
+            # Deploy DC/OS aggregated configuration object
+            self._deploy_dcos_conf()
+
+            # Run per package extra installation helpers, setup services and
+            # save manifests
+            for package in packages_sorted_by_deps:
                 self._handle_pkg_inst_extras(package)
                 self._handle_pkg_svc_setup(package)
 
@@ -167,9 +178,6 @@ class CmdSetup(Command):
 
                 LOG.info(f'{self.msg_src}: Setup package:'
                          f' {package.manifest.pkg_id.pkg_id}: OK')
-
-            # Deploy DC/OS aggregated configuration object
-            self._deploy_dcos_conf()
 
     def _handle_pkg_dir_setup(self, package):
         """Transfer files from special directories into location.

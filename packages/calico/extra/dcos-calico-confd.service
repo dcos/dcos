@@ -1,0 +1,17 @@
+[Unit]
+Description=DC/OS Calico Node (confd): A simple configuration management tool providing dynamic configurations for Calico Bird
+ConditionPathExists=/opt/mesosphere/etc/calico/bird_enabled
+
+[Service]
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/calico/calico-node.env
+EnvironmentFile=/opt/mesosphere/etc/calico/calico-node-datastore.env
+ExecStartPre=/bin/sh -c 'systemctl set-environment NODENAME=$$(/opt/mesosphere/bin/detect_ip)'
+ExecStartPre=/usr/bin/mkdir -p /etc/calico
+ExecStartPre=/usr/bin/cp -r /opt/mesosphere/active/calico/confd /etc/calico/confd
+ExecStart=/opt/mesosphere/bin/calico-node -confd
+
+Restart=always
+StartLimitInterval=0
+KillSignal=SIGTERM
+RestartSec=5
