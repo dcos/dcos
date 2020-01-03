@@ -135,8 +135,8 @@ def test_windows_install(
     )
 
     creds_env = os.environ.copy()
-    creds_env['AWS_ACCESS_KEY_ID'] = os.environ['AWS_TESTING_ACCESS_KEY_ID']
-    creds_env['AWS_SECRET_ACCESS_KEY'] = os.environ['AWS_TESTING_SECRET_ACCESS_KEY']
+    creds_env['AWS_ACCESS_KEY_ID'] = os.environ['AWS_PROD_ACCESS_KEY_ID']
+    creds_env['AWS_SECRET_ACCESS_KEY'] = os.environ['AWS_PROD_SECRET_ACCESS_KEY']
 
     lineno = 1
 
