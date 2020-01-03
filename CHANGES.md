@@ -14,6 +14,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Marathon: Pod statuses could fail to report properly with unlaunched resident pods are scaled down (MARATHON-8711)
 
+* Marathon: Pod status report with tasks in `TASK_UNKONW` state would be omitted. (MARATHON-8710)
+
 * dcos-net: task update leads to two DNS zone updates. (DCOS_OSS-5495)
 
 * DC/OS overlay networks should be compared by-value. (DCOS_OSS-5620)
