@@ -7,13 +7,6 @@ package:
           "PROVIDER": "{{ provider }}"
         }
       }
-  - path: {{ windows_dcos_install_path }}\bin\detect_ip.ps1
-    content: |
-      $IPAddress = ([System.Net.Dns]::GetHostByName("master.mesos").AddressList[0]).IpAddressToString
-      (Find-NetRoute -RemoteIPAddress $IPAddress | Select-Object  Ipv4Address).Ipv4Address
-  - path: {{ windows_dcos_install_path }}\bin\detect_ip_public.ps1
-    content: |
-        (Invoke-WebRequest -uri "http://whatismyip.akamai.com/" -UseBasicParsing).Content
   - path: {{ windows_dcos_install_path }}\etc\check_time.env
     content: |
         ENABLE_CHECK_TIME=true
@@ -122,7 +115,7 @@ package:
         ## Run telegraf in quiet mode (error log messages only).
         quiet = false
         ## Specify the log file name. The empty string means to log to stderr.
-        logfile = ""
+        logfile = "{{ windows_dcos_install_path_json }}\\var\\log\\telegraf\\telegraf.log"
         ## Override default hostname, if empty use os.Hostname()
         hostname = ''
         ## If set to true, do no set the "host" tag in the telegraf agent.
@@ -203,4 +196,19 @@ package:
         ## Expiration interval for each metric before it's evicted from cache.
         expiration_interval = "60s"
       # Read metrics from DC/OS Net Prometheus endpoint.
+  - path: {{ windows_dcos_install_path }}\etc\mesos\domain.json
+    content: |
+      {
+        "fault_domain":
+          {
+            "region":
+              {
+                "name": "windows"
+              },
+            "zone":
+              {
+                "name": "windows"
+              }
+          }
+      }
 

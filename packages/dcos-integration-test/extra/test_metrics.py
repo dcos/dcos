@@ -2,6 +2,7 @@ import contextlib
 import copy
 import logging
 import re
+import sys
 import uuid
 
 import pytest
@@ -114,31 +115,34 @@ def test_metrics_master_mesos(dcos_api_session):
 
 def test_metrics_agents_mesos_overlay(dcos_api_session):
     """Assert that mesos agent overlay module metrics on master and agents are present."""
-    nodes = get_master_and_agents(dcos_api_session)
 
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+    def _check_mesos_overlay_metrics():
+        response = get_metrics_prom(dcos_api_session, node)
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                if sample[0] == 'mesos_overlay_slave_registering':
+                    return
+        raise Exception('Expected Mesos mesos_overlay_slave_registering metric not found')
+
+    nodes = get_master_and_agents(dcos_api_session)
     for node in nodes:
-        @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-        def check_mesos_metrics():
-            response = get_metrics_prom(dcos_api_session, node)
-            for family in text_string_to_metric_families(response.text):
-                for sample in family.samples:
-                    if sample[0] == 'mesos_overlay_slave_registering':
-                        return
-            raise Exception('Expected Mesos mesos_overlay_slave_registering metric not found')
-        check_mesos_metrics()
+        _check_mesos_overlay_metrics()
 
 
 def test_metrics_master_mesos_overlay(dcos_api_session):
     """Assert that mesos overlay module metrics on master are present."""
+
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-    def check_mesos_metrics():
+    def _check_mesos_overlay_metrics():
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
         for family in text_string_to_metric_families(response.text):
             for sample in family.samples:
                 if sample[0] == 'mesos_overlay_master_process_restarts':
                     return
         raise Exception('Expected Mesos mesos_overlay_master_process_restarts metric not found')
-    check_mesos_metrics()
+
+    _check_mesos_overlay_metrics()
 
 
 def test_metrics_master_zookeeper(dcos_api_session):
@@ -167,6 +171,38 @@ def test_metrics_master_cockroachdb(dcos_api_session):
                     return
         raise Exception('Expected CockroachDB ranges_underreplicated metric not found')
     check_cockroachdb_metrics()
+
+
+def test_metrics_master_calico(dcos_api_session):
+    """Assert that DC/OS Calico metrics on master are present."""
+
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+    def _check_calico_metrics():
+        response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                if sample[0].startswith('felix') and sample[1].get('dcos_component_name') == 'DC/OS Calico':
+                    return
+        raise Exception('Expected DC/OS Calico felix* metric on master nodes not found')
+
+    _check_calico_metrics()
+
+
+def test_metrics_agents_calico(dcos_api_session):
+    """Assert that DC/OS Calico metrics on agents are present."""
+
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+    def _check_calico_metrics():
+        response = get_metrics_prom(dcos_api_session, node)
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                if sample[0].startswith('felix') and sample[1].get('dcos_component_name') == 'DC/OS Calico':
+                    return
+        raise Exception('Expected DC/OS Calico felix* metric on agent nodes not found')
+
+    nodes = get_agents(dcos_api_session)
+    for node in nodes:
+        _check_calico_metrics()
 
 
 def test_metrics_master_adminrouter_nginx_vts(dcos_api_session):
@@ -463,6 +499,12 @@ def check_statsd_app_metrics(dcos_api_session, marathon_app, node, expected_metr
                         assert sample[2] == val
                         if len(expected_copy) == 0:
                             return
+            sys.stderr.write(
+                "%r\n%r\n" % (
+                    expected_metrics,
+                    expected_copy,
+                )
+            )
             raise Exception('Expected statsd metrics not found')
         check_statsd_metrics()
 
@@ -505,7 +547,8 @@ def test_metrics_agent_statsd(dcos_api_session):
         ]),
         'container': {
             'type': 'MESOS',
-            'docker': {'image': 'library/alpine'}
+            # pin image to working version - https://jira.mesosphere.com/browse/DCOS-62478
+            'docker': {'image': 'library/alpine:3.10.3'}
         },
         'networks': [{'mode': 'host'}],
     }
