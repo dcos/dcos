@@ -27,3 +27,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Mesos: support quoted realms in WWW-Authenticate headers. (DCOS-61529)
 
 * Build Admin Router without SSE4.2 instructions to work on older CPUs. (DCOS_OSS-5643)
+
+* Update Java to version 8u232. This was mistakenly downgraded during the switch to OpenJDK. (DCOS-62548)
