@@ -52,7 +52,7 @@ def test_run_external_command_failure(tmp_path):
     with pytest.raises(ExternalCommandError) as e:
         run_external_command(('powershell', '-executionpolicy', 'Bypass', '-File', str(script)))
     # no way to access returncode, stdout, and stderr
-    assert 'Exit code[4]' in str(e)
+    assert 'Exit code [4]' in str(e)
 
 
 def test_run_external_command_error(tmp_path):
