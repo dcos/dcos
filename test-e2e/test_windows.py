@@ -1,9 +1,7 @@
 import os
 import random
-import re
 import string
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -91,10 +89,9 @@ def test_windows_install(
     terraform_zip = tmp_path / 'terraform.zip'
     _download_file(terraform_url, terraform_zip)
 
-    subprocess.run(('whoami'))
-
-    subprocess.run(('sudo', 'whoami'))
-
-    subprocess.run(('vagrant', 'version'))
-
-    subprocess.run(('sudo', 'apt-install', '-y', 'vagrant'), check=True)
+    env = {
+        'HOME': os.getcwd()
+    }
+    env.update(os.environ)
+    print('%r' % env)
+    subprocess.run(('vagrant', 'version'), env=env, check=True)
