@@ -2,8 +2,8 @@
   "sources" : {
     "java": {
       "kind": "url_extract",
-      "url": "https://downloads.mesosphere.io/java/openjdk-8u40-b25-linux-x64-10_feb_2015.tar.gz",
-      "sha1": "ba57a7781740c20f7710916d560415ec3c050ece"
+      "url": "https://downloads.mesosphere.com/java/OpenJDK8U-jdk_x64_linux_hotspot_8u232b09.tar.gz",
+      "sha1": "e2d1a6e27e6f2929dcf2d78fa790c808edaa3601"
     }
   },
   "environment": {
