@@ -91,74 +91,10 @@ def test_windows_install(
     terraform_zip = tmp_path / 'terraform.zip'
     _download_file(terraform_url, terraform_zip)
 
-    subprocess.run(('unzip', str(terraform_zip)), cwd=str(tmp_path), check=True)
+    subprocess.run(('whoami'))
 
-    terraform = tmp_path / 'terraform'
+    subprocess.run(('sudo', 'whoami'))
 
-    assert terraform.exists()
+    subprocess.run(('vagrant', 'version'))
 
-    terraform_zip.unlink()
-
-    maintf_url = (
-        'https://raw.githubusercontent.com/sergiimatusEPAM/examples/feature/'
-        'windows-beta-support/aws/windows-agent/main.tf'
-    )
-    main_template = tmp_path / 'main.tf.in'
-    _download_file(maintf_url, main_template)
-
-    ssh_key = tmp_path / 'ssh'
-    ssh_cert = ssh_key.with_suffix('.pub')
-    subprocess.run(
-        (
-            'ssh-keygen',
-            '-t', 'rsa',         # RSA key only
-            '-f', str(ssh_key),  # filename of key file
-            '-N', ''             # empty passphrase
-        ),
-        check=True
-    )
-
-    license_txt = tmp_path / 'license.txt'
-    license_txt.write_text(os.environ['DCOS_LICENSE'])
-
-    subs = (
-        (re.compile(r'( *cluster_name *= *").*"'), r'\1test_windows_install"'),
-        (re.compile(r'( *owner *= *").*"'), r'\1test-e2e"'),
-        (
-            re.compile(r'( *ssh_public_key_file *= *").*"'),
-            r'\1' + str(ssh_cert).replace('\\', '\\\\') + '"'
-        ),
-        (
-            re.compile(r'( *dcos_license_key_contents = ").*"$'),
-            r'\1${file("' + str(license_txt).replace('\\', '\\\\') + '")}"'
-        ),
-    )
-
-    creds_env = os.environ.copy()
-    creds_env['AWS_ACCESS_KEY_ID'] = os.environ['AWS_PROD_ACCESS_KEY_ID']
-    creds_env['AWS_SECRET_ACCESS_KEY'] = os.environ['AWS_PROD_SECRET_ACCESS_KEY']
-
-    lineno = 1
-
-    main_tf = tmp_path / 'main.tf'
-    with main_template.open() as src:
-        with main_tf.open('w') as dst:
-            for line in src:
-                for pat, repl in subs:
-                    line = pat.sub(repl, line)
-                sys.stderr.write('%d\t%s' % (lineno, line))
-                lineno += 1
-                dst.write(line)
-
-    subprocess.run((str(terraform), 'init'), cwd=str(tmp_path), check=True)
-
-    try:
-        subprocess.run(
-            (str(terraform), 'apply', '-auto-approve'),
-            cwd=str(tmp_path), env=creds_env, check=True
-        )
-    finally:
-        subprocess.run(
-            (str(terraform), 'destroy', '-auto-approve'),
-            cwd=str(tmp_path), env=creds_env, check=True
-        )
+    subprocess.run(('sudo', 'apt-install', '-y', 'vagrant'), check=True)
