@@ -1,8 +1,11 @@
 [Unit]
 Description=CockroachDB Set Configuration Timer: Timer to periodically set the CockroachDB configuration
 Documentation=https://docs.mesosphere.com
+# Start the timer after CockroachDB has started
+After=dcos-cockroach.service
 
 [Timer]
-OnBootSec=5sec
-OnStartupSec=5min
+# 15 seconds after CockroachDB has started, connect to ensure correct configuration
+OnActiveSec=15
+# Every 10 minutes, ensure correct configuration
 OnUnitActiveSec=10min
