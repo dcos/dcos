@@ -3,7 +3,7 @@ Description=CockroachDB Config Change: Ensure `num_replicas` equals the expected
 Documentation=https://docs.mesosphere.com
 
 [Service]
-Type=simple
+Type=oneshot
 User=dcos_cockroach
 PermissionsStartOnly=True
 StartLimitInterval=0
