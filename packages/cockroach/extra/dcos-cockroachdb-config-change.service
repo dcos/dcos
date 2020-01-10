@@ -7,8 +7,6 @@ Type=simple
 User=dcos_cockroach
 PermissionsStartOnly=True
 StartLimitInterval=0
-Restart=on-failure
-RestartSec=5
 LimitNOFILE=16384
 # The TMPDIR is created by the bootstrapper.
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-cockroach-config-change
