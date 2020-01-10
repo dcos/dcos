@@ -70,7 +70,21 @@ package:
         "LocalCommands": [
         ]
       }
-
+  - path: {{ windows_dcos_install_path }}\etc\mesos\domain.json
+    content: |
+        {
+          "fault_domain":
+            {
+              "region":
+                {
+                  "name": "windows"
+                },
+              "zone":
+                {
+                  "name": "windows"
+                }
+            }
+        }
   # Config for Telegraf
   - path: {{ windows_dcos_install_path }}\etc\telegraf\telegraf.conf
     content: |
