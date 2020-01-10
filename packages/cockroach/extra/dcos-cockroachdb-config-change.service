@@ -1,9 +1,11 @@
 [Unit]
 Description=CockroachDB Config Change: Ensure `num_replicas` equals the expected number of master nodes.
 Documentation=https://docs.mesosphere.com
+BindsTo=dcos-cockroach.service
+After=dcos-cockroach.service
 
 [Service]
-Type=oneshot
+Type=simple
 User=dcos_cockroach
 PermissionsStartOnly=True
 StartLimitInterval=0
