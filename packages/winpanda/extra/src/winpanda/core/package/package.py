@@ -49,9 +49,7 @@ class Package:
                   f' Package configuration manager: {self.cfg_manager}')
 
         if self.manifest.pkg_extcfg:
-            self.ext_manager = PkgInstExtrasManager(
-                ext_conf=self.manifest.pkg_extcfg
-            )
+            self.ext_manager = PkgInstExtrasManager(pkg_manifest=self.manifest)
         else:
             self.ext_manager = None
         LOG.debug(f'{self.msg_src}: {self.manifest.pkg_id.pkg_id}:'

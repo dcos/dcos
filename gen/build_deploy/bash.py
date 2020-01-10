@@ -494,6 +494,9 @@ function check_all() {
         for service in \
             "53 dcos-net" \
             "80 adminrouter" \
+            "179 dcos-calico-bird" \
+            "2379 dcos-etcd" \
+            "2380 dcos-etcd" \
             "443 adminrouter" \
             "1050 dcos-diagnostics" \
             "2181 zookeeper" \
@@ -513,6 +516,7 @@ function check_all() {
             "61091 telegraf" \
             "62020 fluent-bit" \
             "62080 dcos-net" \
+            "62091 dcos-calico-felix" \
             "62501 dcos-net"
         do
             check_service $service
@@ -521,11 +525,13 @@ function check_all() {
         # agent / public agent node service checks
         for service in \
             "53 dcos-net" \
+            "179 dcos-calico-bird" \
             "5051 mesos-agent" \
             "61001 agent-adminrouter" \
             "61091 telegraf" \
             "62020 fluent-bit" \
             "62080 dcos-net" \
+            "62091 dcos-calico-felix" \
             "62501 dcos-net"
         do
             check_service $service
