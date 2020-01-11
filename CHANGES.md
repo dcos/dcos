@@ -51,6 +51,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Remove the dcos-history-service from DC/OS. (DCOS-58529)
 
+* New format for Admin Router access logs. (DCOS-59598)
+
+
 ### Fixed and improved
 
 * Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
