@@ -1392,7 +1392,7 @@ entry = {
         'calico_vxlan_vni': '4096',
     },
     'must': {
-        'fault_domain_enabled': 'false',
+        'fault_domain_enabled': 'true',
         'custom_auth': 'false',
         'master_quorum': lambda num_masters: str(floor(int(num_masters) / 2) + 1),
         'dns_bind_ip_blacklist_json': calculate_dns_bind_ip_blacklist_json,
