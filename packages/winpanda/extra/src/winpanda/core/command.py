@@ -226,22 +226,23 @@ class CmdSetup(Command):
         :param package: Package, DC/OS package manager object
         """
         msg_src = self.__class__.__name__
+        pkg_id = package.manifest.pkg_id
 
         if package.ext_manager:
-            LOG.debug(f'{msg_src}: Execute: Handle extra install options:'
-                      f' {package.manifest.pkg_id.pkg_name}: ...')
+            LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
+                      f' Handle extra installation options: ...')
             try:
                 package.ext_manager.handle_install_extras()
             except extm_exc.InstExtrasManagerError as e:
-                err_msg = (f'Execute: Handle extra install options:'
-                           f' {package.manifest.pkg_id.pkg_name}: {e}')
+                err_msg = (f'Execute: {pkg_id.pkg_name}:'
+                           f' Handle extra installation options: {e}')
                 raise cr_exc.SetupCommandError(err_msg) from e
 
-            LOG.debug(f'{msg_src}: Execute: Handle extra install options:'
-                      f' {package.manifest.pkg_id.pkg_name}: OK')
+            LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
+                      f' Handle extra installation options: OK')
         else:
-            LOG.debug(f'{msg_src}: Execute: Handle extra install options:'
-                      f' {package.manifest.pkg_id.pkg_name}: NOP')
+            LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
+                      f' Handle extra installation options: NOP')
 
     def _handle_pkg_svc_setup(self, package):
         """Execute steps on package service setup.
@@ -258,8 +259,9 @@ class CmdSetup(Command):
             try:
                 ret_code, stdout, stderr = package.svc_manager.status()
             except svcm_exc.ServiceManagerCommandError as e:
-                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Get initial'
-                          f' service status: {svc_name}: {e}')
+                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Setup'
+                          f' service: Get initial service status: {svc_name}:'
+                          f' {e}')
                 # Try to setup, as a service (expectedly) doesn't exist and
                 # checking it's status naturally would yield an error.
                 try:
@@ -269,8 +271,8 @@ class CmdSetup(Command):
                                f' {svc_name}: {e}')
                     raise cr_exc.SetupCommandError(err_msg) from e
             else:
-                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Get initial'
-                          f' service status: {svc_name}:'
+                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Setup'
+                          f' service: Get initial service status: {svc_name}:'
                           f' stdout[{stdout}] stderr[{stderr}]')
                 svc_status = str(stdout).strip().rstrip('\n')
                 # Try to remove existing service

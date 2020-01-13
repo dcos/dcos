@@ -2,9 +2,12 @@
 
 DC/OS package extra installation options manager definition.
 """
+import subprocess
+
 from common import logger
 from common import exceptions as cm_exc
 from common import utils as cm_utl
+from core.package.manifest import PackageManifest
 from extm import exceptions as extm_exc
 
 
@@ -24,26 +27,31 @@ class EXTCFG_OPTION:
 
 class PkgInstExtrasManager:
     """DC/OS package extra installation options manager."""
-    def __init__(self, ext_conf):
+    def __init__(self, pkg_manifest):
         """Constructor.
 
-        :param ext_conf: dict, package installation extras config
+        :param pkg_manifest: PackageManifest, DC/OS package manifest object
         """
-        if not isinstance(ext_conf, dict):
-            raise extm_exc.InstExtrasManagerConfigError(
-                f'Invalid configuration container structure: {ext_conf}'
-            )
+        self._msg_src_base = self.__class__.__name__
 
-        self.ext_conf = ext_conf
+        assert isinstance(pkg_manifest, PackageManifest), (
+            f'{self._msg_src_base}: Argument: pkg_manifest:'
+            f' Got {type(pkg_manifest).__name__} instead of PackageManifest'
+        )
+        self._pkg_manifest = pkg_manifest
+        self._pkg_id = self._pkg_manifest.pkg_id
+        self._ext_conf = self._pkg_manifest.pkg_extcfg
+
+        self.msg_src = f'{self._msg_src_base}: {self._pkg_id.pkg_id}'
 
     def __str__(self):
         return str({
-            'ext_conf': self.ext_conf,
+            'ext_conf': self._ext_conf,
         })
 
     def handle_install_extras(self):
         """DC/OS package install extra options handler."""
-        install_sect = self.ext_conf.get(EXTCFG_SECTION.INSTALL, {})
+        install_sect = self._ext_conf.get(EXTCFG_SECTION.INSTALL, {})
 
         if not isinstance(install_sect, dict):
             raise extm_exc.InstExtrasManagerConfigError(
@@ -63,7 +71,7 @@ class PkgInstExtrasManager:
 
     def handle_uninstall_extras(self):
         """DC/OS package uninstall extra options handler."""
-        uninstall_sect = self.ext_conf.get(EXTCFG_SECTION.UNINSTALL, {})
+        uninstall_sect = self._ext_conf.get(EXTCFG_SECTION.UNINSTALL, {})
 
         if not isinstance(uninstall_sect, dict):
             raise extm_exc.InstExtrasManagerConfigError(
@@ -87,13 +95,53 @@ class PkgInstExtrasManager:
 
         :param cmd_cl_defs: tuple(str), set of command line definitions
         """
-        msg_src = self.__class__.__name__
-
-        for cmd_cl_def in cmd_cl_defs:
+        for cmd_id, cmd_cl_def in enumerate(cmd_cl_defs, start=1):
             try:
-                cm_utl.run_external_command(cmd_cl_def)
-                LOG.debug(f'{msg_src}: External command: {cmd_cl_def}: OK')
+                cmd_run_result = cm_utl.run_external_command(cmd_cl_def)
+                LOG.debug(
+                    f'{self.msg_src}: Run external command (cmd_id={cmd_id}):'
+                    f' {cmd_cl_def}: OK')
+                self._save_extcmd_output(str(cmd_id), cmd_run_result)
             except cm_exc.ExternalCommandError as e:
+                LOG.debug(
+                    f'{self.msg_src}: Run external command (cmd_id={cmd_id}):'
+                    f' {cmd_cl_def}: {type(e).__name__}: {e}')
+                self._save_extcmd_output(str(cmd_id), e)
                 raise extm_exc.InstExtrasManagerError(
                     f'{type(e).__name__}: {e}'
                 ) from e
+
+    def _save_extcmd_output(self, cmd_id, cmd_run_result):
+        """Save external command's return code and content of its standard
+        output and error streams.
+
+        :param cmd_id:         str, command ID
+        :param cmd_run_result: subprocess.CompletedProcess|
+                               subprocess.SubprocessError, command execution
+                               result descriptor object
+        """
+        failure_descriptor = getattr(cmd_run_result, '__cause__', None)
+
+        if failure_descriptor:
+            cmd_spec = getattr(failure_descriptor, 'cmd', None)
+            cmd_retcode = getattr(failure_descriptor, 'returncode', None)
+            cmd_stdout = getattr(failure_descriptor, 'stdout', None)
+            cmd_stderr = getattr(failure_descriptor, 'stderr', None)
+        else:
+            cmd_spec = getattr(cmd_run_result, 'args', None)
+            cmd_retcode = getattr(cmd_run_result, 'returncode', None)
+            cmd_stdout = getattr(cmd_run_result, 'stdout', None)
+            cmd_stderr = getattr(cmd_run_result, 'stderr', None)
+
+        LOG.debug(
+            f'{self.msg_src}: Run external command (cmd_id={cmd_id}):'
+            f' {cmd_spec}: return code: {cmd_retcode}'
+        )
+        LOG.debug(
+            f'{self.msg_src}: Run external command (cmd_id={cmd_id}):'
+            f' {cmd_spec}: stdout: {cmd_stdout}'
+        )
+        LOG.debug(
+            f'{self.msg_src}: Run external command (cmd_id={cmd_id}):'
+            f' {cmd_spec}: stderr: {cmd_stderr}'
+        )
