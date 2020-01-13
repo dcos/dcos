@@ -1,12 +1,15 @@
 [Unit]
 Description=CockroachDB Config Change: Ensure `num_replicas` equals the expected number of master nodes.
 Documentation=https://docs.mesosphere.com
+After=dcos-cockroach.service
 
 [Service]
 Type=simple
 User=dcos_cockroach
 PermissionsStartOnly=True
 StartLimitInterval=0
+Restart=on-failure
+RestartSec=5
 LimitNOFILE=16384
 # The TMPDIR is created by the bootstrapper.
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-cockroach-config-change
