@@ -9,9 +9,9 @@
   "sources": {
     "mesos": {
       "kind": "git",
-      "git": "https://github.com/apache/mesos",
-      "ref": "d46ae94b49b452ed3fbfdf99dfb501e09675a311",
-      "ref_origin": "master"
+      "git": "https://github.com/bmahler/mesos",
+      "ref": "03e221048b76565ab472ce4a35691b7f5d41346d",
+      "ref_origin": "parallel-v1-reads"
     },
     "mesos-modules": {
       "kind": "git",
