@@ -1388,6 +1388,7 @@ package:
 {% endswitch %}
 {% switch mesos_http_executor_domain_sockets %}
 {% case "true" %}
+      MESOS_HTTP_COMMAND_EXECUTOR=true
       MESOS_HTTP_EXECUTOR_DOMAIN_SOCKETS=true
       # TODO(bevers): With systemd versions before 227, named sockets are not supported and
       # all socket names are rendered as "unknown". Change this to a named socket (i.e.
