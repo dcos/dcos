@@ -6,6 +6,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### What's new
 
+* Added a new configuration option `mesos_http_executors_domain_sockets`, which will cause the mesos-agent to use
+  domain sockets when communicating with executors. While this change should not have any visible impact on users
+  in itself, it does enable administrators to write firewall rules blocking unauthorized access to the agent port
+  5051 since access to this will not be required anymore for executors to work.
+
 * Switched from Oracle Java 8 to OpenJDK 8 (DCOS-54902)
 
 * Updated DC/OS UI to [master+v2.150.2](https://github.com/dcos/dcos-ui/releases/tag/master+v2.150.2).

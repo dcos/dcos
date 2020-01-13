@@ -1,0 +1,10 @@
+[Unit]
+Description=DC/OS Executors Socket: socket for communication between Mesos agent and v1 executors
+
+[Socket]
+ListenStream=/var/run/mesos/mesos-executors.sock
+Accept=no
+
+# Set a custom file descriptor name so we get the same socket
+# name for both public and non-public slaves.
+FileDescriptorName=dcos-mesos-slave
