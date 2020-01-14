@@ -1,4 +1,5 @@
-Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
+Please follow the [`CHANGES.md` modification g
+delines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
 
 ## DC/OS 2.1.0 (in development)
@@ -8,7 +9,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Switched from Oracle Java 8 to OpenJDK 8 (DCOS-54902)
 
-* Updated DC/OS UI to [master+v2.150.2](https://github.com/dcos/dcos-ui/releases/tag/master+v2.150.2).
+* Updated DC/OS UI to [master+v2.154.12](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.12).
 
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
