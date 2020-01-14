@@ -12,7 +12,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
-* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/77ba44ccd6837367ed3a059fc559b2dd7dcf06ec/CHANGELOG)
+* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/d46ae94b49b452ed3fbfdf99dfb501e09675a311/CHANGELOG)
 
 * Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
 
@@ -36,10 +36,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Enable proxing of gRPC requests through Admin Router (DCOS-59091)
 
-* Calico in DC/OS: introduced Calico network for mesos UCR. (DCOS-58582)
-
-* Calico in DC/OS: introduced calico control panel services deployed on all agents and masters. (DCOS-58583)
-
+* Calico in DC/OS: introduced Calico networking into DC/OS, and provided network policy support (DCOS-58413) 
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
@@ -53,6 +50,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Remove the toybox package from DC/OS. Is was used only by Spartan.
 
 * Remove the dcos-history-service from DC/OS. (DCOS-58529)
+
+* New format for Admin Router access logs. (DCOS-59598)
+
 
 ### Fixed and improved
 

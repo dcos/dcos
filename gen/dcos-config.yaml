@@ -1850,6 +1850,34 @@ package:
                   "Optional": true
               },
               {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "node", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "ipPool", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "profile", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "workloadEndpoint", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "node", "status"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "networkPolicy", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "globalNetworkPolicy", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
                   "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
                   "Role": ["master"]
               },
@@ -2409,6 +2437,13 @@ package:
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "DC/OS Net"
+      # Read metrics from DC/OS Calico Node Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://localhost:62091/metrics"]
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Calico"
       # Read metrics from Fluent Bit Prometheus endpoint
       [[inputs.prometheus]]
         ## An array of urls to scrape metrics from.
@@ -3028,6 +3063,8 @@ package:
       CALICO_IPV4POOL_NAT_OUTGOING=true
       FELIX_IGNORELOOSERPF=true
       FELIX_LOGFILEPATH=none
+      FELIX_PROMETHEUSMETRICSENABLED=true
+      FELIX_PROMETHEUSMETRICSPORT=62091
 {% switch calico_vxlan_enabled %}
 {% case "false" %}
       FELIX_IPINIPMTU={{ calico_ipinip_mtu }}
