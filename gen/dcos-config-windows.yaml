@@ -212,3 +212,13 @@ package:
           }
       }
 
+  - path: {{ windows_dcos_install_path }}\etc\adminrouter\adminrouter-tls-agent.conf
+    content: |
+      # Note that Agent Admin Router only serves cluster-internal clients. Hence,
+      # browser compatibility is not a criterion for the TLS cipher suite selection.
+      ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:!MD5;
+      ssl_prefer_server_ciphers on;
+      ssl_protocols TLSv1.2;
+  - path: {{ windows_dcos_install_path }}\etc\adminrouter\adminrouter-listen-open.conf
+    content: |
+        listen 61001 default_server;
