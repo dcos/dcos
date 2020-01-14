@@ -1,0 +1,16 @@
+# change the default profile to allow all traffic from and to endpoints
+apiVersion: projectcalico.org/v3
+kind: Profile
+metadata:
+  name: calico
+spec:
+  egress:
+  - action: Allow
+    destination: {}
+    source: {}
+  ingress:
+  - action: Allow
+    destination: {}
+    source: {}
+  labelsToApply:
+    calico: ""

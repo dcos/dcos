@@ -9,7 +9,7 @@ Like traditional operating systems, DC/OS is system software that manages comput
 
 Unlike traditional operating systems, DC/OS spans multiple machines within a network, aggregating their resources to maximize utilization by distributed applications.
 
-To learn more, see the [DC/OS Overview](https://dcos.io/docs/latest/overview/).
+To learn more, see the [DC/OS Overview](https://docs.d2iq.com/mesosphere/dcos/latest/overview/).
 
 
 # How Do I...?
@@ -47,6 +47,7 @@ To find the git SHA of any given release, check the latest commit in the version
     - Docker doesn't have all the features needed on OS X or Windows
     - `tar` needs to be GNU tar for the set of flags used
     - `unzip` needs to be installed
+1. [pre-commit](https://pre-commit.com)
 1. [tox](https://tox.readthedocs.org/en/latest/)
 1. git 1.8.5+
 1. Docker 1.11+

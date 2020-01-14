@@ -1,0 +1,16 @@
+[Unit]
+Description=DC/OS Calico Node (bird): A BGP routing daemon to propagate routes between hosts.
+ConditionPathExists=/opt/mesosphere/etc/calico/bird_enabled
+
+[Service]
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/calico/calico-node.env
+EnvironmentFile=/opt/mesosphere/etc/calico/calico-node-datastore.env
+ExecStartPre=/usr/bin/mkdir -p /var/run/calico
+ExecStart=/opt/mesosphere/bin/bird -R -s /var/run/calico/bird.ctl -d \
+	-c /etc/calico/confd/config/bird.cfg
+
+Restart=always
+StartLimitInterval=0
+KillSignal=SIGTERM
+RestartSec=5
