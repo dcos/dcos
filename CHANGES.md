@@ -62,3 +62,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
 
 * Marathon launched too many tasks. (DCOS-62078)
+
+* Marathon used to omit pod status report with tasks in `TASK_UNKONW` state. (MARATHON-8710)
