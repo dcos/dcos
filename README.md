@@ -16,8 +16,7 @@ To learn more, see the [DC/OS Overview](https://docs.d2iq.com/mesosphere/dcos/la
 
 - Learn More - <https://dcos.io/>
 - Find the Docs - <https://dcos.io/docs/>
-- Install - <https://dcos.io/install/>
-- Get Started - <https://dcos.io/get-started/>
+- Install / Get Started - <https://dcos.io/install/>
 - Get Help - <http://chat.dcos.io/>
 - Join the Discussion - <https://groups.google.com/a/dcos.io/d/forum/users>
 - Report an Issue - <https://jira.dcos.io>
