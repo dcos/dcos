@@ -2,7 +2,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 
 ## DC/OS 2.1.0 (in development)
-
+* Updated DC/OS UI to [master+v2.154.12](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.12).
 
 ### What's new
 
