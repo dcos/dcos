@@ -6,13 +6,13 @@ This package provides DC/OS Calico component to support Calico networking contai
 
 ### Network requirements
 
-| Port | DC/OS Component | systemd Unit             | Source       | Destination  | Description                                                                                                                         |
-|------|-----------------|--------------------------|--------------|--------------|-------------------------------------------------------------------------------------------------------------------------------------|
-| 179  | Calico          | dcos-calico-bird.service | agent/master | agent/master | calico BGP networking                                                                                                               |
-| 2379 | etcd            | dcos-etcd.service        | agent/master | agent/master | etcd requires this port to be open between masters for leader election and peering connections when using standalone etcd (clustered). |
-| 2380 | etcd            | dcos-etcd.service        | master       | master       | etcd requires this port to be open between masters for leader election and peering connections when using standalone etcd              |
-| 64000 | Calico          | dcos-calico-felix.service | agent/master | agent/master | (Configurable) calico VXLAN networking can be configurable by calico_vxlan_port, by default, this shares the same value with dcos overlay vxlan port  |
-| 62091 | Calico          | dcos-calico-felix.service | agent/master | agent/master | TCP port that the Prometheus metrics server should bind to                                                                   |
+| Port | DC/OS Component | systemd Unit | Source | Destination  | Description |
+|------|-----------------|--------------|--------|--------------|-------------|
+| 179  | Calico | dcos-calico-bird.service | agent/master | agent/master | calico BGP networking |
+| 2379 | etcd | dcos-etcd.service | agent/master | agent/master | etcd requires this port to be open between masters for leader election and peering connections when using standalone etcd (clustered). |
+| 2380 | etcd | dcos-etcd.service | master | master | etcd requires this port to be open between masters for leader election and peering connections when using standalone etcd |
+| 64000 | Calico | dcos-calico-felix.service | agent/master | agent/master | (Configurable) calico VXLAN networking can be configurable by calico_vxlan_port, by default, this shares the same value with dcos overlay vxlan port |
+| 62091 | Calico | dcos-calico-felix.service | agent/master | agent/master | TCP port that the Prometheus metrics server should bind to |
 
 ## DC/OS Calico component
 
@@ -27,15 +27,15 @@ DC/OS Calico integrates Calico into DC/OS for managing container networking and 
 
 ## Configuration Reference(Networking)
 
-| Parameter            | Description                                                                                                                        |
-|----------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| calico_network_cidr  | Subnet allocated for calico. The subnet specified by `calico_network_cidr` should not overlap with those for VXLAN backends or virtual networks defined for [DC/OS virtual networks](https://github.com/mesosphere/dcos-docs-site/blob/staging/pages/mesosphere/dcos/1.14/installing/production/advanced-configuration/configuration-reference/index.md#dcos_overlay_enable). Default: '192.168.0.0/16']                                                                          |
-| calico_vxlan_enabled | Control, whether IP-in-IP or VXLAN mode is used for calico, by default IP-in-IP, is suggested to be used instead of VXLAN. `calico_vxlan_enabled` is supposed to set to 'true' for the environment that IP in IP is not supported, like Azure. [Default: 'false']    |
-| calico_ipinip_mtu    | The MTU to set on the Calico IPIP tunnel device. This configuration works when calico_vxlan_enabled is set to be false. Please refer to [this](https://docs.projectcalico.org/v3.8/networking/mtu) for a suitable MTU configuration. [Default: 1440]    |
-| calico_vxlan_port    | The UDP port used for calico VXLAN. This configuration works when calico_vxlan_enabled is set to be true. [Default: 4789]           |
-| calico_vxlan_vni     | The virtual network ID used for calico VXLAN. This configuration works when calico_vxlan_enabled is set to be true. [Default: 4096] |
-| calico_vxlan_mtu     | The MTU to set on the Calico VXLAN tunnel device. This configuration works when calico_vxlan_enabled is set to be true. Please refer to [this](https://docs.projectcalico.org/v3.8/networking/mtu) for a suitable MTU configuration [Default: 1410]    |
-| calico_veth_mtu     | The MTU to set on the veth pair devices, e.g. both the container interface and host-end interface. Please refer to [this](https://docs.projectcalico.org/v3.8/networking/mtu) for a suitable MTU configuration [Default: 1410]    |
+| Parameter | Description |
+|-----------|-------------|
+| calico_network_cidr | Subnet allocated for calico. The subnet specified by `calico_network_cidr` should not overlap with those for VXLAN backends or virtual networks defined for [DC/OS virtual networks](https://github.com/mesosphere/dcos-docs-site/blob/staging/pages/mesosphere/dcos/1.14/installing/production/advanced-configuration/configuration-reference/index.md#dcos_overlay_enable). Default: '192.168.0.0/16'] |
+| calico_vxlan_enabled | Control, whether IP-in-IP or VXLAN mode is used for calico, by default IP-in-IP, is suggested to be used instead of VXLAN. `calico_vxlan_enabled` is supposed to set to 'true' for the environment that IP in IP is not supported, like Azure. [Default: 'true'] |
+| calico_ipinip_mtu | The MTU to set on the Calico IPIP tunnel device. This configuration works when calico_vxlan_enabled is set to be false. Please refer to [this](https://docs.projectcalico.org/v3.8/networking/mtu) for a suitable MTU configuration. [Default: 1440] |
+| calico_vxlan_port | The UDP port used for calico VXLAN. This configuration works when calico_vxlan_enabled is set to be true. [Default: 4789] |
+| calico_vxlan_vni | The virtual network ID used for calico VXLAN. This configuration works when calico_vxlan_enabled is set to be true. [Default: 4096] |
+| calico_vxlan_mtu | The MTU to set on the Calico VXLAN tunnel device. This configuration works when calico_vxlan_enabled is set to be true. Please refer to [this](https://docs.projectcalico.org/v3.8/networking/mtu) for a suitable MTU configuration [Default: 1410] |
+| calico_veth_mtu | The MTU to set on the veth pair devices, e.g. both the container interface and host-end interface. Please refer to [this](https://docs.projectcalico.org/v3.8/networking/mtu) for a suitable MTU configuration [Default: 1410] |
 
 ## Network Policy
 
