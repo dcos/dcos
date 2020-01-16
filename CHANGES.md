@@ -70,3 +70,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Marathon launched too many tasks. (DCOS-62078)
 
 * Marathon used to omit pod status report with tasks in `TASK_UNKONW` state. (MARATHON-8710)
+
+* Update Kazoo to version 2.6.1. (DCOS-63065)
