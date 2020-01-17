@@ -7,6 +7,10 @@ The following is a list of ports used by internal DC/OS services, and their corr
 ### TCP
 
  - 53: dcos-net (dns)
+ - 179: dcos-calico-bird (calico BGP)
+ - 2379: dcos-etcd (etcd client)
+ - 2380: dcos-etcd (etcd peer)
+ - 62091: dcos-calico-felix (calico metrics)
  - 61091: telegraf
  - 62020: fluent-bit
  - 62080: dcos-net (rest)
@@ -16,6 +20,7 @@ The following is a list of ports used by internal DC/OS services, and their corr
 
  - 53: dcos-net (dns)
  - 61825: dcos-telegraf
+ - 64000: dcos-net (overlay)
 
 ## Master
 

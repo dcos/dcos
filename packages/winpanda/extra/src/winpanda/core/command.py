@@ -11,6 +11,7 @@ from cfgm import exceptions as cfgm_exc
 from common import logger
 from common.cli import CLI_COMMAND, CLI_CMDTARGET, CLI_CMDOPT
 from common import utils as cm_utl
+from common.storage import ISTOR_NODE
 from core import cmdconf
 from core import exceptions as cr_exc
 from core.package.id import PackageId
@@ -151,8 +152,20 @@ class CmdSetup(Command):
 
             # Finalize package setup procedures taking package mutual
             # dependencies into account.
-            for package in cr_utl.pkg_sort_by_deps(packages_bulk):
+
+            packages_sorted_by_deps = cr_utl.pkg_sort_by_deps(packages_bulk)
+
+            # Prepare base per package configuration objects
+            for package in packages_sorted_by_deps:
+                self._handle_pkg_dir_setup(package)
                 self._handle_pkg_cfg_setup(package)
+
+            # Deploy DC/OS aggregated configuration object
+            self._deploy_dcos_conf()
+
+            # Run per package extra installation helpers, setup services and
+            # save manifests
+            for package in packages_sorted_by_deps:
                 self._handle_pkg_inst_extras(package)
                 self._handle_pkg_svc_setup(package)
 
@@ -166,8 +179,24 @@ class CmdSetup(Command):
                 LOG.info(f'{self.msg_src}: Setup package:'
                          f' {package.manifest.pkg_id.pkg_id}: OK')
 
-            # Deploy DC/OS aggregated configuration object
-            self._deploy_dcos_conf()
+    def _handle_pkg_dir_setup(self, package):
+        """Transfer files from special directories into location.
+
+        :param package: Package, DC/OS package manager object
+        """
+        pkg_path = getattr(
+            package.manifest.istor_nodes, ISTOR_NODE.PKGREPO
+        ).joinpath(package.manifest.pkg_id.pkg_id)
+        root = getattr(
+            package.manifest.istor_nodes, ISTOR_NODE.ROOT
+        )
+
+        for name in ('bin', 'etc', 'include', 'lib'):
+            srcdir = pkg_path / name
+            if srcdir.exists():
+                dstdir = root / name
+                dstdir.mkdir(exist_ok=True)
+                cm_utl.transfer_files(str(srcdir), str(dstdir))
 
     def _handle_pkg_cfg_setup(self, package):
         """Execute steps on package configuration files setup.
@@ -197,22 +226,23 @@ class CmdSetup(Command):
         :param package: Package, DC/OS package manager object
         """
         msg_src = self.__class__.__name__
+        pkg_id = package.manifest.pkg_id
 
         if package.ext_manager:
-            LOG.debug(f'{msg_src}: Execute: Handle extra install options:'
-                      f' {package.manifest.pkg_id.pkg_name}: ...')
+            LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
+                      f' Handle extra installation options: ...')
             try:
                 package.ext_manager.handle_install_extras()
             except extm_exc.InstExtrasManagerError as e:
-                err_msg = (f'Execute: Handle extra install options:'
-                           f' {package.manifest.pkg_id.pkg_name}: {e}')
+                err_msg = (f'Execute: {pkg_id.pkg_name}:'
+                           f' Handle extra installation options: {e}')
                 raise cr_exc.SetupCommandError(err_msg) from e
 
-            LOG.debug(f'{msg_src}: Execute: Handle extra install options:'
-                      f' {package.manifest.pkg_id.pkg_name}: OK')
+            LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
+                      f' Handle extra installation options: OK')
         else:
-            LOG.debug(f'{msg_src}: Execute: Handle extra install options:'
-                      f' {package.manifest.pkg_id.pkg_name}: NOP')
+            LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
+                      f' Handle extra installation options: NOP')
 
     def _handle_pkg_svc_setup(self, package):
         """Execute steps on package service setup.
@@ -229,8 +259,9 @@ class CmdSetup(Command):
             try:
                 ret_code, stdout, stderr = package.svc_manager.status()
             except svcm_exc.ServiceManagerCommandError as e:
-                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Get initial'
-                          f' service status: {svc_name}: {e}')
+                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Setup'
+                          f' service: Get initial service status: {svc_name}:'
+                          f' {e}')
                 # Try to setup, as a service (expectedly) doesn't exist and
                 # checking it's status naturally would yield an error.
                 try:
@@ -240,8 +271,8 @@ class CmdSetup(Command):
                                f' {svc_name}: {e}')
                     raise cr_exc.SetupCommandError(err_msg) from e
             else:
-                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Get initial'
-                          f' service status: {svc_name}:'
+                LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Setup'
+                          f' service: Get initial service status: {svc_name}:'
                           f' stdout[{stdout}] stderr[{stderr}]')
                 svc_status = str(stdout).strip().rstrip('\n')
                 # Try to remove existing service

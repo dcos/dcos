@@ -28,7 +28,7 @@ zipp==0.5.2
 # /packages/dnspython/buildinfo.json:
 dnspython3==1.12.0
 # /packages/python-kazoo/buildinfo.json
-kazoo==2.4.0
+kazoo==2.6.1
 # /packages/dcos-test-utils/buildinfo.json
 git+https://github.com/dcos/dcos-test-utils.git@9a9cafdd509bc9b8c76ab5e9f59849e7f3ace765
 

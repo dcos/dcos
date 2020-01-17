@@ -97,6 +97,11 @@ def dcos_adminrouter(b, opts):
 
 
 @check_root
+def dcos_calico_felix(b, opts):
+    b.cluster_id()
+
+
+@check_root
 def dcos_signal(b, opts):
     b.cluster_id()
 
@@ -177,6 +182,7 @@ def noop(b, opts):
 bootstrappers = {
     'dcos-adminrouter': dcos_adminrouter,
     'dcos-bouncer': dcos_bouncer,
+    'dcos-calico-felix': dcos_calico_felix,
     'dcos-etcd': dcos_etcd,
     'dcos-signal': dcos_signal,
     'dcos-diagnostics-master': noop,

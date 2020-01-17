@@ -117,17 +117,21 @@ def run_external_command(cl_elements, timeout=30):
             cl_elements, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             timeout=timeout, check=True, universal_newlines=True
         )
-    except subprocess.SubprocessError as e:
+    except subprocess.CalledProcessError as e:
         raise cm_exc.ExternalCommandError(
-            '{}: {}: Exit code[{}]: {}'.format(
+            '{}: {}: Exit code [{}]: {}'.format(
                 cl_elements, type(e).__name__, e.returncode,
                 e.stderr.replace('\n', ' ')
             )
-        )
+        ) from e
+    except subprocess.SubprocessError as e:
+        raise cm_exc.ExternalCommandError(
+            '{}: {}: {}'.format(cl_elements, type(e).__name__, e)
+        ) from e
     except (OSError, ValueError) as e:
         raise cm_exc.ExternalCommandError(
             f'{cl_elements}: {type(e).__name__}: {e}'
-        )
+        ) from e
 
     return subproc_run
 
@@ -192,3 +196,17 @@ def retry_on_exc(exceptions=(Exception,), max_attempts=0,
 
     return decorator
 
+
+def transfer_files(src, dst):
+    """
+    Transfer files from one directory to another on the same partition.
+    """
+    for name in os.listdir(src):
+        src_path = os.path.join(src, name)
+        if os.path.isdir(src_path):
+            dstdir = os.path.join(dst, name)
+            if not os.path.isdir(dstdir):
+                os.mkdir(dstdir)
+            transfer_files(src_path, dstdir)
+        else:
+            os.link(src_path, os.path.join(dst, name))

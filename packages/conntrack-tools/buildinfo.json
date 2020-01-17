@@ -1,0 +1,8 @@
+{
+  "single_source" : {
+      "kind": "url_extract",
+      "url": "http://ftp.netfilter.org/pub/conntrack-tools/conntrack-tools-1.4.0.tar.bz2",
+      "sha1": "8b462e80472b1ea18946b19df033dae8aa9f88a4"
+  },
+  "state_directory": true
+}
