@@ -26,6 +26,7 @@
   [Optional] DC/OS variable directory for a files created by bootstrap process, for logs stored. Default value is C:\d2iq\dcos\var
 
 .NOTES
+    Updated: 2020-01-17       Added LongPathsSupport function that enables support of pathes longer 256 simbols. 
     Updated: 2019-11-29       Added install_dir and var_dir into path.json file for more flexible DC/OS configuration. Replaced conf dir with etc.
     Updated: 2019-11-22       Removed RunOnce.ps1 and Scheduled task logic. Fixed cluster.conf parameters. Added download of detect_ip*.ps1 scripts.
     Updated: 2019-11-08       Extended startup parameters to acommodate correct script run.
@@ -269,7 +270,24 @@ function SetupPathJson([String] $pathsJson) {
 	}
 }
 
+function LongPathsSupport {
+    $registryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem"
+    $Name = "LongPathsEnabled"
+    $value = "1"
+    if(!(Test-Path $registryPath)) {
+        
+		New-Item -Path $registryPath -Force | Out-Null
+        New-ItemProperty -Path $registryPath -Name $name -Value $value -PropertyType DWORD -Force | Out-Null
+	}
+    
+     else {
+    
+        New-ItemProperty -Path $registryPath -Name $name -Value $value -PropertyType DWORD -Force | Out-Null
+	}
+}
+		
 function main($url, $masters) {
+    LongPathsSupport
     SetupDirectories
     SetupPathJson "C:\d2iq\dcos\etc\paths.json"
 
