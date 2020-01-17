@@ -8,6 +8,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Marathon: Pod status reports would miss tasks in state `TASK_UNKOWN` (MARATHON-8710)
 
+* Fixed preflight check verifying the `ftype` value of /var/lib/mesos. (DCOS-59406)
+
 ### Security updates
 
 
