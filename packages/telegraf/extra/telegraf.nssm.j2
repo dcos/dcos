@@ -1,0 +1,8 @@
+[service]
+DisplayName = telegraf
+Description = Telegraf Data Collector Service
+Application = {{ pkg_inst_dpath }}\bin\telegraf.exe
+AppDirectory = {{ pkg_inst_dpath }}\bin
+AppParameters = --config {{ dcos_cfg_dpath }}\telegraf\telegraf.conf --console
+Start = SERVICE_AUTO_START
+AppEnvironmentExtra = DCOS_NODE_PRIVATE_IP={{ local_priv_ipaddr }}
