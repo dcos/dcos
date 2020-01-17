@@ -1,5 +1,12 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
+## DC/OS 2.0.3 (In development)
+
+### What's new
+
+### Fixed and improved
+
+
 ## DC/OS 2.0.2 (2020-01-17)
 
 * Updated DC/OS UI to [master+v2.154.16](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.16).
