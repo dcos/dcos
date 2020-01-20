@@ -99,7 +99,7 @@ def test_replace_all_static(
             args=[
                 'ifconfig',
                 '|', 'grep', '-B1', str(master.public_ip_address),
-                '|', 'grep', '-o', '"^\w*"',
+                '|', 'grep', '-o', r'"^\w*"',
             ],
             output=Output.LOG_AND_CAPTURE,
             shell=True,
