@@ -1,7 +1,7 @@
 {
   "single_source": {
     "kind": "url_extract",
-    "url": "https://downloads.mesosphere.io/dcos-ui/master%2Bdcos-ui-v2.150.2.tar.gz",
-    "sha1": "25e54ff327f6f45e4abaec7060a42ca4e511e2e2"
+    "url": "https://github.com/dcos/dcos-ui/releases/download/blorgh%2Bv3.0.1/release.tar.gz",
+    "sha1": "3a7ea6b359228580dfc8fa581fa6593058269e7c"
   }
 }
