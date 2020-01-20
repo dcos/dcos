@@ -1047,7 +1047,7 @@ def validate_check_config(check_config):
 
     timeout_units = ['ns', 'us', 'µs', 'ms', 's', 'm', 'h']
     timeout = schema.Regex(
-        '^\d+(\.\d+)?({})$'.format('|'.join(timeout_units)),
+        r'^\d+(\.\d+)?({})$'.format('|'.join(timeout_units)),
         error='Timeout must be a string containing an integer or float followed by a unit: {}'.format(
             ', '.join(timeout_units)))
 
