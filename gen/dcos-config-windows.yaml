@@ -63,6 +63,34 @@ package:
         ],
         "LocalFiles": [
             {
+              "Location": "{{ windows_dcos_var_path_json }}\\log\\adminrouter\\adminrouter-access.log",
+              "Role": [ "agent" ]
+            },
+            {
+              "Location": "{{ windows_dcos_var_path_json }}\\log\\adminrouter\\adminrouter-error.log",
+              "Role": [ "agent" ]
+            },
+            {
+              "Location": "{{ windows_dcos_var_path_json }}\\log\\adminrouter\\adminrouter-nssm.log",
+              "Role": [ "agent" ]
+            },
+            {
+              "Location": "{{ windows_dcos_var_path_json }}\\log\\dcos-diagnostics\\dcos-diagnostics.log",
+               "Role": [ "agent" ]
+            },
+            {
+               "Location": "{{ windows_dcos_var_path_json }}\\log\\telegraf\\telegraf.log",
+               "Role": [ "agent" ]
+            },
+            {
+               "Location": "{{ windows_dcos_var_path_json }}\\log\\dcos_install.log",
+               "Role": [ "agent" ]
+            },
+            {
+                "Location": "{{ windows_dcos_var_path_json }}\\log\\winpanda\\winpanda.log",
+                "Role": [ "agent" ]
+            },
+            {
                 "Location": "{{ windows_dcos_var_path_json }}\\log\\mesos\\mesos-agent.log",
                 "Role": [ "agent" ]
             }
