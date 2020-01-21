@@ -97,7 +97,9 @@ class PkgInstExtrasManager:
         """
         for cmd_id, cmd_cl_def in enumerate(cmd_cl_defs, start=1):
             try:
-                cmd_run_result = cm_utl.run_external_command(cmd_cl_def)
+                cmd_run_result = cm_utl.run_external_command(
+                    cmd_cl_def, timeout=90
+                )
                 LOG.debug(
                     f'{self.msg_src}: Run external command (cmd_id={cmd_id}):'
                     f' {cmd_cl_def}: OK')

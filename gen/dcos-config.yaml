@@ -1386,6 +1386,16 @@ package:
       MESOS_DEFAULT_CONTAINER_SHM_SIZE={{ mesos_default_container_shm_size }}
 {% case "false" %}
 {% endswitch %}
+{% switch mesos_http_executor_domain_sockets %}
+{% case "true" %}
+      MESOS_HTTP_COMMAND_EXECUTOR=true
+      MESOS_HTTP_EXECUTOR_DOMAIN_SOCKETS=true
+      # TODO(bevers): With systemd versions before 227, named sockets are not supported and
+      # all socket names are rendered as "unknown". Change this to a named socket (i.e.
+      # `systemd:mesos-agent.socket`) once we switch to  more modern platforms.
+      MESOS_DOMAIN_SOCKET_LOCATION=systemd:unknown
+{% case "false" %}
+{% endswitch %}
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
       MESOS_WORK_DIR={{ mesos_agent_work_dir }}
 {% switch use_mesos_hooks %}
