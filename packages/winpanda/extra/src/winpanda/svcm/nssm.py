@@ -36,18 +36,23 @@ class NSSMParameter(enum.Enum):
     APPSTDOUT = 'appstdout'
     APPSTDERR = 'appstderr'
     APPENVIRONMENTEXTRA = 'appenvironmentextra'
+    APPEVENTSSTARTPRE = 'appevents start/pre'
+    APPEVENTSSTARTPOST = 'appevents start/post'
+    APPEVENTSSTOPPRE = 'appevents stop/pre'
+    APPEVENTSEXITPOST = 'appevents exit/post'
+    APPEVENTSROTATEPRE = 'appevents rotate/pre'
+    APPEVENTSROTATEPOST = 'appevents rotate/post'
+    APPEVENTSPOWERCHANGE = 'appevents power/change'
+    APPEVENTSPOWERRESUME = 'appevents power/resume'
+    APPREDIRECTHOOK = 'appredirecthook'
 
     @classmethod
-    def values(cls):
-        return [m.value for m in cls.__members__.values()]
+    def names(cls):
+        return [k.lower() for k in cls.__members__.keys()]
 
     @classmethod
-    def values_required(cls):
-        # Names of required parameters. !!!Please keep the sequence!!!
-        names_required = ('DISPLAYNAME', 'APPLICATION')
-        return [
-            m.value for n, m in cls.__members__.items() if n in names_required
-        ]
+    def names_required(cls):
+        return ['displayname', 'application']
 
 
 class NSSMCommand(enum.Enum):
@@ -87,7 +92,7 @@ class SVC_STATUS:
 
 
 VALID_SVC_STATUSES = [getattr(SVC_STATUS, sname) for sname in
-                        SVC_STATUS.__dict__ if not sname.startswith('__')]
+                      SVC_STATUS.__dict__ if not sname.startswith('__')]
 
 
 def _verify_svcm_executor(command):
@@ -210,32 +215,36 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
             NSSMConfSection.SERVICE.value
         )
 
-        if NSSMParameter.DISPLAYNAME.value in self.svc_pnames_bulk:
-            self.svc_name = self.svc_conf.get(NSSMConfSection.SERVICE.value,
-                                              NSSMParameter.DISPLAYNAME.value)
-            if NSSMParameter.NAME.value in self.svc_pnames_bulk:
+        if NSSMParameter.DISPLAYNAME.name.lower() in self.svc_pnames_bulk:
+            self.svc_name = self.svc_conf.get(
+                NSSMConfSection.SERVICE.value,
+                NSSMParameter.DISPLAYNAME.name.lower()
+            )
+            if NSSMParameter.NAME.name.lower() in self.svc_pnames_bulk:
                 self.svc_conf.remove_option(NSSMConfSection.SERVICE.value,
-                                            NSSMParameter.NAME.value)
+                                            NSSMParameter.NAME.name.lower())
                 self.svc_pnames_bulk = self.svc_conf.options(
                     NSSMConfSection.SERVICE.value
                 )
-        elif NSSMParameter.NAME.value in self.svc_pnames_bulk:
+        elif NSSMParameter.NAME.name.lower() in self.svc_pnames_bulk:
             self.svc_name = self.svc_conf.get(NSSMConfSection.SERVICE.value,
-                                              NSSMParameter.NAME.value)
+                                              NSSMParameter.NAME.name.lower())
         else:
             raise svcm_exc.ServiceConfigError(
                 f'Required parameter unavailable:'
-                f' {NSSMParameter.DISPLAYNAME.value}/'
-                f'{NSSMParameter.NAME.value}'
+                f' {NSSMParameter.DISPLAYNAME.name.lower()}/'
+                f'{NSSMParameter.NAME.name.lower()}'
             )
 
-        if NSSMParameter.APPLICATION.value in self.svc_pnames_bulk:
-            self.svc_exec = self.svc_conf.get(NSSMConfSection.SERVICE.value,
-                                              NSSMParameter.APPLICATION.value)
+        if NSSMParameter.APPLICATION.name.lower() in self.svc_pnames_bulk:
+            self.svc_exec = self.svc_conf.get(
+                NSSMConfSection.SERVICE.value,
+                NSSMParameter.APPLICATION.name.lower()
+            )
         else:
             raise svcm_exc.ServiceConfigError(
                 f'Required parameter unavailable:'
-                f' {NSSMParameter.APPLICATION.value}'
+                f' {NSSMParameter.APPLICATION.name.lower()}'
             )
 
     def _get_svc_setup_pchain(self):
@@ -255,8 +264,8 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         """
         setup_pchain = []
 
-        pnames_valid = NSSMParameter.values()
-        pnames_required = NSSMParameter.values_required()
+        pnames_valid = NSSMParameter.names()
+        pnames_required = NSSMParameter.names_required()
 
         # Parameters for nssm 'install' command.
         cmd = NSSMCommand.INSTALL.value
@@ -271,6 +280,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         cmd = NSSMCommand.SET.value
 
         for pname in pnames_opt:
+            pname_cl_form = NSSMParameter[pname.upper()].value
             pval = self.svc_conf.get(NSSMConfSection.SERVICE.value, pname)
             if self._ws.search(pval):
                 err_msg = (
@@ -280,7 +290,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
                     f' parameter[{pname}] value[{pval}]'
                 )
                 LOG.warning(err_msg)
-            cmd_plist = [self.svc_name, pname, pval]
+            cmd_plist = [self.svc_name] + pname_cl_form.split() + [pval]
             setup_pchain.append((cmd, cmd_plist))
 
         return setup_pchain
