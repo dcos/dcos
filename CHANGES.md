@@ -42,7 +42,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Enable proxing of gRPC requests through Admin Router (DCOS-59091)
 
-* Calico in DC/OS: introduced Calico networking into DC/OS, and provided network policy support (DCOS-58413) 
+* Calico in DC/OS: introduced Calico networking into DC/OS, and provided network policy support (DCOS-58413)
+
+* Updated DC/OS UI to [master+v2.154.16](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.16).
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
