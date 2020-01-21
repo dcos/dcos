@@ -77,3 +77,4 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
   instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
+* Updated dcos-config.yaml to support some Mesos Flags. (DCOS-59021)
