@@ -1047,7 +1047,7 @@ def validate_check_config(check_config):
 
     timeout_units = ['ns', 'us', 'µs', 'ms', 's', 'm', 'h']
     timeout = schema.Regex(
-        '^\d+(\.\d+)?({})$'.format('|'.join(timeout_units)),
+        r'^\d+(\.\d+)?({})$'.format('|'.join(timeout_units)),
         error='Timeout must be a string containing an integer or float followed by a unit: {}'.format(
             ', '.join(timeout_units)))
 
@@ -1274,6 +1274,7 @@ entry = {
         'master_dns_bindall': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'mesos_dns_set_truncate_bit': 'true',
+        'mesos_http_executor_domain_sockets': 'true',
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
         'mesos_container_log_sink': 'fluentbit+logrotate',
