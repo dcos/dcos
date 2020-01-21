@@ -323,7 +323,7 @@ function main($url, $masters) {
     Download "$url/windows/ip-detect.ps1" "detect_ip.ps1"
     Download "$url/windows/ip-detect-public.ps1" "detect_ip_public.ps1"
     Download "$url/windows/fault-domain-detect-win.ps1" "fault-domain-detect-win.ps1"
-    Copy-Item -Path "$($basedir)\bootstrap\detect_ip*.ps1" -Destination "$($basedir)\bin" -Recurse
+    Copy-Item -Path "$($basedir)\bootstrap\*.ps1" -Destination "$($basedir)\bin" -Recurse
 
     # Fill up Ansible inventory content to cluster.conf
     Write-Log("MASTERS: $($masters)")
