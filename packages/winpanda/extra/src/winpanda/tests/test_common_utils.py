@@ -1,4 +1,5 @@
 import pytest
+import sys
 
 from common.exceptions import ExternalCommandError
 from common.utils import run_external_command, transfer_files
@@ -31,6 +32,7 @@ Write-Output "$str"
 """
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="only runs on Windows")
 def test_run_external_command_success(tmp_path):
     """
     Output can be captured from a successful process.
@@ -43,6 +45,7 @@ def test_run_external_command_success(tmp_path):
     assert p.stderr.strip() == ''
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="only runs on Windows")
 def test_run_external_command_failure(tmp_path):
     """
     An exception is raised on a non-zero exit.
@@ -55,6 +58,7 @@ def test_run_external_command_failure(tmp_path):
     assert 'Exit code [4]' in str(e)
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="only runs on Windows")
 def test_run_external_command_error(tmp_path):
     """
     A PowerShell script fails if text is written to error stream.
@@ -67,6 +71,7 @@ def test_run_external_command_error(tmp_path):
     assert 'WriteErrorException' in str(e)
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="only runs on Windows")
 def test_run_external_command_slow(tmp_path):
     """
     All output is returned, even if slow.
@@ -79,6 +84,7 @@ def test_run_external_command_slow(tmp_path):
     assert p.stderr.strip() == ''
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="only runs on Windows")
 def test_run_external_command_timeout(tmp_path):
     """
     A process times-out if it runs longer than expected.
@@ -91,6 +97,7 @@ def test_run_external_command_timeout(tmp_path):
     assert 'timed out' in str(e)
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="only runs on Windows")
 def test_run_external_command_verbose(tmp_path):
     """
     Processes can generate large output.
