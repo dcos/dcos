@@ -1,4 +1,6 @@
-WinRM
-mesos-agent
+adminrouter
+dcos-diagnostics
 docker
+mesos-agent
 telegraf
+WinRM

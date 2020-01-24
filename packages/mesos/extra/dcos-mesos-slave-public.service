@@ -1,5 +1,6 @@
 [Unit]
 Description=Mesos Agent Public: distributed systems kernel public agent
+Requires=dcos-mesos-slave-public.socket
 
 [Service]
 Restart=always

@@ -63,7 +63,35 @@ package:
         ],
         "LocalFiles": [
             {
-                "Location": "{{ windows_dcos_var_path_json }}\\mesos\\mesos-agent.log",
+              "Location": "{{ windows_dcos_var_path_json }}\\log\\adminrouter\\adminrouter-access.log",
+              "Role": [ "agent" ]
+            },
+            {
+              "Location": "{{ windows_dcos_var_path_json }}\\log\\adminrouter\\adminrouter-error.log",
+              "Role": [ "agent" ]
+            },
+            {
+              "Location": "{{ windows_dcos_var_path_json }}\\log\\adminrouter\\adminrouter-nssm.log",
+              "Role": [ "agent" ]
+            },
+            {
+              "Location": "{{ windows_dcos_var_path_json }}\\log\\dcos-diagnostics\\dcos-diagnostics.log",
+               "Role": [ "agent" ]
+            },
+            {
+               "Location": "{{ windows_dcos_var_path_json }}\\log\\telegraf\\telegraf.log",
+               "Role": [ "agent" ]
+            },
+            {
+               "Location": "{{ windows_dcos_var_path_json }}\\log\\dcos_install.log",
+               "Role": [ "agent" ]
+            },
+            {
+                "Location": "{{ windows_dcos_var_path_json }}\\log\\winpanda\\winpanda.log",
+                "Role": [ "agent" ]
+            },
+            {
+                "Location": "{{ windows_dcos_var_path_json }}\\log\\mesos\\mesos-agent.log",
                 "Role": [ "agent" ]
             }
         ],
@@ -212,3 +240,13 @@ package:
           }
       }
 
+  - path: {{ windows_dcos_install_path }}\etc\adminrouter\adminrouter-tls-agent.conf
+    content: |
+      # Note that Agent Admin Router only serves cluster-internal clients. Hence,
+      # browser compatibility is not a criterion for the TLS cipher suite selection.
+      ssl_ciphers EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:!MD5;
+      ssl_prefer_server_ciphers on;
+      ssl_protocols TLSv1.2;
+  - path: {{ windows_dcos_install_path }}\etc\adminrouter\adminrouter-listen-open.conf
+    content: |
+        listen 61001 default_server;

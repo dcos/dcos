@@ -6,13 +6,19 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### What's new
 
+* Added a new configuration option `mesos_http_executors_domain_sockets`, which will cause the mesos-agent to use
+  domain sockets when communicating with executors. While this change should not have any visible impact on users
+  in itself, it does enable administrators to write firewall rules blocking unauthorized access to the agent port
+  5051 since access to this will not be required anymore for executors to work.
+
 * Switched from Oracle Java 8 to OpenJDK 8 (DCOS-54902)
 
 * Updated DC/OS UI to [master+v2.150.2](https://github.com/dcos/dcos-ui/releases/tag/master+v2.150.2).
 
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
-* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/77ba44ccd6837367ed3a059fc559b2dd7dcf06ec/CHANGELOG)
+* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/d46ae94b49b452ed3fbfdf99dfb501e09675a311/CHANGELOG)
+* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/21ccad220f04369a7accf2bafae8f1d5002646bb/CHANGELOG)
 
 * Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
 
@@ -36,10 +42,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Enable proxing of gRPC requests through Admin Router (DCOS-59091)
 
-* Calico in DC/OS: introduced Calico network for mesos UCR. (DCOS-58582)
+* Calico in DC/OS: introduced Calico networking into DC/OS, and provided network policy support (DCOS-58413)
 
-* Calico in DC/OS: introduced calico control panel services deployed on all agents and masters. (DCOS-58583)
-
+* Updated DC/OS UI to [master+v2.154.16](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.16).
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
@@ -54,6 +59,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Remove the dcos-history-service from DC/OS. (DCOS-58529)
 
+* New format for Admin Router access logs. (DCOS-59598)
+
+* Update OpenResty to 1.15.8.2. (DCOS-61159)
+
 ### Fixed and improved
 
 * Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
@@ -61,3 +70,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
 
 * Marathon launched too many tasks. (DCOS-62078)
+
+* Marathon used to omit pod status report with tasks in `TASK_UNKONW` state. (MARATHON-8710)
+
+* Update Kazoo to version 2.6.1. (DCOS-63065)

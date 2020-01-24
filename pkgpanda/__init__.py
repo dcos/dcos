@@ -45,10 +45,10 @@ env_export_header = """# Pkgpanda provided environment variables
 export LD_LIBRARY_PATH={0}/lib
 export PATH="{0}/bin:$PATH"\n\n"""
 
-name_regex = "^[a-zA-Z0-9@_+][a-zA-Z0-9@._+\-]*$"
-version_regex = "^[a-zA-Z0-9@_+:.]+$"
-username_regex = "^dcos_[a-z0-9_]+$"
-linux_group_regex = "^[a-z_][a-z0-9_-]*$"  # https://github.com/shadow-maint/shadow/blob/master/libmisc/chkname.c#L52
+name_regex = r"^[a-zA-Z0-9@_+][a-zA-Z0-9@._+\-]*$"
+version_regex = r"^[a-zA-Z0-9@_+:.]+$"
+username_regex = r"^dcos_[a-z0-9_]+$"
+linux_group_regex = r"^[a-z_][a-z0-9_-]*$"  # https://github.com/shadow-maint/shadow/blob/master/libmisc/chkname.c#L52
 
 
 class Systemd:

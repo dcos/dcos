@@ -40,7 +40,7 @@ JSON_DISK_TEMPLATE = Template('''
 }
 ''')
 
-MOUNT_PATTERN = re.compile('on\s+(/dcos/volume\d+)\s+', re.M | re.I)
+MOUNT_PATTERN = re.compile(r'on\s+(/dcos/volume\d+)\s+', re.M | re.I)
 
 # Conversion factor for Bytes -> MB calculation
 MB = float(1 << 20)
