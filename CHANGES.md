@@ -6,6 +6,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+ * [MARATHON-8719](https://jira.mesosphere.com/browse/MARATHON-8719) With UnreachableStrategy, setting `expungeAfterSeconds`
+   and `inactiveAfterSeconds` to the same value will cause the instance to be expunged immediately; this helps with
+   `GROUP_BY` or `UNIQUE` constraints.
+
 
 ## DC/OS 2.0.2 (2020-01-17)
 
