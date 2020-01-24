@@ -74,3 +74,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Marathon used to omit pod status report with tasks in `TASK_UNKONW` state. (MARATHON-8710)
 
 * Update Kazoo to version 2.6.1. (DCOS-63065)
+
+* With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
+  instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
