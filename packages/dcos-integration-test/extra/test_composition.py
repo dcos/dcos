@@ -153,6 +153,7 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-calico-bird.service',
         'dcos-calico-felix.service',
         'dcos-calico-confd.service',
+        'dcos-calico-libnetwork-plugin.service',
         'dcos-checks-api.service',
         'dcos-checks-api.socket',
         'dcos-diagnostics.service',
