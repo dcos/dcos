@@ -36,3 +36,17 @@ for comp in bird confd felix; do
     mkdir -vp "$(dirname "$tmp")"
     cp "/pkg/extra/dcos-calico-${comp}.service" "${tmp}"
 done
+
+# copy calico libnetwork scripts and plugins
+cp /pkg/extra/create-calico-docker-network.py $PKG_PATH/bin/create-calico-docker-network.py
+chmod +x $PKG_PATH/bin/create-calico-docker-network.py
+cp /pkg/src/calico-libnetwork-plugin/libnetwork-plugin-amd64 $PKG_PATH/bin/calico-libnetwork-plugin
+chmod +x $PKG_PATH/bin/calico-libnetwork-plugin
+
+# calico-libnetwork service works only on slaves
+for at in slave slave_public; do
+    tmp="$PKG_PATH/dcos.target.wants_${at}/dcos-calico-libnetwork-plugin.service"
+    mkdir -vp "$(dirname "$tmp")"
+    envsubst '$PKG_PATH' < "/pkg/extra/dcos-calico-libnetwork-plugin.service" > "$tmp"
+done
+
