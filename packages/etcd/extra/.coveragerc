@@ -1,0 +1,13 @@
+[run]
+branch = True
+parallel = True
+source = etcd_discovery
+concurrency = thread
+
+[report]
+ exclude_lines =
+    pragma: no cover
+
+[html]
+title = etcd_discovery script unit test code coverage report
+directory = coverage-report-html
