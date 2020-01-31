@@ -26,7 +26,8 @@
   [Optional] DC/OS variable directory for a files created by bootstrap process, for logs stored. Default value is C:\d2iq\dcos\var
 
 .NOTES
-    Updated: 2020-01-17       Added LongPathsSupport function that enables support of pathes longer 256 simbols. 
+    Updated: 2020-01-29       Added Invoke-NativeApplication function to run native processes. Extended logging. Streamed stdout/stderr to the single log file.
+    Updated: 2020-01-17       Added LongPathsSupport function that enables support of pathes longer 256 symbols.
     Updated: 2019-11-29       Added install_dir and var_dir into path.json file for more flexible DC/OS configuration. Replaced conf dir with etc.
     Updated: 2019-11-22       Removed RunOnce.ps1 and Scheduled task logic. Fixed cluster.conf parameters. Added download of detect_ip*.ps1 scripts.
     Updated: 2019-11-08       Extended startup parameters to acommodate correct script run.
@@ -74,7 +75,7 @@ function Write-Log
         [string]$Path="$($vardir)\log\dcos_install.log",
 
         [Parameter(Mandatory=$false)]
-        [ValidateSet("Error","Warn","Info")]
+        [ValidateSet("Error","Warn","Info","Debug")]
         [string]$Level="Info",
 
         [Parameter(Mandatory=$false)]
@@ -119,16 +120,60 @@ function Write-Log
                 $LevelText = 'WARNING:'
                 }
             'Info' {
-                Write-Verbose $Message
+                Write-Host $Message
                 $LevelText = 'INFO:'
+                }
+            'Debug' {
+                Write-Verbose $Message
+                $LevelText = 'DEBUG:'
                 }
             }
 
         # Write log entry to $Path
-        "$FormattedDate $LevelText $Message" | Out-File -FilePath $Path -Append
+        "$FormattedDate $LevelText $Message" | Tee-Object -FilePath $Path -Append
     }
     End
     {
+    }
+}
+
+function Test-CalledFromPrompt {
+    (Get-PSCallStack)[-2].Command -eq "prompt"
+}
+
+function Invoke-NativeApplication {
+    param
+    (
+        [ScriptBlock] $ScriptBlock,
+        [int[]] $AllowedExitCodes = @(0),
+        [switch] $IgnoreExitCode
+    )
+    [string] $stringScriptBlock = $ScriptBlock.ToString();
+    $backupErrorActionPreference = $ErrorActionPreference;
+    $ErrorActionPreference = "Continue";
+    try
+    {
+        if (Test-CalledFromPrompt)
+        {
+            $lines = & $ScriptBlock 2>&1 | Tee-Object -FilePath "$($vardir)\log\dcos_install.log" -Append
+        }
+        else
+        {
+            $lines = & $ScriptBlock 2>&1 | Tee-Object -FilePath "$($vardir)\log\dcos_install.log" -Append
+        }
+        $lines | ForEach-Object -Process `
+            {
+                $isError = $_ -is [System.Management.Automation.ErrorRecord]
+                "$_" | Add-Member -Name IsError -MemberType NoteProperty -Value $isError -PassThru
+            }
+        if ((-not $IgnoreExitCode) -and ($AllowedExitCodes -notcontains $LASTEXITCODE))
+        {
+            throw "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss") ERROR: Failed to execute `'$stringScriptBlock`' : returned $LASTEXITCODE. Check logs at $($vardir)\log\ or traceback for more details!" 2>&1 | Tee-Object -FilePath "$($vardir)\log\dcos_install.log" -Append
+        }
+    }
+    finally
+    {
+        $ErrorActionPreference = $backupErrorActionPreference
     }
 }
 
@@ -147,59 +192,72 @@ function SetupDirectories() {
         "$($vardir)\log"
     )
     # setup
-    Write-Log("Creating a directories structure:")
+    Write-Log -Level "Info" -LogContent "Creating a directories structure:"
     foreach ($dir in $dirs) {
         if (-not (test-path "$dir") ) {
-            Write-Log("$($dir) doesn't exist, creating it")
+            Write-Log -Level "Debug" -LogContent "$($dir) doesn't exist, creating it"
             New-Item -Path $dir -ItemType directory | Out-Null
         } else {
-            Write-Log("$($dir) exists, no need to create it")
+            Write-Log -Level "Debug" -LogContent "$($dir) exists, no need to create it"
         }
     }
 }
 
 function Download([String] $url, [String] $file) {
     $output = "$($basedir)\bootstrap\$file"
-    Write-Log("Starting Download of $($url) to $($output) ...")
+    Write-Log -Level "Info" -LogContent "Starting Download of $($url) to $($output) ..."
     $start_time = Get-Date
-    (New-Object System.Net.WebClient).DownloadFile($url, $output)
-    Write-Log("Download complete. Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)")
+    try{
+        Write-Log -Level "Debug" -LogContent "Downloading $($url)"
+        (New-Object System.Net.WebClient).DownloadFile($url, $output)
+    }
+    catch{
+        Write-Log -Level "Error" -LogContent ("Failed to download: {0}" -f $_)
+    }
+    Write-Log -Level "Info" -LogContent "Download complete. Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)"
 }
 
 function ExtractTarXz($infile, $outdir){
-    if (-not (test-path "$env:ProgramFiles\7-Zip\7z.exe")) {
-        throw "$env:ProgramFiles\7-Zip\7z.exe needed"
-    }
     $sz = "$env:ProgramFiles\7-Zip\7z.exe"
+    Write-Log -Level "Debug" -LogContent "Testing if $sz installed ..."
+    if (-not (test-path "$sz")) {
+        Write-Log -Level "Error" -LogContent ("Failed to extract: $sz missing!")
+    }
     $Source = $infile
     $Target = $outdir
-    Write-Log("Extracting $Source to $Target")
     $start_time = Get-Date
+    Write-Log -Level "Info" -LogContent ("Extracting $Source to $Target")
     $exec = ("`"{0}`" x `"{1}`" -so | `"{2}`" x -aoa -si -ttar -o`"{3}`"" -f $sz, $Source, $sz, $Target)
-    Write-Log("Running: cmd /c $exec")
-    & cmd /C $exec
-    Write-Log("Extract complete. Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)")
+    Write-Log -Level "Info" -LogContent "Running: cmd /c $exec"
+    Invoke-NativeApplication {cmd /c $exec}
+    Write-Log -Level "Info" -LogContent "Extract complete. Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)"
 }
 
 function ExtractBootstrapZip($zipfile, $Target){
     $Source = $zipfile
-    Write-Log("Extracting $Source to $Target")
+    Write-Log -Level "Info" -LogContent "Extracting $Source to $Target"
     $start_time = Get-Date
-    expand-archive -path "$Source" -destinationpath "$Target" -force
-    Write-Log("Extract complete. Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)")
+     try{
+        Write-Log -Level "Debug" -LogContent "Downloading $($url)"
+        Expand-Archive -path "$Source" -destinationpath "$Target" -force
+    }
+    catch{
+        Write-Log -Level "Error" -LogContent ("Failed to extract zip: {0}" -f $_)
+    }
+    Write-Log -Level "Info" -LogContent "Extract complete. Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)"
 }
 
 function CreateWriteFile([String] $dir, [String] $file, [String] $content) {
-    Write-Log("vars: $dir, $file, $content")
+    Write-Log -Level "Debug" -LogContent "vars: $dir, $file, $content"
     if (-not (test-path "$($dir)\$($file)") ) {
-        Write-Log("Creating $($file) at $($dir)")
+        Write-Log -Level "Debug" -LogContent "Creating $($file) at $($dir)"
     }
     else {
-        Write-Log("$($dir)\$($file) already exists. Re-writing")
+        Write-Log -Level "Warn" -LogContent "$($dir)\$($file) already exists. Re-writing"
         Remove-Item "$($dir)\$($file)"
     }
     New-Item -Path "$($dir)\$($file)" -ItemType File
-    Write-Log("Writing content to $($file)")
+    Write-Log -Level "Info" -LogContent "Writing content to $($file)"
     Add-Content "$($dir)\$($file)" "$($content)"
     Get-Content "$($dir)\$($file)"
 }
@@ -208,7 +266,6 @@ function Add-EnvPath {
     param(
         [Parameter(Mandatory=$true)]
         [string] $Path,
-
         [ValidateSet('Machine', 'User', 'Session')]
         [string] $Container = 'Session'
     )
@@ -240,31 +297,31 @@ function SetupPathJson([String] $pathsJson) {
         var = "$($vardir)"
     }
     if (-not (test-path "$($pathsJson)") ) {
-        Write-Log("$($pathsJson) doesn't exist, creating it")
+        Write-Log -Level "Info" -LogContent "$($pathsJson) doesn't exist, creating it"
         [System.IO.File]::WriteAllLines($pathsJson, ($jsonDoc | convertTo-Json))
     }
     else {
-        Write-Log("$($pathsJson) already exists, checking if such contains correct values")
+        Write-Log -Level "Debug" -LogContent "$($pathsJson) already exists, checking if such contains correct values"
         $previousJsonDoc = [System.IO.File]::ReadAllLines( ( Resolve-Path $pathsJson ) ) | ConvertFrom-Json
-        Write-Verbose "JSON File Opened ."
+        Write-Log -Level "Debug" -LogContent "JSON File Opened ."
 	    if (-not (($previousJsonDoc.install -eq $jsonDoc.install) -and ($previousJsonDoc.var -eq $jsonDoc.var))) {
-	    	Write-Log("$($pathsJson) doesn't match to expected, changing it.")
-	    	Write-Verbose "Opening JSON file for write (locking) ..."
+	    	Write-Log -Level "Debug" -LogContent "$($pathsJson) doesn't match to expected, changing it."
+	    	Write-Log -Level "Info" -LogContent "Opening JSON file for write (locking) ..."
             while ($true) {
                 try {
                     $file = [System.IO.StreamWriter] ([string] $pathsJson)
-                    Write-Verbose "JSON File Opened and Locked."
+                    Write-Log -Level "Debug" -LogContent "JSON File Opened and Locked."
                     break
                 }
 	    		catch {
-                    Write-Warning "Error Opening/Locking JSON File: $($Error[0].Exception.InnerException.Message)"
-                    Write-Verbose "Trying again ..."
+                    Write-Log -Level "Warn" -LogContent "Error Opening/Locking JSON File: $($Error[0].Exception.InnerException.Message)"
+                    Write-Log -Level "Debug" -LogContent "Trying again ..."
                     Start-Sleep -Milliseconds 1000
                 }
             }
-            Write-Verbose "Writing JSON ..."
+            Write-Log -Level "Debug" -LogContent "Writing JSON ..."
             $file.WriteLine($($jsonDoc | ConvertTo-Json))
-            Write-Verbose "Closing JSON ..."
+            Write-Log -Level "Debug" -LogContent "Closing JSON ..."
             $file.Close()
         }
 	}
@@ -275,80 +332,92 @@ function LongPathsSupport {
     $Name = "LongPathsEnabled"
     $value = "1"
     if(!(Test-Path $registryPath)) {
-        
 		New-Item -Path $registryPath -Force | Out-Null
         New-ItemProperty -Path $registryPath -Name $name -Value $value -PropertyType DWORD -Force | Out-Null
 	}
-    
-     else {
-    
+    else {
         New-ItemProperty -Path $registryPath -Name $name -Value $value -PropertyType DWORD -Force | Out-Null
 	}
 }
-		
+
+function CheckPreexistingDcos {
+    Write-Log -Level "Info" -LogContent "Checking if DC/OS is already installed on Windows ..."
+    if (
+        (Test-Path "$($basedir)\etc\dcos-version.json") -or
+        (Test-Path "$($basedir)\state\pkgactive\*.json") -or
+        ((Get-Service -Name "adminrouter","mesos-agent","dcos-diagnostics","telegraf" -ErrorAction SilentlyContinue).Length -gt 0)
+    )
+    {
+        $message = -join @(
+            "Found an existing DC/OS installation. To reinstall DC/OS on this this machine you must first "
+            "uninstall DC/OS then run dcos_install.ps1. To uninstall DC/OS, follow the product documentation "
+            "provided with DC/OS."
+        )
+        throw "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss") ERROR: $message" 2>&1 | Tee-Object -FilePath "$($vardir)\log\dcos_install.log" -Append
+    }
+    Write-Log -Level "Info" -LogContent "DC/OS is not installed previously"
+}
+
 function main($url, $masters) {
+    CheckPreexistingDcos
     LongPathsSupport
     SetupDirectories
     SetupPathJson "C:\d2iq\dcos\etc\paths.json"
 
-    Write-Log("Downloading/Extracting prerequisites.zip out of Bootstrap agent ...")
+    Write-Log -Level "Info" -LogContent "Downloading/Extracting prerequisites.zip out of Bootstrap agent ..."
     Download "$url/windows/prerequisites/prerequisites.zip" "prerequisites.zip"
     $zipfile = "$($basedir)\bootstrap\prerequisites.zip"
     ExtractBootstrapZip $zipfile "$($basedir)\bootstrap\prerequisites"
 
-    Write-Log("Installing 7zip from prerequisites.zip ...")
-    & cmd /c "start /wait $($basedir)\bootstrap\prerequisites\7z-x64.exe /S" 2>&1 | Out-File "$($vardir)\log\dcos_install.log" -Append;
-
-	Write-Log("Checking proper versions from latest.package_list.json ...")
+    Write-Log -Level "Info" -LogContent "Installing 7zip from prerequisites.zip ..."
+    #& cmd /c "start /wait $($basedir)\bootstrap\prerequisites\7z-x64.exe /S" 2>&1 | Out-File "$($vardir)\log\dcos_install.log" -Append;
+    #$exec = ("`"{0}`" x `"{1}`" -so | `"{2}`" x -aoa -si -ttar -o`"{3}`"" -f $sz, $Source, $sz, $Target)
+    $exec7zInstall = "start /wait $($basedir)\bootstrap\prerequisites\7z-x64.exe /S"
+    Write-Log -Level "Info" -LogContent "Running: cmd /c $exec7zInstall"
+    $cmd7zInstall = Invoke-NativeApplication {cmd /c $exec7zInstall}
+	Write-Log -Level "Info" -LogContent "Checking proper versions from latest.package_list.json ..."
 	Download "$url/windows/package_lists/latest.package_list.json" "latest.package_list.json"
 	$package_list_json = "$($basedir)\bootstrap\latest.package_list.json"
 	echo $(cat $package_list_json | ConvertFrom-Json) | Where-Object { $_ -Match "python"} | New-Variable -Name python_package
 	echo $(cat $package_list_json | ConvertFrom-Json) | Where-Object { $_ -Match "winpanda"} | New-Variable -Name winpanda_package
 
-	Write-Log("Installing Python from Bootstrap agent - $($python_package).tar.xz...")
+	Write-Log -Level "Info" -LogContent "Installing Python from Bootstrap agent - $($python_package).tar.xz..."
     Download "$url/windows/packages/python/$($python_package).tar.xz" "python.tar.xz"
     $pythontarfile = "$($basedir)\bootstrap\python.tar.xz"
     ExtractTarXz $pythontarfile "C:\python36"
 	Add-EnvPath "C:\python36" "Session";
 	Add-EnvPath "C:\python36" "Machine";
 
-    Write-Log("Installing Winpanda from Bootstrap agent - $($winpanda_package).tar.xz ...")
+    Write-Log -Level "Info" -LogContent "Installing Winpanda from Bootstrap agent - $($winpanda_package).tar.xz ..."
     Download "$url/windows/packages/winpanda/$($winpanda_package).tar.xz" "winpanda.tar.xz"
     $winpandatarfile = "$($basedir)\bootstrap\winpanda.tar.xz"
     ExtractTarXz $winpandatarfile "$($basedir)"
 	[Environment]::SetEnvironmentVariable("PYTHONPATH", "$($basedir)\winpanda\lib\python36\site-packages", [System.EnvironmentVariableTarget]::Machine);
 	$env:PYTHONPATH="$($basedir)\winpanda\lib\python36\site-packages";
 
-    Write-Log("Downloading ip-detect scripts from Bootstrap agent ...")
+    Write-Log -Level "Info" -LogContent "Downloading *.ps1 scripts from Bootstrap agent ..."
     Download "$url/windows/ip-detect.ps1" "detect_ip.ps1"
     Download "$url/windows/ip-detect-public.ps1" "detect_ip_public.ps1"
     Download "$url/windows/fault-domain-detect-win.ps1" "fault-domain-detect-win.ps1"
     Copy-Item -Path "$($basedir)\bootstrap\*.ps1" -Destination "$($basedir)\bin" -Recurse
 
     # Fill up Ansible inventory content to cluster.conf
-    Write-Log("MASTERS: $($masters)")
+    Write-Log -Level "Debug" -LogContent "MASTERS: $($masters)"
     [System.Array]$masterarray = $masters.split(",")
     $masternodecontent = ""
     for ($i=0; $i -lt $masterarray.length; $i++) {
         $masternodecontent += "[master-node-$($i+1)]`nPrivateIPAddr=$($masterarray[$i])`nZookeeperListenerPort=2181`n"
     }
-    $local_ip = (Get-WmiObject -Class Win32_NetworkAdapterConfiguration | where {$_.DefaultIPGateway -ne $null}).IPAddress | select-object -first 1
-    Write-Log("Local IP: $($local_ip)")
+    $local_ip = Invoke-NativeApplication {. "$($basedir)\bin\detect_ip.ps1"}
+    Write-Log -Level "Debug" -LogContent "Local IP: $($local_ip)"
     $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($url)`nPkgRepoPath=windows/packages`nPkgListPath=windows/package_lists/latest.package_list.json`nDcosClusterPkgInfoPath=cluster-package-info.json`n`n[local]`nPrivateIPAddr=$($local_ip)"
     CreateWriteFile "$($basedir)\etc" "cluster.conf" $content
 
-    Write-Log("Running Winpanda.py setup ...")
-    & python.exe "$($basedir)\winpanda\bin\winpanda.py" --inst-root-dir="$($basedir)" setup | Out-File "$($vardir)\log\dcos_install.log" -Append;
-    if ($LASTEXITCODE -ne 0) {
-        Write-Log("ERROR: command `'& python.exe `"$($basedir)\winpanda\bin\winpanda.py`" --inst-root-dir=`"$($basedir)`" setup`' failed, please check the winpanda.log");
-		exit 1
-    }
-    Write-Log("Running Winpanda.py start ...")
-    & python.exe "$($basedir)\winpanda\bin\winpanda.py" --inst-root-dir="$($basedir)" start | Out-File "$($vardir)\log\dcos_install.log" -Append;
-    if ($LASTEXITCODE -ne 0) {
-        Write-Log("ERROR: command `'& python.exe `"$($basedir)\winpanda\bin\winpanda.py`" --inst-root-dir=`"$($basedir)`" start`' failed, please check the winpanda.log");
-		exit 1
-    }
+    Write-Log -Level "Info" -LogContent "Running Winpanda.py setup ..."
+    Invoke-NativeApplication {python.exe "$($basedir)\winpanda\bin\winpanda.py" --inst-root-dir="$($basedir)" setup}
+    Write-Log -Level "Info" -LogContent "Running Winpanda.py start ..."
+    Invoke-NativeApplication {python.exe "$($basedir)\winpanda\bin\winpanda.py" --inst-root-dir="$($basedir)" start}
+    Write-Log -Level "Info" -LogContent "dcos_install.ps1 successfully finished."
 }
 
 main $bootstrap_url $masters
