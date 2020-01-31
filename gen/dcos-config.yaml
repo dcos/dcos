@@ -1361,6 +1361,7 @@ package:
       # number of our frameworks in the past, since they often depend on the Mesos
       # hostname in the resource offer to be reachable.
       MESOS_HOSTNAME_LOOKUP=false
+      MESOS_HTTP_EXECUTOR_DOMAIN_SOCKETS=true
       MESOS_IMAGE_GC_CONFIG=file:///opt/mesosphere/etc/mesos-slave-image-gc-config.json
       MESOS_IMAGE_PROVIDERS=docker
       MESOS_ISOLATION={{ mesos_isolation }}
