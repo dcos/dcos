@@ -279,7 +279,6 @@ class CmdConfigSetup(CommandConfig):
                 'dcosclusterpkginfopath', ''
             )
         )
-        dcos_conf_pkg_name = 'dcos-config-win'
         template_fname = 'dcos-config-windows.yaml'
         values_fname = 'expanded.config.full.json'
 
@@ -288,46 +287,10 @@ class CmdConfigSetup(CommandConfig):
             LOG.info(f'{self.msg_src}: dcos_conf: NOP')
             return {}
 
-        # Linux package index direct URL
-        lpi_url = posixpath.join(dstor_root_url, dstor_linux_pkg_index_path)
-        lpi_fname = Path(dstor_linux_pkg_index_path).name
-
-        try:
-            cm_utl.download(lpi_url, str(self.inst_storage.tmp_dpath))
-            LOG.debug(f'{self.msg_src}: DC/OS Linux package index: Download:'
-                      f' {lpi_fname}: {lpi_url}')
-        except Exception as e:
-            raise cr_exc.RCDownloadError(
-                f'DC/OS Linux package index: Download: {lpi_fname}:'
-                f' {lpi_url}: {type(e).__name__}: {e}'
-            ) from e
-
-        lpi_fpath = self.inst_storage.tmp_dpath.joinpath(lpi_fname)
-
-        try:
-            lpi = cr_utl.rc_load_json(
-                lpi_fpath,
-                emheading=f'DC/OS Linux package index: {lpi_fname}'
-            )
-
-            if (not isinstance(lpi, dict) or not
-                    isinstance(lpi.get(dcos_conf_pkg_name), dict)):
-                raise cr_exc.RCInvalidError(
-                    f'DC/OS Linux package index: {lpi}'
-                )
-
-            dstor_dcoscfg_pkg_path = lpi.get(dcos_conf_pkg_name).get(
-                'filename'
-            )
-            if not isinstance(dstor_dcoscfg_pkg_path, str):
-                raise cr_exc.RCElementError(
-                    f'DC/OS Linux package index: DC/OS config package'
-                    f' distribution storage path: {dstor_dcoscfg_pkg_path}'
-                )
-        except cr_exc.RCError as e:
-            raise e
-        finally:
-            lpi_fpath.unlink()
+        # Discover relative URL to the DC/OS aggregated configuration package.
+        dstor_dcoscfg_pkg_path = self.get_dstor_dcoscfgpkg_path(
+            dstor_root_url, dstor_linux_pkg_index_path
+        )
 
         dcoscfg_pkg_url = posixpath.join(
             dstor_root_url, dstor_dcoscfg_pkg_path
@@ -337,14 +300,15 @@ class CmdConfigSetup(CommandConfig):
         # Download DC/OS aggregated configuration package ...
         try:
             cm_utl.download(dcoscfg_pkg_url, str(self.inst_storage.tmp_dpath))
-            LOG.debug(f'{self.msg_src}: DC/OS aggregated config: Download:'
-                      f' {dcoscfg_pkg_fname}: {dcoscfg_pkg_url}')
+            LOG.debug(f'{self.msg_src}: DC/OS aggregated config package:'
+                      f' Download: {dcoscfg_pkg_url}')
         except Exception as e:
             raise cr_exc.RCDownloadError(
-                f'DC/OS aggregated config: Download: {dcoscfg_pkg_fname}:'
-                f' {dcoscfg_pkg_url}: {type(e).__name__}: {e}'
+                f'DC/OS aggregated config package: {dcoscfg_pkg_url}:'
+                f' {type(e).__name__}: {e}'
             ) from e
 
+        # Process DC/OS aggregated configuration package.
         dcoscfg_pkg_fpath = self.inst_storage.tmp_dpath.joinpath(
             dcoscfg_pkg_fname
         )
@@ -354,30 +318,117 @@ class CmdConfigSetup(CommandConfig):
                 dir=str(self.inst_storage.tmp_dpath)
             ) as tmp_dpath:
                 cm_utl.unpack(str(dcoscfg_pkg_fpath), tmp_dpath)
-                LOG.debug(f'{self.msg_src}: DC/OS aggregated config: Extract:'
-                          f' OK')
+                LOG.debug(f'{self.msg_src}: DC/OS aggregated config package:'
+                          f' {dcoscfg_pkg_fpath}: Extract: OK')
 
                 values_fpath = Path(tmp_dpath).joinpath(values_fname)
                 values = cr_utl.rc_load_json(
                     values_fpath,
-                    emheading=f'DC/OS aggregated config: Values: {values_fname}'
+                    emheading=f'DC/OS aggregated config: Values'
                 )
                 template_fpath = Path(tmp_dpath).joinpath(template_fname)
-                template = self.load_dcos_conf_templete(template_fpath)
+                template = self.load_dcos_conf_template(template_fpath)
         except Exception as e:
             if not isinstance(e, cr_exc.RCError):
                 raise cr_exc.RCExtractError(
-                    f'DC/OS aggregated config: {type(e).__name__}: {e}'
+                    f'DC/OS aggregated config package: {dcoscfg_pkg_fpath}:'
+                    f' {type(e).__name__}: {e}'
                 )
             else:
                 raise
         else:
+            LOG.debug(f'{self.msg_src}: DC/OS aggregated config package:'
+                      f' {dcoscfg_pkg_fpath}: Preprocess: OK')
             return {'template': template, 'values': values}
         finally:
             dcoscfg_pkg_fpath.unlink()
 
+    def get_dstor_dcoscfgpkg_path(self, dstor_root_url, dstor_lpi_path):
+        """Retrieve the Linux Package Index (LPI) object from the DC/OS
+        distribution storage and discover a relative URL to the DC/OS
+        aggregated configuration package.
+        LPI is expected to be a JSON-formatted file containing descriptors for
+        DC/OS distribution packages:
+
+        {
+            "<pkg-name>":{
+                "filename":"<base-path>/<pkg-name>--<pkg-version>.tar.xz",
+                "id":"<pkg-name>--<pkg-version>"
+            },
+            ...
+        }
+
+        :param dstor_root_url:         str, DC/OS distribution storage root URL
+        :param dstor_lpi_path:         str, URL path to the DC/OS Linux package
+                                       index object at the DC/OS distribution
+                                       storage
+        :return dstor_dcoscfgpkg_path: str, URL path to the DC/OS aggregated
+                                       config package at the DC/OS distribution
+                                       storage
+        """
+        dcos_conf_pkg_name = 'dcos-config-win'
+
+        # Linux package index direct URL
+        lpi_url = posixpath.join(dstor_root_url, dstor_lpi_path)
+        lpi_fname = Path(dstor_lpi_path).name
+
+        try:
+            cm_utl.download(lpi_url, str(self.inst_storage.tmp_dpath))
+            LOG.debug(f'{self.msg_src}: DC/OS Linux package index: Download:'
+                      f' {lpi_url}')
+        except Exception as e:
+            raise cr_exc.RCDownloadError(
+                f'DC/OS Linux package index: {lpi_url}: {type(e).__name__}:'
+                f' {e}'
+            ) from e
+
+        lpi_fpath = self.inst_storage.tmp_dpath.joinpath(lpi_fname)
+
+        try:
+            lpi = cr_utl.rc_load_json(lpi_fpath,
+                                      emheading='DC/OS Linux package index')
+
+            if not isinstance(lpi, dict):
+                raise cr_exc.RCInvalidError(
+                    f'DC/OS Linux package index: {lpi_url}: Invalid structure'
+                )
+
+            dcos_conf_pkg_desc = lpi.get(dcos_conf_pkg_name)
+
+            if dcos_conf_pkg_desc is None:
+                raise cr_exc.RCElementError(
+                    f'DC/OS Linux package index: {lpi_url}: DC/OS aggregated'
+                    f' config package descriptor is missed:'
+                    f' {dcos_conf_pkg_name}'
+                )
+
+            if not isinstance(dcos_conf_pkg_desc, dict):
+                raise cr_exc.RCElementError(
+                    f'DC/OS Linux package index: {lpi_url}: Invalid DC/OS'
+                    f' aggregated config package descriptor:'
+                    f' {dcos_conf_pkg_desc}'
+                )
+
+            dstor_dcoscfgpkg_path = dcos_conf_pkg_desc.get('filename')
+            if dstor_dcoscfgpkg_path is None:
+                raise cr_exc.RCElementError(
+                    f'DC/OS Linux package index: {lpi_url}: DC/OS aggregated'
+                    f' config package descriptor: Distribution storage path is'
+                    f' missed: {dcos_conf_pkg_desc}'
+                )
+            if not isinstance(dstor_dcoscfgpkg_path, str):
+                raise cr_exc.RCElementError(
+                    f'DC/OS Linux package index: {lpi_url}: DC/OS aggregated'
+                    f' config package descriptor: Distribution storage path:'
+                    f' Invalid type: {dstor_dcoscfgpkg_path}'
+                )
+        finally:
+            lpi_fpath.unlink()
+
+        return dstor_dcoscfgpkg_path
+
     @staticmethod
-    def load_dcos_conf_templete(fpath):
+    def load_dcos_conf_template(fpath):
         """Load the DC/OS aggregated configuration template from disk.
 
         :param fpath: pathlib.Path, path to template
@@ -386,38 +437,42 @@ class CmdConfigSetup(CommandConfig):
         c_key = re.compile(r' *content: [|].*')
         h_key = re.compile(r' *#.*$')
 
-        with fpath.open() as fp:
+        try:
+            with fpath.open() as fp:
 
-            aggregator = {'package': []}
-            path = ''
-            content = []
+                aggregator = {'package': []}
+                path = ''
+                content = []
 
-            for line in fp:
-                pk_match = p_key.match(line)
-                ck_match = c_key.match(line)
-                hk_match = h_key.match(line)
+                for line in fp:
+                    pk_match = p_key.match(line)
+                    ck_match = c_key.match(line)
+                    hk_match = h_key.match(line)
 
-                if pk_match:
+                    if pk_match:
 
-                    if path:
-                        item = {'path': path, 'content': ''.join(content)}
-                        aggregator['package'].append(item)
-                        path = pk_match.group('g1')
-                        content = []
-                    else:
-                        path = pk_match.group('g1')
-                elif ck_match:
-                    continue
-                elif hk_match:
-                    continue
-                else:
-                    if not path:
+                        if path:
+                            item = {'path': path, 'content': ''.join(content)}
+                            aggregator['package'].append(item)
+                            path = pk_match.group('g1')
+                            content = []
+                        else:
+                            path = pk_match.group('g1')
+                    elif ck_match:
+                        continue
+                    elif hk_match:
                         continue
                     else:
-                        content.append(line.strip(' '))
+                        if not path:
+                            continue
+                        else:
+                            content.append(line.strip(' '))
 
-            item = {'path': path, 'content': ''.join(content)}
-            aggregator['package'].append(item)
+                item = {'path': path, 'content': ''.join(content)}
+                aggregator['package'].append(item)
+        except (OSError, RuntimeError) as e:
+            raise cr_exc.RCError(f'DC/OS aggregated config: Template: Load:'
+                                 f' {fpath}: {type(e).__name__}: {e}') from e
 
         return aggregator
 
