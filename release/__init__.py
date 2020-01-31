@@ -16,7 +16,7 @@ import os.path
 import subprocess
 import sys
 from distutils.version import LooseVersion
-from typing import Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import pkg_resources
 
@@ -34,7 +34,7 @@ class ConfigError(Exception):
     pass
 
 
-def expand_env_vars(config):
+def expand_env_vars(config) -> dict:
     # Iterate recursively through config dictionaries, mapping any string keys that begin with `$` into
     # env vars.
     # If they don't begin with $ then skip.
@@ -63,7 +63,7 @@ def expand_env_vars(config):
         return config
 
 
-def load_config(filename):
+def load_config(filename: str) -> dict:
     return expand_env_vars(pkgpanda.util.load_yaml(filename))
 
 
@@ -105,7 +105,7 @@ def to_json(data):
     return json.dumps(none_to_null(data), indent=2, sort_keys=True)
 
 
-def from_json(json_str):
+def from_json(json_str: str) -> dict:
     """Reverses to_json"""
 
     def null_to_none(obj):
@@ -129,7 +129,7 @@ def load_providers(provider_names):
 # have all the logic about channels and repositories.
 class Repository():
 
-    def __init__(self, repository_path, channel_name: Optional[str], unique_id):
+    def __init__(self, repository_path: str, channel_name: Optional[str], unique_id) -> None:
         if not repository_path:
             raise ValueError("repository_path must be a non-empty string. channel_name may be None though.")
 
@@ -145,7 +145,7 @@ class Repository():
         self.__unique_id = unique_id
 
     @property
-    def path_prefix(self):
+    def path_prefix(self: Repository):
         return self.__repository_path + '/'
 
     @property
@@ -162,7 +162,7 @@ class Repository():
 
     # TODO(cmaloney): This function is too big. Break it into testable chunks.
     # TODO(cmaloney): Assert the same path/destination_path is never used twice.
-    def make_commands(self, metadata):
+    def make_commands(self, metadata: dict) -> Dict[str, list]:
         stage1 = []
         stage2 = []
 
@@ -308,7 +308,7 @@ def make_bootstrap_artifacts(bootstrap_id, package_ids, variant_name, artifact_p
     }
 
 
-def make_stable_artifacts(cache_repository_url, tree_variants):
+def make_stable_artifacts(cache_repository_url: str, tree_variants: List[Optional[str]]) -> Dict[str, Any]:
     metadata = {
         "commit": util.dcos_image_commit,
         "core_artifacts": [],
@@ -387,7 +387,7 @@ def built_resource_to_artifacts(built_resource: dict):
 #       'content': '',
 #       'content_file': '',
 #       }]}}
-def make_channel_artifacts(metadata, provider_names):
+def make_channel_artifacts(metadata: dict, provider_names) -> List[Dict[str, str]]:
     artifacts = [{
         'channel_path': 'version',
         'local_content': DCOS_VERSION,
@@ -579,7 +579,7 @@ def do_build_packages(cache_repository_url, tree_variants):
     return result
 
 
-def get_azure_download_url(config) -> str:
+def get_azure_download_url(config: dict) -> str:
     # TODO: HACK. Stashing and pulling the config from release/__init__.py
     # is definitely not the right way to do this.
     # See also gen/build_deploy/aws.py#get_cloudformation_s3_url
@@ -604,7 +604,7 @@ def get_azure_download_url(config) -> str:
     return download_url
 
 
-def set_repository_metadata(repository, metadata, storage_providers, preferred_provider, config) -> None:
+def set_repository_metadata(repository: Repository, metadata: Dict[str, Any], storage_providers: Any, preferred_provider: Any, config: dict) -> None:
     metadata['repository_path'] = repository.path_prefix[:-1]
     metadata['repository_url'] = preferred_provider.url + repository.path_prefix[:-1]
     metadata['build_name'] = repository.path_channel_prefix[:-1]
@@ -625,7 +625,7 @@ def set_repository_metadata(repository, metadata, storage_providers, preferred_p
     metadata['azure_download_url'] = get_azure_download_url(config)
 
 
-def call_matching_arguments(function, arguments, allow_unused=False):
+def call_matching_arguments(function: Callable, arguments: dict, allow_unused: bool=False) -> Any:
     signature = inspect.signature(function)
     arguments = copy.deepcopy(arguments)
 
@@ -650,7 +650,7 @@ def call_matching_arguments(function, arguments, allow_unused=False):
     return function(**kwargs)
 
 
-def get_storage_provider_factory(kind):
+def get_storage_provider_factory(kind: str) -> Any:
     # Get the module containing it (kind portion before `_`)
     if '_' not in kind:
         raise ConfigError("Storage kind must be of the form <provider>_<name>")
@@ -695,7 +695,7 @@ def apply_storage_commands(storage_providers: dict, storage_commands: dict) -> N
 # something such as a cloudformation template which won't work.
 class ReleaseManager():
 
-    def _setup_storage(self, storage_config):
+    def _setup_storage(self, storage_config: dict) -> None:
         self.__storage_providers = {}
         for name, options in storage_config.items():
             options = copy.deepcopy(options)
@@ -719,7 +719,7 @@ class ReleaseManager():
 
             self.__storage_providers[name] = storage
 
-    def __init__(self, config, noop, provider_names):
+    def __init__(self, config: dict, noop: bool, provider_names: List[str]) -> None:
         self._setup_storage(config.get('storage', dict()))
         self.__noop = noop
         self.__config = config
@@ -731,14 +731,14 @@ class ReleaseManager():
         else:
             self.__preferred_provider = None
 
-    def get_metadata(self, src_channel):
+    def get_metadata(self, src_channel: str) -> Dict[str, Any]:
         return from_json(self.__preferred_provider.fetch(src_channel + '/metadata.json').decode())
 
-    def fetch_key_artifacts(self, metadata):
+    def fetch_key_artifacts(self, metadata: Dict[str, Any]) -> None:
         assert metadata['reproducible_artifact_path'][-1] != '/'
         assert metadata['repository_path'][-1] != '/'
 
-        def fetch_artifact(artifact):
+        def fetch_artifact(artifact: dict) -> None:
             print("Fetching core artifact if it doesn't exist: ", artifact)
             if 'channel_path' in artifact:
                 assert artifact['channel_path'][0] != '/'
@@ -769,7 +769,7 @@ class ReleaseManager():
         for artifact in metadata['core_artifacts']:
             fetch_artifact(artifact)
 
-    def promote(self, src_channel, destination_repository, destination_channel):
+    def promote(self, src_channel: str, destination_repository: str, destination_channel: Optional[str]) -> Dict[str, Any]:
         metadata = self.get_metadata(src_channel)
 
         # Can't run a release promotion with a different version of the scripts than the one that
@@ -792,7 +792,7 @@ class ReleaseManager():
 
         return metadata
 
-    def create_installer(self, src_channel):
+    def create_installer(self, src_channel: str) -> Dict[str, Any]:
         assert not src_channel.startswith('/')
         metadata = self.get_metadata(src_channel)
         self.fetch_key_artifacts(metadata)
@@ -801,7 +801,7 @@ class ReleaseManager():
 
         return metadata
 
-    def create(self, repository_path, channel, tag, tree_variants):
+    def create(self, repository_path: str, channel: str, tag: str, tree_variants: List[Optional[str]]) -> Dict[str, Any]:
         assert len(channel) > 0  # channel must be a non-empty string.
 
         assert ('options' in self.__config) and \
@@ -841,7 +841,7 @@ class ReleaseManager():
 
         return metadata
 
-    def apply_storage_commands(self, storage_commands):
+    def apply_storage_commands(self, storage_commands: Dict[str, Any]) -> None:
         assert storage_commands.keys() == {'stage1', 'stage2'}
 
         if self.__noop:
@@ -854,7 +854,7 @@ class ReleaseManager():
 _config = None
 
 
-def load_provider_names():
+def load_provider_names() -> List[str]:
     # Set the various stages that need to execute after packages are built.
     if is_windows:
         # DC/OS is not supported on AWS at this time.
@@ -862,7 +862,7 @@ def load_provider_names():
     return ['aws', 'azure', 'bash']
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description='DC/OS Release Management Tool.')
     subparsers = parser.add_subparsers(title='commands')
 
@@ -938,7 +938,7 @@ def main():
         sys.exit(1)
 
     # Set the stages that need to run once individual packages have been built.
-    provider_names = load_provider_names()
+    provider_names: List[str] = load_provider_names()
     # If the '--local' option is specified we don't do any cloud provider
     # operations, we just build a local installer artifact.
     if options.local:
