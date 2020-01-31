@@ -108,7 +108,7 @@ chmod {mode} {filename}
 
 """
 
-bash_template = """#!/bin/bash
+bash_template = r"""#!/bin/bash
 #
 # BASH script to install DC/OS on a node
 #

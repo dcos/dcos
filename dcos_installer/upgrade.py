@@ -11,7 +11,7 @@ from dcos_installer.constants import SERVE_DIR
 from pkgpanda.util import make_directory, write_string
 
 
-node_upgrade_template = """#!/bin/bash
+node_upgrade_template = r"""#!/bin/bash
 #
 # BASH script to upgrade DC/OS on a node
 #
