@@ -207,6 +207,14 @@ def validate_mesos_log_retention_mb(mesos_log_retention_mb):
     assert int(mesos_log_retention_mb) >= 1024, "Must retain at least 1024 MB of logs"
 
 
+def validate_mesos_logrotate_file_size_mb(mesos_logrotate_file_size_mb):
+    try:
+        int(mesos_logrotate_file_size_mb)
+    except ValueError as ex:
+        raise AssertionError("Error parsing 'mesos_logrotate_file_size_mb' "
+                             "parameter as an integer: {}".format(ex)) from ex
+
+
 def validate_mesos_container_log_sink(mesos_container_log_sink):
     assert mesos_container_log_sink in [
         'fluentbit',
@@ -761,18 +769,20 @@ def calculate_fair_sharing_excluded_resource_names(gpus_are_scarce):
     return ''
 
 
-def calculate_has_mesos_max_completed_tasks_per_framework(mesos_max_completed_tasks_per_framework):
-    return calculate_set(mesos_max_completed_tasks_per_framework)
+def validate_mesos_max_completed_frameworks(mesos_max_completed_frameworks):
+    try:
+        int(mesos_max_completed_frameworks)
+    except ValueError as ex:
+        raise AssertionError("Error parsing 'mesos_max_completed_frameworks' "
+                             "parameter as an integer: {}".format(ex)) from ex
 
 
-def validate_mesos_max_completed_tasks_per_framework(
-        mesos_max_completed_tasks_per_framework, has_mesos_max_completed_tasks_per_framework):
-    if has_mesos_max_completed_tasks_per_framework == 'true':
-        try:
-            int(mesos_max_completed_tasks_per_framework)
-        except ValueError as ex:
-            raise AssertionError("Error parsing 'mesos_max_completed_tasks_per_framework' "
-                                 "parameter as an integer: {}".format(ex)) from ex
+def validate_mesos_max_completed_tasks_per_framework(mesos_max_completed_tasks_per_framework):
+    try:
+        int(mesos_max_completed_tasks_per_framework)
+    except ValueError as ex:
+        raise AssertionError("Error parsing 'mesos_max_completed_tasks_per_framework' "
+                             "parameter as an integer: {}".format(ex)) from ex
 
 
 def validate_mesos_recovery_timeout(mesos_recovery_timeout):
@@ -1159,9 +1169,11 @@ entry = {
         lambda auth_cookie_secure_flag: validate_true_false(auth_cookie_secure_flag),
         lambda oauth_enabled: validate_true_false(oauth_enabled),
         lambda oauth_available: validate_true_false(oauth_available),
+        lambda mesos_cgroups_enable_cfs: validate_true_false(mesos_cgroups_enable_cfs),
         validate_mesos_dns_ip_sources,
         lambda mesos_dns_set_truncate_bit: validate_true_false(mesos_dns_set_truncate_bit),
         validate_mesos_log_retention_mb,
+        validate_mesos_logrotate_file_size_mb,
         lambda telemetry_enabled: validate_true_false(telemetry_enabled),
         lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
@@ -1203,6 +1215,7 @@ entry = {
         validate_adminrouter_tls_version_present,
         validate_adminrouter_x_frame_options,
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
+        validate_mesos_max_completed_frameworks,
         validate_mesos_max_completed_tasks_per_framework,
         validate_mesos_recovery_timeout,
         validate_metronome_gpu_scheduling_behavior,
@@ -1272,13 +1285,16 @@ entry = {
         'auth_cookie_secure_flag': 'false',
         'marathon_java_args': '',
         'master_dns_bindall': 'true',
+        'mesos_cgroups_enable_cfs': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'mesos_dns_set_truncate_bit': 'true',
         'mesos_http_executor_domain_sockets': 'true',
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
+        'mesos_logrotate_file_size_mb': '2',
         'mesos_container_log_sink': 'fluentbit+logrotate',
-        'mesos_max_completed_tasks_per_framework': '',
+        'mesos_max_completed_frameworks': '10',
+        'mesos_max_completed_tasks_per_framework': '100',
         'mesos_recovery_timeout': '24hrs',
         'mesos_seccomp_enabled': 'true',
         'mesos_seccomp_profile_name': 'default.json',
@@ -1426,7 +1442,6 @@ entry = {
         'dcos_l4lb_min_named_ip6_erltuple': calculate_dcos_l4lb_min_named_ip6_erltuple,
         'dcos_l4lb_max_named_ip6_erltuple': calculate_dcos_l4lb_max_named_ip6_erltuple,
         'mesos_isolation': calculate_mesos_isolation,
-        'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
         'has_mesos_seccomp_profile_name':
             lambda mesos_seccomp_profile_name: calculate_set(mesos_seccomp_profile_name),
         'has_mesos_default_container_shm_size':
