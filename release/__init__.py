@@ -16,7 +16,7 @@ import os.path
 import subprocess
 import sys
 from distutils.version import LooseVersion
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Iterator, List, Optional, Union, overload
 
 import pkg_resources
 
@@ -34,40 +34,51 @@ class ConfigError(Exception):
     pass
 
 
-def expand_env_vars(config) -> dict:
+def expand_env_vars(config: dict) -> dict:
     # Iterate recursively through config dictionaries, mapping any string keys that begin with `$` into
     # env vars.
     # If they don't begin with $ then skip.
     # If they begin with \$ simply replace with $.
-    if isinstance(config, dict):
-        return {key: expand_env_vars(value) for key, value in config.items()}
-    elif isinstance(config, list):
-        return [expand_env_vars(item) for item in config]
-    elif isinstance(config, str):
-        # Env variable replacement
-        # Escaped $
-        if config.startswith('$$'):
-            return config[1:]
-        elif config.startswith('$'):
-            key = config[1:]
-            if key not in os.environ:
-                logging.error("Requested environment variable {} in config isn't set in the "
-                              "environment".format(key))
-                return ''
-            return os.environ[key]
 
-        # No processing to do
-        return config
-    else:
-        # Not a known type. Skipping
-        return config
+    @overload
+    def inner(conf: dict) -> dict: ...
+    @overload
+    def inner(conf: list) -> list: ...
+    @overload
+    def inner(conf: str) -> str: ...
+
+    def inner(conf: Union[dict, list, str]) -> Union[dict, list, str]:
+        if isinstance(conf, dict):
+            return {key: inner(value) for key, value in config.items()}
+        elif isinstance(config, list):
+            return [inner(item) for item in config]
+        elif isinstance(config, str):
+            # Env variable replacement
+            # Escaped $
+            if config.startswith('$$'):
+                return config[1:]
+            elif config.startswith('$'):
+                key = config[1:]
+                if key not in os.environ:
+                    logging.error("Requested environment variable {} in config isn't set in the "
+                                  "environment".format(key))
+                    return ''
+                return os.environ[key]
+
+            # No processing to do
+            return config
+        else:
+            # Not a known type. Skipping
+            return config
+
+    return {key: inner(value) for key, value in config.items()}
 
 
 def load_config(filename: str) -> dict:
     return expand_env_vars(pkgpanda.util.load_yaml(filename))
 
 
-def strip_locals(data):
+def strip_locals(data: Union[dict, list]) -> Union[dict, list]:
     """Returns a dictionary with all keys that begin with local_ removed.
 
     If data is a dictionary, recurses through cleaning the keys of that as well.
@@ -85,7 +96,7 @@ def strip_locals(data):
     return data
 
 
-def to_json(data):
+def to_json(data: Union[dict, list]) -> str:
     """Return a JSON string representation of data.
 
     If data is a dictionary, None is replaced with 'null' in its keys and,
@@ -93,14 +104,14 @@ def to_json(data):
     allow the dictionary to be sorted by key before being written to JSON.
 
     """
-    def none_to_null(obj):
-        try:
-            items = obj.items()
-        except AttributeError:
+    def none_to_null(obj: Union[dict, list]) -> Union[dict, list]:
+        if isinstance(obj, list):
             return obj
-        # Don't make any ambiguities by requiring null to not be a key.
-        assert 'null' not in obj
-        return {'null' if key is None else key: none_to_null(val) for key, val in items}
+        elif isinstance(obj, dict):
+            items = obj.items()
+            # Don't make any ambiguities by requiring null to not be a key.
+            assert 'null' not in obj
+            return {'null' if key is None else key: none_to_null(val) for key, val in items}
 
     return json.dumps(none_to_null(data), indent=2, sort_keys=True)
 
@@ -108,17 +119,15 @@ def to_json(data):
 def from_json(json_str: str) -> dict:
     """Reverses to_json"""
 
-    def null_to_none(obj):
-        try:
-            items = obj.items()
-        except AttributeError:
-            return obj
+    def null_to_none(obj: Union[dict, list]) -> dict:
+        assert isinstance(obj, dict)
+        items = obj.items()
         return {None if key == 'null' else key: null_to_none(val) for key, val in items}
 
     return null_to_none(json.loads(json_str))
 
 
-def load_providers(provider_names):
+def load_providers(provider_names: List[str]) -> dict:
     return {name: importlib.import_module("gen.build_deploy." + name)
             for name in provider_names}
 
@@ -129,7 +138,7 @@ def load_providers(provider_names):
 # have all the logic about channels and repositories.
 class Repository():
 
-    def __init__(self, repository_path: str, channel_name: Optional[str], unique_id) -> None:
+    def __init__(self, repository_path: str, channel_name: Optional[str], unique_id: str) -> None:
         if not repository_path:
             raise ValueError("repository_path must be a non-empty string. channel_name may be None though.")
 
@@ -145,19 +154,19 @@ class Repository():
         self.__unique_id = unique_id
 
     @property
-    def path_prefix(self: Repository):
+    def path_prefix(self: Repository) -> str:
         return self.__repository_path + '/'
 
     @property
-    def path_channel_prefix(self):
+    def path_channel_prefix(self) -> str:
         return self.path_prefix + self.channel_prefix
 
     @property
-    def reproducible_artifact_path(self):
+    def reproducible_artifact_path(self) -> str:
         return self.path_channel_prefix + self.__unique_id + '/'
 
     @property
-    def channel_prefix(self):
+    def channel_prefix(self) -> str:
         return self.__channel_name + '/' if self.__channel_name else ''
 
     # TODO(cmaloney): This function is too big. Break it into testable chunks.
@@ -166,12 +175,12 @@ class Repository():
         stage1 = []
         stage2 = []
 
-        def process_artifact(artifact, base_artifact):
+        def process_artifact(artifact: dict, base_artifact: bool) -> None:
             # First destination is upload
             # All other destinations are copies from first destination.
             upload_path = None
 
-            def add_dest(destination_path, is_reproducible):
+            def add_dest(destination_path: str, is_reproducible: bool) -> dict:
                 nonlocal upload_path
 
                 # First action -> upload
@@ -197,7 +206,7 @@ class Repository():
                             'destination_path': destination_path}}
                 else:
                     # Upload from local machine.
-                    action = {
+                    action: dict = {
                         'method': 'upload',
                         'if_not_exists': is_reproducible,
                         'args': {
@@ -251,7 +260,7 @@ class Repository():
         }
 
 
-def make_package_filename(package_id_str):
+def make_package_filename(package_id_str: str) -> str:
     package_id = pkgpanda.PackageId(package_id_str)
     extension = '.tar.xz'
     if package_id.version == 'setup':
@@ -259,21 +268,21 @@ def make_package_filename(package_id_str):
     return 'packages/{}/{}{}'.format(package_id.name, package_id_str, extension)
 
 
-def get_package_artifact(package_id_str):
+def get_package_artifact(package_id_str: str) -> Dict[str, str]:
     package_filename = make_package_filename(package_id_str)
     return {
         'reproducible_path': package_filename,
         'local_path': 'packages/cache/' + package_filename}
 
 
-def get_gen_package_artifact(package_id_str):
+def get_gen_package_artifact(package_id_str: str) -> Dict[str, str]:
     package_filename = make_package_filename(package_id_str)
     return {
         'reproducible_path': package_filename,
         'local_path': package_filename}
 
 
-def make_bootstrap_artifacts(bootstrap_id, package_ids, variant_name, artifact_prefix):
+def make_bootstrap_artifacts(bootstrap_id: str, package_ids: List[str], variant_name: str, artifact_prefix: str) -> Iterator[Dict[str, str]]:
     bootstrap_filename = "{}.bootstrap.tar.xz".format(bootstrap_id)
     active_filename = "{}.active.json".format(bootstrap_id)
     active_local_path = artifact_prefix + '/bootstrap/' + active_filename
@@ -340,10 +349,10 @@ def make_stable_artifacts(cache_repository_url: str, tree_variants: List[Optiona
     metadata["bootstrap_dict"] = {k: v['bootstrap'] for k, v in complete_dict.items()}
     metadata["all_bootstraps"] = {k: v['bootstrap'] for k, v in all_completes.items()}
 
-    def add_file(info):
+    def add_file(info: dict) -> None:
         metadata["core_artifacts"].append(info)
 
-    def add_package(package_id):
+    def add_package(package_id: str) -> None:
         if package_id in metadata['packages']:
             return
         metadata['packages'].add(package_id)
@@ -365,7 +374,7 @@ def make_stable_artifacts(cache_repository_url: str, tree_variants: List[Optiona
     return metadata
 
 
-def built_resource_to_artifacts(built_resource: dict):
+def built_resource_to_artifacts(built_resource: dict) -> List[Dict[str, str]]:
     # Type switch
     if 'packages' in built_resource:
         return [get_gen_package_artifact(package) for package in built_resource['packages']]
@@ -387,7 +396,7 @@ def built_resource_to_artifacts(built_resource: dict):
 #       'content': '',
 #       'content_file': '',
 #       }]}}
-def make_channel_artifacts(metadata: dict, provider_names) -> List[Dict[str, str]]:
+def make_channel_artifacts(metadata: dict, provider_names: List[str]) -> List[Dict[str, str]]:
     artifacts = [{
         'channel_path': 'version',
         'local_content': DCOS_VERSION,
@@ -403,7 +412,7 @@ def make_channel_artifacts(metadata: dict, provider_names) -> List[Dict[str, str
     original_log_level = log.getEffectiveLevel()
     log.setLevel(logging.DEBUG)
 
-    provider_data = {}
+    provider_data: Dict[str, list] = {} # TODO(kjeschkies): provider data is not really used.
     providers = load_providers(provider_names)
     for name, module in sorted(providers.items()):
         bootstrap_url = metadata['repository_url']
@@ -426,7 +435,7 @@ def make_channel_artifacts(metadata: dict, provider_names) -> List[Dict[str, str
 
             # Load additional default variant arguments out of gen_extra
             if os.path.exists('gen_extra/calc.py'):
-                mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()
+                mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module() # type: ignore
                 variant_arguments[variant].update(mod.provider_template_defaults)
 
         # Add templates for the default variant.
@@ -470,18 +479,18 @@ def make_channel_artifacts(metadata: dict, provider_names) -> List[Dict[str, str
     return artifacts
 
 
-def make_abs(path):
+def make_abs(path: str) -> str:
     if path[0] == '/':
         return path
     return os.getcwd() + '/' + path
 
 
-def do_build_docker(name, path):
+def do_build_docker(name: str, path: str) -> None:
     with logger.scope("dcos/dcos-builder ({})".format(name)):
         return _do_build_docker(name, path)
 
 
-def _do_build_docker(name, path):
+def _do_build_docker(name: str, path: str) -> None:
     path_sha = pkgpanda.build.hash_folder_abs(path, os.path.dirname(path))
     container_name = 'dcos/dcos-builder:{}_dockerdir-{}'.format(name, path_sha)
 
@@ -534,7 +543,7 @@ def _do_build_docker(name, path):
     subprocess.check_call(args)
 
 
-def _get_global_builders():
+def _get_global_builders() -> dict:
     """Find builders defined globally
     """
     res = {}
@@ -545,7 +554,7 @@ def _get_global_builders():
     return res
 
 
-def _build_builders(package_store):
+def _build_builders(package_store: pkgpanda.build.PackageStore) -> None:
     """Build all builder containers required to build packages
     """
     global_builders = _get_global_builders()
@@ -563,13 +572,13 @@ def _build_builders(package_store):
         do_build_docker(name, path)
 
 
-def do_build_packages(cache_repository_url, tree_variants):
+def do_build_packages(cache_repository_url: str, tree_variants: List[Optional[str]]) -> dict:
     package_store = pkgpanda.build.PackageStore(os.getcwd() + '/packages',
                                                 cache_repository_url)
 
     _build_builders(package_store)
 
-    result = pkgpanda.build.build_tree(package_store, True, tree_variants)
+    result: dict = pkgpanda.build.build_tree(package_store, True, tree_variants)
     last_set = package_store.get_last_complete_set(tree_variants)
     assert last_set == result, \
         "Internal error: get_last_complete_set doesn't match the results of build_tree: {} != {}".format(
@@ -596,7 +605,7 @@ def get_azure_download_url(config: dict) -> str:
     if 'download_url' not in config['storage']['azure']:
         raise RuntimeError("No download_url section in azure configuration")
 
-    download_url = config['storage']['azure']['download_url']
+    download_url: str = config['storage']['azure']['download_url']
 
     if not download_url.endswith('/'):
         raise RuntimeError("Azure download_url must end with a '/'")
@@ -663,10 +672,10 @@ def get_storage_provider_factory(kind: str) -> Any:
     except ImportError:
         raise ConfigError("Couldn't load storage provider '{}'".format(provider))
 
-    if name not in module.factories:
+    if name not in module.factories: # type: ignore
         raise ConfigError("Storage provider {} has no kind {}".format(provider, name))
 
-    return module.factories[name]
+    return module.factories[name] # type: ignore
 
 
 def apply_storage_commands(storage_providers: dict, storage_commands: dict) -> None:
@@ -931,7 +940,7 @@ def main() -> None:
         # TODO(cmaloney): HACK. This is so we can get to the config for aws and azure template
         # testing inside gen/build_deploy/{aws,azure}.py
         global _config
-        config = load_config(options.config)
+        config: dict = load_config(options.config)
         _config = config
     except OSError as ex:
         print("ERROR: Failed to open release configuration file '{}': {}".format(options.config, ex))
