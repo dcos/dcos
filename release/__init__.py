@@ -436,7 +436,7 @@ def make_channel_artifacts(metadata: dict, provider_names: List[str]) -> List[Di
             # Load additional default variant arguments out of gen_extra
             if os.path.exists('gen_extra/calc.py'):
                 mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module() # type: ignore
-                variant_arguments[variant].update(mod.provider_template_defaults)
+                variant_arguments[variant].update(mod.provider_template_defaults) # type: ignore
 
         # Add templates for the default variant.
         # Use keyword args to make not matching ordering a loud error around changes.
@@ -705,7 +705,7 @@ def apply_storage_commands(storage_providers: dict, storage_commands: dict) -> N
 class ReleaseManager():
 
     def _setup_storage(self, storage_config: dict) -> None:
-        self.__storage_providers = {}
+        self.__storage_providers: dict = {}
         for name, options in storage_config.items():
             options = copy.deepcopy(options)
             if 'kind' not in options:
