@@ -10,13 +10,13 @@
     "mesos": {
       "kind": "git",
       "git": "https://github.com/apache/mesos",
-      "ref": "21ccad220f04369a7accf2bafae8f1d5002646bb",
+      "ref": "3d197d8e815f1f2de0565ce64547f409997c5e82",
       "ref_origin": "master"
     },
     "mesos-modules": {
       "kind": "git",
       "git": "https://github.com/dcos/dcos-mesos-modules.git",
-      "ref": "2043f7ead0f1f928554f869a0c16a0e4cf40afe4",
+      "ref": "7d91c7f92c94f483f427e74b55046e34df0420c7",
       "ref_origin": "master"
     }
   },

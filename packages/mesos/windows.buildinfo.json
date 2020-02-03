@@ -2,7 +2,7 @@
   "single_source": {
     "kind": "git",
     "git": "https://github.com/apache/mesos",
-    "ref": "d46ae94b49b452ed3fbfdf99dfb501e09675a311",
+    "ref": "3d197d8e815f1f2de0565ce64547f409997c5e82",
     "ref_origin": "master"
   },
   "environment": {
