@@ -2,6 +2,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 1.11.14 (in development)
 
+* Updated to Mesos [1.5.4-dev](https://github.com/apache/mesos/blob/d440095b5a94872eabbd66def49a588d6f8f2b38/CHANGELOG)
+
 ## DC/OS 1.11.13 (2019-11-14)
 
 * Updated to Mesos [1.5.4-dev](https://github.com/apache/mesos/blob/ea5e6e87eb5053dcfbcb11237902d3e2126c41cf/CHANGELOG)
