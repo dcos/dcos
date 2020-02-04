@@ -67,6 +67,7 @@ groups:
         - test_mesos.py
         - test_meta.py
         - test_metrics.py
+        - test_etcd.py
     group_3:
         - test_misc.py
         - test_networking.py
