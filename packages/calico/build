@@ -1,7 +1,8 @@
 #!/bin/bash
 set -x
 
-source /opt/mesosphere/environment
+# calico container is missing 'envsubst'
+apt-get update && apt-get install gettext-base
 
 # copy calico CNI plugin to CNI plugin directory
 mkdir -p $PKG_PATH/cni
