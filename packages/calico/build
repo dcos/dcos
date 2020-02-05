@@ -1,6 +1,8 @@
 #!/bin/bash
 set -x
 
+source /opt/mesosphere/environment
+
 # copy calico CNI plugin to CNI plugin directory
 mkdir -p $PKG_PATH/cni
 cp /pkg/src/calico/calico-amd64 $PKG_PATH/cni/calico
