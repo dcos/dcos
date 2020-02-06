@@ -10,6 +10,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fixed preflight check verifying the `ftype` value of /var/lib/mesos. (DCOS-59406)
 
+* Allow Admin Router to accept files up to 32GB, such as for uploading large packages to Package Registry. (DCOS-61233)
+
 ### Security updates
 
 
@@ -178,8 +180,6 @@ N/A
 * Telegraf now supports specyfying port names for task-label based Prometheus endpoints discovery. (DCOS-55100)
 
 * Fixed Telegraf configuration error that dropped task metrics with certain names or tags. (DCOS_OSS-5032)
-* Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
-* Allow Admin Router to accept files up to 32GB, such as for uploading large packages to Package Registry. (DCOS-61233)
 
 * Added Fluent Bit metrics to the pipeline. (DCOS-54425)
 
