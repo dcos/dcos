@@ -154,7 +154,7 @@ class Repository():
         self.__unique_id = unique_id
 
     @property
-    def path_prefix(self: Repository) -> str:
+    def path_prefix(self) -> str:
         return self.__repository_path + '/'
 
     @property
