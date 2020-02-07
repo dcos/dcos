@@ -9,6 +9,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
  * With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the 
    instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
 
+* Allow Admin Router to accept files up to 32GB, such as for uploading large packages to Package Registry. (DCOS-61233)
 
 ## DC/OS 2.0.2 (2020-01-17)
 
