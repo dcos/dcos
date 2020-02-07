@@ -10,6 +10,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fixed preflight check verifying the `ftype` value of /var/lib/mesos. (DCOS-59406)
 
+* Allow Admin Router to accept files up to 32GB, such as for uploading large packages to Package Registry. (DCOS-61233)
+
 ### Security updates
 
 
