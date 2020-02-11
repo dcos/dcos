@@ -1,5 +1,16 @@
 DC/OS is tested in TeamCity by several groups of integration tests using dcos-terraform and AWS spot instances.
 
+# Local Setup
+
+Provision a local virutal environment for Python and activate it with
+
+```
+python3.6 -m venv /tmp/dcos_build_env
+. /tmp/dcos_build_env/bin/active
+```
+
+Install all required dependencies with `./prep_local`.
+
 # Connecting to a test cluster
 
 Once the TeamCity job has completed, the DC/OS cluster that was created will be deleted. However, if the job is still running, you can connect to the cluster.
