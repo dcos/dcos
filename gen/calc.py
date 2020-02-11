@@ -658,6 +658,14 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
 
 
+def validate_adminrouter_grpc_proxy_port(adminrouter_grpc_proxy_port):
+    try:
+        assert 0 < int(adminrouter_grpc_proxy_port) < 65536
+    except ValueError as ex:
+        raise AssertionError("Error parsing 'adminrouter_grpc_proxy_port' "
+                             "parameter as an integer: {}".format(ex)) from ex
+
+
 def calculate_adminrouter_tls_version_override(
         adminrouter_tls_1_0_enabled,
         adminrouter_tls_1_1_enabled,
@@ -1250,6 +1258,7 @@ entry = {
         lambda calico_vxlan_port: validate_int_in_range(calico_vxlan_port, 1025, 65535),
         lambda calico_vxlan_vni: validate_vxlan_vni(calico_vxlan_vni),
         validate_overlay_networks_not_overlap,
+        validate_adminrouter_grpc_proxy_port,
     ],
     'default': {
         'exhibitor_azure_account_key': '',
@@ -1262,6 +1271,7 @@ entry = {
         'use_proxy': 'false',
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
+        'adminrouter_grpc_proxy_port': '12379',
         'adminrouter_tls_1_0_enabled': 'false',
         'adminrouter_tls_1_1_enabled': 'false',
         'adminrouter_tls_1_2_enabled': 'true',
