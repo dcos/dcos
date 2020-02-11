@@ -38,7 +38,7 @@
             "1.11": "DC/OS 1.11.14",
             "1.10": "DC/OS 1.10.12"
         },
-        "jira_regex": "((?:DCOS|DCOS_OSS|COPS|MARATHON)-\\d+)"
+        "jira_regex": "((?:DCOS|DCOS_OSS|COPS|MARATHON|D2IQ)-\\d+)"
     },
     "required statuses": {
         "master": [

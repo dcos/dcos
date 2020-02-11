@@ -17,8 +17,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
-* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/d46ae94b49b452ed3fbfdf99dfb501e09675a311/CHANGELOG)
-* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/21ccad220f04369a7accf2bafae8f1d5002646bb/CHANGELOG)
+* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/4990d2cd6e76da340b30e200be0d700124dac2b1/CHANGELOG)
+* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/4990d2cd6e76da340b30e200be0d700124dac2b1/CHANGELOG)
 
 * Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
 
@@ -68,6 +68,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
 
 * Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
+* Allow Admin Router to accept files up to 32GB, such as for uploading large packages to Package Registry. (DCOS-61233)
 
 * Marathon launched too many tasks. (DCOS-62078)
 
@@ -77,3 +78,4 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
   instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
+* Updated dcos-config.yaml to support some Mesos Flags. (DCOS-59021)

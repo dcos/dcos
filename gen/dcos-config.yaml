@@ -396,13 +396,13 @@ package:
                     "value": "2"
                   }, {
                     "key": "logrotate_max_stdout_size",
-                    "value": "2MB"
+                    "value": "{{ mesos_logrotate_file_size_mb }}MB"
                   }, {
                     "key": "logrotate_stdout_options",
                     "value": "rotate 9"
                   }, {
                     "key": "logrotate_max_stderr_size",
-                    "value": "2MB"
+                    "value": "{{ mesos_logrotate_file_size_mb }}MB"
                   }, {
                     "key": "logrotate_stderr_options",
                     "value": "rotate 9"
@@ -1317,11 +1317,8 @@ package:
       MESOS_WORK_DIR={{ mesos_master_work_dir }}
       MESOS_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
       SASL_PATH=/opt/mesosphere/lib/sasl2
-{% switch has_mesos_max_completed_tasks_per_framework %}
-{% case "true" %}
+      MESOS_MAX_COMPLETED_FRAMEWORKS={{ mesos_max_completed_frameworks }}
       MESOS_MAX_COMPLETED_TASKS_PER_FRAMEWORK={{ mesos_max_completed_tasks_per_framework }}
-{% case "false" %}
-{% endswitch %}
 {% switch log_offers %}
 {% case "true" %}
       GLOG_vmodule=master=2
@@ -1333,7 +1330,7 @@ package:
   - path: /etc/mesos-slave-common
     content: |
       GLOG_drop_log_memory=false
-      MESOS_CGROUPS_ENABLE_CFS=true
+      MESOS_CGROUPS_ENABLE_CFS={{ mesos_cgroups_enable_cfs }}
       MESOS_CGROUPS_LIMIT_SWAP=false
       # The order of containerizers affects the order of certain operations
       # on the agent.  See https://github.com/dcos/dcos/pull/4988 before
