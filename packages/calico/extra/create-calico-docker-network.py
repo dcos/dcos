@@ -182,8 +182,9 @@ def create_calico_docker_network():
         raise Exception("Environment varialbe CALICO_IPV4POOL_CIDR is not set")
 
     net_create_cmd = "/usr/bin/docker network create --driver calico " \
+        "--opt org.projectcalico.profile={} " \
         "--ipam-driver calico-ipam --subnet={} {}".format(
-            subnet, CALICO_DOCKER_NETWORK_NAME)
+            CALICO_DOCKER_NETWORK_NAME, subnet, CALICO_DOCKER_NETWORK_NAME)
     p = exec_cmd(net_create_cmd, check=False)
     if p.returncode != 0:
         # here we double-check the existence of calico network in case the

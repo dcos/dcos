@@ -19,9 +19,11 @@ chmod +x $PKG_PATH/bin/calicoctl
 mkdir -p $PKG_PATH/etc
 cp /pkg/extra/profile.yaml $PKG_PATH/etc/profile.yaml
 
-# copy the launch script to the package bin directory
+# copy the launch scripts to the package bin directory
 cp /pkg/extra/start-calico-felix.sh $PKG_PATH/bin/start-calico-felix.sh
 chmod +x $PKG_PATH/bin/start-calico-felix.sh
+cp /pkg/extra/start-calico-libnetwork-plugin.sh $PKG_PATH/bin/start-calico-libnetwork-plugin.sh
+chmod +x $PKG_PATH/bin/start-calico-libnetwork-plugin.sh
 
 # copy binaries from calico-node docker container
 cp /bin/calico-node $PKG_PATH/bin/calico-node
