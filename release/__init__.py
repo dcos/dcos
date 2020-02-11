@@ -49,16 +49,16 @@ def expand_env_vars(config: dict) -> dict:
 
     def inner(conf: Union[dict, list, str]) -> Union[dict, list, str]:
         if isinstance(conf, dict):
-            return {key: inner(value) for key, value in config.items()}
-        elif isinstance(config, list):
-            return [inner(item) for item in config]
-        elif isinstance(config, str):
+            return {key: inner(value) for key, value in conf.items()}
+        elif isinstance(conf, list):
+            return [inner(item) for item in conf]
+        elif isinstance(conf, str):
             # Env variable replacement
             # Escaped $
-            if config.startswith('$$'):
-                return config[1:]
-            elif config.startswith('$'):
-                key = config[1:]
+            if conf.startswith('$$'):
+                return conf[1:]
+            elif conf.startswith('$'):
+                key = conf[1:]
                 if key not in os.environ:
                     logging.error("Requested environment variable {} in config isn't set in the "
                                   "environment".format(key))
@@ -66,10 +66,10 @@ def expand_env_vars(config: dict) -> dict:
                 return os.environ[key]
 
             # No processing to do
-            return config
+            return conf
         else:
             # Not a known type. Skipping
-            return config
+            return conf
 
     return {key: inner(value) for key, value in config.items()}
 
