@@ -29,9 +29,8 @@ aws
 "true"'''
 
 # Files ending in .json have replacement values escaped
-# TODO: JSON is not escaped correctly: should be "\"true\""
 FILE2_CONTENTS = r'''{
-value: "\"true\"
+value: "\"true\""
 }
 '''
 
