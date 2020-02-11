@@ -53,7 +53,7 @@ else
     export DCOS_SSH_KEY_PATH=~/.ssh/id_rsa
 
     cd packages/dcos-integration-test/extra
-    pytest ${EXTRA_PYTEST_ARGS} test_applications.py::test_if_marathon_app_can_be_deployed
+    pytest ${EXTRA_PYTEST_ARGS} test_windows.py
 fi
 
 # if the last return code is zero, we create a file to indicate all tests passed. The existence of this
