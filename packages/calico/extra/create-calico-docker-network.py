@@ -170,7 +170,7 @@ def create_calico_docker_network():
     # Since we are creating a cluster-wide network, avoid a race condition
     # where the same network is created by multiple agents at the same time,
     # by waiting a random interval
-    time.sleep(1.0 + random.randint(1,100)/10)
+    time.sleep(1.0 + random.randint(1, 100) / 10)
 
     inspect_net_cmd = "docker inspect {}".format(CALICO_DOCKER_NETWORK_NAME)
     p = exec_cmd(inspect_net_cmd, check=False)
