@@ -9,7 +9,12 @@ python3.6 -m venv /tmp/dcos_build_env
 . /tmp/dcos_build_env/bin/active
 ```
 
-Install all required dependencies with `./prep_local`.
+Install all required dependencies with
+
+```
+./prep_local`
+pip install -r packages/dcos-integration-test/requirements.txt
+```
 
 # Connecting to a test cluster
 
