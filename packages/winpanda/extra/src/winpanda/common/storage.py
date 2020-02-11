@@ -4,23 +4,21 @@ DC/OS installation local storage management tools.
 
 Default local storage layout for DC/OS installation:
 
-<inst_drive>:/                # DC/OS installation drive
-    +-<inst_root>/            # DC/OS installation root dir
-        +-<inst_cfg>/         # DC/OS installation config dir
-        +-<inst_pkgrepo>/     # DC/OS local package repository dir
-        +-<inst_state>/       # DC/OS installation state dir
-            +-<pkgactive>/    # DC/OS active packages index
-        +-<inst_var>/         # DC/OS installation variable data root dir
-            +-<inst_work>/    # Package-specific work dirs
-            +-<inst_run>/     # Package-specific/common runtime data
-            +-<inst_log>/     # Package-specific/common log files
-            +-<inst_tmp>/     # Package-specific/common temporary data
-        +-<inst_bin>/         # DC/OS installation shared executables dir
-        +-<inst_lib>/         # DC/OS installation shared libraries dir
+<inst_root>/              # DC/OS installation root dir
+    +-<inst_cfg>/         # DC/OS installation config dir
+    +-<inst_pkgrepo>/     # DC/OS local package repository dir
+    +-<inst_state>/       # DC/OS installation state dir
+        +-<pkgactive>/    # DC/OS active packages index
+    +-<inst_var>/         # DC/OS installation variable data root dir
+        +-<inst_work>/    # Package-specific work dirs
+        +-<inst_run>/     # Package-specific/common runtime data
+        +-<inst_log>/     # Package-specific/common log files
+        +-<inst_tmp>/     # Package-specific/common temporary data
+    +-<inst_bin>/         # DC/OS installation shared executables dir
+    +-<inst_lib>/         # DC/OS installation shared libraries dir
 """
-# This is how the default DC/OS installation FS layout looks like
-# C:/                         # DC/OS installation drive
-#   +-dcos/                   # DC/OS installation root dir
+# This is how the default DC/OS installation FS layout looks:
+# c:/d2iq/dcos/               # DC/OS installation root dir
 #     +-etc/                  # DC/OS installation config dir
 #     +-packages/             # DC/OS local package repository dir
 #     +-state/                # DC/OS installation state dir
@@ -47,11 +45,8 @@ from core import exceptions as cr_exc
 
 LOG = logger.get_logger(__name__)
 
-# DC/OS installation drive
-DCOS_INST_DRIVE_DFT = 'c:'
-
 # DC/OS installation root directory path
-DCOS_INST_ROOT_DPATH_DFT = 'dcos'
+DCOS_INST_ROOT_DPATH_DFT = 'c:\\d2iq\\dcos'
 
 # >>>>>
 # DC/OS installation configuration root directory
@@ -92,7 +87,6 @@ DCOS_INST_LIB_DPATH_DFT = 'lib'
 
 class ISTOR_NODE:
     """DC/OS installation storage core node."""
-    DRIVE = 'inst_drive'
     ROOT = 'inst_root'
     CFG = 'inst_cfg'
     PKGREPO = 'inst_pkgrepo'
@@ -108,7 +102,7 @@ class ISTOR_NODE:
 
 
 IStorNodes = namedtuple('IStorNodes', [
-    ISTOR_NODE.DRIVE, ISTOR_NODE.ROOT, ISTOR_NODE.CFG, ISTOR_NODE.PKGREPO,
+    ISTOR_NODE.ROOT, ISTOR_NODE.CFG, ISTOR_NODE.PKGREPO,
     ISTOR_NODE.STATE, ISTOR_NODE.PKGACTIVE, ISTOR_NODE.VAR, ISTOR_NODE.WORK,
     ISTOR_NODE.RUN, ISTOR_NODE.LOG, ISTOR_NODE.TMP, ISTOR_NODE.BIN,
     ISTOR_NODE.LIB
@@ -118,7 +112,6 @@ IStorNodes = namedtuple('IStorNodes', [
 class InstallationStorage:
     """DC/OS installation storage manager."""
     def __init__(self,
-                 drive=DCOS_INST_DRIVE_DFT,
                  root_dpath=DCOS_INST_ROOT_DPATH_DFT,
                  cfg_dpath=DCOS_INST_CFG_DPATH_DFT,
                  pkgrepo_dpath=DCOS_INST_PKGREPO_DPATH_DFT,
@@ -133,7 +126,6 @@ class InstallationStorage:
                  lib_dpath=DCOS_INST_LIB_DPATH_DFT):
         """Constructor.
 
-        :param drive:           str, DC/OS installation drive spec (ex. 'c:')
         :param root_dpath:      str, DC/OS installation root dir path
         :param cfg_dpath:       str, DC/OS installation configs root dir path
         :param pkgrepo_dpath:   str, local package repository root dir path
@@ -151,16 +143,11 @@ class InstallationStorage:
         :param bin_dpath:       str, shared executables root dir path
         :param lib_dpath:       str, shared libraries root dir path
         """
-        # Refine/verify drive specification
-        drive_ = Path(f'{drive.strip(":")}:').drive
-        LOG.debug(f'InstallationStorage: drive_: {drive_}')
-        if drive_:
-            self.drive = Path(drive_, '/')
-        else:
+        self.root_dpath = Path(root_dpath)
+        if not self.root_dpath.is_absolute():
             raise cr_exc.InstallationStorageError(
-                f'Invalid drive specification: {drive}'
+                f'Require absolute root path: {root_dpath}'
             )
-        self.root_dpath = self.drive.joinpath(root_dpath)
         self.cfg_dpath = self.root_dpath.joinpath(cfg_dpath)
         self.pkgrepo_dpath = self.root_dpath.joinpath(pkgrepo_dpath)
         self.state_dpath = self.root_dpath.joinpath(state_dpath)
@@ -174,7 +161,6 @@ class InstallationStorage:
         self.lib_dpath = self.root_dpath.joinpath(lib_dpath)
 
         self.istor_nodes = IStorNodes(**{
-            ISTOR_NODE.DRIVE: self.drive,
             ISTOR_NODE.ROOT: self.root_dpath,
             ISTOR_NODE.CFG: self.cfg_dpath,
             ISTOR_NODE.PKGREPO: self.pkgrepo_dpath,

@@ -319,7 +319,6 @@ class CmdSetup(Command):
             extra_values=self.config.dcos_conf.get('values')
         )
         context_items = context.get_items()
-        context_items_jr = context.get_items(json_ready=True)
 
         t_elements = self.config.dcos_conf.get('template').get('package', [])
         for t_element in t_elements:
@@ -331,10 +330,7 @@ class CmdSetup(Command):
                 rendered_path = j2t.render(**context_items)
                 dst_fpath = Path(rendered_path)
                 j2t = j2.Environment().from_string(content)
-                if '.json' in dst_fpath.suffixes[-1:]:
-                    rendered_content = j2t.render(**context_items_jr)
-                else:
-                    rendered_content = j2t.render(**context_items)
+                rendered_content = j2t.render(**context_items)
             except j2.TemplateError as e:
                 err_msg = (
                     f'Execute: Deploy aggregated config: Render:'
