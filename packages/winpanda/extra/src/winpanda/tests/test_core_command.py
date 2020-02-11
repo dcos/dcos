@@ -15,7 +15,7 @@ package:
   - path: {{ windows_dcos_install_path }}\subdir\file2.json
     content: |
         {
-            value: "{{ escaped }}"
+            value: {{ escaped }}
         }
 
 '''
@@ -28,9 +28,9 @@ red
 aws
 "true"'''
 
-# Files ending in .json have replacement values escaped
+# Files ending in .json do not have replacement values escaped.
 FILE2_CONTENTS = r'''{
-value: "\"true\""
+value: "true"
 }
 '''
 
