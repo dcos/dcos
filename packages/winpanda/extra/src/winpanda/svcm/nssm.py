@@ -17,7 +17,9 @@ import subprocess
 
 from . import base
 from . import exceptions as svcm_exc
+from common import exceptions as cm_exc
 from common import logger
+from common import utils as cm_utl
 
 
 LOG = logger.get_logger(__name__)
@@ -35,6 +37,7 @@ class NSSMParameter(enum.Enum):
     DEPENDONSERVICE = 'dependonservice'
     APPSTDOUT = 'appstdout'
     APPSTDERR = 'appstderr'
+    APPENVIRONMENT = 'appenvironment'
     APPENVIRONMENTEXTRA = 'appenvironmentextra'
     APPEVENTSSTARTPRE = 'appevents start/pre'
     APPEVENTSSTARTPOST = 'appevents start/post'
@@ -131,8 +134,10 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         super(WinSvcManagerNSSM, self).__init__(**svcm_opts)
         _svc_conf = svcm_opts.get('svc_conf', {})
 
+        self.msg_src = self.__class__.__name__
+
         assert isinstance(_svc_conf, dict), (
-            f'Argument: svc_conf:'
+            f'{self.msg_src}: Argument: svc_conf:'
             f' Got {type(self.svc_conf).__name__} instead of dict'
         )
 
@@ -295,28 +300,33 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
 
         return setup_pchain
 
-    def _subproc_run(self, cl_elements):
-        """Run external command."""
-        cl_elements = cl_elements if isinstance(cl_elements, list) else []
+    def _run_external_command(self, svcm_op_name, cl_elements):
+        """Run an external command within the scope of a service manager's
+        operation of a higher level.
 
+        :param svcm_op_name: str, name of a service manager operation which
+                             this external command is a part of
+        :param cl_elements:  list[str], a sequence of individual elements of
+                             command line, beginning with executable name
+        """
+        assert isinstance(cl_elements, list), (
+            f'{self.msg_src}: Argument: cl_elements:'
+            f' Got {type(cl_elements).__name__} instead of list'
+        )
+
+        cmd_line = ' '.join(cl_elements)
         try:
-            subproc_run = subprocess.run(
-                cl_elements, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                timeout=30, check=True, universal_newlines=True
-            )
-        except subprocess.SubprocessError as e:
+            ext_cmd_run = cm_utl.run_external_command(cmd_line)
+            LOG.debug(f'{self.msg_src}: {svcm_op_name.capitalize()}:'
+                      f' {cmd_line}: OK')
+        except cm_exc.ExternalCommandError as e:
+            LOG.debug(f'{self.msg_src}: {svcm_op_name.capitalize()}:'
+                      f' {cmd_line}: {type(e).__name__}: {e}')
             raise svcm_exc.ServiceManagerCommandError(
-                '{}: {}: Exit code[{}]: {}'.format(
-                    cl_elements, type(e).__name__, e.returncode,
-                    e.stderr.replace('\n', ' ')
-                )
-            )
-        except (OSError, ValueError) as e:
-            raise svcm_exc.ServiceManagerCommandError(
-                f'{cl_elements}: {type(e).__name__}: {e}'
-            )
+                f'{svcm_op_name.capitalize()}: {e}'
+            ) from e
 
-        return subproc_run
+        return ext_cmd_run
 
     @_verify_svcm_executor
     def setup(self):
@@ -337,13 +347,8 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
                 )
 
             cl_elements.extend(call_params[1])
-            subproc_run = self._subproc_run(cl_elements=cl_elements)
 
-            if subproc_run.returncode != 0:
-                raise svcm_exc.ServiceManagerCommandError(
-                    f'{cl_elements}: Exit code {subproc_run.returncode}:'
-                    f' {subproc_run.stderr}'
-                )
+            self._run_external_command('setup', cl_elements)
 
         # TODO: Add a cleanup procedure for the case of unsuccessful service
         #       setup operation.
@@ -356,7 +361,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
             self.svc_name, 'confirm'
         ]
 
-        self._subproc_run(cl_elements=cl_elements)
+        self._run_external_command('remove', cl_elements)
 
     @_verify_svcm_executor
     def enable(self):
@@ -367,7 +372,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
             self.svc_name, NSSMParameter.START.value, 'SERVICE_AUTO_START'
         ]
 
-        self._subproc_run(cl_elements=cl_elements)
+        self._run_external_command('enable', cl_elements)
 
     @_verify_svcm_executor
     def disable(self):
@@ -379,20 +384,18 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
             self.svc_name, NSSMParameter.START.value, 'SERVICE_DEMAND_START'
         ]
 
-        self._subproc_run(cl_elements=cl_elements)
+        self._run_external_command('disable', cl_elements)
 
     @_verify_svcm_executor
     def _primitive_command(self, command_name):
         """Primitive command template."""
         assert command_name in NSSMCommand.values_primitive(), (
-            f'Non primitive command: {command_name}'
+            f'{self.msg_src}: Non primitive command: {command_name}'
         )
 
         cl_elements = [f'{self.exec_path}', command_name, self.svc_name]
 
-        subproc_run = self._subproc_run(cl_elements=cl_elements)
-
-        return subproc_run
+        return self._run_external_command(command_name, cl_elements)
 
     def start(self):
         """Start a registered service (immediately)."""
