@@ -14,6 +14,7 @@ MASTER_PRIVATE_IP=$(terraform output --json -module dcos.dcos-infrastructure mas
 MASTER_PUBLIC_IP=$(terraform output --json -module dcos.dcos-infrastructure masters.public_ips |jq -r '.value[0]')
 PUBLIC_SLAVE_HOSTS="$(terraform output --json -module dcos.dcos-infrastructure public_agents.private_ips |jq -r '.value |join(",")')"
 SLAVE_HOSTS="$(terraform output --json -module dcos.dcos-infrastructure private_agents.private_ips |jq -r '.value |join(",")')"
+DCOS_ACS_TOKEN=""
 
 if [ "$2" == "enterprise" ]; then
     # if the DC/OS variant is enterprise, we ssh into the cluster and run the tests there instead of using pytest-xdist.
@@ -51,9 +52,11 @@ else
     export MASTER_PUBLIC_IP=$MASTER_PUBLIC_IP
     export DCOS_SSH_USER=$ssh_user
     export DCOS_SSH_KEY_PATH=~/.ssh/id_rsa
+    export DCOS_ACS_TOKEN
 
     cd packages/dcos-integration-test/extra
-    pytest ${EXTRA_PYTEST_ARGS} test_windows.py
+    pytest ${EXTRA_PYTEST_ARGS} test_applications.py::test_if_marathon_app_can_be_deployed
+    # pytest ${EXTRA_PYTEST_ARGS} test_windows.py
 fi
 
 # if the last return code is zero, we create a file to indicate all tests passed. The existence of this
