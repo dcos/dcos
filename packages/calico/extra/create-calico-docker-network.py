@@ -6,7 +6,6 @@ docker with etcd as its cluster-store backend
 
 import json
 import os
-import random
 import shlex
 import signal
 import socket
@@ -14,7 +13,20 @@ import subprocess
 import sys
 import time
 
+from contextlib import contextmanager
+from typing import Generator
+
 import retrying
+
+from kazoo.client import KazooClient
+from kazoo.exceptions import (
+    ConnectionLoss,
+    LockTimeout,
+    SessionExpiredError,
+)
+from kazoo.retry import KazooRetry
+from kazoo.security import make_digest_acl
+
 
 DOCKERD_CONFIG_FILE = "/etc/docker/daemon.json"
 CALICO_DOCKER_NETWORK_NAME = "calico"
@@ -23,6 +35,66 @@ ETCD_ENDPOINTS_ENV_KEY = "ETCD_ENDPOINTS"
 ETCD_CA_CERT_FILE_ENV_KEY = "ETCD_CA_CERT_FILE"
 ETCD_CERT_FILE_ENV_KEY = "ETCD_CERT_FILE"
 ETCD_KEY_FILE_ENV_KEY = "ETCD_KEY_FILE"
+
+
+def zk_connect():
+    print("Connecting to ZooKeeper")
+    zk_user = os.environ.get('CALICO_ZK_USER')
+    zk_secret = os.environ.get('CALICO_ZK_SECRET')
+    conn_retry_policy = KazooRetry(
+        max_tries=-1,
+        delay=0.3,
+        backoff=1.3,
+        max_jitter=1,
+        max_delay=3,
+        ignore_expire=True,
+    )
+    # Retry commands every 0.3 seconds, for a total of <1s (usually 0.9)
+    cmd_retry_policy = KazooRetry(
+        max_tries=3,
+        delay=0.3,
+        backoff=1,
+        max_jitter=0.1,
+        max_delay=1,
+        ignore_expire=False,
+    )
+    default_acl = None
+    auth_data = None
+    if zk_user and zk_secret:
+        default_acl = [make_digest_acl(zk_user, zk_secret, all=True)]
+        scheme = 'digest'
+        credential = "{}:{}".format(zk_user, zk_secret)
+        auth_data = [(scheme, credential)]
+    zk = KazooClient(
+        hosts="leader.mesos:2181",
+        timeout=30,
+        connection_retry=conn_retry_policy,
+        command_retry=cmd_retry_policy,
+        default_acl=default_acl,
+        auth_data=auth_data,
+    )
+    zk.start()
+    return zk
+
+
+@contextmanager
+def zk_cluster_lock(zk: KazooClient, name: str, timeout: int = 5) -> Generator:
+    lock = zk.Lock("/cluster/boot/{}".format(name), socket.gethostname())
+    try:
+        print("Acquiring cluster lock '{}'".format(name))
+        lock.acquire(blocking=True, timeout=timeout)
+    except (ConnectionLoss, SessionExpiredError) as e:
+        print("Failed to acquire cluster lock: {}".format(e.__class__.__name__))
+        raise e
+    except LockTimeout as e:
+        print("Failed to acquire cluster lock in {} seconds".format(timeout))
+        raise e
+    else:
+        print("ZooKeeper lock acquired.")
+    yield
+    print("Releasing ZooKeeper lock")
+    lock.release()
+    print("ZooKeeper lock released.")
 
 
 def exec_cmd(cmd: str, check=False) -> subprocess.CompletedProcess:
@@ -167,35 +239,35 @@ def config_docker_cluster_store():
 
 
 def create_calico_docker_network():
-    # Since we are creating a cluster-wide network, avoid a race condition
-    # where the same network is created by multiple agents at the same time,
-    # by waiting a random interval
-    time.sleep(1.0 + random.randint(1, 100) / 10)
-
-    inspect_net_cmd = "docker inspect {}".format(CALICO_DOCKER_NETWORK_NAME)
-    p = exec_cmd(inspect_net_cmd, check=False)
-    if p.returncode == 0:
-        return
-
-    subnet = os.getenv("CALICO_IPV4POOL_CIDR")
-    if not subnet:
-        raise Exception("Environment varialbe CALICO_IPV4POOL_CIDR is not set")
-
-    net_create_cmd = "/usr/bin/docker network create --driver calico " \
-        "--opt org.projectcalico.profile={} " \
-        "--ipam-driver calico-ipam --subnet={} {}".format(
-            CALICO_DOCKER_NETWORK_NAME, subnet, CALICO_DOCKER_NETWORK_NAME)
-    p = exec_cmd(net_create_cmd, check=False)
-    if p.returncode != 0:
-        # here we double-check the existence of calico network in case the
-        # calico libnetwork plugin from other nodes creates it concurrently.
-        if "network with name calico already exists" in p.stdout:
-            print("calico docker network '{}' has been created".format(
-                CALICO_DOCKER_NETWORK_NAME))
+    # Avoid race-conditions by obtaining a cluster-wide exclusive lock
+    # (using zookeeper) before trying to create a docker network
+    zk = zk_connect()
+    with zk_cluster_lock(zk, "calico-libnetwork-plugin"):
+        inspect_net_cmd = "docker inspect {}".format(CALICO_DOCKER_NETWORK_NAME)
+        p = exec_cmd(inspect_net_cmd, check=False)
+        if p.returncode == 0:
             return
-        raise Exception("Create calico network failed for {}", p.stderr)
-    print("calico docker is created, name:{}, subnet:{}".format(
-        CALICO_DOCKER_NETWORK_NAME, subnet))
+
+        subnet = os.getenv("CALICO_IPV4POOL_CIDR")
+        if not subnet:
+            raise Exception(
+                "Environment varialbe CALICO_IPV4POOL_CIDR is not set")
+
+        net_create_cmd = "/usr/bin/docker network create --driver calico " \
+            "--opt org.projectcalico.profile={} " \
+            "--ipam-driver calico-ipam --subnet={} {}".format(
+                CALICO_DOCKER_NETWORK_NAME, subnet, CALICO_DOCKER_NETWORK_NAME)
+        p = exec_cmd(net_create_cmd, check=False)
+        if p.returncode != 0:
+            # here we double-check the existence of calico network in case the
+            # calico libnetwork plugin from other nodes creates it concurrently.
+            if "network with name calico already exists" in p.stdout:
+                print("calico docker network '{}' has been created".format(
+                    CALICO_DOCKER_NETWORK_NAME))
+                return
+            raise Exception("Create calico network failed for {}", p.stderr)
+        print("calico docker is created, name:{}, subnet:{}".format(
+            CALICO_DOCKER_NETWORK_NAME, subnet))
 
 
 def main():
