@@ -1,0 +1,49 @@
+
+@Library('sec_ci_libs@v2-latest') _
+
+def master_branches = ["master", ] as String[]
+
+pipeline {
+  agent none
+
+
+  stages {
+    stage("Verify author for PR") {
+      agent {
+        label "py36"
+      }
+      when {
+        beforeAgent true
+        changeRequest()
+      }
+      steps {
+        user_is_authorized(master_branches, '8b793652-f26a-422f-a9ba-0d1e47eb9d89', '#sre')
+      }
+    }
+
+    stage('Build') {
+      parallel {
+          stage('Build DC/OS') {
+	    agent {
+	       label 'ec2-large-20200213'
+	    }
+            steps {
+              ansiColor('xterm') {
+	        sh './build_teamcity'
+	      }
+	    }
+	  }
+          stage('Tox') {
+	    agent {
+	       label 'ec2-large-20200213'
+	    }
+            steps {
+              ansiColor('xterm') {
+	        sh 'tox'
+	      }
+	    }
+	  }
+      }
+    }
+  }
+}

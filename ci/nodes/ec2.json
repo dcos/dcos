@@ -1,0 +1,47 @@
+{
+  "variables": {
+    "aws_access_key": "",
+    "aws_secret_key": "",
+    "ami_name": "",
+    "conduit_token": "",
+    "packer_version": "0.10.2",
+    "vpc_id": "",
+    "subnet_id": ""
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "region": "us-west-2",
+    "source_ami": "ami-01ed306a12b7d1c96",
+    "instance_type": "m5.2xlarge",
+    "vpc_id": "{{user `vpc_id`}}",
+    "subnet_id": "{{user `subnet_id`}}",
+    "associate_public_ip_address": true,
+    "ssh_username": "centos",
+    "run_tags": {"created_by": "jenkins"},
+    "ami_name": "{{user `ami_name`}}",
+    "ami_users": ["633059600857", "540164828399"],
+    "ami_block_device_mappings": [{
+      "device_name": "xvda",
+      "volume_type": "gp2",
+      "volume_size": 40,
+      "delete_on_termination": true
+    },
+    {
+      "device_name": "/dev/sdb",
+      "virtual_name": "ephemeral0"
+    },
+    {
+      "device_name": "/dev/sdc",
+      "virtual_name": "ephemeral1"
+    }]
+  }],
+  "provisioners": [{
+    "execute_command": "bash '{{ .Path }}'",
+    "type": "shell",
+    "scripts": [
+        "python.sh",
+        "docker.sh"
+    ],
+    "pause_before": "10s"
+  }]
+}
