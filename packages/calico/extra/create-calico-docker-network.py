@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-This script creates the calico docker network if not exist, and configures
+Creates the calico docker network if it does not exist, and configures
 docker with etcd as its cluster-store backend
 """
 
@@ -239,7 +239,7 @@ def config_docker_cluster_store():
 
 
 def create_calico_docker_network():
-    # Avoid race-conditions by obtaining a cluster-wide exclusive lock
+    # Avoid race conditions by obtaining a cluster-wide exclusive lock
     # (using zookeeper) before trying to create a docker network
     zk = zk_connect()
     with zk_cluster_lock(zk, "calico-libnetwork-plugin"):
@@ -268,6 +268,11 @@ def create_calico_docker_network():
             raise Exception("Create calico network failed for {}", p.stderr)
         print("calico docker is created, name:{}, subnet:{}".format(
             CALICO_DOCKER_NETWORK_NAME, subnet))
+
+        # Wait for a few seconds before releasing the lock in order to
+        # ensure that docker configuration has propagated to the rest of
+        # the cluster nodes
+        time.sleep(2)
 
 
 def main():
