@@ -3,6 +3,7 @@
 Command configuration object definitions.
 """
 import abc
+import os
 from pathlib import Path
 import posixpath
 import re
@@ -51,8 +52,8 @@ def cmdconf_type(command_name):
 
 
 class CommandConfig(metaclass=abc.ABCMeta):
-    """Abstract base class for command configuration types.
-    """
+    """Abstract base class for command configuration types."""
+
     def __init__(self, **cmd_opts):
         """Constructor."""
         self.cmd_opts = cmd_opts
@@ -69,6 +70,7 @@ class CommandConfig(metaclass=abc.ABCMeta):
 @cmdconf_type(CLI_COMMAND.SETUP)
 class CmdConfigSetup(CommandConfig):
     """Configuration for the 'setup' command."""
+
     def __init__(self, **cmd_opts):
         """"""
         self.msg_src = self.__class__.__name__
@@ -454,10 +456,10 @@ class CmdConfigSetup(CommandConfig):
                         if path:
                             item = {'path': path, 'content': ''.join(content)}
                             aggregator['package'].append(item)
-                            path = pk_match.group('g1')
+                            path = pk_match.group('g1').replace('\\', os.path.sep)
                             content = []
                         else:
-                            path = pk_match.group('g1')
+                            path = pk_match.group('g1').replace('\\', os.path.sep)
                     elif ck_match:
                         continue
                     elif hk_match:
@@ -480,6 +482,7 @@ class CmdConfigSetup(CommandConfig):
 @cmdconf_type(CLI_COMMAND.START)
 class CmdConfigStart(CommandConfig):
     """Configuration for the 'start' command."""
+
     def __init__(self, **cmd_opts):
         """"""
         super(CmdConfigStart, self).__init__(**cmd_opts)
