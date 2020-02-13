@@ -2,19 +2,18 @@
 
 set -exo pipefail
 
-#if [ $# -lt 1 ]; then
-#    echo "Usage: $0 <test group>"
-#    echo "This script runs the DC/OS integration tests of the given test group against an existing cluster by using pytest-xdist."
-#    exit 1
-#fi
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <test group>"
+    echo "This script runs the DC/OS integration tests of the given test group against an existing cluster by using pytest-xdist."
+    exit 1
+fi
 
-ssh_user=$(terraform output --json -module dcos.dcos-infrastructure masters.os_user |jq -r '.value')
-ssh_user=${ssh_user:-$(terraform output --json -module dcos.dcos-infrastructure masters.admin_username |jq -r '.value')}
-MASTER_PRIVATE_IP=$(terraform output --json -module dcos.dcos-infrastructure masters.private_ips |jq -r '.value[0]')
-MASTER_PUBLIC_IP=$(terraform output --json -module dcos.dcos-infrastructure masters.public_ips |jq -r '.value[0]')
-PUBLIC_SLAVE_HOSTS="$(terraform output --json -module dcos.dcos-infrastructure public_agents.private_ips |jq -r '.value |join(",")')"
-SLAVE_HOSTS="$(terraform output --json -module dcos.dcos-infrastructure private_agents.private_ips |jq -r '.value |join(",")')"
-DCOS_ACS_TOKEN=""
+ssh_user=$(./terraform output --json -module dcos.dcos-infrastructure masters.os_user |jq -r '.value')
+ssh_user=${ssh_user:-$(./terraform output --json -module dcos.dcos-infrastructure masters.admin_username |jq -r '.value')}
+MASTER_PRIVATE_IP=$(./terraform output --json -module dcos.dcos-infrastructure masters.private_ips |jq -r '.value[0]')
+MASTER_PUBLIC_IP=$(./terraform output --json -module dcos.dcos-infrastructure masters.public_ips |jq -r '.value[0]')
+PUBLIC_SLAVE_HOSTS="$(./terraform output --json -module dcos.dcos-infrastructure public_agents.private_ips |jq -r '.value |join(",")')"
+SLAVE_HOSTS="$(./terraform output --json -module dcos.dcos-infrastructure private_agents.private_ips |jq -r '.value |join(",")')"
 
 if [ "$2" == "enterprise" ]; then
     # if the DC/OS variant is enterprise, we ssh into the cluster and run the tests there instead of using pytest-xdist.
@@ -44,7 +43,7 @@ else
     PYTEST_LOCALE=${PYTEST_LOCALE:-en_US.utf8}
     SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ./id_rsa ${ssh_user}@$MASTER_PUBLIC_IP"
     TEST_DIR='$(find /opt/mesosphere/active/ -name dcos-integration-test* | sort | tail -n 1)'
-    #TEST_NAMES=$($SSH -- "LC_ALL=$PYTEST_LOCALE LANG=$PYTEST_LOCALE cd $TEST_DIR && dcos-shell python $TEST_GROUPS_PATH group_$1")
+    TEST_NAMES=$($SSH -- "LC_ALL=$PYTEST_LOCALE LANG=$PYTEST_LOCALE cd $TEST_DIR && dcos-shell python $TEST_GROUPS_PATH group_$1")
 
     export PUBLIC_AGENTS_PRIVATE_IPS=$PUBLIC_SLAVE_HOSTS
     export PRIVATE_AGENTS_PRIVATE_IPS=$SLAVE_HOSTS
@@ -52,11 +51,9 @@ else
     export MASTER_PUBLIC_IP=$MASTER_PUBLIC_IP
     export DCOS_SSH_USER=$ssh_user
     export DCOS_SSH_KEY_PATH=~/.ssh/id_rsa
-    export DCOS_ACS_TOKEN
 
     cd packages/dcos-integration-test/extra
-    pytest ${EXTRA_PYTEST_ARGS} test_applications.py::test_if_marathon_app_can_be_deployed
-    # pytest ${EXTRA_PYTEST_ARGS} test_windows.py
+    pytest ${EXTRA_PYTEST_ARGS} ${TEST_NAMES}
 fi
 
 # if the last return code is zero, we create a file to indicate all tests passed. The existence of this
