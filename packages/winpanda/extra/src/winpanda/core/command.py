@@ -3,9 +3,9 @@
 DC/OS package management command definitions.
 """
 import abc
+import os
 from pathlib import Path
-
-import jinja2 as j2
+import yaml
 
 from cfgm import exceptions as cfgm_exc
 from common import logger
@@ -17,7 +17,6 @@ from core import exceptions as cr_exc
 from core.package.id import PackageId
 from core.package.manifest import PackageManifest
 from core.package.package import Package
-from core.rc_ctx import ResourceContext
 from core import utils as cr_utl
 from extm import exceptions as extm_exc
 from svcm import exceptions as svcm_exc
@@ -313,60 +312,21 @@ class CmdSetup(Command):
         """Deploy aggregated DC/OS configuration object."""
         LOG.debug(f'{self.msg_src}: Execute: Deploy aggregated config: ...')
 
-        context = ResourceContext(
-            istor_nodes=self.config.inst_storage.istor_nodes,
-            cluster_conf=self.config.cluster_conf,
-            extra_values=self.config.dcos_conf.get('values')
-        )
-        context_items = context.get_items()
+        template = self.config.dcos_conf.get('template')
+        values = self.config.dcos_conf.get('values')
 
-        t_elements = self.config.dcos_conf.get('template').get('package', [])
-        for t_element in t_elements:
-            path = t_element.get('path')
-            content = t_element.get('content')
+        rendered = template.render(values)
+        config = yaml.safe_load(rendered)
 
-            try:
-                j2t = j2.Environment().from_string(path)
-                rendered_path = j2t.render(**context_items)
-                dst_fpath = Path(rendered_path)
-                j2t = j2.Environment().from_string(content)
-                rendered_content = j2t.render(**context_items)
-            except j2.TemplateError as e:
-                err_msg = (
-                    f'Execute: Deploy aggregated config: Render:'
-                    f' {path}: {type(e).__name__}: {e}'
-                )
-                raise cfgm_exc.PkgConfFileInvalidError(err_msg) from e
+        assert config.keys() == {"package"}
 
-            if not dst_fpath.parent.exists():
-                try:
-                    dst_fpath.parent.mkdir(parents=True, exist_ok=True)
-                    LOG.debug(f'{self.msg_src}: Execute: Deploy aggregated'
-                              f' config: Create directory:'
-                              f' {dst_fpath.parent}: OK')
-                except (OSError, RuntimeError) as e:
-                    err_msg = (f'Execute: Deploy aggregated config: Create'
-                               f' directory: {dst_fpath.parent}:'
-                               f' {type(e).__name__}: {e}')
-                    raise cr_exc.SetupCommandError(err_msg) from e
-            elif not dst_fpath.parent.is_dir():
-                err_msg = (f'Execute: Deploy aggregated config: Save content:'
-                           f' {dst_fpath}: Existing parent is not a directory:'
-                           f' {dst_fpath.parent}')
-                raise cr_exc.SetupCommandError(err_msg)
-            elif dst_fpath.exists():
-                err_msg = (f'Execute: Deploy aggregated config: Save content:'
-                           f' {dst_fpath}: Same-named file already exists!')
-                raise cr_exc.SetupCommandError(err_msg)
-
-            try:
-                dst_fpath.write_text(rendered_content)
-                LOG.debug(f'{self.msg_src}: Execute: Deploy aggregated config:'
-                          f' Save content: {dst_fpath}: OK')
-            except (OSError, RuntimeError) as e:
-                err_msg = (f'Execute: Deploy aggregated config: Save content:'
-                           f' {dst_fpath}: {type(e).__name__}: {e}')
-                raise cr_exc.SetupCommandError(err_msg) from e
+        # Write out the individual files
+        for file_info in config["package"]:
+            assert file_info.keys() <= {"path", "content", "permissions"}
+            path = Path(file_info['path'].replace('\\', os.path.sep))
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(file_info['content'] or '')
+            # On Windows, we don't interpret permissions yet
 
         LOG.debug(f'{self.msg_src}: Execute: Deploy aggregated config: OK')
 
