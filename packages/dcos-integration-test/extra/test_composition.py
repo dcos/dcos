@@ -168,17 +168,16 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-telegraf.socket',
         'dcos-fluent-bit.service']
     slave_units = [
-        'dcos-calico-libnetwork-plugin.service',
         'dcos-mesos-slave.service',
         'dcos-mesos-slave.socket']
     public_slave_units = [
-        'dcos-calico-libnetwork-plugin.service',
         'dcos-mesos-slave-public.service',
         'dcos-mesos-slave-public.socket']
     all_slave_units = [
+        'dcos-adminrouter-agent.service',
+        'dcos-calico-libnetwork-plugin.service',
         'dcos-docker-gc.service',
         'dcos-docker-gc.timer',
-        'dcos-adminrouter-agent.service',
         'dcos-log-agent.service',
         'dcos-log-agent.socket',
         'dcos-logrotate-agent.service',

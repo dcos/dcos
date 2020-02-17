@@ -78,11 +78,14 @@ def zk_connect():
 
 
 @contextmanager
-def zk_cluster_lock(zk: KazooClient, name: str, timeout: int = 5) -> Generator:
+def zk_lock_run_once(zk: KazooClient, name: str, timeout: int = 5) -> Generator:
     lock = zk.Lock("/cluster/boot/{}".format(name), socket.gethostname())
     try:
         print("Acquiring cluster lock '{}'".format(name))
-        lock.acquire(blocking=True, timeout=timeout)
+        acquired = lock.acquire(blocking=False, timeout=timeout)
+        if not acquired:
+            print("Lock acquired by another node, bailing")
+            return
     except (ConnectionLoss, SessionExpiredError) as e:
         print("Failed to acquire cluster lock: {}".format(e.__class__.__name__))
         raise e
@@ -240,9 +243,9 @@ def config_docker_cluster_store():
 
 def create_calico_docker_network():
     # Avoid race conditions by obtaining a cluster-wide exclusive lock
-    # (using zookeeper) before trying to create a docker network
+    # (using zookeeper) and letting only on agent executing the logic.
     zk = zk_connect()
-    with zk_cluster_lock(zk, "calico-libnetwork-plugin"):
+    with zk_lock_run_once(zk, "calico-libnetwork-plugin"):
         inspect_net_cmd = "docker inspect {}".format(CALICO_DOCKER_NETWORK_NAME)
         p = exec_cmd(inspect_net_cmd, check=False)
         if p.returncode == 0:
