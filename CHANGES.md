@@ -6,6 +6,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### What's new
 
+* Upgrade coreOS AMIs (D2IQ-64271)
 * Added a new configuration option `mesos_http_executors_domain_sockets`, which will cause the mesos-agent to use
   domain sockets when communicating with executors. While this change should not have any visible impact on users
   in itself, it does enable administrators to write firewall rules blocking unauthorized access to the agent port
