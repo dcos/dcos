@@ -11,7 +11,6 @@ import signal
 import socket
 import subprocess
 import sys
-import time
 
 from contextlib import contextmanager
 from typing import Generator
@@ -255,14 +254,19 @@ def config_docker_cluster_store():
     return _wait_docker_cluster_store_config()
 
 
+def is_docker_calico_network_available():
+    inspect_net_cmd = "docker inspect {}".format(CALICO_DOCKER_NETWORK_NAME)
+    p = exec_cmd(inspect_net_cmd, check=False)
+    return p.returncode == 0
+
+
 def create_calico_docker_network():
     # Avoid race conditions by obtaining a cluster-wide exclusive lock
     # (using zookeeper) and letting only on agent executing the logic.
     zk = zk_connect()
     with zk_lock_run_once(zk, "calico-libnetwork-plugin"):
-        inspect_net_cmd = "docker inspect {}".format(CALICO_DOCKER_NETWORK_NAME)
-        p = exec_cmd(inspect_net_cmd, check=False)
-        if p.returncode == 0:
+        if is_docker_calico_network_available():
+            print("Docker calico network already exists")
             return
 
         subnet = os.getenv("CALICO_IPV4POOL_CIDR")
@@ -286,10 +290,16 @@ def create_calico_docker_network():
         print("calico docker is created, name:{}, subnet:{}".format(
             CALICO_DOCKER_NETWORK_NAME, subnet))
 
-        # Wait for a few seconds before releasing the lock in order to
-        # ensure that docker configuration has propagated to the rest of
-        # the cluster nodes
-        time.sleep(2)
+        # Wait until docker reports the network as available
+        @retrying.retry(
+            wait_fixed=5 * 1000,
+            stop_max_delay=30 * 1000)
+        def _wait_docker_calico_network():
+            if not is_docker_calico_network_available():
+                raise Exception("Calico docker network was not found available")
+            return True
+
+        return _wait_docker_calico_network()
 
 
 def main():
