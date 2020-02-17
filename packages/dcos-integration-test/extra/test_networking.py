@@ -470,7 +470,8 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6,
     # ipv6 for now. And it's safe to assign network name in advance because
     # MarathonPod will determined whether or not this network name is used by
     # the network mode.
-    # it is used for user network mode only
+    # it is used for user network mode only and only for 'dcos' networks.
+    # NOTE: 'calico' IPV6 is not yet supported
     if ipv6:
         network_name = '{}6'.format(network_name)
 
