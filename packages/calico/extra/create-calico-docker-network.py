@@ -82,10 +82,7 @@ def zk_lock_run_once(zk: KazooClient, name: str, timeout: int = 5) -> Generator:
     lock = zk.Lock("/cluster/boot/{}".format(name), socket.gethostname())
     try:
         print("Acquiring cluster lock '{}'".format(name))
-        acquired = lock.acquire(blocking=False, timeout=timeout)
-        if not acquired:
-            print("Lock acquired by another node, bailing")
-            return
+        lock.acquire(blocking=False, timeout=timeout)
     except (ConnectionLoss, SessionExpiredError) as e:
         print("Failed to acquire cluster lock: {}".format(e.__class__.__name__))
         raise e
@@ -174,7 +171,7 @@ def reload_docker_daemon():
         exec_cmd("systemctl start docker")
 
 
-def config_docker_cluster_store():
+def is_docker_cluster_store_configured():
     docker_info_cmd = "docker info"
     p = exec_cmd(docker_info_cmd)
     docker_infos = p.stdout.strip().split('\n')
@@ -182,9 +179,15 @@ def config_docker_cluster_store():
         # An example of cluster store listed by `docker info`:
         # Cluster Store: etcd://master.dcos.thisdcos.directory:2379
         if not item.startswith(CLUSTER_STORE_DOCKER_INFO_PREFIX):
+            print("Found cluster store config: {}".format(item))
             continue
-        print("Docker cluster store has already been configured, {}".format(
-            item))
+        return True
+    return False
+
+
+def config_docker_cluster_store():
+    if is_docker_cluster_store_configured():
+        print("Docker cluster store has already been configured")
         return
 
     # load previous daemon configuration (if any)
@@ -240,6 +243,17 @@ def config_docker_cluster_store():
     # gracefully reload the docker daemon
     reload_docker_daemon()
 
+    # Wait until daemon is reloaded and the configuration applied
+    @retrying.retry(
+        wait_fixed=5 * 1000,
+        stop_max_delay=30 * 1000)
+    def _wait_docker_cluster_store_config():
+        if not is_docker_cluster_store_configured():
+            raise Exception("Cluster store not configured")
+        return True
+
+    return _wait_docker_cluster_store_config()
+
 
 def create_calico_docker_network():
     # Avoid race conditions by obtaining a cluster-wide exclusive lock
@@ -281,12 +295,6 @@ def create_calico_docker_network():
 def main():
     wait_calico_libnetwork_ready()
     config_docker_cluster_store()
-    # Before cluster-store takes effect in docker, creating calico docker
-    # network will fail.
-    # normally reloading docker takes less than one second, to ensure docker
-    # configuration is reloaded before creating calico network, we wait a few
-    # seconds first.
-    time.sleep(2)
     create_calico_docker_network()
 
 
