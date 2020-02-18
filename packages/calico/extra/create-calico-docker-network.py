@@ -11,6 +11,7 @@ import signal
 import socket
 import subprocess
 import sys
+import time
 
 from contextlib import contextmanager
 from typing import Generator
@@ -255,10 +256,26 @@ def config_docker_cluster_store():
     return _wait_docker_cluster_store_config()
 
 
-def is_docker_calico_network_available():
-    inspect_net_cmd = "docker inspect {}".format(CALICO_DOCKER_NETWORK_NAME)
-    p = exec_cmd(inspect_net_cmd, check=False)
-    return p.returncode == 0
+def is_docker_calico_network_available(retries: int = 5):
+    while retries > 0:
+        docker_inspect_cmd = "docker network inspect {}".format(
+            CALICO_DOCKER_NETWORK_NAME)
+        p = exec_cmd(docker_inspect_cmd, check=False)
+        if p.returncode == 0:
+            return True
+
+        # Make sure that's an expected error
+        if 'No such network' not in p.stderr:
+            raise Exception("Unexpected docker error: {}".format(p.stderr))
+
+        # Don't immediately fail if the network does not exist, since it might
+        # take a few seconds for the network information to be propagated to all
+        # the docker nodes in the cluster.
+        if retries > 0:
+            retries -= 1
+            time.sleep(1)
+
+    return False
 
 
 def create_calico_docker_network():
@@ -283,8 +300,8 @@ def create_calico_docker_network():
         if p.returncode != 0:
             # here we double-check the existence of calico network in case the
             # calico libnetwork plugin from other nodes creates it concurrently.
-            if "network with name calico already exists" in p.stdout:
-                print("calico docker network '{}' has been created".format(
+            if "network with name calico already exists" in p.stderr:
+                print("calico docker network '{}' was already installed".format(
                     CALICO_DOCKER_NETWORK_NAME))
                 return
             raise Exception("Create calico network failed for {}", p.stderr)
@@ -298,7 +315,7 @@ def create_calico_docker_network():
             retry_on_exception=lambda x: True,
             retry_on_result=lambda x: x is False)
         def _wait_docker_calico_network():
-            if not is_docker_calico_network_available():
+            if not is_docker_calico_network_available(0):
                 raise Exception("Calico docker network was not found available")
             return True
 
