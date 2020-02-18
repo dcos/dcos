@@ -3,10 +3,8 @@
 Command configuration object definitions.
 """
 import abc
-import os
 from pathlib import Path
 import posixpath
-import re
 import tempfile as tf
 
 from common import constants as cm_const
@@ -14,6 +12,7 @@ from common import logger
 from common.cli import CLI_COMMAND, CLI_CMDOPT, CLI_CMDTARGET
 from common.storage import InstallationStorage
 from core import exceptions as cr_exc
+from core import template
 from core import utils as cr_utl
 
 from common import utils as cm_utl
@@ -435,48 +434,12 @@ class CmdConfigSetup(CommandConfig):
 
         :param fpath: pathlib.Path, path to template
         """
-        p_key = re.compile(r' *- path: (?P<g1>.*)')
-        c_key = re.compile(r' *content: [|].*')
-        h_key = re.compile(r' *#.*$')
-
         try:
-            with fpath.open() as fp:
-
-                aggregator = {'package': []}
-                path = ''
-                content = []
-
-                for line in fp:
-                    pk_match = p_key.match(line)
-                    ck_match = c_key.match(line)
-                    hk_match = h_key.match(line)
-
-                    if pk_match:
-
-                        if path:
-                            item = {'path': path, 'content': ''.join(content)}
-                            aggregator['package'].append(item)
-                            path = pk_match.group('g1').replace('\\', os.path.sep)
-                            content = []
-                        else:
-                            path = pk_match.group('g1').replace('\\', os.path.sep)
-                    elif ck_match:
-                        continue
-                    elif hk_match:
-                        continue
-                    else:
-                        if not path:
-                            continue
-                        else:
-                            content.append(line.strip(' '))
-
-                item = {'path': path, 'content': ''.join(content)}
-                aggregator['package'].append(item)
+            with fpath.open() as f:
+                return template.parse_str(f.read())
         except (OSError, RuntimeError) as e:
             raise cr_exc.RCError(f'DC/OS aggregated config: Template: Load:'
                                  f' {fpath}: {type(e).__name__}: {e}') from e
-
-        return aggregator
 
 
 @cmdconf_type(CLI_COMMAND.START)
