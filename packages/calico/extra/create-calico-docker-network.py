@@ -83,7 +83,7 @@ def zk_lock_run_once(zk: KazooClient, name: str, timeout: int = 5) -> Generator:
     lock = zk.Lock("/cluster/boot/{}".format(name), socket.gethostname())
     try:
         print("Acquiring cluster lock '{}'".format(name))
-        lock.acquire(blocking=False, timeout=timeout)
+        lock.acquire(blocking=True, timeout=timeout)
     except (ConnectionLoss, SessionExpiredError) as e:
         print("Failed to acquire cluster lock: {}".format(e.__class__.__name__))
         raise e
@@ -159,6 +159,7 @@ def reload_docker_daemon():
     docker_pid_file = "/var/run/docker.pid"
     if not os.path.exists(docker_pid_file):
         # Not running, start now
+        print("Docker daemon pid was missing, starting docker service")
         exec_cmd("systemctl start docker")
         return
 
@@ -167,9 +168,11 @@ def reload_docker_daemon():
         docker_pid = int(f.read())
 
     try:
+        print("Reloading found docker daemon with pid={}".format(docker_pid))
         os.kill(docker_pid, signal.SIGHUP)
     except OSError:
         # The pid is stale, docker is not running. Start it now.
+        print("Unable to reload daemon, going to restart it instead")
         exec_cmd("systemctl start docker")
 
 
@@ -197,10 +200,10 @@ def config_docker_cluster_store():
         with open(DOCKERD_CONFIG_FILE, "r") as f:
             try:
                 dockerd_config = json.loads(f.read())
+                print("Loaded previous `docker.json` contents")
             except Exception as e:
-                print("Error: cannot load {}: {}".format(
+                raise Exception("Error: cannot load {}: {}".format(
                     DOCKERD_CONFIG_FILE, str(e)))
-                sys.exit(1)
 
     # cluster-store related options can take effect by reloading docker without
     # requiring to restart docker daemon process, according to
@@ -238,6 +241,8 @@ def config_docker_cluster_store():
         dockerd_config.update(
             {"cluster-store-opts": cluster_store_opts})
 
+    print("Writing updated docker daemon configuration to {}".format(
+        DOCKERD_CONFIG_FILE))
     with open(DOCKERD_CONFIG_FILE, "w") as f:
         json.dump(dockerd_config, f)
 
@@ -258,7 +263,7 @@ def config_docker_cluster_store():
     return _wait_docker_cluster_store_config()
 
 
-def is_docker_calico_network_available(retries: int) -> bool:
+def is_docker_calico_network_available(retries: int = 5) -> bool:
     print("Checking if '{}' docker network already exists".format(
         CALICO_DOCKER_NETWORK_NAME))
     while retries > 0:
@@ -279,7 +284,7 @@ def is_docker_calico_network_available(retries: int) -> bool:
         if retries > 0:
             print("Docker network not found, {} retries left".format(retries))
             retries -= 1
-            time.sleep(5)
+            time.sleep(1)
 
     print("Docker network does not exist")
     return False
@@ -290,7 +295,7 @@ def create_calico_docker_network():
     # (using zookeeper) and letting only on agent executing the logic.
     zk = zk_connect()
     with zk_lock_run_once(zk, "calico-libnetwork-plugin"):
-        if is_docker_calico_network_available(2):
+        if is_docker_calico_network_available(5):
             print("Not creating docker network")
             return
 
@@ -315,7 +320,7 @@ def create_calico_docker_network():
             raise Exception("Create calico network failed for {}", p.stderr)
 
         # Wait until docker reports the network as available
-        if not is_docker_calico_network_available(6):
+        if not is_docker_calico_network_available(5):
             raise Exception("Could not create docker network")
 
         print("calico docker is created, name:{}, subnet:{}".format(
