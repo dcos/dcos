@@ -8,6 +8,16 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Marathon version bumped to 1.7.236
+
+    * Marathon would sometimes fail to suppress offers (MARATHON-8632)
+    * Unreachable instances would interfere with replacements when using GROUP_BY / UNIQUE placement constraints, even if expungeAfter is configured the same as inactiveAfter (MARATHON-8719)
+    * /v2/tasks plaintext output in Marathon 1.5 returned container network endpoints in an unusable way (MARATHON-8721)
+    * Marathon tried to store Task StatusUpdate without checking the message size, resulting in failure (MARATHON-8698)
+    * Include maintenance mode configuration in info Endpoint (MARATHON-8660)
+    * Marathon would use resources with a disk profile when no disk profile was specified (DCOS_OSS-5211)
+    * Presence of instance with TASK_UNKNOWN mesos task status causes API to fail to respond (MARATHON-8624)
+
 ### Security updates
 
 
