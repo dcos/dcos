@@ -177,7 +177,7 @@ def is_docker_cluster_store_configured():
     for item in docker_infos:
         # An example of cluster store listed by `docker info`:
         # Cluster Store: etcd://master.dcos.thisdcos.directory:2379
-        if item.startswith(CLUSTER_STORE_DOCKER_INFO_PREFIX):
+        if item.strip().startswith(CLUSTER_STORE_DOCKER_INFO_PREFIX):
             print("Found cluster store config: {}".format(item))
             return True
     return False
@@ -244,7 +244,9 @@ def config_docker_cluster_store():
     # Wait until daemon is reloaded and the configuration applied
     @retrying.retry(
         wait_fixed=5 * 1000,
-        stop_max_delay=30 * 1000)
+        stop_max_delay=30 * 1000,
+        retry_on_exception=lambda x: True,
+        retry_on_result=lambda x: x is False)
     def _wait_docker_cluster_store_config():
         if not is_docker_cluster_store_configured():
             raise Exception("Cluster store not configured")
@@ -292,7 +294,9 @@ def create_calico_docker_network():
         # Wait until docker reports the network as available
         @retrying.retry(
             wait_fixed=5 * 1000,
-            stop_max_delay=30 * 1000)
+            stop_max_delay=30 * 1000,
+            retry_on_exception=lambda x: True,
+            retry_on_result=lambda x: x is False)
         def _wait_docker_calico_network():
             if not is_docker_calico_network_available():
                 raise Exception("Calico docker network was not found available")
