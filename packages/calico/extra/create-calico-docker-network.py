@@ -177,10 +177,9 @@ def is_docker_cluster_store_configured():
     for item in docker_infos:
         # An example of cluster store listed by `docker info`:
         # Cluster Store: etcd://master.dcos.thisdcos.directory:2379
-        if not item.startswith(CLUSTER_STORE_DOCKER_INFO_PREFIX):
+        if item.startswith(CLUSTER_STORE_DOCKER_INFO_PREFIX):
             print("Found cluster store config: {}".format(item))
-            continue
-        return True
+            return True
     return False
 
 
