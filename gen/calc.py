@@ -255,6 +255,15 @@ def calculate_mesos_log_directory_max_files(mesos_log_retention_mb):
     return str(25 + int(calculate_mesos_log_retention_count(mesos_log_retention_mb)))
 
 
+def calculate_mesos_http_executor_domain_sockets(os_type):
+    # We disallow domain sockets for HTTP executors on CoreOS due to the issue
+    # with systemd on CoreOS.
+    if os_type != 'coreos':
+        return True
+    else:
+        return False
+
+
 def calculate_windows_config_yaml():
     # Convert the resource file 'dcos-config-windows.yaml' into a YAML stanza
     # that can be inserted into template file.
@@ -1288,7 +1297,7 @@ entry = {
         'mesos_cgroups_enable_cfs': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'mesos_dns_set_truncate_bit': 'true',
-        'mesos_http_executor_domain_sockets': 'true',
+        'mesos_http_executor_domain_sockets': calculate_mesos_http_executor_domain_sockets,
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
         'mesos_logrotate_file_size_mb': '2',
