@@ -22,6 +22,7 @@ from kazoo.client import KazooClient
 from kazoo.exceptions import (
     ConnectionLoss,
     LockTimeout,
+    NoNodeError,
     SessionExpiredError,
 )
 from kazoo.retry import KazooRetry
@@ -36,6 +37,8 @@ ETCD_ENDPOINTS_ENV_KEY = "ETCD_ENDPOINTS"
 ETCD_CA_CERT_FILE_ENV_KEY = "ETCD_CA_CERT_FILE"
 ETCD_CERT_FILE_ENV_KEY = "ETCD_CERT_FILE"
 ETCD_KEY_FILE_ENV_KEY = "ETCD_KEY_FILE"
+ZK_SERVER = "leader.mesos:2181"
+ZK_PREFIX = "/cluster/boot/calico-libnetwork-plugin"
 
 
 def zk_connect():
@@ -67,7 +70,7 @@ def zk_connect():
         credential = "{}:{}".format(zk_user, zk_secret)
         auth_data = [(scheme, credential)]
     zk = KazooClient(
-        hosts="leader.mesos:2181",
+        hosts=ZK_SERVER,
         timeout=30,
         connection_retry=conn_retry_policy,
         command_retry=cmd_retry_policy,
@@ -79,8 +82,8 @@ def zk_connect():
 
 
 @contextmanager
-def zk_lock_run_once(zk: KazooClient, name: str, timeout: int = 5) -> Generator:
-    lock = zk.Lock("/cluster/boot/{}".format(name), socket.gethostname())
+def zk_cluster_lock(zk: KazooClient, name: str, timeout: int = 5) -> Generator:
+    lock = zk.Lock("{}/{}".format(ZK_PREFIX, name), socket.gethostname())
     try:
         print("Acquiring cluster lock '{}'".format(name))
         lock.acquire(blocking=True, timeout=timeout)
@@ -96,6 +99,23 @@ def zk_lock_run_once(zk: KazooClient, name: str, timeout: int = 5) -> Generator:
     print("Releasing ZooKeeper lock")
     lock.release()
     print("ZooKeeper lock released.")
+
+
+def zk_flag_set(zk: KazooClient, name: str, value: str):
+    path = "{}/{}".format(ZK_PREFIX, name)
+    zk.set(path, value)
+
+
+def zk_flag_get(zk: KazooClient, name: str) -> str:
+    path = "{}/{}".format(ZK_PREFIX, name)
+    try:
+        value, info = zk.get(path)
+        return str(value)
+    except NoNodeError:
+        return ""
+    except Exception as e:
+        print("Failed to read {}: {}".format(path, e))
+        raise e
 
 
 def exec_cmd(cmd: str, check=False) -> subprocess.CompletedProcess:
@@ -294,8 +314,24 @@ def create_calico_docker_network():
     # Avoid race conditions by obtaining a cluster-wide exclusive lock
     # (using zookeeper) and letting only on agent executing the logic.
     zk = zk_connect()
-    with zk_lock_run_once(zk, "calico-libnetwork-plugin"):
-        if is_docker_calico_network_available(5):
+    with zk_cluster_lock(zk, "mutex"):
+        net_wait_delay = 5
+
+        # Check if the network was (presumably) already created by another
+        # agent in the cluster. If that's the case we have to increase the time
+        # we wait for the docker network to appear in order to validate it.
+        created_by = zk_flag_get(zk, "created_by")
+        if created_by:
+            net_wait_delay = 120
+
+        # Docker takes some time to propagate the network information to all the
+        # agents. Depending on the cluster size this might even take up to a
+        # minute. We have to be patient and wait for the network to appear,
+        # otherwise we are risking creating the same network twice.
+        if is_docker_calico_network_available(net_wait_delay):
+            if created_by:
+                raise Exception("The network should have been created by {}, "
+                                "but did not appear on time".format(created_by))
             print("Not creating docker network")
             return
 
@@ -325,6 +361,10 @@ def create_calico_docker_network():
 
         print("calico docker is created, name:{}, subnet:{}".format(
             CALICO_DOCKER_NETWORK_NAME, subnet))
+
+        # Set a flag in ZK denoting that we are the ones created the
+        # calico network.
+        zk_flag_set(zk, "created_by", socket.gethostname())
 
 
 def main():
