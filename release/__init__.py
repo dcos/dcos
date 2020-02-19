@@ -16,7 +16,8 @@ import os.path
 import subprocess
 import sys
 from distutils.version import LooseVersion
-from typing import Any, Callable, Dict, Iterator, List, Optional, Union, overload
+from importlib.machinery import SourceFileLoader
+from typing import Any, Callable, Dict, Iterator, List, Optional, overload, Union
 
 import pkg_resources
 
@@ -41,13 +42,18 @@ def expand_env_vars(config: dict) -> dict:
     # If they begin with \$ simply replace with $.
 
     @overload
-    def inner(conf: dict) -> dict: ...
-    @overload
-    def inner(conf: list) -> list: ...
-    @overload
-    def inner(conf: str) -> str: ...
+    def inner(conf: dict) -> dict:
+        ...
 
-    def inner(conf: Union[dict, list, str]) -> Union[dict, list, str]:
+    @overload  # NOQA: F811
+    def inner(conf: list) -> list:
+        ...
+
+    @overload  # NOQA: F811
+    def inner(conf: str) -> str:
+        ...
+
+    def inner(conf: Union[dict, list, str]) -> Union[dict, list, str]:  # NOQA: F811
         if isinstance(conf, dict):
             return {key: inner(value) for key, value in conf.items()}
         elif isinstance(conf, list):
@@ -282,7 +288,8 @@ def get_gen_package_artifact(package_id_str: str) -> Dict[str, str]:
         'local_path': package_filename}
 
 
-def make_bootstrap_artifacts(bootstrap_id: str, package_ids: List[str], variant_name: str, artifact_prefix: str) -> Iterator[Dict[str, str]]:
+def make_bootstrap_artifacts(
+        bootstrap_id: str, package_ids: List[str], variant_name: str, artifact_prefix: str) -> Iterator[Dict[str, str]]:
     bootstrap_filename = "{}.bootstrap.tar.xz".format(bootstrap_id)
     active_filename = "{}.active.json".format(bootstrap_id)
     active_local_path = artifact_prefix + '/bootstrap/' + active_filename
@@ -412,7 +419,7 @@ def make_channel_artifacts(metadata: dict, provider_names: List[str]) -> List[Di
     original_log_level = log.getEffectiveLevel()
     log.setLevel(logging.DEBUG)
 
-    provider_data: Dict[str, list] = {} # TODO(kjeschkies): provider data is not really used.
+    provider_data: Dict[str, list] = {}  # TODO(kjeschkies): provider data is not really used.
     providers = load_providers(provider_names)
     for name, module in sorted(providers.items()):
         bootstrap_url = metadata['repository_url']
@@ -435,8 +442,8 @@ def make_channel_artifacts(metadata: dict, provider_names: List[str]) -> List[Di
 
             # Load additional default variant arguments out of gen_extra
             if os.path.exists('gen_extra/calc.py'):
-                mod = importlib.machinery.SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module() # type: ignore
-                variant_arguments[variant].update(mod.provider_template_defaults) # type: ignore
+                mod = SourceFileLoader('gen_extra.calc', 'gen_extra/calc.py').load_module()  # type: ignore
+                variant_arguments[variant].update(mod.provider_template_defaults)  # type: ignore
 
         # Add templates for the default variant.
         # Use keyword args to make not matching ordering a loud error around changes.
@@ -613,7 +620,8 @@ def get_azure_download_url(config: dict) -> str:
     return download_url
 
 
-def set_repository_metadata(repository: Repository, metadata: Dict[str, Any], storage_providers: Any, preferred_provider: Any, config: dict) -> None:
+def set_repository_metadata(repository: Repository, metadata: Dict[str, Any], storage_providers: Any,
+                            preferred_provider: Any, config: dict) -> None:
     metadata['repository_path'] = repository.path_prefix[:-1]
     metadata['repository_url'] = preferred_provider.url + repository.path_prefix[:-1]
     metadata['build_name'] = repository.path_channel_prefix[:-1]
@@ -634,7 +642,7 @@ def set_repository_metadata(repository: Repository, metadata: Dict[str, Any], st
     metadata['azure_download_url'] = get_azure_download_url(config)
 
 
-def call_matching_arguments(function: Callable, arguments: dict, allow_unused: bool=False) -> Any:
+def call_matching_arguments(function: Callable, arguments: dict, allow_unused: bool = False) -> Any:
     signature = inspect.signature(function)
     arguments = copy.deepcopy(arguments)
 
@@ -672,10 +680,10 @@ def get_storage_provider_factory(kind: str) -> Any:
     except ImportError:
         raise ConfigError("Couldn't load storage provider '{}'".format(provider))
 
-    if name not in module.factories: # type: ignore
+    if name not in module.factories:  # type: ignore
         raise ConfigError("Storage provider {} has no kind {}".format(provider, name))
 
-    return module.factories[name] # type: ignore
+    return module.factories[name]  # type: ignore
 
 
 def apply_storage_commands(storage_providers: dict, storage_commands: dict) -> None:
@@ -778,7 +786,8 @@ class ReleaseManager():
         for artifact in metadata['core_artifacts']:
             fetch_artifact(artifact)
 
-    def promote(self, src_channel: str, destination_repository: str, destination_channel: Optional[str]) -> Dict[str, Any]:
+    def promote(self, src_channel: str, destination_repository: str,
+                destination_channel: Optional[str]) -> Dict[str, Any]:
         metadata = self.get_metadata(src_channel)
 
         # Can't run a release promotion with a different version of the scripts than the one that
@@ -810,7 +819,8 @@ class ReleaseManager():
 
         return metadata
 
-    def create(self, repository_path: str, channel: str, tag: str, tree_variants: List[Optional[str]]) -> Dict[str, Any]:
+    def create(self, repository_path: str, channel: str, tag: str,
+               tree_variants: List[Optional[str]]) -> Dict[str, Any]:
         assert len(channel) > 0  # channel must be a non-empty string.
 
         assert ('options' in self.__config) and \
