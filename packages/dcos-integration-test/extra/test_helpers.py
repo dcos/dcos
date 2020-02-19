@@ -238,7 +238,7 @@ def marathon_test_app_windows(
     if host_constraint is not None:
         app['constraints'] = [['hostname', 'CLUSTER', host_constraint]]
     # Add Windows constraint
-    app['constraints'] = app.get('constraints', []) + [['os', 'LIKE', 'Windows']]
+    app['constraints'] = app.get('constraints', []) + [['os', 'LIKE', 'windows*']]
     app['acceptedResourceRoles'] = ["slave_public"]
 
     return app, test_uuid
