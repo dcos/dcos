@@ -82,7 +82,7 @@ def zk_connect():
 
 
 @contextmanager
-def zk_cluster_lock(zk: KazooClient, name: str, timeout: int = 5) -> Generator:
+def zk_cluster_lock(zk: KazooClient, name: str, timeout: int = 30) -> Generator:
     lock = zk.Lock("{}/{}".format(ZK_PREFIX, name), socket.gethostname())
     try:
         print("Acquiring cluster lock '{}'".format(name))
@@ -103,14 +103,18 @@ def zk_cluster_lock(zk: KazooClient, name: str, timeout: int = 5) -> Generator:
 
 def zk_flag_set(zk: KazooClient, name: str, value: str):
     path = "{}/{}".format(ZK_PREFIX, name)
-    zk.set(path, value)
+    data = value.encode('utf-8')
+    try:
+        zk.set(path, data)
+    except NoNodeError:
+        zk.create(path, data, makepath=True)
 
 
 def zk_flag_get(zk: KazooClient, name: str) -> str:
     path = "{}/{}".format(ZK_PREFIX, name)
     try:
         value, info = zk.get(path)
-        return str(value)
+        return value.decode('utf-8')
     except NoNodeError:
         return ""
     except Exception as e:
@@ -329,11 +333,12 @@ def create_calico_docker_network():
         # minute. We have to be patient and wait for the network to appear,
         # otherwise we are risking creating the same network twice.
         if is_docker_calico_network_available(net_wait_delay):
+            print("Not creating docker network")
+            return
+        else:
             if created_by:
                 raise Exception("The network should have been created by {}, "
                                 "but did not appear on time".format(created_by))
-            print("Not creating docker network")
-            return
 
         subnet = os.getenv("CALICO_IPV4POOL_CIDR")
         if not subnet:
