@@ -342,7 +342,7 @@ def _init_cockroachdb_cluster(ip: str) -> None:
 
         try:
             response.raise_for_status()
-        except HTTPError as exc:
+        except HTTPError:
             # 150 bytes was chosen arbitrarily as it might not be so long as to
             # cause annoyance in a console, but it might be long enough to show
             # some useful data.

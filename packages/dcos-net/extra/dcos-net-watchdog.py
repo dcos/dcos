@@ -30,7 +30,7 @@ def watchdog(ns):
         return result.answer != []
     except dns.exception.Timeout:
         logging.error('DNS Server Timeout')
-    except:
+    except:  # NOQA: E722
         logging.error('Exception: {}'.sys.exc_info()[1])
     return False
 

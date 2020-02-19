@@ -602,7 +602,7 @@ class UserManagement:
                 UserManagement.validate_user_group(username, groupname)
             self._users.add(username)
             return
-        except KeyError as ex:
+        except KeyError:
             # Doesn't exist, fall through
             pass
 

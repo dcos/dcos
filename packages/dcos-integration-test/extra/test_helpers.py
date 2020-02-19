@@ -54,15 +54,15 @@ def docker_pull_image(image: str) -> bool:
 
 
 def marathon_test_app_linux(
-        host_port: int=0,
-        container_port: int=None,
-        container_type: marathon.Container=marathon.Container.NONE,
-        network: marathon.Network=marathon.Network.HOST,
-        healthcheck_protocol: marathon.Healthcheck=marathon.Healthcheck.HTTP,
-        vip: str=None,
-        host_constraint: str=None,
-        network_name: str='dcos',
-        app_name_fmt: str=TEST_APP_NAME_FMT):
+        host_port: int = 0,
+        container_port: int = None,
+        container_type: marathon.Container = marathon.Container.NONE,
+        network: marathon.Network = marathon.Network.HOST,
+        healthcheck_protocol: marathon.Healthcheck = marathon.Healthcheck.HTTP,
+        vip: str = None,
+        host_constraint: str = None,
+        network_name: str = 'dcos',
+        app_name_fmt: str = TEST_APP_NAME_FMT):
     """ Creates an app definition for the python test server which will be
     consistent (i.e. deployable with green health checks and desired network
     routability). To learn more about the test server, see in this repo:
@@ -178,9 +178,9 @@ def marathon_test_app_linux(
 
 
 def marathon_test_app_windows(
-        host_constraint: str=None,
-        host_port: int=None,
-        network_name: str='dcosnat'):
+        host_constraint: str = None,
+        host_port: int = None,
+        network_name: str = 'dcosnat'):
     """ Creates an app definition for the python test server container
 
     Args:

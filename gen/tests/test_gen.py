@@ -144,10 +144,8 @@ def test_extract_files_containing_late_variables():
             ),
         },
     ]
-    assert (
-        gen.extract_files_containing_late_variables(regular_config_files + late_config_files) ==
-        (late_config_files, regular_config_files)
-    )
+    assert (gen.extract_files_containing_late_variables(regular_config_files + late_config_files) ==
+            (late_config_files, regular_config_files))
 
     # Only content may contain late bind placeholders.
     with pytest.raises(Exception):

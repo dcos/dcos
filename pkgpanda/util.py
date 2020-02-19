@@ -223,7 +223,7 @@ def download_atomic(out_filename, url, work_dir):
     except FetchError:
         try:
             os.remove(tmp_filename)
-        except:
+        except Exception:
             pass
         raise
 
@@ -248,7 +248,7 @@ def extract_tarball(path, target):
         else:
             check_call(['tar', '-xf', path, '-C', target])
 
-    except:
+    except Exception:
         # If there are errors, we can't really cope since we are already in an error state.
         rmtree(target, ignore_errors=True)
         raise

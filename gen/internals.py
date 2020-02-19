@@ -24,7 +24,7 @@ def validate_arguments_strings(arguments: dict):
         if not isinstance(k, str):
             errors[''] = "All keys in arguments must be strings. '{}' isn't.".format(k)
         if not isinstance(v, str):
-            errors[k] = ("All values in arguments must be strings. Value for argument {} isn't. " +
+            errors[k] = ("All values in arguments must be strings. Value for argument {} isn't. "
                          "Given value: {}").format(k, v)
     if len(errors):
         raise ValidationError(errors, set())
@@ -135,7 +135,7 @@ class Scope:
     dependent Targets resulting in each case of parameter value. += operator
     is implemented to allow easily combining Targets without tedious iteration
     """
-    def __init__(self, name: str, cases: Dict[str, Any]=None):
+    def __init__(self, name: str, cases: Dict[str, Any] = None):
         # Note: use type Any and type check later to avoid circular dependency
         self.name = name
         self.cases = cases if cases is not None else dict()
@@ -180,7 +180,7 @@ class Target:
     """
     # TODO(cmaloney): Make a better API for working with and managing sub scopes. The current
     # dictionary of dictionaries is really hard to use right.
-    def __init__(self, variables: Set[str]=None, sub_scopes: Dict[str, Scope]=None):
+    def __init__(self, variables: Set[str] = None, sub_scopes: Dict[str, Scope] = None):
         """
         variables: set of parameters that must be extracted from Source
         sub_scopes: mapping of variables to be conditionally added

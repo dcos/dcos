@@ -84,10 +84,10 @@ class S3StorageProvider(AbstractStorageProvider):
 
     def upload(self,
                destination_path: str,
-               blob: Optional[bytes]=None,
-               local_path: Optional[str]=None,
-               no_cache: bool=False,
-               content_type: Optional[str]=None):
+               blob: Optional[bytes] = None,
+               local_path: Optional[str] = None,
+               no_cache: bool = False,
+               content_type: Optional[str] = None):
         extra_args = {}
         if no_cache:
             extra_args['CacheControl'] = 'no-cache'

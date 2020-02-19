@@ -161,11 +161,11 @@ class Tokenizer:
             self.__to_lex = self.__to_lex[4:]
             return "blob", "{{"
         if self.__to_lex.startswith('{{{'):
-            raise SyntaxError(
-                "{{{ is illegal. To make an argument substitution use " +
-                "{{ <identifier> }}. To make '{{' use '{{{{'. To make '{{{' " +
-                "use '{{{{{' (the first for become two, then the last is left" +
-                " alone since it is all alone)")
+            raise SyntaxError((
+                "{{{ is illegal. To make an argument substitution use "
+                "{{ <identifier> }}. To make '{{' use '{{{{'. To make '{{{' "
+                "use '{{{{{' (the first for become two, then the last is left"
+                " alone since it is all alone)"))
         elif self.__to_lex.startswith('{%'):
             # TODO(cmaloney): There is fairly specific parsing happening in control and ident rather
             # than doing what they probably _should_ be doing for generic parsing. There is some
@@ -312,7 +312,7 @@ class Template:
     def __init__(self, ast: list):
         self.ast = ast
 
-    def render(self, arguments: dict, filters: dict={}):
+    def render(self, arguments: dict, filters: dict = {}):
 
         def get_argument(name):
             try:

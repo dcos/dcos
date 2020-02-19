@@ -22,7 +22,7 @@ superuser_username = str(uuid.uuid4())
 superuser_password = str(uuid.uuid4())
 
 
-def assert_system_unit_state(node: Node, unit_name: str, active: bool=True) -> None:
+def assert_system_unit_state(node: Node, unit_name: str, active: bool = True) -> None:
     result = node.run(
         args=["systemctl show {}".format(unit_name)],
         output=Output.LOG_AND_CAPTURE,

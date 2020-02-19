@@ -38,7 +38,7 @@ class HttpStorageProvider(AbstractStorageProvider):
                 for chunk in r.iter_content(chunk_size=4096):
                     f.write(chunk)
                 os.rename(local_path_tmp, local_path)
-        except:
+        except Exception:
             # Delete the temp file, re-raise.
             try:
                 os.remove(local_path_tmp)

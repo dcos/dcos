@@ -17,7 +17,7 @@ import click
 import yaml
 
 
-def patterns_from_group(group_name: str, test_groups_path: str='test_groups.yaml') -> List[str]:
+def patterns_from_group(group_name: str, test_groups_path: str = 'test_groups.yaml') -> List[str]:
     """
     Given a group name, return all the pytest patterns defined for that group
     in ``test_groups.yaml``.

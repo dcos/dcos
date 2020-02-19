@@ -163,9 +163,9 @@ def test_file_fail():
     # copy the source file to the destination directory
     try:
         pkgpanda.util.copy_file(src_path, dst_path)
-    except CalledProcessError as e:
+    except CalledProcessError:
         return
-    except OSError as e:
+    except OSError:
         return
 
     assert False, 'did not see expected OSError when trying to copy to non-existant directory item'
@@ -222,9 +222,9 @@ def test_copy_directory_fail():
     # try to copy the source file to the destination directory
     try:
         pkgpanda.util.copy_directory(test_src_dir, test_dst_dir)
-    except CalledProcessError as e:
+    except CalledProcessError:
         return
-    except OSError as e:
+    except OSError:
         return
 
     assert False, 'did not see expected OSError when trying to copy to non-existant directory tree'

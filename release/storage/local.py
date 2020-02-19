@@ -37,10 +37,10 @@ class LocalStorageProvider(AbstractStorageProvider):
     def upload(
             self,
             destination_path: str,
-            blob: Optional[bytes]=None,
-            local_path: Optional[str]=None,
-            no_cache: bool=False,
-            content_type: Optional[str]=None):
+            blob: Optional[bytes] = None,
+            local_path: Optional[str] = None,
+            no_cache: bool = False,
+            content_type: Optional[str] = None):
         # TODO(cmaloney): Don't discard the extra no_cache / content_type. We ideally want to be
         # able to test those are set.
         destination_full_path = self.__full_path(destination_path)

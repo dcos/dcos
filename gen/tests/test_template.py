@@ -89,8 +89,8 @@ def test_parse():
         " c ",
         Replacement(("d", 'bar'))
     ])
-    assert(parse_str('{% switch foo %}{% case "as\\"df" %}foobar{% endswitch %}}}').ast ==
-           [Switch("foo", {'as"df': ["foobar"]}), '}}'])
+    assert(parse_str('{% switch foo %}{% case "as\\"df" %}foobar{% endswitch %}}}').ast
+           == [Switch("foo", {'as"df': ["foobar"]}), '}}'])
     assert(parse_str('{{ a }}b{{ c }}{% switch foo %}  \n  {% case "as\\"df" %}foobar{% endswitch %}}}').ast == [
         Replacement(("a", None)),
         "b",

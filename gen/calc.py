@@ -399,9 +399,7 @@ def validate_dcos_overlay_network(dcos_overlay_network):
         assert 'name' in overlay, (
             'Missing "name" in overlay configuration: {}'.format(overlay))
 
-        assert (len(overlay['name']) <=
-                13), ("Overlay name cannot exceed 13 characters: {}".format(
-                    overlay['name']))
+        assert (len(overlay['name']) <= 13), ("Overlay name cannot exceed 13 characters: {}".format(overlay['name']))
 
         assert ('subnet' in overlay or 'subnet6' in overlay), (
             'Missing "subnet" or "subnet6" in overlay configuration: {}'.format(
