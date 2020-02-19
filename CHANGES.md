@@ -17,6 +17,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
     * Include maintenance mode configuration in info Endpoint (MARATHON-8660)
     * Marathon would use resources with a disk profile when no disk profile was specified (DCOS_OSS-5211)
     * Presence of instance with TASK_UNKNOWN mesos task status causes API to fail to respond (MARATHON-8624)
+* DC/OS no longer increases the rate limit for journald logging.  Scale testing demonstrated that raising the limit overloads journald, causing problems for other components that see delayed or lost logs or, worse, hang until log buffers are read. The default of 10000 messages per 30 seconds appears to distinguish well between busy components and excessively verbose components. (DCOS-53763)
 
 ### Security updates
 
