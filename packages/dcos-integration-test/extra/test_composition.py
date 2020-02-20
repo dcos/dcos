@@ -174,9 +174,10 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-mesos-slave-public.service',
         'dcos-mesos-slave-public.socket']
     all_slave_units = [
+        'dcos-adminrouter-agent.service',
+        'dcos-calico-libnetwork-plugin.service',
         'dcos-docker-gc.service',
         'dcos-docker-gc.timer',
-        'dcos-adminrouter-agent.service',
         'dcos-log-agent.service',
         'dcos-log-agent.socket',
         'dcos-logrotate-agent.service',
