@@ -11,6 +11,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Allow Admin Router to accept files up to 32GB, such as for uploading large packages to Package Registry. (DCOS-61233)
 
+* Fix Telegraf migration when no containers present. (D2IQ-64507)
+
 ## DC/OS 2.0.2 (2020-01-17)
 
 * Updated DC/OS UI to [master+v2.154.16](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.16).
