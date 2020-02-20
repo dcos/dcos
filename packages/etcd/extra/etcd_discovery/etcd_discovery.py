@@ -284,27 +284,27 @@ def dump_state_to_file(state: str, file_path: str) -> None:
 def parse_cmdline() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='DC/OS etcd node discovery')
     parser.add_argument('--secure',
-                        action='store_true',
+                        action='store_true',  # Overwritten after pasrsing if env var exists
                         help='enable ensure connection for etcd peers and clients.')
     parser.add_argument('--zk-addr',
                         action='store',
                         default='127.0.0.1:2181',
                         help='address of the ZK instance to connect to')
     parser.add_argument('--etcd-client-tls-cert',
-                        action='store',
-                        default='',
+                        action=EnvDefault,
+                        envvar='ETCD_CERT_FILE',
                         help='key used for connecting to etcd via etcdctl')
     parser.add_argument('--etcd-client-tls-key',
-                        action='store',
-                        default='',
+                        action=EnvDefault,
+                        envvar='ETCD_KEY_FILE',
                         help='certificate used for connecting to etcd via etcdctl')
     parser.add_argument('--etcdctl-path',
                         action='store',
                         default='/opt/mesosphere/active/etcd/bin/etcdctl',
                         help='path to etcdctl binary')
     parser.add_argument('--ca-cert',
-                        action='store',
-                        default='',
+                        action=EnvDefault,
+                        envvar='ETCD_TRUSTED_CA_FILE',
                         help='path to the CA certificate')
     subparsers = parser.add_subparsers(title='Subcommands', dest='subcommand')
 
@@ -334,7 +334,10 @@ def parse_cmdline() -> argparse.Namespace:
         default=detect_ip(),
         help="the IP address of the node to remove from the ensemble")
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    if 'SECURE' in os.environ:
+        args.secure = True
+    return args
 
 
 def join_cluster(args: argparse.Namespace) -> None:
@@ -440,6 +443,21 @@ def join_cluster(args: argparse.Namespace) -> None:
         dump_nodes_to_file(nodes, args.cluster_nodes_file)
 
     log.info("registration complete")
+
+
+class EnvDefault(argparse.Action):
+    # See: https://stackoverflow.com/a/10551190/1387612
+    def __init__(self, envvar, required=False, default=None, **kwargs):
+        if not default and envvar:
+            if envvar in os.environ:
+                default = os.environ[envvar]
+        if required and default:
+            required = False
+        super(EnvDefault, self).__init__(default=default, required=required,
+                                         **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
 
 
 class EtcdctlHelper:
