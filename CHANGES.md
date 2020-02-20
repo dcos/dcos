@@ -96,6 +96,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Upgraded Erlang OTP to release 22.0.3. (DCOS_OSS-5276)
 
 * Upgraded platform CPython to release 3.6.8. (DCOS_OSS-5318)
+* Updated DC/OS UI to [master+v2.154.16](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.16).
+
+### Breaking changes
 
 * Upgraded CockroachDB to release [2.1.8](https://www.cockroachlabs.com/docs/releases/v2.1.8.html). (DCOS_OSS-5360)
 
@@ -167,3 +170,9 @@ The Marathon option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES` has been deprecat
 * Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
 
 * DC/OS Net: wait till agents become active before fanning out Mesos tasks. (DCOS_OSS-5463)
+* With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
+  instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
+
+* Updated dcos-config.yaml to support some Mesos Flags. (DCOS-59021)
+
+* Fix Telegraf migration when no containers present. (D2IQ-64507)
