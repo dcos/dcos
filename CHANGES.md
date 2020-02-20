@@ -78,6 +78,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Mesos overlay networking: added an HTTP endpoint for dropping agents from the state. (DCOS_OSS-5536)
 
 * Diagnostics bundle: Fixed a bug as of which the bundle creation job duration was shown as ever-increasing, even after the job finished. (DCOS_OSS-5494)
+* Updated DC/OS UI to [master+v2.154.16](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.16).
+
+### Breaking changes
 
 * Diagnostics bundle: added a REST API with performance improvements. (DCOS_OSS-5098)
 
@@ -322,3 +325,9 @@ No breaking changes are known to date.
 
 * Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
 
+* With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
+  instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
+
+* Updated dcos-config.yaml to support some Mesos Flags. (DCOS-59021)
+
+* Fix Telegraf migration when no containers present. (D2IQ-64507)
