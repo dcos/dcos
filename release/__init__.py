@@ -111,24 +111,26 @@ def to_json(data: Union[dict, list]) -> str:
 
     """
     def none_to_null(obj: Union[dict, list]) -> Union[dict, list]:
-        if isinstance(obj, list):
-            return obj
-        elif isinstance(obj, dict):
+        if isinstance(obj, dict):
             items = obj.items()
             # Don't make any ambiguities by requiring null to not be a key.
             assert 'null' not in obj
             return {'null' if key is None else key: none_to_null(val) for key, val in items}
+        else:
+            return obj
 
     return json.dumps(none_to_null(data), indent=2, sort_keys=True)
 
 
-def from_json(json_str: str) -> dict:
+def from_json(json_str: str) -> Any:
     """Reverses to_json"""
 
-    def null_to_none(obj: Union[dict, list]) -> dict:
-        assert isinstance(obj, dict)
-        items = obj.items()
-        return {None if key == 'null' else key: null_to_none(val) for key, val in items}
+    def null_to_none(obj: Union[dict, list]) -> Any:
+        if isinstance(obj, dict):
+            items = obj.items()
+            return {None if key == 'null' else key: null_to_none(val) for key, val in items}
+        else:
+            return obj
 
     return null_to_none(json.loads(json_str))
 
@@ -749,7 +751,9 @@ class ReleaseManager():
             self.__preferred_provider = None
 
     def get_metadata(self, src_channel: str) -> Dict[str, Any]:
-        return from_json(self.__preferred_provider.fetch(src_channel + '/metadata.json').decode())
+        metadata = from_json(self.__preferred_provider.fetch(src_channel + '/metadata.json').decode())
+        assert isinstance(metadata, dict)
+        return metadata
 
     def fetch_key_artifacts(self, metadata: Dict[str, Any]) -> None:
         assert metadata['reproducible_artifact_path'][-1] != '/'
