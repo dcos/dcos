@@ -17,6 +17,7 @@ WorkingDirectory=/var/lib/dcos/etcd/
 
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=-/run/dcos/etc/etcd/zk-creds
+EnvironmentFile=/opt/mesosphere/etc/etcd.env
 ExecStartPre=/usr/bin/mkdir -p /run/dcos/etcd/
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-etcd
 ExecStartPre=/bin/chown -R dcos_etcd /run/dcos/etcd/

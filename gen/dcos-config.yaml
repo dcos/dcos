@@ -3044,6 +3044,11 @@ package:
           Port 61092
           Chunk_Size 32
           Buffer_Size 64
+  - path: /opt/mesosphere/etc/etcd.env
+    content: |
+        PROTOCOL="http"
+        ETCD_AUTO_TLS="true"
+        ETCD_PEER_AUTO_TLS="true"
   - path: /etc/dcos/network/cni/calico.conf
     content: |
       {
