@@ -255,13 +255,10 @@ def calculate_mesos_log_directory_max_files(mesos_log_retention_mb):
     return str(25 + int(calculate_mesos_log_retention_count(mesos_log_retention_mb)))
 
 
-def calculate_mesos_http_executor_domain_sockets(os_type):
+def calculate_mesos_http_executor_domain_sockets():
     # We disallow domain sockets for HTTP executors on CoreOS due to the issue
     # with systemd on CoreOS.
-    if os_type != 'coreos':
-        return True
-    else:
-        return False
+    return 'false'
 
 
 def calculate_windows_config_yaml():
