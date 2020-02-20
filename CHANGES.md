@@ -46,6 +46,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Calico in DC/OS: introduced Calico networking into DC/OS, and provided network policy support (DCOS-58413)
 
 * Updated DC/OS UI to [master+v2.154.16](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.16).
+
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
@@ -79,4 +80,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
   instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
+
 * Updated dcos-config.yaml to support some Mesos Flags. (DCOS-59021)
+
+* Fix Telegraf migration when no containers present. (D2IQ-64507)
