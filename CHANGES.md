@@ -16,6 +16,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * DC/OS no longer increases the rate limit for journald logging.  Scale testing demonstrated that raising the limit overloads journald, causing problems for other components that see delayed or lost logs or, worse, hang until log buffers are read. The default of 10000 messages per 30 seconds appears to distinguish well between busy components and excessively verbose components. (DCOS-53763)
 
+* Fix Telegraf migration when no containers present. (D2IQ-64507)
 
 ### Security updates
 
