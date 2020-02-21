@@ -477,6 +477,10 @@ class EtcdctlHelper:
         self._etcd_client_tls_cert = etcd_client_tls_cert
         self._etcd_client_tls_key = etcd_client_tls_key
 
+        if len(nodes) == 1:
+            self._designated_node(nodes[0])
+            return
+
         # Choose one node from the list
         healthy_nodes = list(filter(self._is_node_healthy, nodes))
         # In order to not to always hit the same node, we randomize the choice:
