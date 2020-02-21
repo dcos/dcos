@@ -43,14 +43,18 @@
 # requires -version 2
 #>
 
+# Metadata:
+#   dcos image commit : {{ dcos_image_commit }}
+#   generation date   : {{ generation_date }}
+
 [CmdletBinding()]
 
 # PARAMETERS
 param (
-    [Parameter(Mandatory=$true)] [string] $bootstrap_url,
-    [Parameter(Mandatory=$true)] [string] $masters,
-    [Parameter(Mandatory=$false)][string] $install_dir = 'C:\d2iq\dcos',
-    [Parameter(Mandatory=$false)][string] $var_dir = 'C:\d2iq\dcos\var'
+    [Parameter(Mandatory=$false)] [string] $bootstrap_url = '{{ bootstrap_url }}',
+    [Parameter(Mandatory=$false)] [string] $masters = '{{ master_list }}',
+    [Parameter(Mandatory=$false)] [string] $install_dir = 'C:\d2iq\dcos',
+    [Parameter(Mandatory=$false)] [string] $var_dir = 'C:\d2iq\dcos\var'
 )
 
 # GLOBAL
@@ -403,7 +407,7 @@ function main($url, $masters) {
 
     # Fill up Ansible inventory content to cluster.conf
     Write-Log -Level "Debug" -LogContent "MASTERS: $($masters)"
-    [System.Array]$masterarray = $masters.split(",")
+    [System.Array]$masterarray = $masters.replace('"', '').replace('[', '').replace(']', '').replace(' ', '').split(',')
     $masternodecontent = ""
     for ($i=0; $i -lt $masterarray.length; $i++) {
         $masternodecontent += "[master-node-$($i+1)]`nPrivateIPAddr=$($masterarray[$i])`nZookeeperListenerPort=2181`n"
