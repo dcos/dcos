@@ -18,6 +18,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fix Telegraf migration when no containers present. (D2IQ-64507)
 
+* Marathon version bumped to 1.7.236
+
+    * /v2/tasks plaintext output in Marathon 1.5 returned container network endpoints in an unusable way (MARATHON-8721)
+    * Unreachable instances would interfere with replacements when using GROUP_BY / UNIQUE placement constraints, even if expungeAfter is configured the same as inactiveAfter (MARATHON-8719)
+
 ### Security updates
 
 
