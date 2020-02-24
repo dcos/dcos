@@ -43,14 +43,18 @@
 # requires -version 2
 #>
 
+# Metadata:
+#   dcos image commit : {{ dcos_image_commit }}
+#   generation date   : {{ generation_date }}
+
 [CmdletBinding()]
 
 # PARAMETERS
 param (
-    [Parameter(Mandatory=$true)] [string] $bootstrap_url,
-    [Parameter(Mandatory=$true)] [string] $masters,
-    [Parameter(Mandatory=$false)][string] $install_dir = 'C:\d2iq\dcos',
-    [Parameter(Mandatory=$false)][string] $var_dir = 'C:\d2iq\dcos\var'
+    [Parameter(Mandatory=$false)] [string] $bootstrap_url = '{{ bootstrap_url }}',
+    [Parameter(Mandatory=$false)] [string] $masters = '{{ master_list }}',
+    [Parameter(Mandatory=$false)] [string] $install_dir = 'C:\d2iq\dcos',
+    [Parameter(Mandatory=$false)] [string] $var_dir = 'C:\d2iq\dcos\var'
 )
 
 # GLOBAL
@@ -155,7 +159,7 @@ function Invoke-NativeApplication {
     {
         if (Test-CalledFromPrompt)
         {
-            $lines = & $ScriptBlock 2>&1 | Tee-Object -FilePath "$($vardir)\log\dcos_install.log" -Append
+            $lines = & $ScriptBlock | Tee-Object -FilePath "$($vardir)\log\dcos_install.log" -Append
         }
         else
         {
@@ -370,8 +374,6 @@ function main($url, $masters) {
     ExtractBootstrapZip $zipfile "$($basedir)\bootstrap\prerequisites"
 
     Write-Log -Level "Info" -LogContent "Installing 7zip from prerequisites.zip ..."
-    #& cmd /c "start /wait $($basedir)\bootstrap\prerequisites\7z-x64.exe /S" 2>&1 | Out-File "$($vardir)\log\dcos_install.log" -Append;
-    #$exec = ("`"{0}`" x `"{1}`" -so | `"{2}`" x -aoa -si -ttar -o`"{3}`"" -f $sz, $Source, $sz, $Target)
     $exec7zInstall = "start /wait $($basedir)\bootstrap\prerequisites\7z-x64.exe /S"
     Write-Log -Level "Info" -LogContent "Running: cmd /c $exec7zInstall"
     $cmd7zInstall = Invoke-NativeApplication {cmd /c $exec7zInstall}
@@ -401,9 +403,9 @@ function main($url, $masters) {
     Download "$url/windows/fault-domain-detect-win.ps1" "fault-domain-detect-win.ps1"
     Copy-Item -Path "$($basedir)\bootstrap\*.ps1" -Destination "$($basedir)\bin" -Recurse
 
-    # Fill up Ansible inventory content to cluster.conf
+    # Fill up gen_out arguments to cluster.conf
     Write-Log -Level "Debug" -LogContent "MASTERS: $($masters)"
-    [System.Array]$masterarray = $masters.split(",")
+    [System.Array]$masterarray = $masters.replace('"', '').replace('[', '').replace(']', '').replace(' ', '').split(',')
     $masternodecontent = ""
     for ($i=0; $i -lt $masterarray.length; $i++) {
         $masternodecontent += "[master-node-$($i+1)]`nPrivateIPAddr=$($masterarray[$i])`nZookeeperListenerPort=2181`n"
