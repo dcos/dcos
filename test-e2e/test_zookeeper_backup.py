@@ -45,6 +45,7 @@ def three_master_cluster(
             dcos_installer=artifact_path,
             dcos_config=cluster.base_config,
             ip_detect_path=docker_backend.ip_detect_path,
+            output=Output.LOG_AND_CAPTURE,
         )
         wait_for_dcos_oss(
             cluster=cluster,
