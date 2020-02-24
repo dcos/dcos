@@ -2,6 +2,7 @@
 set -euo pipefail
 
 LIBPROCESS_IP=$($MESOS_IP_DISCOVERY_COMMAND)
+MARATHON_HOSTNAME="$LIBPROCESS_IP"
 
 # If DefaultAcceptedResourceRoles is not set, then we try to assign a default value to resource roles
 # default behavior
