@@ -1,15 +1,20 @@
 provider "aws" {}
 
 #Linux Installer path - place url with "pull/PR#" or "master" suffix here:
-variable "dcos_generate_config" {
-  type = string
-  default = "https://downloads.mesosphere.com/dcos-enterprise/testing/2.1.0-beta1/dcos_generate_config.ee.sh"
+variable "custom_dcos_download_path" {
+  type = "string"
+  default = "https://downloads.mesosphere.com/dcos-enterprise/testing/master/dcos_generate_config.ee.sh"
 }
 
 #Windows Installer path - place url with "pull/PR#" or "master" suffix here:
-variable "dcos_generate_config_win" {
-  type = string
-  default = "https://downloads.mesosphere.com/dcos-enterprise/testing/2.1.0-beta1/dcos_generate_config_win.ee.sh"
+variable "custom_dcos_download_path_win" {
+  type = "string"
+  default = "https://downloads.mesosphere.com/dcos-enterprise/testing/master/dcos_generate_config_win.ee.sh"
+}
+
+variable "variant" {
+  type = "string"
+  default = "ee"
 }
 
 # Used to determine your public IP for forwarding rules
@@ -40,12 +45,12 @@ module "dcos" {
   dcos_instance_os        = "centos_7.5"
   bootstrap_instance_type = "m4.xlarge"
 
-  dcos_variant              = "ee"
+  dcos_variant              = "${var.variant}"
   dcos_version              = "2.1.0-beta1"
   dcos_license_key_contents = "${file("~/license.txt")}"
   ansible_bundled_container = "mesosphere/dcos-ansible-bundle:windows-beta-support"
 
-  custom_dcos_download_path = var.dcos_generate_config
+  custom_dcos_download_path = "${var.custom_dcos_download_path}"
 
   # provide a SHA512 hashed password, here "deleteme"
   dcos_superuser_password_hash = "$6$rounds=656000$YSvuFmasQDXheddh$TpYlCxNHF6PbsGkjlK99Pwxg7D0mgWJ.y0hE2JKoa61wHx.1wtxTAHVRHfsJU9zzHWDoE08wpdtToHimNR9FJ/"
@@ -59,7 +64,7 @@ enable_windows_agents: true
 
 ansible_additional_config = <<-EOF
 dcos:
- download_win: var.dcos_generate_config_win
+ download_win: "${var.custom_dcos_download_path_win}"
 -EOF
 }
 
