@@ -26,6 +26,7 @@ to start a cluster.
 
 Once Terraform finished you can setup the CLI with `dcos cluster setup $(terraform output masters_dns_name) --insecure`.
 
+Do not forget to destroy the cluster again with `terraform destroy`.
 
 ### Configuration
 
@@ -39,3 +40,4 @@ terraform init --upgrade
 terraform apply
 ```
 
+If you want to launch the build of a specific pull request simply replace `master` with `pull/<PR#>`.
