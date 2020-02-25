@@ -3,9 +3,9 @@
   "sources": {
     "dcos-net": {
       "kind": "git",
-      "git": "https://github.com/dcos/dcos-net.git",
-      "ref": "eb7242123907009892634a87f8d14c97d3f6c331",
-      "ref_origin": "master"
+      "git": "https://github.com/jkoelker/dcos-net.git",
+      "ref": "e0d9bb90c3049d3088702e739edea9a9c79f0bce",
+      "ref_origin": "task_killing"
     }
   },
   "sysctl": {

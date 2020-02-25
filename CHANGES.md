@@ -84,3 +84,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Updated dcos-config.yaml to support some Mesos Flags. (DCOS-59021)
 
 * Fix Telegraf migration when no containers present. (D2IQ-64507)
+
+* Set VIP backend weight to 0 when tasks enter `TASK_KILLING` state to allow graceful shutdown of connections (D2IQ-61077)
