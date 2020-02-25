@@ -30,8 +30,8 @@ to start a cluster.
 You can change the configuration with
 
 ```
-export TF_VAR_custom_dcos_download_path="https://downloads.mesosphere.com/dcos-enterprise/testing/master/dcos_generate_config.sh"
-export TF_VAR_custom_dcos_download_path_win="https://downloads.mesosphere.com/dcos-enterprise/testing/master/dcos_generate_config_win.sh"
+export TF_VAR_custom_dcos_download_path="https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh"
+export TF_VAR_custom_dcos_download_path_win="https://downloads.dcos.io/dcos/testing/master/windows/dcos_generate_config_win.sh"
 export TF_VAT_variant="open"
 terraform init --upgrade
 terraform apply

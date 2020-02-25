@@ -9,7 +9,7 @@ variable "custom_dcos_download_path" {
 #Windows Installer path - place url with "pull/PR#" or "master" suffix here:
 variable "custom_dcos_download_path_win" {
   type = "string"
-  default = "https://downloads.mesosphere.com/dcos-enterprise/testing/master/dcos_generate_config_win.ee.sh"
+  default = "https://downloads.mesosphere.com/dcos-enterprise/testing/master/windows/dcos_generate_config_win.ee.sh"
 }
 
 variable "variant" {
