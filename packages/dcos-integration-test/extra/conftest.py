@@ -23,7 +23,6 @@ def dcos_api_session(dcos_api_session_factory):
     exhibitor settings currently used in the cluster
     """
     args = dcos_api_session_factory.get_args_from_env()
-    print(args)
 
     exhibitor_admin_password = None
     expanded_config = get_expanded_config()
