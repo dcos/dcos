@@ -24,6 +24,8 @@ terraform apply
 
 to start a cluster.
 
+Once Terraform finished you can setup the CLI with `dcos cluster setup $(terraform output masters_dns_name) --insecure`.
+
 
 ### Configuration
 
