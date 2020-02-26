@@ -32,6 +32,16 @@ class Container(enum.Enum):
     POD = 'POD'
 
 
+class InternalUserNetwork(enum.Enum):
+    """User networks supported internally in DC/OS by default"""
+    DCOS = 'dcos'
+    CALICO = 'calico'
+
+    @staticmethod
+    def has_value(item):
+        return item in [v.value for v in InternalUserNetwork.__members__.values()]
+
+
 class MarathonApp:
     def __init__(self, container, network,
                  host=None, vip=None, network_name=None,
@@ -90,7 +100,7 @@ class MarathonApp:
         task = info['app']['tasks'][0]
         if 'networks' in self.app and \
                 self.app['networks'][0]['mode'] == 'container' and \
-                self.app['networks'][0]['name'] in ["calico", "dcos"]:
+                InternalUserNetwork.has_value(self.app['networks'][0]['name']):
             host = task['ipAddresses'][0]['ipAddress']
             port = self.app['container']['portMappings'][0]['containerPort']
         else:
@@ -350,6 +360,7 @@ def test_vip(dcos_api_session,
             for proxy_net in list(marathon.Network)]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('container', list(marathon.Container) + [Container.POD])
 @pytest.mark.parametrize('vip_net', [marathon.Network.USER])
 @pytest.mark.parametrize('proxy_net', [marathon.Network.USER])
@@ -376,7 +387,70 @@ def test_calico_vip(dcos_api_session,
 
     errors = []
     tests = setup_vip_workload_tests(dcos_api_session, container, vip_net,
-                                     proxy_net, ipv6, with_port_mapping_app, network_name="calico")
+                                     proxy_net, ipv6, with_port_mapping_app,
+                                     vip_network_name="calico",
+                                     proxy_network_name="calico")
+    for vip, hosts, cmd, origin_app, proxy_app, port_mapping_app in tests:
+        log.info("Testing :: VIP: {}, Hosts: {}".format(vip, hosts))
+        log.info("Remote command: {}".format(cmd))
+        proxy_host, proxy_port = proxy_app.hostport(dcos_api_session)
+        try:
+            if ipv6 and len(hosts) < 2:
+                # NOTE: If proxy and origin apps run on the same host, IPv6 VIP works from
+                # proxy task's network namespace only when bridge-nf-call-ip6tables is enabled, i.e
+                # sysctl -w net.bridge.bridge-nf-call-ip6tables=1
+                # JIRA: https://jira.mesosphere.com/browse/DCOS_OSS-5122
+                continue
+            assert ensure_routable(cmd, proxy_host, proxy_port)['test_uuid'] == origin_app.uuid
+        except Exception as e:
+            log.error('Exception: {}'.format(e))
+            errors.append(e)
+        finally:
+            log.info('Purging application: {}'.format(origin_app.id))
+            origin_app.purge(dcos_api_session)
+            log.info('Purging application: {}'.format(proxy_app.id))
+            proxy_app.purge(dcos_api_session)
+            if port_mapping_app is not None:
+                log.info('Purging application: {}'.format(port_mapping_app.id))
+                port_mapping_app.purge(dcos_api_session)
+    assert not errors
+
+
+def generate_vip_app_cross_usernetwork_permutations():
+    """Generate cross user network combinations for vip"""
+    return [(container, vip_network_name, proxy_network_name)
+            for container in list(marathon.Container) + [Container.POD]
+            for vip_network_name in list(InternalUserNetwork)
+            for proxy_network_name in list(InternalUserNetwork)
+            if vip_network_name != proxy_network_name]
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    'container,vip_network_name,proxy_network_name',
+    generate_vip_app_cross_usernetwork_permutations())
+def test_vip_cross_usernetwork(dcos_api_session,
+                               container: marathon.Container,
+                               vip_network_name: InternalUserNetwork,
+                               proxy_network_name: InternalUserNetwork,
+                               ipv6: bool=False):
+    '''Test the vip connectivity between different user networks
+
+    Origin app will be deployed to the cluster with a VIP. Proxy app will be
+    deployed either to the same host or elsewhere. Finally, a thread will be
+    started on localhost (which should be a master) to submit a command to the
+    proxy container that will ping the origin container VIP and then assert
+    that the expected origin app UUID was returned
+    '''
+    if not lb_enabled():
+        pytest.skip('Load Balancer disabled')
+
+    errors = []
+    tests = setup_vip_workload_tests(dcos_api_session, container,
+                                     marathon.Network.USER,
+                                     marathon.Network.USER, ipv6,
+                                     vip_network_name=vip_network_name,
+                                     proxy_network_name=proxy_network_name)
     for vip, hosts, cmd, origin_app, proxy_app, port_mapping_app in tests:
         log.info("Testing :: VIP: {}, Hosts: {}".format(vip, hosts))
         log.info("Remote command: {}".format(cmd))
@@ -404,10 +478,14 @@ def test_calico_vip(dcos_api_session,
 
 
 def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net,
-                             ipv6, with_port_mapping_app=False, network_name="dcos"):
+                             ipv6, with_port_mapping_app=False,
+                             vip_network_name=InternalUserNetwork.DCOS,
+                             proxy_network_name=InternalUserNetwork.DCOS):
     same_hosts = [True, False] if len(dcos_api_session.all_slaves) > 1 else [True]
     tests = [vip_workload_test(dcos_api_session, container, vip_net, proxy_net,
-                               ipv6, named_vip, same_host, with_port_mapping_app, network_name)
+                               ipv6, named_vip, same_host,
+                               with_port_mapping_app, vip_network_name,
+                               proxy_network_name)
              for named_vip in [True, False]
              for same_host in same_hosts]
     for vip, hosts, cmd, origin_app, proxy_app, pm_app in tests:
@@ -434,7 +512,9 @@ def setup_vip_workload_tests(dcos_api_session, container, vip_net, proxy_net,
 
 
 def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6,
-                      named_vip, same_host, with_port_mapping_app, network_name="dcos"):
+                      named_vip, same_host, with_port_mapping_app,
+                      vip_network_name=InternalUserNetwork.DCOS,
+                      proxy_network_name=InternalUserNetwork.DCOS):
     slaves = dcos_api_session.slaves + dcos_api_session.public_slaves
     vip_port = unused_port()
     origin_host = slaves[0]
@@ -472,17 +552,20 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6,
     # the network mode.
     # it is used for user network mode only and only for 'dcos' networks.
     # NOTE: 'calico' IPV6 is not yet supported
+    vip_network_name = enum2str(vip_network_name)
+    proxy_network_name = enum2str(proxy_network_name)
     if ipv6:
-        network_name = '{}6'.format(network_name)
+        vip_network_name = '{}6'.format(vip_network_name)
+        proxy_network_name = '{}6'.format(proxy_network_name)
 
     if container == Container.POD:
-        origin_app = MarathonPod(vip_net, origin_host, vip, pod_name_fmt=origin_fmt, network_name=network_name)
-        proxy_app = MarathonPod(proxy_net, proxy_host, pod_name_fmt=proxy_fmt, network_name=network_name)
+        origin_app = MarathonPod(vip_net, origin_host, vip, pod_name_fmt=origin_fmt, network_name=vip_network_name)
+        proxy_app = MarathonPod(proxy_net, proxy_host, pod_name_fmt=proxy_fmt, network_name=proxy_network_name)
     else:
         origin_app = MarathonApp(container, vip_net, origin_host, vip,
-                                 network_name=network_name, app_name_fmt=origin_fmt)
+                                 network_name=vip_network_name, app_name_fmt=origin_fmt)
         proxy_app = MarathonApp(container, proxy_net, proxy_host,
-                                network_name=network_name, app_name_fmt=proxy_fmt)
+                                network_name=proxy_network_name, app_name_fmt=proxy_fmt)
     # Port mappiong application runs on `proxy_host` and has the `host_port` same as `vip_port`.
     pm_fmt = '{}/pm-{}'.format(path_id, test_case_id)
     pm_fmt = pm_fmt + '-{{:.{}}}'.format(63 - len(pm_fmt))
