@@ -2,7 +2,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 1.12.6 (in development)
 
-* Updated to Mesos [1.7.3-dev](https://github.com/apache/mesos/blob/8af5a6d50c64abb683b803f25bbc02e320fe70f6/CHANGELOG)
+* Updated to Mesos [1.7.3-dev](https://github.com/apache/mesos/blob/3c4691e1c13d2908389436794b420dd9e19bd92a/CHANGELOG)
 
 ### Notable changes
 
