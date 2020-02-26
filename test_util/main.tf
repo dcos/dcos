@@ -17,6 +17,12 @@ variable "variant" {
   default = "ee"
 }
 
+variable "windowsagent_num" {
+  type = "string"
+  default = "0"
+  description = "Defines the number of Windows agents for the cluster."
+}
+
 # Used to determine your public IP for forwarding rules
 data "http" "whatismyip" {
   url = "http://whatismyip.akamai.com/"
@@ -79,7 +85,7 @@ module "windowsagent" {
   aws_key_name           = "${module.dcos.infrastructure.aws_key_name}"
 
   # provide the number of windows agents that should be provisioned.
-  num = "1"
+  num = "${var.windowsagent_num}"
 }
 
 resource "local_file" "ansible_inventory" {
