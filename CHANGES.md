@@ -1,10 +1,10 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
-## DC/OS 1.13.8 (in development)
-
-* Updated to Mesos [1.8.2-dev](https://github.com/apache/mesos/blob/bb32bf8732af3e941aa651c82f5c4f3f03e2e139/CHANGELOG)
+## DC/OS 1.13.8 (2020-02-27)
 
 ### Notable changes
+
+* Updated to Mesos [1.8.2-dev](https://github.com/apache/mesos/blob/bb32bf8732af3e941aa651c82f5c4f3f03e2e139/CHANGELOG)
 
 ### Fixed and improved
 
