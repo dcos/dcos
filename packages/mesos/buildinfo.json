@@ -10,7 +10,7 @@
     "mesos": {
       "kind": "git",
       "git": "https://github.com/apache/mesos",
-      "ref": "cb8106fb7fc9282232a98b27bd1aca43c52a7f69",
+      "ref": "ea670eca55af847bd7fcba1510726dd0059edf32",
       "ref_origin": "master"
     },
     "mesos-modules": {

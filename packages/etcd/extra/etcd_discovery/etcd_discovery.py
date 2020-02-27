@@ -51,7 +51,8 @@ DETECT_IP_SCRIPT = '/opt/mesosphere/bin/detect_ip'
 # script and verify the output` function that we want
 def detect_ip() -> str:
     machine_ip = subprocess.check_output(
-        [DETECT_IP_SCRIPT], stderr=subprocess.STDOUT).decode('ascii').strip()
+        [DETECT_IP_SCRIPT],
+        stderr=subprocess.STDOUT).decode('ascii').strip()  # type: str
     # Validate IP address
     ipaddress.ip_address(machine_ip)
     log.info("private IP is `%s`", machine_ip)
@@ -334,10 +335,50 @@ def parse_cmdline() -> argparse.Namespace:
         default=detect_ip(),
         help="the IP address of the node to remove from the ensemble")
 
+    parser_ensure_perms = subparsers.add_parser('ensure-permissions')
+    parser_ensure_perms.set_defaults(func=ensure_permissions)
     args = parser.parse_args()
     if 'SECURE' in os.environ:
         args.secure = True
+
     return args
+
+
+def ensure_permissions(args: argparse.Namespace) -> None:
+    log.info("ensure-permissions subcommand starts, args: `%s`", args)
+
+    etcdctl = EtcdctlHelper(
+        args.secure,
+        # NOTE(prozlach): we intentionally do not read back the nodes list from
+        # disk and connect to the local etcd instance. With more than one node
+        # in a quorum we would have sometimes intra-node and sometimes inter-node
+        # communication which may result in disruptions that happen only
+        # sometimes and are hard to reproduce.
+        [
+            "127.0.0.1",
+        ],
+        args.etcdctl_path,
+        args.ca_cert,
+        args.etcd_client_tls_cert,
+        args.etcd_client_tls_key,
+    )
+
+    # See below for more context:
+    # https://github.com/etcd-io/etcd/blob/3898452b5432b4d69028ee79d796ddeab0acc42c/Documentation/op-guide/authentication.md
+    etcdctl.ensure_user("root")
+    etcdctl.grant_role("root", "root")
+
+    etcdctl.ensure_user("calico")
+    # See below for more details:
+    # https://docs.projectcalico.org/v3.11/reference/etcd-rbac/calico-etcdv3-paths#calicoctl-read-only-access
+    etcdctl.ensure_role("calico_prefix", "/calico/")
+    etcdctl.grant_role("calico", "calico_prefix")
+
+    etcdctl.ensure_user("adminrouter")
+    etcdctl.ensure_role("adminrouter_prefix", "/")
+    etcdctl.grant_role("adminrouter", "adminrouter_prefix")
+
+    etcdctl.enable_auth()
 
 
 def join_cluster(args: argparse.Namespace) -> None:
@@ -361,7 +402,7 @@ def join_cluster(args: argparse.Namespace) -> None:
     zk_secret = os.environ.get('DATASTORE_ZK_SECRET')
     zk = zk_connect(zk_addr=args.zk_addr, zk_user=zk_user, zk_secret=zk_secret)
 
-    nodes = []
+    nodes = []  # type: List[str]
 
     with zk_lock(
             zk=zk,
@@ -372,10 +413,6 @@ def join_cluster(args: argparse.Namespace) -> None:
 
         nodes = get_registered_nodes(zk=zk, zk_path=ZK_NODES_PATH)
 
-        if nodes:
-            # There is already at least one etcd node which we should join
-            log.info("Cluster has members that already registered: %s", nodes)
-
         # The order of nodes is important - the first node to register
         # becomes the `designated node` that will initialize cluster, all
         # the other nodes will join it.
@@ -385,8 +422,12 @@ def join_cluster(args: argparse.Namespace) -> None:
         # script, as there is no need for monitoring the process from
         # within this script/making it a wrapper around etcd.
         if len(nodes) == 0:
+            log.info("Cluster has not been initialized yet: %s", nodes)
             dump_state_to_file("new", args.cluster_state_file)
         else:
+            # There is already at least one etcd node which we should join
+            log.info("Cluster has members that already registered: %s", nodes)
+
             etcdctl = EtcdctlHelper(
                 args.secure,
                 nodes,
@@ -512,7 +553,7 @@ class EtcdctlHelper:
         )
         result.check_returncode()
         output = json.loads(result.stdout)
-        members = output["members"]
+        members = output["members"]  # type: JsonTypeMembers
 
         return members
 
@@ -554,12 +595,113 @@ class EtcdctlHelper:
         result.check_returncode()
         log.info("node %s was added to the ensemble", node_ip)
 
+    def ensure_role(self, role_name: str, prefix: str) -> None:
+        roles = self.list_roles()
+        if role_name not in roles:
+            self.add_role(role_name)
+        self.add_permission(role_name, prefix)
+
+    def list_roles(self) -> List[str]:
+        result = self._execute_etcdctl(
+            self._designated_node,
+            [
+                "role",
+                "list",
+            ],
+        )
+        result.check_returncode()
+        roles = result.stdout.decode('utf8').splitlines()  # type: List[str]
+        log.info("roles currently defined: %s", roles)
+        return roles
+
+    def grant_role(self, user_name: str, role_name: str) -> None:
+        result = self._execute_etcdctl(
+            self._designated_node,
+            [
+                "user",
+                "grant-role",
+                user_name,
+                role_name,
+            ],
+        )
+        result.check_returncode()
+        log.info("role %s was granted to %s", role_name, user_name)
+
+    def enable_auth(self) -> None:
+        result = self._execute_etcdctl(
+            self._designated_node,
+            [
+                "auth",
+                "enable",
+            ],
+        )
+        result.check_returncode()
+        log.info("authentication was enabled")
+
+    def add_role(self, role_name: str) -> None:
+        result = self._execute_etcdctl(
+            self._designated_node,
+            [
+                "role",
+                "add",
+                role_name,
+            ],
+        )
+        result.check_returncode()
+        log.info("role %s was added", role_name)
+
+    def add_permission(self, role_name: str, prefix: str) -> None:
+        result = self._execute_etcdctl(
+            self._designated_node,
+            [
+                "role",
+                "grant",
+                role_name,
+                "--prefix=true",
+                "readwrite",
+                prefix,
+            ],
+        )
+        result.check_returncode()
+        log.info("prefix %s has been granted to the role %s", prefix,
+                 role_name)
+
+    def ensure_user(self, user_name: str) -> None:
+        users = self.list_users()
+        if user_name not in users:
+            self.add_user(user_name)
+
+    def add_user(self, user_name: str) -> None:
+        result = self._execute_etcdctl(
+            self._designated_node,
+            [
+                "user",
+                "add",
+                "--no-password",
+                user_name,
+            ],
+        )
+        result.check_returncode()
+        log.info("user %s was added", user_name)
+
+    def list_users(self) -> List[str]:
+        result = self._execute_etcdctl(
+            self._designated_node,
+            [
+                "user",
+                "list",
+            ],
+        )
+        result.check_returncode()
+        users = result.stdout.decode('utf8').splitlines()  # type: List[str]
+        log.info("users currently defined: %s", users)
+        return users
+
     def remove_member(self, node_ip: str) -> None:
         node_id = self.get_node_id(node_ip)
         if node_id == "":
-            log.warning(
-                "node {} is not a member yet so it cannot be removed".format(
-                    node_ip))
+            log.warning("node %s is not a member yet so it cannot be removed",
+                        node_ip)
             return
 
         result = self._execute_etcdctl(
@@ -578,18 +720,15 @@ class EtcdctlHelper:
                          args: List[str]) -> subprocess.CompletedProcess:
 
         cmd = [
-            self._etcdctl_path,
-            "--endpoints", "{}://{}:2379".format(self.scheme, endpoint_ip)
+            self._etcdctl_path, "--endpoints",
+            "{}://{}:2379".format(self.scheme, endpoint_ip)
         ]
 
         if self.scheme == "https":
-            cmd.extend(
-                [
-                    "--cacert", self._ca_cert, "--cert",
-                    self._etcd_client_tls_cert, "--key",
-                    self._etcd_client_tls_key
-                ]
-            )
+            cmd.extend([
+                "--cacert", self._ca_cert, "--cert",
+                self._etcd_client_tls_cert, "--key", self._etcd_client_tls_key
+            ])
 
         cmd.extend(args)
         result = subprocess.run(
