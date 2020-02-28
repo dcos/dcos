@@ -1,5 +1,6 @@
 import logging
 
+import pytest
 import requests
 
 import test_helpers
