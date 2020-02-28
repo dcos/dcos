@@ -453,7 +453,7 @@ def run(cmd, *args, **kwargs):
     if proc.returncode != 0:
         raise subprocess.CalledProcessError(proc.returncode, cmd)
 
-    # assert len(stderr) == 0
+    assert len(stderr) == 0
     return stdout.decode('utf-8')
 
 
