@@ -85,5 +85,3 @@ groups:
         - test_iam_migration.py
         - test_legacy_user_management.py
         - test_ui_update_service.py
-    group_windows:
-        - test_windows.py
