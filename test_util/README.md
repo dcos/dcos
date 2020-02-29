@@ -30,7 +30,8 @@ Do not forget to destroy the cluster again with `terraform destroy`.
 
 ### Configuration
 
-You can change the configuration with
+You can change the configuration of the cluster. All variables are defined at the top of [main.tf](main.tf) and can be
+set via [environment variables](https://www.terraform.io/docs/configuration-0-11/variables.html#environment-variables).
 
 ```
 export TF_VAR_custom_dcos_download_path="https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh"
@@ -40,4 +41,5 @@ terraform init --upgrade
 terraform apply
 ```
 
-If you want to launch the build of a specific pull request simply replace `master` with `pull/<PR#>`.
+If you want to launch the build of a specific pull request simply replace `master` with `pull/<PR#>`. The number of
+Windows agents defaults to zero and can be set via `TF_VAR_windowsagent_num`.

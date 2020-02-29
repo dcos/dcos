@@ -38,3 +38,5 @@ pytest -v -x --capture=no --full-trace --log-level=DEBUG test_applications.py::t
 ```
 
 Alternatively you should be able to run `terraform_test.sh` in case you provisioned the cluster with Terraform.
+
+The Windows tests are run by passing `--windows-only`.
