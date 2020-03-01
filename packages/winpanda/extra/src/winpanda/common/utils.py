@@ -154,7 +154,7 @@ def get_retry_interval(attempt, retry_interval_base, retry_interval_cap):
     )
 
 
-def retry_on_exc(exceptions=(Exception,), max_attempts=0,
+def retry_on_exc(exceptions=(Exception,), max_attempts=1,
                  retry_interval_base=0.5, retry_interval_cap=5.0):
     """Apply retrying logic to a function/method being decorated.
     """
