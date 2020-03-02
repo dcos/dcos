@@ -88,6 +88,7 @@ def test_dcos_diagnostics_health(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_nodes(dcos_api_session):
     """
     test a list of nodes with statuses endpoint /system/health/v1/nodes
@@ -119,6 +120,7 @@ def test_dcos_diagnostics_nodes_node(dcos_api_session):
             validate_node([node_response])
 
 
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_nodes_node_units(dcos_api_session):
     """
     test a list of units from a specific node, endpoint /system/health/v1/nodes/<node>/units
@@ -136,6 +138,7 @@ def test_dcos_diagnostics_nodes_node_units(dcos_api_session):
             validate_units(units_response['units'])
 
 
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session):
     """
     test a specific unit for a specific node, endpoint /system/health/v1/nodes/<node>/units/<unit>
@@ -212,6 +215,7 @@ def test_systemd_units_health(dcos_api_session):
         raise AssertionError('\n'.join(unhealthy_output))
 
 
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_units_unit(dcos_api_session):
     """
     test a unit response in a right format, endpoint: /system/health/v1/units/<unit>
@@ -225,6 +229,7 @@ def test_dcos_diagnostics_units_unit(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
     """
     test a list of nodes for a specific unit, endpoint /system/health/v1/units/<unit>/nodes
@@ -312,6 +317,7 @@ def test_dcos_diagnostics_report(dcos_api_session):
 
 
 @pytest.mark.parametrize('use_legacy_api', [False, True])
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_legacy_api):
     """
     test bundle create, read, delete workflow
