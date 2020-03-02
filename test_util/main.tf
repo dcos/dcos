@@ -17,6 +17,16 @@ variable "variant" {
   default = "ee"
 }
 
+variable "owner" {
+    type = "string"
+    default = "dcos/test_util"
+}
+
+variable "expiration" {
+    type = "string"
+    default = "2h"
+}
+
 variable "windowsagent_num" {
   type = "string"
   default = "0"
@@ -38,6 +48,11 @@ module "dcos" {
 
   providers = {
     aws = "aws"
+  }
+
+  tags {
+    owner = "${var.owner}"
+    expiration = "${var.expiration}"
   }
 
   cluster_name        = "${local.cluster_name}"
@@ -77,6 +92,11 @@ dcos:
 module "windowsagent" {
   source  = "dcos-terraform/windows-instance/aws"
   version = "~> 0.2.0"
+
+  tags {
+    owner = "${var.owner}"
+    expiration = "${var.expiration}"
+  }
 
   cluster_name           = "${local.cluster_name}"
   hostname_format        = "%[3]s-winagent%[1]d-%[2]s"
@@ -129,9 +149,14 @@ agents_public
 EOF
 }
 
-output "masters_dns_name" {
+output "dcos_ui" {
   description = "This is the load balancer address to access the DC/OS UI"
-  value       = "${module.dcos.masters-loadbalancer}"
+  value       = "http://${module.dcos.masters-loadbalancer}/"
+}
+
+output "masters_public_ip" {
+    description = "This is the public masters IP to SSH"
+    value       = "${module.dcos.infrastructure.masters.public_ips}"
 }
 
 output "passwords" {
