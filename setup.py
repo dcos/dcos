@@ -125,7 +125,8 @@ setup(
             'build_deploy/bash/Dockerfile.in',
             'build_deploy/bash/installer_internal_wrapper.in',
             'build_deploy/bash/dcos-launch.spec',
-            'build_deploy/powershell/dcos_install.ps1',
+            'build_deploy/powershell/dcos_install.ps1.in',
+            'build_deploy/powershell/dcos_node_upgrade.ps1.in',
             'coreos-aws/cloud-config.yaml',
             'coreos/cloud-config.yaml'
         ] + get_advanced_templates(),
