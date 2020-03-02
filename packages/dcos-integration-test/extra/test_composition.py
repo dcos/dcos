@@ -104,6 +104,8 @@ def test_mesos_agent_role_assignment(dcos_api_session):
         assert r.json()['flags']['default_role'] == '*'
 
 
+@pytest.mark.supportedwindows
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64752")
 def test_systemd_units_are_healthy(dcos_api_session) -> None:
     """
     Test that the system is healthy at the arbitrary point in time

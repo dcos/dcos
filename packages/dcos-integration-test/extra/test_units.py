@@ -12,7 +12,6 @@ __maintainer__ = 'gpaul'
 __contact__ = 'dcos-security@mesosphere.io'
 
 
-@pytest.mark.supportedwindows
 def test_verify_units():
     """Test that all systemd units are valid."""
     def _check_units(path):

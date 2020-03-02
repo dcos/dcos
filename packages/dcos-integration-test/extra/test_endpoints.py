@@ -38,6 +38,8 @@ def test_if_mesos_is_up(dcos_api_session):
     assert '<title>Mesos</title>' in r.text
 
 
+@pytest.mark.supportedwindows
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64754")
 def test_if_all_mesos_slaves_have_registered(dcos_api_session):
     r = dcos_api_session.get('/mesos/master/slaves')
     assert r.status_code == 200

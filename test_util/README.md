@@ -36,10 +36,12 @@ set via [environment variables](https://www.terraform.io/docs/configuration-0-11
 ```
 export TF_VAR_custom_dcos_download_path="https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh"
 export TF_VAR_custom_dcos_download_path_win="https://downloads.dcos.io/dcos/testing/master/windows/dcos_generate_config_win.sh"
-export TF_VAT_variant="open"
+export TF_VAR_variant="open"
 terraform init --upgrade
 terraform apply
 ```
 
 If you want to launch the build of a specific pull request simply replace `master` with `pull/<PR#>`. The number of
 Windows agents defaults to zero and can be set via `TF_VAR_windowsagent_num`.
+
+If you want to launch the master build with Windows agents simply call `terraform apply -var-file=windows.tfvars`.
