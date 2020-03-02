@@ -24,8 +24,10 @@ Options:
                                 repository directory [default: {default_repository}]
     --rooted-systemd            Use $ROOT/dcos.target.wants for systemd management
                                 rather than /etc/systemd/system/dcos.target.wants
+    --silent                    Do not log anything
 """
 
+import logging
 import os
 import sys
 from itertools import groupby
@@ -137,6 +139,9 @@ def main():
         ),
     )
     umask(0o022)
+
+    if arguments['--silent']:
+        logging.disable(logging.CRITICAL)
 
     # NOTE: Changing root or repository will likely break actually running packages.
     install = Install(
