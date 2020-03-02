@@ -27,7 +27,6 @@ def deploy_test_app_and_check_windows(dcos_api_session, app: dict, test_uuid: st
 
 @pytest.mark.supportedwindows
 @pytest.mark.supportedwindowsonly
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True)
 def test_if_docker_app_can_be_deployed_windows(dcos_api_session):
     """Marathon app inside docker deployment integration test.
 
