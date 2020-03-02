@@ -156,6 +156,7 @@ def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_units(dcos_api_session):
     """
     test a list of collected units, endpoint /system/health/v1/units
