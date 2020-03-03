@@ -12,14 +12,24 @@ pipeline {
   }
 
   stages {
+    stage("Verify author for PR") {
+      agent {
+        label "py36"
+      }
+      when {
+        beforeAgent true
+        changeRequest()
+      }
+      steps {
+        user_is_authorized(master_branches, '8b793652-f26a-422f-a9ba-0d1e47eb9d89', '#dcos-security-ci')
+      }
+    }
+
     stage('Adminrouter') {
       steps {
         script {
           task_wrapper('mesos-sec', master_branches, '8b793652-f26a-422f-a9ba-0d1e47eb9d89', '#dcos-security-ci') {
-              stage("Verify author") {
-                  user_is_authorized(master_branches, '8b793652-f26a-422f-a9ba-0d1e47eb9d89', '#dcos-security-ci')
-              }
-          
+	    stages {
               stage('Cleanup workspace') {
                   deleteDir()
               }
@@ -29,6 +39,7 @@ pipeline {
               }
           
               load 'Jenkinsfile-insecure.groovy'
+	    }
           }
         }  
       }
