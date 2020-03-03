@@ -403,3 +403,33 @@ That said, to add a network profile, you should:
 ## 6. Troubleshooting
 
 Diagnostic info including Calico resources, components logs, and BGP peer status are collected in DC/OS node diagnostic bundle to debug Calico networking issues, please execute  `dcos node diagnostic create` to create a diagnostic bundle, and download the diagnostic bundle by executing `dcos node diagnostic download <diagnostic-bundle-name>`.
+
+## 7. Development
+
+The address of calicoctl fork is [8], the libcalico-go fork is [9]. The CI job can be found in [1]. Each release of calicoctl should have a separate branch named release-vXXX-d2iq.YYY where XXX is the calico version (e.g. 3.12) and YYY is an internal build version (plain integer, e.g. `1`). The build from branch pushes into the dcos-calicoctl-artifacts bucket [2], sample URL for Linux binary is [3], darwin is [4], windows is [5]. Each build artifact from the release branch is auto removed after 7 days. The Jenkins task also builds from tags that are meant to be used in the dc/os CLI itself. The job build job for tags needs to be triggered manually (see [6] for reasoning). Once the tag build job finishes, the artifacts are pushed to download.mesosphere.io bucket into a path containing both parts of the commit sha and the sha of the binaries. Example URL for windows binary can be found in [7].
+
+New releases can be done in the following way:
+
+* pull the new release branch from the calicoctl upstream [10], e.g. release-v3.15
+* push the branch into our calicoctl fork [8], use the name release-vXXX-d2iq.YYY, where XXX is the original version of the calicoctl (here it is 3.15) and YYY is the iteration number picked by us (e..g. `1`)
+* check the revision of libcalico-go that new calicoctl release is using
+* go to our fork of libcalico-go [9], create a new release branch (e.g. `release-v3.15.d2iq`) that matches the release that calicoctl is using, cherr-pick our changes (see the previous release branch's history to get the commit shas) on top of it.
+* go back to our calicoctl fork [8], update the gomod reference replacement to match the libcalico-go version from the previous step. The command is. e.g. `go mod edit -replace=github.com/projectcalico/libcalico-go=github.com/vespian/libcalico-go@release-v3.12-d2iq`
+* rebase all the other commits from the previous release, namelly the `Jenkinsfile` addition.
+* push the new `release-v3.15-d2iq.1` branch into our fork [8]
+* create new tag vXXX-d2iq.YYY tag (in our example it is going to be v3.15-d2iq.1), and push it to upstream repo [8]
+* go to the calicoctl Jenkins job[1], and start the build job for tags manually.
+
+As soon as the tasks finish, the artifacts will be available in `downloads.mesosphere.io`. Example URL can be seen in [7].
+
+[1] https://jenkins.mesosphere.com/service/jenkins/view/DCOS%20Networking/job/calicoctl/<br/>
+[2] https://s3.console.aws.amazon.com/s3/buckets/dcos-calicoctl-artifacts/autodelete7d/release-v3.12-d2iq/bin/?region=us-east-1&tab=overview<br/>
+[3] https://dcos-calicoctl-artifacts.s3.amazonaws.com/autodelete7d/release-v3.12-d2iq/bin/calicoctl-linux-amd64<br/>
+[4] https://dcos-calicoctl-artifacts.s3.amazonaws.com/autodelete7d/release-v3.12-d2iq/bin/calicoctl-darwin-amd64<br/>
+[5] https://dcos-calicoctl-artifacts.s3.amazonaws.com/autodelete7d/release-v3.12-d2iq/bin/calicoctl-windows-amd64.exe<br/>
+[6] https://stackoverflow.com/a/48276262<br/>
+[7] https://s3.amazonaws.com/downloads.mesosphere.io/dcos-calicoctl/bin/v3.12.0-d2iq.1/fd5d699-b80546e/calicoctl-windows-amd64.exe<br/>
+[8] https://github.com/dcos/calicoctl<br/>
+[9] https://github.com/dcos/libcalico-go/<br/>
+[10] https://github.com/projectcalico/calicoctl
+
