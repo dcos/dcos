@@ -26,21 +26,36 @@ pipeline {
       }
     }
 
-    stage('Adminrouter') {
-      steps {
-        script {
-          task_wrapper('mesos-sec', master_branches, '8b793652-f26a-422f-a9ba-0d1e47eb9d89', '#dcos-security-ci') {
-              stage('Cleanup workspace') {
-                  deleteDir()
-              }
-          
-              stage('Checkout') {
-                  checkout scm
-              }
-          
-              load 'Jenkinsfile-insecure.groovy'
-	    }
-        }  
+    stage('Build') {
+      parallel {
+        stage('Tox') {
+	  agent {
+	    label 'py36'
+	  }
+	  steps {
+	    sh('rm -rf dcos-release.config.yaml')
+	    sh('cp config/dcos-release.config.yaml dcos-release.config.yaml')
+	    sh('tox')
+	  }
+	}
+
+        stage('Adminrouter') {
+          steps {
+            script {
+              task_wrapper('mesos-sec', master_branches, '8b793652-f26a-422f-a9ba-0d1e47eb9d89', '#dcos-security-ci') {
+                  stage('Cleanup workspace') {
+                      deleteDir()
+                  }
+              
+                  stage('Checkout') {
+                      checkout scm
+                  }
+              
+                  load 'Jenkinsfile-insecure.groovy'
+                }
+            }  
+          }
+        }
       }
     }
   }
