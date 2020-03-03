@@ -35,7 +35,7 @@ pipeline {
 	  steps {
 	    sh('rm -rf dcos-release.config.yaml')
 	    sh('cp config/dcos-release.config.yaml dcos-release.config.yaml')
-	    sh('tox')
+	    sh('pip install tox && tox')
 	  }
 	}
 
