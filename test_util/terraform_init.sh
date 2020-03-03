@@ -3,7 +3,7 @@
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 
 # COPS-4642: using fork of terraform-aws-instance as spot instances are unsupported in dcos-terraform.
-dcos_terraform_instance_aws="git::https://github.com/dcos/terraform-aws-spot-instance.git?ref=${DCOS_TERRAFORM_VERSION:-0.2.0}"
+dcos_terraform_instance_aws="git::https://github.com/dcos/terraform-aws-spot-instance.git?ref=${DCOS_TERRAFORM_AWS_SPOT_INSTANCE_VERSION:-0.2.0}"
 
 # Forked terraform:
 
