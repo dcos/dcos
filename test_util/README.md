@@ -44,4 +44,6 @@ terraform apply
 If you want to launch the build of a specific pull request simply replace `master` with `pull/<PR#>`. The number of
 Windows agents defaults to zero and can be set via `TF_VAR_windowsagent_num`.
 
+By default instances will be destroyed by CloudCleaner to change expiration set `TF_VAR_expiration=8h` and `TF_VAR_owner=$USER`.
+
 If you want to launch the master build with Windows agents simply call `terraform apply -var-file=windows.tfvars`.
