@@ -2,6 +2,29 @@
 
 This package provides DC/OS Calico component to support Calico networking containers and network policy in DC/OS.
 
+<!-- MarkdownTOC -->
+
+* [1. System Requirements](#1-system-requirements)
+  - [1.1. Network requirements](#11-network-requirements)
+* [2. DC/OS Calico components](#2-dcos-calico-components)
+  - [2.1. DC/OS Calico services](#21-dcos-calico-services)
+* [3. DC/OS Configuration Reference \(Networking\)](#3-dcos-configuration-reference-networking)
+* [4. Application Example](#4-application-example)
+  - [4.1. Calico Networking \(Universal Container Runtime\)](#41-calico-networking-universal-container-runtime)
+  - [4.2. Calico Networking \(Docker Engine\)](#42-calico-networking-docker-engine)
+* [5. Administration Topics](#5-administration-topics)
+  - [5.1. Network Policies](#51-network-policies)
+  - [5.2. Default profile](#52-default-profile)
+  - [5.3. Network policy examples](#53-network-policy-examples)
+    * [5.3.1. Launch Marathon applications](#531-launch-marathon-applications)
+    * [5.3.2. Test the connectivity between the frontends and the server](#532-test-the-connectivity-between-the-frontends-and-the-server)
+    * [5.3.3. Apply network policy](#533-apply-network-policy)
+  - [5.4. Adding network profiles](#54-adding-network-profiles)
+* [6. Troubleshooting](#6-troubleshooting)
+* [7. Development](#7-development)
+
+<!-- /MarkdownTOC -->
+
 ## 1. System Requirements
 
 ### 1.1. Network requirements
