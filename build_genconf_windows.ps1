@@ -29,9 +29,6 @@ $source = "http://www.7-zip.org/a/7z1900-x64.exe";
 $destination = "$($artifact_storage)\prerequisites\zip\7z-x64.exe";
 Invoke-WebRequest $source -OutFile $destination
 
-# Copying dcos_install.ps1 to cache location for further packing:
-Copy-Item -Path "$($gen_powershell_dir)\dcos_install.ps1" "$artifact_storage\prerequisites\dcos_install.ps1" -Force -ErrorAction SilentlyContinue;
-
 # Creating prerequisites.zip:
 Compress-Archive -Path "$artifact_storage\prerequisites\zip\*" -destinationpath "$artifact_storage\prerequisites\prerequisites.zip" -Force;
 Remove-Item -Recurse -Path "$artifact_storage\prerequisites\zip" -Force;
