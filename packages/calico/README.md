@@ -353,6 +353,55 @@ $ dcos task exec fruitstore-frontend wget -qO- --timeout=5 bookstore-server.mara
 wget: can't connect to remote host (192.168.219.133): Connection timed out
 ```
 
+## Administration
+
+### Adding network profiles
+
+In most of the use cases a single calico profile is enough. However if for any reason more networks needs to be created, you should be aware of some corner cases.
+
+> ⚠️ NOTE: The `calico-libnetwork-plugin` (the network interface to Docker Runtime) implicitly links the IP Pool to the calico profile associated with the respective calico docker network. 
+
+That said, to add a network profile, you should:
+
+1. Create a new IP pool. For example:
+  ```yaml
+  apiVersion: v1
+  kind: ipPool
+  metadata:
+    name: <pool-name>
+    cidr: 10.1.0.0/16
+  spec:
+    nat-outgoing: true
+    disabled: false  
+  ```
+2. Create a new calico profile. For example:
+  ```yaml
+  apiVersion: projectcalico.org/v3
+  kind: Profile
+  metadata:
+    name: <profile-name>
+  spec:
+    egress:
+    + action: Allow
+      destination: {}
+      source: {}
+    ingress:
+    + action: Allow
+      destination: {}
+      source: {}
+    labelsToApply:
+      calico: ""
+  ```
+3. On **every agent**, create a new docker network that will use the new profile. You can use the following command, making sure the subnet matches the cidr from the pool:
+  ```sh
+  docker network create \
+      --opt org.projectcalico.profile=<profile-name> \
+      --driver calico \
+      --ipam-driver calico-ipam \
+      --subnet=10.1.0.0/16 \
+      <network-name> 
+  ```
+
 ## Troubleshoot
 
 Diagnostic info including Calico resources, components logs, and BGP peer status are collected in DC/OS node diagnostic bundle to debug Calico networking issues, please execute  `dcos node diagnostic create` to create a diagnostic bundle, and download the diagnostic bundle by executing `dcos node diagnostic download <diagnostic-bundle-name>`.
