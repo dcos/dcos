@@ -29,7 +29,6 @@ pipeline {
       steps {
         script {
           task_wrapper('mesos-sec', master_branches, '8b793652-f26a-422f-a9ba-0d1e47eb9d89', '#dcos-security-ci') {
-	    stages {
               stage('Cleanup workspace') {
                   deleteDir()
               }
@@ -40,7 +39,6 @@ pipeline {
           
               load 'Jenkinsfile-insecure.groovy'
 	    }
-          }
         }  
       }
     }
