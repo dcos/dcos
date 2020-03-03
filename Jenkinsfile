@@ -30,7 +30,7 @@ pipeline {
       parallel {
         stage('Tox') {
 	  agent {
-	    label 'py36'
+	    label 'py35'
 	  }
 	  steps {
 	    sh('rm -rf dcos-release.config.yaml')
