@@ -16,14 +16,16 @@ This package provides DC/OS Calico component to support Calico networking contai
 
 ## DC/OS Calico component
 
-DC/OS Calico component integrates the [Calico networking](https://www.projectcalico.org) into DC/OS, by providing Calico CNI plugin for Mesos Universal Container Runtime, besides, the calico control panel will provide the functionality of network policy for DC/OS workloads.
+DC/OS Calico component integrates the [Calico networking](https://www.projectcalico.org) into DC/OS, by providing the Calico CNI plugin for Mesos Universal Container Runtime and the Calico libnetwork plugin for Docker Engine. In addition, the calico control panel will provide the functionality of configuring the network policy for DC/OS workloads.
 
 ### DC/OS Calico services
 
 DC/OS Calico integrates Calico into DC/OS for managing container networking and network security, three services are introduced:
-- dcos-calico-bird.service: A BGP client that exchanges routing information between hosts for Calico. [source](https://github.com/projectcalico/bird)
-- dcos-calico-confd.service: The confd templating engine monitors etcd datastores and generating and reloading bird configuration dynamically. [source](https://github.com/projectcalico/node)
-- dcos-calico-felix.service: the control panel for Calico networking to program routes and ACL's for containers. [source](https://github.com/projectcalico/node)
+
+* `dcos-calico-bird.service`: A BGP client that exchanges routing information between hosts for Calico. [(source)](https://github.com/projectcalico/bird)
+* `dcos-calico-confd.service`: The confd templating engine monitors etcd datastores and generating and reloading bird configuration dynamically. [(source)](https://github.com/projectcalico/node)
+* `dcos-calico-felix.service`: the control panel for Calico networking to program routes and ACL's for containers. [(source)](https://github.com/projectcalico/node)
+* `dcos-calico-libntwork-plugin.service`: the network plugin for Docker that provides Calico networking to the Docker Engine. [(source)](https://github.com/projectcalico/libnetwork-plugin)
 
 ## Configuration Reference(Networking)
 
@@ -108,16 +110,49 @@ For a more detailed description of the Calico profile, please read [here](https:
 
 ## Example
 
-### Calico networking containers
+### Calico Networking (Universal Container Runtime)
 
-To use Calico networking containers, you only have to specify the network name as `calico`, and the following example shows the Marathon application definition of Calico networking containers supported by Mesos UCR.
-a Marathon application with Calcico networking supported by Mesos UCR:
-```
+To use Calico networking containers, you only have to specify the network name as `calico`.
+
+The following marathon app definition example will launch a container using the _Mesos UCR engine_ and plug it to the `calico` network:
+
+```json
 {
   "id": "/calico-ucr",
   "instances": 1,
   "container": {
     "type": "MESOS",
+    "volumes": [],
+    "docker": {
+      "image": "mesosphere/id-server:2.1.0"
+    },
+    "portMappings": []
+  },
+  "cpus": 0.1,
+  "mem": 128,
+  "requirePorts": false,
+  "networks": [
+    {
+      "mode": "container",
+      "name": "calico"
+    }
+  ],
+  "healthChecks": [],
+  "fetch": [],
+  "constraints": []
+}
+```
+
+### Calico Networking (Docker Engine)
+
+Like with the previous example, the following marathon app definition will launch a container using the _Docker Engine_ and plug it to the `calico` network:
+
+```json
+{
+  "id": "/calico-docker",
+  "instances": 1,
+  "container": {
+    "type": "DOCKER",
     "volumes": [],
     "docker": {
       "image": "mesosphere/id-server:2.1.0"
