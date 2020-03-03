@@ -18,7 +18,7 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 @pytest.mark.first
 @pytest.mark.supportedwindows
-def test_dcos_cluster_is_up(dcos_api_session):
+def test_dcos_cluster_is_up():
     def _docker_info(component):
         # sudo is required for non-coreOS installs
         return (subprocess.check_output(['sudo', 'docker', 'version', '-f', component], timeout=60)
@@ -94,6 +94,7 @@ def test_if_all_exhibitors_are_in_sync(dcos_api_session):
         assert correct_data == tested_data
 
 
+@pytest.mark.supportedwindows
 def test_mesos_agent_role_assignment(dcos_api_session):
     state_endpoint = '/state.json'
     for agent in dcos_api_session.public_slaves:
@@ -105,7 +106,6 @@ def test_mesos_agent_role_assignment(dcos_api_session):
 
 
 @pytest.mark.supportedwindows
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64752")
 def test_systemd_units_are_healthy(dcos_api_session) -> None:
     """
     Test that the system is healthy at the arbitrary point in time
@@ -185,6 +185,16 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-logrotate-agent.service',
         'dcos-logrotate-agent.timer',
         'dcos-rexray.service']
+    # Since systemd is not working on windows it's using dcos/packages/dcos-diagnostics/extra/servicelist.txt
+    # to define interesting services.
+    windows_units = {
+        'WinRM',
+        'adminrouter',
+        'dcos-diagnostics',
+        'docker',
+        'mesos-agent',
+        'telegraf',
+    }
 
     expected_units = {
         "master": set(all_node_units + master_units),
@@ -229,6 +239,8 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         role = node_health["Role"]  # Is one of master, agent, agent_public
         units_per_node[node] = set(node_health["Output"])
         exp_units_per_node[node] = expected_units[role]
+        if 'WinRM' in units_per_node[node]:
+            exp_units_per_node[node] = windows_units
     assert units_per_node == exp_units_per_node
 
     # Test that there are no unhealthy nodes.
@@ -242,6 +254,7 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
     assert unhealthy_nodes == 0
 
 
+@pytest.mark.supportedwindows
 def test_signal_service(dcos_api_session):
     """
     signal-service runs on an hourly timer, this test runs it as a one-off
