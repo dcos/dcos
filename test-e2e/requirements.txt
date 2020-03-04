@@ -2,6 +2,7 @@ git+https://github.com/dcos/dcos-e2e.git@2019.10.11.0
 attrs==19.1.0
 cryptography==2.5
 docker==3.7.0
+etcd3==0.11.1
 jwt==0.5.4
 kazoo==2.6.1
 pytest==4.1.1

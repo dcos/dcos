@@ -19,7 +19,7 @@ What features does this change enable? What bugs does this change fix?
 
 ## Corresponding DC/OS tickets (required)
 
-  - [DCOS-ID](https://jira.mesosphere.com/browse/DCOS-<number>) JIRA title / short description.
+  - [D2IQ-ID](https://jira.d2iq.com/browse/D2IQ-ID) JIRA title / short description.
 
 
 ## Related tickets (optional)
@@ -31,7 +31,7 @@ Fix Version fields of these JIRAs will not be updated.
 
 -->
 
-  - [DCOS-ID](https://jira.mesosphere.com/browse/DCOS-<number>) JIRA title / short description.
+  - [D2IQ-ID](https://jira.mesosphere.com/browse/D2IQ-<number>) JIRA title / short description.
 
 
 ## Checklist for component/package updates:
@@ -50,14 +50,14 @@ If you are changing components or packages in DC/OS (e.g. you are bumping the sh
 
 **What is the review process and when will my changes land?**
 
-All PRs require approvals from any two users on the most recent commit. Any commits added to the pull request after approval will invalidate the approvals.
+All PRs require approvals from one developer on the most recent commit. Any commits added to the pull request after approval will invalidate the approvals.
 
 Reviewers should be:
 
 * Developers who understand the code being modified.
 * Developers responsible for code that interacts with or depends on the code being modified.
 
-It is best to proactively ask for 2 reviews by @mentioning the candidate reviewers in the PR comments area. The responsibility is on the developer submitting the PR to follow-up with reviewers and make sure a PR is reviewed in a timely manner. 
-Once a PR has **2 approvals**, **no red reviews**, and **all tests are green** it will be included in the next Merge Train.
+It is best to proactively ask for reviews by @mentioning the candidate reviewers in the PR comments area. The responsibility is on the developer submitting the PR to follow-up with reviewers and make sure a PR is reviewed in a timely manner.
+Once a PR has **1 approval**, **no red reviews**, and **all tests are green** it will be included in the next Merge Train.
 
 -->

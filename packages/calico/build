@@ -1,6 +1,9 @@
 #!/bin/bash
 set -x
 
+# calico container is missing 'envsubst'
+apt-get update && apt-get install gettext-base
+
 # copy calico CNI plugin to CNI plugin directory
 mkdir -p $PKG_PATH/cni
 cp /pkg/src/calico/calico-amd64 $PKG_PATH/cni/calico
@@ -16,9 +19,11 @@ chmod +x $PKG_PATH/bin/calicoctl
 mkdir -p $PKG_PATH/etc
 cp /pkg/extra/profile.yaml $PKG_PATH/etc/profile.yaml
 
-# copy the launch script to the package bin directory
+# copy the launch scripts to the package bin directory
 cp /pkg/extra/start-calico-felix.sh $PKG_PATH/bin/start-calico-felix.sh
 chmod +x $PKG_PATH/bin/start-calico-felix.sh
+cp /pkg/extra/start-calico-libnetwork-plugin.sh $PKG_PATH/bin/start-calico-libnetwork-plugin.sh
+chmod +x $PKG_PATH/bin/start-calico-libnetwork-plugin.sh
 
 # copy binaries from calico-node docker container
 cp /bin/calico-node $PKG_PATH/bin/calico-node
@@ -36,3 +41,17 @@ for comp in bird confd felix; do
     mkdir -vp "$(dirname "$tmp")"
     cp "/pkg/extra/dcos-calico-${comp}.service" "${tmp}"
 done
+
+# copy calico libnetwork scripts and plugins
+cp /pkg/extra/create-calico-docker-network.py $PKG_PATH/bin/create-calico-docker-network.py
+chmod +x $PKG_PATH/bin/create-calico-docker-network.py
+cp /pkg/src/calico-libnetwork-plugin/libnetwork-plugin-amd64 $PKG_PATH/bin/calico-libnetwork-plugin
+chmod +x $PKG_PATH/bin/calico-libnetwork-plugin
+
+# calico-libnetwork service works only on slaves
+for at in slave slave_public; do
+    tmp="$PKG_PATH/dcos.target.wants_${at}/dcos-calico-libnetwork-plugin.service"
+    mkdir -vp "$(dirname "$tmp")"
+    envsubst '$PKG_PATH' < "/pkg/extra/dcos-calico-libnetwork-plugin.service" > "$tmp"
+done
+

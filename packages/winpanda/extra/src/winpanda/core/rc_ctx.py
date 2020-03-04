@@ -36,8 +36,20 @@ class RCCONTEXT_ITEM:
     PKG_SHRCFG_DPATH = 'pkg_shrcfg_dpath'
 
 
+def _identity(s):
+    return s
+
+
+def _escape_json_string(s):
+    result = json.dumps(s)
+    if result.startswith('"'):
+        result = result[1:-1]
+    return result
+
+
 class ResourceContext:
     """Resource rendering context manager."""
+
     def __init__(self, istor_nodes=None, cluster_conf=None, pkg_id=None,
                  extra_values=None):
         """Constructor.
@@ -87,70 +99,59 @@ class ResourceContext:
                       self._get_extra_items)
         items = {}
 
+        if json_ready:
+            escape = _escape_json_string
+        else:
+            escape = _identity
+
         for retriever in retrievers:
-            items.update(retriever(json_ready))
+            items.update(retriever(escape))
 
         return items
 
-    def _get_istor_items(self, json_ready=False):
+    def _get_istor_items(self, escape):
         """Discover resource rendering context items from DC/OS installation
         storage configuration.
 
-        :param json_ready: bool, get JSON-compatible context items, if True
+        :param escape:     Callable, escape string function
         :return:           dict, set of resource rendering context items
         """
         if self._istor_nodes is None:
             return {}
 
         items = {
-            RCCONTEXT_ITEM.DCOS_INST_DPATH: json.dumps(str(
+            RCCONTEXT_ITEM.DCOS_INST_DPATH: escape(str(
                 getattr(self._istor_nodes, ISTOR_NODE.ROOT)
-            )).strip('"') if json_ready else str(
-                getattr(self._istor_nodes, ISTOR_NODE.ROOT)
-            ),
-            RCCONTEXT_ITEM.DCOS_CFG_DPATH: json.dumps(str(
+            )),
+            RCCONTEXT_ITEM.DCOS_CFG_DPATH: escape(str(
                 getattr(self._istor_nodes, ISTOR_NODE.CFG)
-            )).strip('"') if json_ready else str(
-                getattr(self._istor_nodes, ISTOR_NODE.CFG)
-            ),
-            RCCONTEXT_ITEM.DCOS_WORK_DPATH: json.dumps(str(
+            )),
+            RCCONTEXT_ITEM.DCOS_WORK_DPATH: escape(str(
                 getattr(self._istor_nodes, ISTOR_NODE.WORK)
-            )).strip('"') if json_ready else str(
-                getattr(self._istor_nodes, ISTOR_NODE.WORK)
-            ),
-            RCCONTEXT_ITEM.DCOS_RUN_DPATH: json.dumps(str(
+            )),
+            RCCONTEXT_ITEM.DCOS_RUN_DPATH: escape(str(
                 getattr(self._istor_nodes, ISTOR_NODE.RUN)
-            )).strip('"') if json_ready else str(
-                getattr(self._istor_nodes, ISTOR_NODE.RUN)
-            ),
-            RCCONTEXT_ITEM.DCOS_LOG_DPATH: json.dumps(str(
+            )),
+            RCCONTEXT_ITEM.DCOS_LOG_DPATH: escape(str(
                 getattr(self._istor_nodes, ISTOR_NODE.LOG)
-            )).strip('"') if json_ready else str(
-                getattr(self._istor_nodes, ISTOR_NODE.LOG)
-            ),
-            RCCONTEXT_ITEM.DCOS_TMP_DPATH: json.dumps(str(
+            )),
+            RCCONTEXT_ITEM.DCOS_TMP_DPATH: escape(str(
                 getattr(self._istor_nodes, ISTOR_NODE.TMP)
-            )).strip('"') if json_ready else str(
-                getattr(self._istor_nodes, ISTOR_NODE.TMP)
-            ),
-            RCCONTEXT_ITEM.DCOS_BIN_DPATH: json.dumps(str(
+            )),
+            RCCONTEXT_ITEM.DCOS_BIN_DPATH: escape(str(
                 getattr(self._istor_nodes, ISTOR_NODE.BIN)
-            )).strip('"') if json_ready else str(
-                getattr(self._istor_nodes, ISTOR_NODE.BIN)
-            ),
-            RCCONTEXT_ITEM.DCOS_LIB_DPATH: json.dumps(str(
+            )),
+            RCCONTEXT_ITEM.DCOS_LIB_DPATH: escape(str(
                 getattr(self._istor_nodes, ISTOR_NODE.LIB)
-            )).strip('"') if json_ready else str(
-                getattr(self._istor_nodes, ISTOR_NODE.LIB)
-            ),
+            )),
         }
 
         return items
 
-    def _get_cluster_conf_items(self, json_ready=False):
+    def _get_cluster_conf_items(self, escape):
         """Extract resource rendering context items from cluster configuration.
 
-        :param json_ready: bool, get JSON-compatible context items, if True
+        :param escape:     Callable, escape string function
         :return:           dict, set of resource rendering context items
         """
         if self._cluster_conf is None:
@@ -177,18 +178,18 @@ class ResourceContext:
         )
 
         items = {
-            RCCONTEXT_ITEM.MASTER_PRIV_IPADDR: master_priv_ipaddr,
-            RCCONTEXT_ITEM.LOCAL_PRIV_IPADDR: local_priv_ipaddr,
-            RCCONTEXT_ITEM.ZK_CLIENT_PORT: zk_client_port
+            RCCONTEXT_ITEM.MASTER_PRIV_IPADDR: escape(master_priv_ipaddr),
+            RCCONTEXT_ITEM.LOCAL_PRIV_IPADDR: escape(local_priv_ipaddr),
+            RCCONTEXT_ITEM.ZK_CLIENT_PORT: escape(zk_client_port)
         }
 
         return items
 
-    def _get_pkg_items(self, json_ready=False):
+    def _get_pkg_items(self, escape):
         """Calculate resource rendering context items specific to a particular
         DC/OS package.
 
-        :param json_ready: bool, get JSON-compatible context items, if True
+        :param escape:     Callable, escape string function
         :return:           dict, set of resource rendering context items
         """
         if self._istor_nodes is None or self._pkg_id is None:
@@ -213,42 +214,27 @@ class ResourceContext:
         )
 
         items = {
-            RCCONTEXT_ITEM.PKG_INST_DPATH: json.dumps(str(
-                pkg_inst_dpath
-            )).strip('"') if json_ready else str(pkg_inst_dpath),
-
-            RCCONTEXT_ITEM.PKG_LOG_DPATH: json.dumps(str(
-                pkg_log_dpath
-            )).strip('"') if json_ready else str(pkg_log_dpath),
-
-            RCCONTEXT_ITEM.PKG_RTD_DPATH: json.dumps(str(
-                pkg_rtd_dpath
-            )).strip('"') if json_ready else str(pkg_rtd_dpath),
-
-            RCCONTEXT_ITEM.PKG_WORK_DPATH: json.dumps(str(
-                pkg_work_dpath
-            )).strip('"') if json_ready else str(pkg_work_dpath),
-
-            RCCONTEXT_ITEM.PKG_SHRCFG_DPATH: json.dumps(str(
-                pkg_shrcfg_dpath
-            )).strip('"') if json_ready else str(pkg_shrcfg_dpath),
+            RCCONTEXT_ITEM.PKG_INST_DPATH: escape(str(pkg_inst_dpath)),
+            RCCONTEXT_ITEM.PKG_LOG_DPATH: escape(str(pkg_log_dpath)),
+            RCCONTEXT_ITEM.PKG_RTD_DPATH: escape(str(pkg_rtd_dpath)),
+            RCCONTEXT_ITEM.PKG_WORK_DPATH: escape(str(pkg_work_dpath)),
+            RCCONTEXT_ITEM.PKG_SHRCFG_DPATH: escape(str(pkg_shrcfg_dpath)),
         }
 
         return items
 
-    def _get_extra_items(self, json_ready=False):
+    def _get_extra_items(self, escape):
         """Extract resource rendering context items from provided extra
         'key=value' map.
 
-        :param json_ready: bool, get JSON-compatible context items, if True
+        :param escape:     Callable, escape string function
         :return:           dict, set of resource rendering context items
         """
         if self._extra_values is None:
             return {}
 
         items = {
-            k: json.dumps(str(v)).strip('"') if json_ready else str(v) for
-            k, v in self._extra_values.items()
+            k: escape(str(v)) for k, v in self._extra_values.items()
         }
 
         return items

@@ -21,7 +21,9 @@ PermissionsStartOnly=True
 EnvironmentFile=/opt/mesosphere/etc/check_time.env
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/metronome
+EnvironmentFile=-/opt/mesosphere/etc/metronome-extras
 EnvironmentFile=-/run/dcos/etc/metronome/service.env
+EnvironmentFile=-/run/dcos/etc/metronome/tls.env
 # The env file in /var/lib/dcos is for post-install configuration via environment variables, and persists with upgrades.
 EnvironmentFile=-/var/lib/dcos/metronome/environment
 ExecStartPre=/opt/mesosphere/bin/check-time
@@ -30,5 +32,5 @@ ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-metronome
 ExecStartPre=/bin/bash -c 'mkdir -p /run/dcos/etc/metronome'
 ExecStartPre=/bin/bash -c 'echo "METRONOME_LEADER_ELECTION_HOSTNAME=\$(\$MESOS_IP_DISCOVERY_COMMAND)" > /run/dcos/etc/metronome/service.env'
 ExecStartPre=/bin/bash -c 'echo "LIBPROCESS_IP=\$(\$MESOS_IP_DISCOVERY_COMMAND)" >> /run/dcos/etc/metronome/service.env'
-ExecStart=/opt/mesosphere/bin/metronome
+ExecStart=/opt/mesosphere/bin/metronome -Djava.security.properties=/opt/mesosphere/etc/java.security
 EOF

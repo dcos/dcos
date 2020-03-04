@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 import os
+import textwrap
 import uuid
 
 import pytest
@@ -465,3 +466,87 @@ def reserved_disk(dcos_api_session):
                 'unreserve_resources': resources}
             r = dcos_api_session.post('/mesos/api/v1', json=request)
             assert r.status_code == 202, r.text
+
+
+def test_executor_uses_domain_socket(dcos_api_session):
+    """
+    This test validates that by default executors connect with the agent over domain sockets.
+
+    The test launches a Marathon app with a health check which validates that
+    the `mesos-executor` process of the task is connected to the agent socket.
+    We do not validate that any actual data is passed over the socket
+    connection. Once the app is healthy the test has succeeded.
+    """
+    expanded_config = test_helpers.get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        pytest.skip('Cannot detect domain sockets with EE strict mode enabled')
+
+    task_id = 'domain-socket-{}'.format(uuid.uuid4())
+
+    check = textwrap.dedent('''\
+        #!/bin/bash
+
+        set -o nounset -o pipefail
+        set -ex
+
+        export PATH=/usr/sbin/:$PATH
+        MESOS_EXECUTORS_SOCK="/var/run/mesos/mesos-executors.sock"
+
+        # In the container's PID namespace the containerizer will have pid=1. Since the
+        # first process it launches is the executor, the executor has pid=2.
+        EXECUTOR_PID=2
+        grep -q '^mesos-executor' /proc/$EXECUTOR_PID/cmdline || exit 2
+
+        declare -i socket_connections
+        socket_connections=0
+
+        for peer in $(ss -xp | grep "pid=$EXECUTOR_PID" | awk '{print $8}'); do
+            # We cannot see the mesos-agent process, but can make sure
+            # the executor's socket is related to the agent socket.
+            if ss -xp | grep "$peer" | grep -q "$MESOS_EXECUTORS_SOCK"; then
+                ((socket_connections+=1))
+            fi
+        done
+
+        if [ $socket_connections -ne 2 ]; then
+            echo "expected 2 socket connections, got $socket_connections"
+            exit 1
+        fi''')
+
+    app = {
+        "id": task_id,
+        "cpus": 0.1,
+        "mem": 32,
+        "disk": 32,
+        "cmd": "sleep 10000",
+        "container": {
+            "type": "MESOS",
+            "volumes": []
+        },
+        "instances": 1,
+        "healthChecks": [{
+            "gracePeriodSeconds": 5,
+            "intervalSeconds": 60,
+            "maxConsecutiveFailures": 1,
+            "timeoutSeconds": 20,
+            "delaySeconds": 1,
+            "protocol": "COMMAND",
+            "command": {
+                "value": check
+            }
+        }],
+    }
+
+    with dcos_api_session.marathon.deploy_and_cleanup(app,
+                                                      check_health=False,
+                                                      timeout=60):
+        # Retry collecting the health check result since its availability might be delayed.
+        @retrying.retry(wait_fixed=1000, stop_max_delay=10000)
+        def assert_app_is_healthy() -> None:
+            assert dcos_api_session.marathon.check_app_instances(
+                app_id=task_id,
+                app_instances=1,
+                check_health=True,
+                ignore_failed_tasks=False)
+
+        assert_app_is_healthy()

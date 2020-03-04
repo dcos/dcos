@@ -350,7 +350,7 @@ def test_vip(dcos_api_session,
             for proxy_net in list(marathon.Network)]
 
 
-@pytest.mark.parametrize('container', [marathon.Container.MESOS, Container.POD])
+@pytest.mark.parametrize('container', list(marathon.Container) + [Container.POD])
 @pytest.mark.parametrize('vip_net', [marathon.Network.USER])
 @pytest.mark.parametrize('proxy_net', [marathon.Network.USER])
 def test_calico_vip(dcos_api_session,
@@ -470,9 +470,10 @@ def vip_workload_test(dcos_api_session, container, vip_net, proxy_net, ipv6,
     # ipv6 for now. And it's safe to assign network name in advance because
     # MarathonPod will determined whether or not this network name is used by
     # the network mode.
-    # it is used for user network mode only
+    # it is used for user network mode only and only for 'dcos' networks.
+    # NOTE: 'calico' IPV6 is not yet supported
     if ipv6:
-        network_name = 'dcos6'
+        network_name = '{}6'.format(network_name)
 
     if container == Container.POD:
         origin_app = MarathonPod(vip_net, origin_host, vip, pod_name_fmt=origin_fmt, network_name=network_name)
@@ -833,7 +834,7 @@ def test_dcos_net_cluster_identity(dcos_api_session):
     assert cluster_id == cookie, "cluster_id: {}, cookie: {}".format(cluster_id, cookie)
 
 
-@pytest.mark.parametrize('container', [marathon.Container.MESOS])
+@pytest.mark.parametrize('container', list(marathon.Container))
 def test_calico_container_ip_in_network_cidr(container, dcos_api_session):
     expanded_config = test_helpers.get_expanded_config()
     network_cidr = expanded_config["calico_network_cidr"]

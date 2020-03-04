@@ -72,7 +72,7 @@ RUN set -ex \
 # Refs:
 #   https://github.com/docker/docker/issues/12327#issuecomment-188921470
 #   https://github.com/docker/docker/issues/12327#issuecomment-187158265
-RUN python3 -m pip install --upgrade virtualenv
+RUN python3 -m pip install --upgrade 'virtualenv<20'
 RUN set -ex \
     && virtualenv --no-site-packages $VENV_DIR \
     && ${VENV_DIR}/bin/pip install --upgrade setuptools pip
@@ -143,6 +143,7 @@ COPY adminrouter-redirect-http-https.conf \
      adminrouter-tls-agent.conf \
      adminrouter-tls-master.conf \
      adminrouter-ui-security.conf \
+     adminrouter-grpc-proxy-port.conf \
         /opt/mesosphere/etc/
 
 # The `ca.crt` file is copied into two places due to the fact that

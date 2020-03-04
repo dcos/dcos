@@ -10,6 +10,7 @@ environment variables from the package.
 
 """
 import json
+import logging
 import os
 import os.path
 import re
@@ -17,7 +18,7 @@ import shutil
 import tempfile
 from collections import Iterable
 from itertools import chain
-from subprocess import CalledProcessError, check_call, check_output
+from subprocess import CalledProcessError, check_output
 from typing import Union
 
 from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
@@ -25,12 +26,14 @@ from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
                                 STATE_DIR_ROOT)
 from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
                                  ValidationError)
-from pkgpanda.util import (download, extract_tarball, if_exists, is_windows,
+from pkgpanda.util import (_check_call, download, extract_tarball, if_exists, is_windows,
                            load_json, make_directory, remove_directory, write_json, write_string)
 
 if not is_windows:
     import grp
     import pwd
+
+log = logging.getLogger(__name__)
 
 # TODO(cmaloney): Can we switch to something like a PKGBUILD from ArchLinux and
 # then just do the mutli-version stuff ourself and save a lot of re-implementation?
@@ -45,10 +48,10 @@ env_export_header = """# Pkgpanda provided environment variables
 export LD_LIBRARY_PATH={0}/lib
 export PATH="{0}/bin:$PATH"\n\n"""
 
-name_regex = "^[a-zA-Z0-9@_+][a-zA-Z0-9@._+\-]*$"
-version_regex = "^[a-zA-Z0-9@_+:.]+$"
-username_regex = "^dcos_[a-z0-9_]+$"
-linux_group_regex = "^[a-z_][a-z0-9_-]*$"  # https://github.com/shadow-maint/shadow/blob/master/libmisc/chkname.c#L52
+name_regex = r"^[a-zA-Z0-9@_+][a-zA-Z0-9@._+\-]*$"
+version_regex = r"^[a-zA-Z0-9@_+:.]+$"
+username_regex = r"^dcos_[a-z0-9_]+$"
+linux_group_regex = r"^[a-z_][a-z0-9_-]*$"  # https://github.com/shadow-maint/shadow/blob/master/libmisc/chkname.c#L52
 
 
 class Systemd:
@@ -72,8 +75,10 @@ class Systemd:
 
     def stop_all(self):
         if not self.__active:
+            log.warning("Do not stop services")
             return
         if not os.path.exists(self.__unit_directory):
+            log.warning("Do not stop services. %s does not exist", self.__unit_directory)
             return
         for name in os.listdir(self.__unit_directory):
             # Skip directories
@@ -83,11 +88,12 @@ class Systemd:
                 cmd = ["systemctl", "stop", name]
                 if not self.__block:
                     cmd.append("--no-block")
-                check_call(cmd)
+                _check_call(cmd)
             except CalledProcessError as ex:
                 # If the service doesn't exist, don't error. This happens when a
                 # bootstrap tarball has just been extracted but nothing started
                 # yet during first activation.
+                log.warning(ex)
                 if ex.returncode != 5:
                     raise
 
@@ -123,17 +129,21 @@ class Systemd:
 
     def remove_unit_files(self):
         if not os.path.exists(self.__unit_directory):
+            log.warning("Do not remove files. %s does not exist", self.__unit_directory)
             return
 
         for unit_name in self.unit_names(self.__unit_directory):
             try:
-                os.remove(os.path.join(self.__base_systemd, unit_name))
+                path = os.path.join(self.__base_systemd, unit_name)
+                log.debug("Remove %s", path)
+                os.remove(path)
             except FileNotFoundError:
-                pass
+                log.warning(unit_name + " not found")
 
     def activate_new_unit_files(self):
-        """Move new unit files to their final locations."""
+        log.info("Move new unit files to their final locations.")
         if not os.path.exists(self.__unit_directory):
+            log.warning("Do not move new unit files. %s does not exist", self.__unit_directory)
             return
 
         self.remove_unit_files()
@@ -335,8 +345,9 @@ def validate_compatible(packages, roles):
         for k, v in package.environment.items():
             if k in reserved_env_vars:
                 raise ValidationError(
-                    "{0} are reserved environment vars and cannot be specified in packages. Present in package {1}"
-                    .format(", ".join(reserved_env_vars), package))
+                    "{0} are reserved environment vars and cannot be specified in packages. "
+                    "Present in package {1}".format(
+                        ", ".join(reserved_env_vars), package))
             if k in environment:
                 raise ValidationError(
                     "Repeated environment variable {0}. In both packages {1} and {2}.".format(
@@ -514,8 +525,8 @@ def symlink_tree(src, dest):
                 # result in a package editing inside another package.
                 if not os.path.isdir(dest_path) and not os.path.islink(dest_path):
                     raise ValidationError(
-                        "Can't merge a file `{0}` and directory (or symlink) `{1}` with the same name."
-                        .format(src_path, dest_path))
+                        "Can't merge a file `{0}` and directory (or symlink) `{1}` with the same name.".format(
+                            src_path, dest_path))
             else:
                 os.makedirs(dest_path)
 
@@ -604,14 +615,14 @@ class UserManagement:
             return
         except KeyError as ex:
             # Doesn't exist, fall through
-            pass
+            log.warning("User [%s:%s] already exists", username, groupname)
 
         # If we're not allowed to manage users, error
         if not self._add_users:
             raise ValidationError("User {} doesn't exist but is required by a DC/OS Component, and "
                                   "automatic user addition is disabled".format(username))
 
-        # Add the user:
+        log.info("Add the user")
         add_user_cmd = [
             'useradd',
             '--system',
@@ -636,6 +647,7 @@ class UserManagement:
         add_user_cmd += [username]
 
         try:
+            log.debug(" ".join(add_user_cmd))
             check_output(add_user_cmd)
             self._users.add(username)
         except CalledProcessError as ex:
@@ -660,18 +672,19 @@ class Install:
     # of these should be made so they can be removed (most are just for testing)
 
     def __init__(
-            self,
-            root,
-            config_dir,
-            rooted_systemd,
-            manage_systemd,
-            block_systemd,
-            fake_path=False,
-            skip_systemd_dirs=False,
-            manage_users=False,
-            add_users=False,
-            manage_state_dir=False,
-            state_dir_root=STATE_DIR_ROOT):
+        self,
+        root,
+        config_dir,
+        rooted_systemd,
+        manage_systemd,
+        block_systemd,
+        fake_path=False,
+        skip_systemd_dirs=False,
+        manage_users=False,
+        add_users=False,
+        manage_state_dir=False,
+        state_dir_root=STATE_DIR_ROOT
+    ):
 
         assert type(rooted_systemd) == bool
         assert type(fake_path) == bool
@@ -756,6 +769,7 @@ class Install:
                 "active",
                 "active.buildinfo.full.json"
             ]))
+
     # Builds new working directories for the new active set, then swaps it into place as atomically as possible.
 
     def activate(self, packages):
@@ -772,7 +786,7 @@ class Install:
 
         old_names = [name + ".old" for name in active_names]
 
-        # Remove all pre-existing new and old directories
+        log.info("Remove all pre-existing new and old directories")
         for name in chain(new_names, old_names):
             if os.path.exists(name):
                 if os.path.isdir(name):
@@ -780,11 +794,11 @@ class Install:
                 else:
                     os.remove(name)
 
-        # Remove unit files staged for an activation that didn't occur.
+        log.info("Remove unit files staged for an activation that didn't occur.")
         if not self.__skip_systemd_dirs:
             self.systemd.remove_staged_unit_files()
 
-        # Make the directories for the new config
+        log.debug("Make the directories for the new config: " + ", ".join(new_dirs))
         for name in new_dirs:
             os.makedirs(name)
 
@@ -794,7 +808,7 @@ class Install:
 
             symlink_tree(src, dest)
 
-        # Set the new LD_LIBRARY_PATH, PATH.
+        log.info("Set the new LD_LIBRARY_PATH, PATH.")
         env_contents = env_header.format("/opt/mesosphere" if self.__fake_path else self.__root)
         env_export_contents = env_export_header.format("/opt/mesosphere" if self.__fake_path else self.__root)
 
@@ -802,7 +816,7 @@ class Install:
 
         dcos_service_configuration = self._get_dcos_configuration_template()
 
-        # Building up the set of users
+        log.info("Building up the set of users.")
         sysusers = UserManagement(self.__manage_users, self.__add_users)
 
         def _get_service_files(_dir):
@@ -851,7 +865,7 @@ class Install:
                                                                                     self.__roles,
                                                                                     ex.src))
 
-            # Add to the active folder
+            log.info("Add %s to the active folder", package.name)
             os.symlink(package.path, os.path.join(self._make_abs("active.new"), package.name))
 
             # Add to the environment and environment.export contents
@@ -889,7 +903,7 @@ class Install:
                     make_directory(state_dir_path)
                     if package.username and not is_windows:
                         uid = sysusers.get_uid(package.username)
-                        check_call(['chown', '-R', str(uid), state_dir_path])
+                        _check_call(['chown', '-R', str(uid), state_dir_path])
 
             if package.sysctl:
                 service_names = _get_service_names(package.path)
@@ -902,7 +916,7 @@ class Install:
                     if service in package.sysctl:
                         dcos_service_configuration["sysctl"][service] = package.sysctl[service]
 
-        # Prepare new systemd units for activation.
+        log.info("Prepare new systemd units for activation.")
         if not self.__skip_systemd_dirs:
             new_wants_dir = self._make_abs(self.__systemd_dir + ".new")
             if os.path.exists(new_wants_dir):
@@ -911,15 +925,15 @@ class Install:
         dcos_service_configuration_file = os.path.join(self._make_abs("etc.new"), DCOS_SERVICE_CONFIGURATION_FILE)
         write_json(dcos_service_configuration_file, dcos_service_configuration)
 
-        # Write out the new environment file.
+        log.info("Write out the new environment file.")
         new_env = self._make_abs("environment.new")
         write_string(new_env, env_contents)
 
-        # Write out the new environment.export file
+        log.info("Write out the new environment.export file")
         new_env_export = self._make_abs("environment.export.new")
         write_string(new_env_export, env_export_contents)
 
-        # Write out the buildinfo of every active package
+        log.info("Write out the buildinfo of every active package")
         new_buildinfo_meta = self._make_abs("active.buildinfo.full.json.new")
         write_json(new_buildinfo_meta, active_buildinfo_full)
 
@@ -940,6 +954,7 @@ class Install:
             raise ValueError("Unexpected state to recover from {}".format(state))
 
         return True, ""
+
     # Does an atomic(ish) upgrade swap with support for recovering if
     # only part of the swap happens before a reboot.
     # TODO(cmaloney): Implement recovery properly.
@@ -957,7 +972,7 @@ class Install:
         # Record the state (atomically) on the filesystem so that if there is a
         # hard/fast fail at any point the activate swap can continue.
         def record_state(state):
-            # Atomically write all the state to disk, swap into place.
+            log.info("Atomically write all the state to disk, swap into place.")
             with open(state_filename + ".new", "w+") as f:
                 state['extension'] = extension
                 json.dump(state, f)
@@ -969,12 +984,12 @@ class Install:
             # TODO(cmaloney): stop all systemd services in dcos.target.wants
             record_state({"stage": "archive"})
 
-            # Stop all systemd services and clean up existing unit files.
+            log.info("Stop all systemd services and clean up existing unit files.")
             if not self.__skip_systemd_dirs:
                 self.systemd.stop_all()
                 self.systemd.remove_unit_files()
 
-            # Archive the current config.
+            log.info("Archive the current config.")
             for active in active_names:
                 old_path = active + ".old"
                 if os.path.exists(active):

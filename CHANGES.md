@@ -1,11 +1,12 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
 
-## DC/OS 2.1.0 (in development)
+## DC/OS 2.1.0-beta2 (in development)
 
 
 ### What's new
 
+* Upgrade coreOS AMIs (D2IQ-64271)
 * Added a new configuration option `mesos_http_executors_domain_sockets`, which will cause the mesos-agent to use
   domain sockets when communicating with executors. While this change should not have any visible impact on users
   in itself, it does enable administrators to write firewall rules blocking unauthorized access to the agent port
@@ -17,8 +18,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
-* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/d46ae94b49b452ed3fbfdf99dfb501e09675a311/CHANGELOG)
-* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/21ccad220f04369a7accf2bafae8f1d5002646bb/CHANGELOG)
+* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/9ba066a7d3372d51c9ff111ae613eed9b565738d/CHANGELOG)
+* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/9ba066a7d3372d51c9ff111ae613eed9b565738d/CHANGELOG)
 
 * Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
 
@@ -45,6 +46,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Calico in DC/OS: introduced Calico networking into DC/OS, and provided network policy support (DCOS-58413)
 
 * Updated DC/OS UI to [master+v2.154.16](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.16).
+
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
@@ -68,9 +70,17 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
 
 * Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
+* Allow Admin Router to accept files up to 32GB, such as for uploading large packages to Package Registry. (DCOS-61233)
 
 * Marathon launched too many tasks. (DCOS-62078)
 
 * Marathon used to omit pod status report with tasks in `TASK_UNKONW` state. (MARATHON-8710)
 
 * Update Kazoo to version 2.6.1. (DCOS-63065)
+
+* With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
+  instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
+
+* Updated dcos-config.yaml to support some Mesos Flags. (DCOS-59021)
+
+* Fix Telegraf migration when no containers present. (D2IQ-64507)
