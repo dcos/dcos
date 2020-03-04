@@ -57,3 +57,4 @@ groups:
         - test_windows.py
         - test_zookeeper_backup.py
         - test_calico_networking.py
+        - test_adminrouter_grpc.py

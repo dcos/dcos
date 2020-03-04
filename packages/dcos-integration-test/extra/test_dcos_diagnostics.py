@@ -19,8 +19,9 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 # another minute to allow for check-time to settle. See: DCOS_OSS-988
 LATENCY = 120
 
+pytestmark = [pytest.mark.supportedwindows]
 
-@pytest.mark.supportedwindows
+
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_dcos_diagnostics_health(dcos_api_session):
     """
@@ -86,8 +87,8 @@ def test_dcos_diagnostics_health(dcos_api_session):
             assert response[required_field], '{} cannot be empty'.format(required_field)
 
 
-@pytest.mark.supportedwindows
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_nodes(dcos_api_session):
     """
     test a list of nodes with statuses endpoint /system/health/v1/nodes
@@ -105,7 +106,6 @@ def test_dcos_diagnostics_nodes(dcos_api_session):
         validate_node(response['nodes'])
 
 
-@pytest.mark.supportedwindows
 def test_dcos_diagnostics_nodes_node(dcos_api_session):
     """
     test a specific node enpoint /system/health/v1/nodes/<node>
@@ -120,7 +120,7 @@ def test_dcos_diagnostics_nodes_node(dcos_api_session):
             validate_node([node_response])
 
 
-@pytest.mark.supportedwindows
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_nodes_node_units(dcos_api_session):
     """
     test a list of units from a specific node, endpoint /system/health/v1/nodes/<node>/units
@@ -138,7 +138,7 @@ def test_dcos_diagnostics_nodes_node_units(dcos_api_session):
             validate_units(units_response['units'])
 
 
-@pytest.mark.supportedwindows
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session):
     """
     test a specific unit for a specific node, endpoint /system/health/v1/nodes/<node>/units/<unit>
@@ -155,8 +155,8 @@ def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session):
                     check_json(dcos_api_session.health.get('/nodes/{}/units/{}'.format(node, unit_id), node=master)))
 
 
-@pytest.mark.supportedwindows
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_units(dcos_api_session):
     """
     test a list of collected units, endpoint /system/health/v1/units
@@ -185,7 +185,6 @@ def test_dcos_diagnostics_units(dcos_api_session):
                                                 'puller, missing: {}'.format(diff))
 
 
-@pytest.mark.supportedwindows
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_systemd_units_health(dcos_api_session):
     """
@@ -217,7 +216,7 @@ def test_systemd_units_health(dcos_api_session):
         raise AssertionError('\n'.join(unhealthy_output))
 
 
-@pytest.mark.supportedwindows
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_units_unit(dcos_api_session):
     """
     test a unit response in a right format, endpoint: /system/health/v1/units/<unit>
@@ -231,6 +230,7 @@ def test_dcos_diagnostics_units_unit(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
     """
     test a list of nodes for a specific unit, endpoint /system/health/v1/units/<unit>/nodes
@@ -274,7 +274,6 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
         assert len(agent_nodes) == len(dcos_api_session.slaves), '{} != {}'.format(agent_nodes, dcos_api_session.slaves)
 
 
-@pytest.mark.supportedwindows
 def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
     """
     test a specific node for a specific unit, endpoint /system/health/v1/units/<unit>/nodes/<node>
@@ -305,7 +304,6 @@ def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
                 assert node_response['help'], 'help field cannot be empty'
 
 
-@pytest.mark.supportedwindows
 def test_dcos_diagnostics_report(dcos_api_session):
     """
     test dcos-diagnostics report endpoint /system/health/v1/report
@@ -320,6 +318,7 @@ def test_dcos_diagnostics_report(dcos_api_session):
 
 
 @pytest.mark.parametrize('use_legacy_api', [False, True])
+@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_legacy_api):
     """
     test bundle create, read, delete workflow
