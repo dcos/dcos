@@ -38,6 +38,8 @@ class PackageManifest:
         :param extra_context: dict, extra 'key=value' data to be added to the
                               resource rendering context
         """
+        self.msg_src = self.__class__.__name__
+
         assert isinstance(pkg_id, PackageId), (
             f'Argument: pkg_id:'
             f' Got {type(pkg_id).__name__} instead of PackageId'
@@ -215,20 +217,55 @@ class PackageManifest:
 
         return manifest
 
-    def save(self):
-        """Save package manifest to a file within the active packages index."""
-        fpath = getattr(self._istor_nodes, ISTOR_NODE.PKGACTIVE).joinpath(
-            f'{self._pkg_id.pkg_id}.json'
-        )
+    def save(self, dpath=None):
+        """Save package manifest to a file.
+
+        :param dpath: pathlib.Path, absolute path to the host directory where
+                      to save to
+        """
+        if dpath is not None:
+            assert isinstance(dpath, Path) and dpath.is_absolute(), (
+                f'{self.msg_src}: Argument: dpath:'
+                f' Absolute pathlib.Path is required: {dpath}'
+            )
+        else:
+            # Manifest host directory defaults to the active packages index
+            dpath = getattr(self._istor_nodes, ISTOR_NODE.PKGACTIVE)
+
+        fpath = dpath.joinpath(f'{self._pkg_id.pkg_id}.json')
 
         try:
             with fpath.open(mode='w') as fp:
                 json.dump(self.body, fp)
         except (OSError, RuntimeError) as e:
-            err_msg = f'Package manifest: Save: {type(e).__name__}: {e}'
+            err_msg = f'{self.msg_src}: Save: {type(e).__name__}: {e}'
             raise cr_exc.RCError(err_msg) from e
 
-        LOG.debug(f'Package manifest: Save: {fpath}')
+        LOG.debug(f'{self.msg_src}: Save: {fpath}')
+
+    def delete(self, dpath=None):
+        """Delete package manifest file.
+
+        :param dpath: pathlib.Path, absolute path to the host directory where
+                      to delete from
+        """
+        if dpath is not None:
+            assert isinstance(dpath, Path) and dpath.is_absolute(), (
+                f'{self.msg_src}: Argument: dpath:'
+                f' Absolute pathlib.Path is required: {dpath}'
+            )
+        else:
+            dpath = getattr(self._istor_nodes, ISTOR_NODE.PKGACTIVE)
+
+        fpath = dpath.joinpath(f'{self._pkg_id.pkg_id}.json')
+
+        try:
+            fpath.unlink()
+        except (OSError, RuntimeError) as e:
+            err_msg = f'{self.msg_src}: Delete: {type(e).__name__}: {e}'
+            raise cr_exc.RCError(err_msg) from e
+
+        LOG.debug(f'{self.msg_src}: Delete: {fpath}')
 
     def update_context(self, values=None):
         """Update context data.
