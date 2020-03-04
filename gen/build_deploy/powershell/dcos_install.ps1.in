@@ -216,7 +216,7 @@ function Download([String] $url, [String] $file) {
         (New-Object System.Net.WebClient).DownloadFile($url, $output)
     }
     catch{
-        Write-Log -Level "Error" -LogContent ("Failed to download: {0}" -f $_)
+        Write-Log -Level "Error" -LogContent ("Failed to download $url to $file: {0}" -f $_)
     }
     Write-Log -Level "Info" -LogContent "Download complete. Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)"
 }
