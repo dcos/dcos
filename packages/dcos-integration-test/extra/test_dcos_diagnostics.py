@@ -237,7 +237,7 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
         for node in response['nodes']:
             assert 'host_ip' in node, 'node response must have `host_ip` field. Got {}'.format(node)
             # Fails with Windows
-            assert node['host_ip'] in nodes_ip_map, 'nodes_ip_map must have node {}. Got {}'.format(node['host_ip'],
+            assert node['host_ip'] in nodes_ip_map, 'nodes_ip_map must have node {}.Got {}'.format(node['host_ip'],
                                                                                                    nodes_ip_map)
             nodes.append(nodes_ip_map.get(node['host_ip']))
         return nodes
