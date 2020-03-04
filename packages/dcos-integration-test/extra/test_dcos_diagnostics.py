@@ -312,7 +312,8 @@ def test_dcos_diagnostics_report(dcos_api_session):
         assert len(report_response['Nodes']) > 0
 
 
-@pytest.mark.parametrize('use_legacy_api', [False, pytest.param(True, marks=pytest.mark.xfail("config.getoption('--windows-only')"))])
+@pytest.mark.parametrize('use_legacy_api',
+                         [False, pytest.param(True, marks=pytest.mark.xfail("config.getoption('--windows-only')"))])
 def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_legacy_api):
     """
     test bundle create, read, delete workflow
