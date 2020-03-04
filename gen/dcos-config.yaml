@@ -1922,6 +1922,10 @@ package:
               },
               {
                   "Command": ["df"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/dcos-shell", "dcos-etcdctl", "diagnostic"],
+                  "Role": ["master"]
               }
           ]
         }
