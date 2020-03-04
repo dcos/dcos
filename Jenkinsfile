@@ -37,6 +37,11 @@ pipeline {
 	    sh('cp config/dcos-release.config.yaml dcos-release.config.yaml')
 	    sh('pip install tox && tox')
 	  }
+	  post {
+            always {
+              junit '**/junit-*.xml'
+            }
+	  }
 	}
 
         stage('Adminrouter') {
