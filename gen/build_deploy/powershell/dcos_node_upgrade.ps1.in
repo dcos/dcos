@@ -111,6 +111,8 @@ function Test-CalledFromPrompt {
 }
 
 function Invoke-NativeApplication {
+    # The helper function is used to run Native Windows apps in PS1 such as python.exe or cmd.exe. IMPORTANT, it cannot be used to run PS1 CmdLets!
+    # Source code: https://github.com/mnaoumov/Invoke-NativeApplication
     param
     (
         [ScriptBlock] $ScriptBlock,
@@ -218,7 +220,7 @@ function main($url, $masters) {
     for ($i=0; $i -lt $masterarray.length; $i++) {
         $masternodecontent += "[master-node-$($i+1)]`nPrivateIPAddr=$($masterarray[$i])`nZookeeperListenerPort=2181`n"
     }
-    $local_ip = Invoke-NativeApplication {. "$($basedir)\bin\detect_ip.ps1"}
+    $local_ip = try { . "$($basedir)\bin\detect_ip.ps1" } catch { throw "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss") ERROR: Failed to execute `'$($basedir)\bin\detect_ip.ps1`' . Check script validity!" 2>&1 | Tee-Object -FilePath "$($vardir)\log\dcos_node_upgrade.log" -Append; return }
     Write-Log -Level "Debug" -LogContent "Local IP: $($local_ip)"
     $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($url)`nPkgRepoPath=windows/packages`nPkgListPath=windows/package_lists/latest.package_list.json`nDcosClusterPkgInfoPath=cluster-package-info.json`n`n[local]`nPrivateIPAddr=$($local_ip)"
     CreateWriteFile "$($basedir)\etc" "cluster.conf" $content
