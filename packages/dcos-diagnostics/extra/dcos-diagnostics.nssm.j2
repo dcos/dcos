@@ -1,6 +1,6 @@
 [service]
 DisplayName = dcos-diagnostics
-Description = DC/OS Diagnostics For Windows Agent Node
+Description = DC/OS Diagnostics Windows Agent: exposes component health
 Application = {{ pkg_inst_dpath }}\bin\dcos-diagnostics.exe
 AppDirectory = {{ pkg_inst_dpath }}\bin
 AppParameters = --config {{ dcos_cfg_dpath }}\dcos-diagnostics\dcos-diagnostics-config.json --role=agent daemon
