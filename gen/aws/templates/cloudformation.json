@@ -350,6 +350,11 @@
           "FromPort" : "443",
           "ToPort" : "443",
           "CidrIp" : { "Ref" : "AdminLocation" }
+        }, {
+          "IpProtocol" : "tcp",
+          "FromPort" : "12379",
+          "ToPort" : "12379",
+          "CidrIp" : { "Ref" : "AdminLocation" }
         } ]
       }
     },
@@ -581,6 +586,7 @@
           { "IpProtocol" : "tcp", "FromPort" : "5050", "ToPort" : "5050", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
           { "IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
           { "IpProtocol" : "tcp", "FromPort" : "443", "ToPort" : "443", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
+          { "IpProtocol" : "tcp", "FromPort" : "12379", "ToPort" : "12379", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
           { "IpProtocol" : "tcp", "FromPort" : "8080", "ToPort" : "8080", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
           { "IpProtocol" : "tcp", "FromPort" : "8181", "ToPort" : "8181", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} },
           { "IpProtocol" : "tcp", "FromPort" : "2181", "ToPort" : "2181", "SourceSecurityGroupId" : { "Ref" : "LbSecurityGroup"} }
@@ -642,6 +648,12 @@
             "InstanceProtocol" : "TCP"
           },
           {
+            "LoadBalancerPort" : "12379",
+            "Protocol" : "TCP",
+            "InstancePort" : "12379",
+            "InstanceProtocol" : "TCP"
+          },
+          {
             "LoadBalancerPort" : "8080",
             "Protocol" : "HTTP",
             "InstancePort" : "8080",
@@ -673,6 +685,12 @@
             "LoadBalancerPort" : "443",
             "Protocol" : "TCP",
             "InstancePort" : "443",
+            "InstanceProtocol" : "TCP"
+          },
+          {
+            "LoadBalancerPort" : "12379",
+            "Protocol" : "TCP",
+            "InstancePort" : "12379",
             "InstanceProtocol" : "TCP"
           }],
         "HealthCheck" : {
