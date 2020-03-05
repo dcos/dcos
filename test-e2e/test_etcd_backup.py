@@ -1,12 +1,12 @@
 """
-Tests for the Etcd backup/restore via `dcos-etcdctl`.
+Tests for the etcd backup/restore via `dcos-etcdctl`.
 """
 
+import json
 import logging
-import subprocess
 import uuid
 from pathlib import Path
-from typing import List, Set
+from typing import Generator, List, Set
 
 import pytest
 from _pytest.fixtures import SubRequest
@@ -15,12 +15,13 @@ from cluster_helpers import wait_for_dcos_oss
 from dcos_e2e.backends import Docker
 from dcos_e2e.cluster import Cluster
 from dcos_e2e.node import Node, Output
-from dcos_test_utils.etcd import is_enterprise
 
 
 LOGGER = logging.getLogger(__name__)
 
-LOCAL_ETCD_ENDPOINT = "127.0.0.1:2379"
+LOCAL_ETCD_ENDPOINT_IP = "127.0.0.1"
+ETCDCTL_PATH = "/opt/mesosphere/bin/etcdctl"
+MASTER_DNS = "master.dcos.thisdcos.directory"
 
 
 @pytest.fixture
@@ -29,7 +30,7 @@ def three_master_cluster(
     docker_backend: Docker,
     request: SubRequest,
     log_dir: Path,
-) -> Cluster:
+) -> Generator[Cluster, None, None]:
     """Spin up a highly-available DC/OS cluster with three master nodes."""
     with Cluster(
         cluster_backend=docker_backend,
@@ -54,31 +55,27 @@ def _do_backup(master: Node, backup_local_path: Path) -> None:
 
     backup_name = backup_local_path.name
     # This must be an existing directory on the remote server.
-    backup_remote_path = Path('/etc/') / backup_name
+    backup_remote_path = Path("/etc/") / backup_name
+    etcdctl_with_args = get_etcdctl_with_base_args()
+    etcdctl_with_args += ["backup", str(backup_remote_path)]
     master.run(
-        args=[
-            '/opt/mesosphere/bin/dcos-shell',
-            'dcos-etcdctl',
-            get_etcd_base_args(),
-            'backup',
-            str(backup_remote_path),
-        ],
+        args=etcdctl_with_args,
         output=Output.LOG_AND_CAPTURE,
     )
 
-    master.run(args=['systemctl', 'stop', 'dcos-etcd'])
+    master.run(args=["systemctl", "stop", "dcos-etcd"])
 
     master.download_file(
         remote_path=backup_remote_path,
         local_path=backup_local_path,
     )
 
-    master.run(args=['rm', str(backup_remote_path)])
+    master.run(args=["rm", str(backup_remote_path)])
 
 
 def _do_restore(all_masters: Set[Node], backup_local_path: Path) -> None:
     backup_name = backup_local_path.name
-    backup_remote_path = Path('/etc/') / backup_name
+    backup_remote_path = Path("/etc/") / backup_name
 
     for master in all_masters:
         master.send_file(
@@ -87,42 +84,48 @@ def _do_restore(all_masters: Set[Node], backup_local_path: Path) -> None:
         )
 
     for master in all_masters:
+        etcdctl_with_args = get_etcdctl_with_base_args()
+        etcdctl_with_args += ["restore", str(backup_remote_path)]
         master.run(
-            args=[
-                '/opt/mesosphere/bin/dcos-shell',
-                'dcos-etcdctl',
-                get_etcd_base_args(),
-                'restore', str(backup_remote_path),
-            ],
+            args=etcdctl_with_args,
             output=Output.LOG_AND_CAPTURE,
         )
 
     for master in all_masters:
-        master.run(args=['systemctl', 'start', 'dcos-etcd'])
+        master.run(args=["systemctl", "start", "dcos-etcd"])
 
 
-def get_etcd_base_args(
-    self,
+def is_dcos_ee() -> bool:
+    # This is the expanded DC/OS configuration JSON document w/o sensitive
+    # values. Read it, parse it.
+    dcos_cfg_path = '/opt/mesosphere/etc/expanded.config.json'
+    with open(dcos_cfg_path, 'rb') as f:
+        dcos_config = json.loads(f.read().decode('utf-8'))
+    dcos_variant = dcos_config.get("dcos_variant")
+    return True if dcos_variant == "enterprise" else False
+
+
+def get_etcdctl_with_base_args(
     cert_type: str="root",
-    endpoint: str=LOCAL_ETCD_ENDPOINT,
+    endpoint_ip: str=LOCAL_ETCD_ENDPOINT_IP,
 )-> List[str]:
-    """Returns args including etcd endpoint and certificates if necessary"""
-    args = []
-    if is_enterprise():
-        args += ["--endpoints=https://{}".format(endpoint)]
+    """Returns args including etcd endpoint and certificates if necessary."""
+    args = [ETCDCTL_PATH]
+    if is_dcos_ee():
+        args += ["--endpoints=https://{}:2379".format(endpoint_ip)]
         args += [
             "--cert=/run/dcos/pki/tls/certs/etcd-client-{}.crt".format(cert_type),
             "--key=/run/dcos/pki/tls/private/etcd-client-{}.key".format(cert_type),
             "--cacert={}".format(cert_type),
         ]
     else:
-        args += ["--endpoints=http://{}".format(endpoint)]
+        args += ["--endpoints=http://{}".format(endpoint_ip)]
 
     return args
 
 
 class EtcdClient():
-    """Interacts etcd through CLI on master nodes."""
+    """Communicates with etcd through CLI on master nodes."""
     def __init__(self, all_masters: Set[Node]) -> None:
         self.masters = all_masters
 
@@ -134,41 +137,31 @@ class EtcdClient():
         `master.dcos.thisdcos.directory:2379` is the endpoint that etcd
         cluster is exposed, hence we use this endpoint to set a value to a key
         """
-        master = self.masters[0]
-        master.run(
-            args=[
-                '/opt/mesosphere/bin/dcos-shell',
-                'etcdctl',
-                get_etcd_base_args(endpoint="master.dcos.thisdcos.directory:2379"),
-                'put',
-                key,
-                value,
-            ],
-        )
+        master = list(self.masters)[0]
+        etcdctl_with_args = get_etcdctl_with_base_args(endpoint_ip=MASTER_DNS)
+        etcdctl_with_args += ["put", key, value]
+        master.run(args=etcdctl_with_args)
 
     def get_key_from_node(
             self,
             key: str,
             master_node: Node,
-    ) -> subprocess.CompletedProcess:
+    ) -> str:
         """gets the value of the key on given master node"""
+        etcdctl_with_args = get_etcdctl_with_base_args(
+            endpoint_ip=str(master_node.private_ip_address))
+        etcdctl_with_args += ["get", key]
         result = master_node.run(
-            args=[
-                '/opt/mesosphere/bin/dcos-shell',
-                'etcdctl',
-                get_etcd_base_args("{}:2379".format(master_node.private_ip_address)),
-                'get',
-                key,
-            ],
+            args=etcdctl_with_args,
             output=Output.LOG_AND_CAPTURE,
         )
         value = result.stdout.strip().decode()
-        return value
+        return str(value)
 
 
 @pytest.fixture()
-def etcd_client(three_master_cluster: Cluster):
-    etcd_client = EtcdClient(three_master_cluster)
+def etcd_client(three_master_cluster: Cluster) -> EtcdClient:
+    etcd_client = EtcdClient(three_master_cluster.masters)
     return etcd_client
 
 
@@ -186,18 +179,18 @@ class TestEtcdBackup:
         etcd_client.put(test_key, test_val)
 
         random = uuid.uuid4().hex
-        backup_name = 'etcd-backup-{random}.tar.gz'.format(random=random)
+        backup_name = "etcd-backup-{random}.tar.gz".format(random=random)
         backup_local_path = tmp_path / backup_name
 
-        # Take Etcd backup from one master node.
+        # Take etcd backup from one master node.
         _do_backup(next(iter(three_master_cluster.masters)), backup_local_path)
 
-        # Restore ZooKeeper from backup on all master nodes.
+        # Restore etcd from backup on all master nodes.
         _do_restore(three_master_cluster.masters, backup_local_path)
 
         # assert all etcd containers
         for master in three_master_cluster.masters:
-            assert etcd_client.get(test_key, master) == test_val
+            assert etcd_client.get_key_from_node(test_key, master) == test_val
 
         # Assert DC/OS is intact.
         wait_for_dcos_oss(
