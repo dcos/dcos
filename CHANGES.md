@@ -93,6 +93,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update OpenSSL to 1.1.1f. (D2IQ-65604, D2IQ-66526)
 
+* Adjust dcos-net (l4lb) to allow for graceful shutdown of connections by changing the VIP backend weight to `0`
+  when tasks are unhealthy or enter the `TASK_KILLING` state instead of removing them. (D2IQ-61077)
+
 #### Update Marathon to 1.10.6
 
 * Marathon updated to 1.9.136
