@@ -24,7 +24,7 @@ terraform apply
 
 to start a cluster.
 
-Once Terraform finished you can setup the CLI with `dcos cluster setup $(terraform output masters_dns_name) --insecure`.
+Once Terraform finished you can setup the CLI with `dcos cluster setup $(terraform output dcos_ui) --insecure`.
 
 Do not forget to destroy the cluster again with `terraform destroy`.
 
@@ -47,3 +47,18 @@ Windows agents defaults to zero and can be set via `TF_VAR_windowsagent_num`.
 By default instances will be destroyed by CloudCleaner to change expiration set `TF_VAR_expiration=8h` and `TF_VAR_owner=$USER`.
 
 If you want to launch the master build with Windows agents simply call `terraform apply -var-file=windows.tfvars`.
+
+### Username and Password
+
+username: demo-super
+password: deleteme
+
+### Environment Variables
+
+The following enviroment variables can be overriden to customize the clluster setup
+
+* AWS_REGION
+* TF_VAR_custom_dcos_download_path_win
+* TF_VAR_variant
+* OUTPUT_FILE
+

@@ -14,7 +14,7 @@ variable "custom_dcos_download_path_win" {
 
 variable "variant" {
   type = "string"
-  default = "ee"
+  default = "open"
 }
 
 variable "owner" {
@@ -24,7 +24,7 @@ variable "owner" {
 
 variable "expiration" {
     type = "string"
-    default = "2h"
+    default = "1h"
 }
 
 variable "windowsagent_num" {
@@ -38,8 +38,14 @@ data "http" "whatismyip" {
   url = "http://whatismyip.akamai.com/"
 }
 
+resource "random_string" "password" {
+  length = 6
+  special = true
+  override_special = "-"
+}
+
 locals {
-  cluster_name = "generic-dcos-ee-demo"
+  cluster_name = "generic-dcos-it-${random_string.password.result}"
 }
 
 module "dcos" {
@@ -56,7 +62,7 @@ module "dcos" {
   }
 
   cluster_name        = "${local.cluster_name}"
-  ssh_public_key_file = "~/.ssh/id_rsa.pub"
+  ssh_public_key_file = "./tf-dcos-rsa.pem.pub"
   admin_ips           = ["${data.http.whatismyip.body}/32"]
 
   num_masters        = "1"
@@ -68,7 +74,7 @@ module "dcos" {
 
   dcos_variant              = "${var.variant}"
   dcos_version              = "2.1.0-beta1"
-  dcos_license_key_contents = "${file("~/license.txt")}"
+  dcos_license_key_contents = "${file("./license.txt")}"
   ansible_bundled_container = "mesosphere/dcos-ansible-bundle:windows-beta-support"
 
   custom_dcos_download_path = "${var.custom_dcos_download_path}"
