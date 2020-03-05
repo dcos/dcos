@@ -86,3 +86,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Fix Telegraf migration when no containers present. (D2IQ-64507)
 
 * Update OpenSSL to 1.1.1d. (D2IQ-65604)
+* Adjust dcos-net (l4lb) to allow for graceful shutdown of connections by changing the VIP backend weight to `0`
+  when tasks are unhealthy or enter the `TASK_KILLING` state instead of removing them. (D2IQ-61077)
