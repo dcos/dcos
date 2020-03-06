@@ -18,7 +18,8 @@ def test_superuser_service_account_login(
     request: SubRequest,
     log_dir: Path,
     rsa_keypair: Tuple[str, str],
-    jwt_token: Callable[[str, str, int], str]
+    jwt_token: Callable[[str, str, int], str],
+    docker_backend_cluster_config: dict,
 ) -> None:
     """
     Tests for successful superuser service account login which asserts
@@ -39,6 +40,7 @@ def test_superuser_service_account_login(
             dcos_config={
                 **cluster.base_config,
                 **config,
+                **docker_backend_cluster_config,
             },
             output=Output.LOG_AND_CAPTURE,
             ip_detect_path=docker_backend.ip_detect_path,

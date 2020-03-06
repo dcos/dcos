@@ -31,6 +31,7 @@ def three_master_cluster(
     docker_backend: Docker,
     request: SubRequest,
     log_dir: Path,
+    docker_backend_cluster_config: dict,
 ) -> Cluster:
     """
     Spin up a highly-available DC/OS cluster with three master nodes.
@@ -41,9 +42,13 @@ def three_master_cluster(
         agents=0,
         public_agents=0,
     ) as cluster:
+        dcos_config = {
+            **cluster.base_config,
+            **docker_backend_cluster_config,
+        }
         cluster.install_dcos_from_path(
             dcos_installer=artifact_path,
-            dcos_config=cluster.base_config,
+            dcos_config=dcos_config,
             ip_detect_path=docker_backend.ip_detect_path,
             output=Output.LOG_AND_CAPTURE,
         )

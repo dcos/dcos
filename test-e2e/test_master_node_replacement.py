@@ -69,6 +69,7 @@ def test_replace_all_static(
     tmp_path: Path,
     request: SubRequest,
     log_dir: Path,
+    docker_backend_cluster_config: dict,
 ) -> None:
     """
     In a cluster with an Exhibitor backend consisting of a static ZooKeeper
@@ -127,6 +128,7 @@ def test_replace_all_static(
         dcos_config = {
             **original_cluster.base_config,
             **static_config,
+            **docker_backend_cluster_config,
         }
         original_cluster.install_dcos_from_path(
             dcos_installer=artifact_path,

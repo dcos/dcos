@@ -100,3 +100,22 @@ def jwt_token() -> Callable[[str, str, int], str]:
         ).decode('ascii')
 
     return _token
+
+
+@pytest.fixture(scope='session')
+def docker_backend_cluster_config() -> dict:
+    """
+    Return the minimal configuraion set to spin up a docker backend cluster.
+
+    DC/OS exposes mandatory configuration to the operators, these
+    configurations are required otherwise the cluster can not be spin up.
+    """
+    # To simply our e2e tests, we fill these mandatory configurations with
+    # default values, considering:
+    # calico_network_cidr: `192.168.128.0/17` will not overlap infrastructure
+    #                       network, `172.17.0.0/16`, for the docker backend
+    #                       DC/OS cluster.
+    default_mandatory_config = {
+        "calico_network_cidr": "192.168.128.0/17",
+    }
+    return default_mandatory_config
