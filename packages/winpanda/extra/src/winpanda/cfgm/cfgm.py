@@ -3,7 +3,6 @@
 DC/OS package configuration files manager definition.
 """
 from pathlib import Path
-import shutil
 import tempfile as tf
 
 import jinja2 as j2
@@ -11,6 +10,7 @@ import jinja2 as j2
 from cfgm import exceptions as cfgm_exc
 from common import logger
 from common.storage import ISTOR_NODE
+from common.utils import transfer_files
 from core import constants as cr_const
 from core import exceptions as cr_exc
 from core.package.manifest import PackageManifest
@@ -22,6 +22,7 @@ LOG = logger.get_logger(__name__)
 
 class PkgConfManager:
     """DC/OS package configuration files manager."""
+
     def __init__(self, pkg_manifest):
         """Constructor.
 
@@ -47,17 +48,15 @@ class PkgConfManager:
         LOG.debug(f'{self.msg_src}: Setup configuration: {pkg_id.pkg_name}:'
                   f' Source directory path: {pkg_cfg_dpath}')
 
-        pkg_shrcfg_dpath = getattr(
-            self._pkg_manifest.istor_nodes, ISTOR_NODE.CFG
-        ).joinpath(pkg_id.pkg_name)
+        config_dir = getattr(self._pkg_manifest.istor_nodes, ISTOR_NODE.CFG)
+        pkg_shrcfg_dpath = config_dir.joinpath(pkg_id.pkg_name)
         LOG.debug(f'{self.msg_src}: Setup configuration: {pkg_id.pkg_name}:'
                   f' Destination directory path: {pkg_shrcfg_dpath}')
 
-        inst_tmp_dpath = getattr(self._pkg_manifest.istor_nodes,
-                                 ISTOR_NODE.TMP)
         pkg_context = self._pkg_manifest.context
 
         if pkg_cfg_dpath.exists():
+            # Check source is a directory
             if pkg_cfg_dpath.is_symlink():
                 err_msg = (f'Source directory: Symlink conflict:'
                            f' {pkg_cfg_dpath}')
@@ -70,55 +69,34 @@ class PkgConfManager:
                 err_msg = (f'Source directory: Not a directory:'
                            f' {pkg_cfg_dpath}')
                 raise cfgm_exc.PkgConfInvalidError(err_msg)
-            else:
-                # Try to cleanup DC/OS shared configuration directory before
-                # trying to create a package-specific configuration directory
-                # there
-                try:
-                    if pkg_shrcfg_dpath.exists():
-                        if pkg_shrcfg_dpath.is_dir():
-                            shutil.rmtree(str(pkg_shrcfg_dpath))
-                        elif pkg_shrcfg_dpath.is_file and (
-                            not pkg_shrcfg_dpath.is_symlink()
-                        ):
-                            pkg_shrcfg_dpath.unlink()
-                        else:
-                            raise cr_exc.InstallationStorageError(
-                                f'Setup configuration: {pkg_id.pkg_name}:'
-                                f' Auto-cleanup: Removing objects other than'
-                                f' regular directories and files is not'
-                                f' supported: {pkg_shrcfg_dpath}'
-                            )
-                        LOG.debug(
-                            f'{self.msg_src}: Setup configuration:'
-                            f' {pkg_id.pkg_name}: Auto-cleanup:'
-                            f' {pkg_shrcfg_dpath}'
-                        )
-                except (OSError, RuntimeError) as e:
-                    raise cr_exc.InstallationStorageError(
-                        f'Setup configuration: {pkg_id.pkg_name}:'
-                        f' Auto-cleanup: {pkg_shrcfg_dpath}:'
-                        f' {type(e).__name__}: {e}'
-                    ) from e
 
-                try:
-                    with tf.TemporaryDirectory(dir=str(inst_tmp_dpath)) as tdp:
+            # Ensure destination exists and is a directory
+            try:
+                pkg_shrcfg_dpath.mkdir(parents=True, exist_ok=True)
+            except FileExistsError:
+                raise cr_exc.InstallationStorageError(
+                    f'Setup configuration: {pkg_id.pkg_name}:'
+                    f' {pkg_shrcfg_dpath} exists but is not a directory'
+                )
 
-                        self._process_pkgconf_srcdir(
-                            src_dpath=pkg_cfg_dpath,
-                            tmp_dpath=Path(tdp),
-                            context=pkg_context
-                        )
-                        shutil.copytree(tdp, str(pkg_shrcfg_dpath))
-                        LOG.debug(
-                            f'{self.msg_src}: Setup configuration:'
-                            f' {pkg_id.pkg_name}: Save: {pkg_shrcfg_dpath}: OK'
-                        )
-                except (OSError, RuntimeError) as e:
-                    err_msg = (f'Setup configuration: {pkg_id.pkg_name}:'
-                               f' Process configuration sources:'
-                               f' {pkg_cfg_dpath}: {type(e).__name__}: {e}')
-                    raise cfgm_exc.PkgConfManagerError(err_msg)
+            try:
+                with tf.TemporaryDirectory(dir=str(config_dir)) as tdp:
+
+                    self._process_pkgconf_srcdir(
+                        src_dpath=pkg_cfg_dpath,
+                        tmp_dpath=Path(tdp),
+                        context=pkg_context
+                    )
+                    transfer_files(tdp, str(pkg_shrcfg_dpath))
+                    LOG.debug(
+                        f'{self.msg_src}: Setup configuration:'
+                        f' {pkg_id.pkg_name}: Save: {pkg_shrcfg_dpath}: OK'
+                    )
+            except (OSError, RuntimeError) as e:
+                err_msg = (f'Setup configuration: {pkg_id.pkg_name}:'
+                           f' Process configuration sources:'
+                           f' {pkg_cfg_dpath}: {type(e).__name__}: {e}')
+                raise cfgm_exc.PkgConfManagerError(err_msg)
         else:
             err_msg = f'Source directory: Not found: {pkg_cfg_dpath}'
             raise cfgm_exc.PkgConfNotFoundError(err_msg)
