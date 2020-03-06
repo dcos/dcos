@@ -61,7 +61,8 @@ aws_base_source = Source(entry={
         'cloud_config': '{{ cloud_config }}',
         'rexray_config_preset': 'aws',
         'fault_domain_detect_contents': yaml.dump(
-            pkg_resources.resource_string('gen', 'fault-domain-detect/cloud.sh').decode())
+            pkg_resources.resource_string('gen', 'fault-domain-detect/cloud.sh').decode()),
+        'calico_network_cidr': '192.168.0.0/16'
     },
     'conditional': {
         'oauth_available': {
