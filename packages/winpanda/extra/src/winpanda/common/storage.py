@@ -209,7 +209,7 @@ class InstallationStorage:
                     LOG.error(f'{self.__class__.__name__}: Construction:'
                               f' Rollback: {path}: {type(e).__name__}: {e}')
 
-        for path in self.istor_nodes[1:]:
+        for path in self.istor_nodes:
             if path.exists():
                 if path.is_symlink():
                     rollback()

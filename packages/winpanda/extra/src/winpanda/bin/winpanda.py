@@ -35,9 +35,8 @@ class DCOSInstallationManager:
         """Retrieve set of CLI arguments."""
         cli_argspec = CLI_ARGSPEC.format(
             cmd_setup=CLI_COMMAND.SETUP,
-            cmd_teardown=CLI_COMMAND.TEARDOWN,
+            cmd_upgrade=CLI_COMMAND.UPGRADE,
             cmd_start=CLI_COMMAND.START,
-            cmd_stop=CLI_COMMAND.STOP,
             valid_cmd_targets=', '.join(VALID_CLI_CMDTARGETS),
             default_cmd_target=CLI_CMDTARGET.PKGALL,
             default_root_dpath=storage.DCOS_INST_ROOT_DPATH_DFT,
@@ -69,12 +68,10 @@ class DCOSInstallationManager:
 
         if self.cli_args[CLI_COMMAND.SETUP] is True:
             command_name = CLI_COMMAND.SETUP
-        elif self.cli_args[CLI_COMMAND.TEARDOWN] is True:
-            command_name = CLI_COMMAND.TEARDOWN
+        elif self.cli_args[CLI_COMMAND.UPGRADE] is True:
+            command_name = CLI_COMMAND.UPGRADE
         elif self.cli_args[CLI_COMMAND.START] is True:
             command_name = CLI_COMMAND.START
-        elif self.cli_args[CLI_COMMAND.STOP] is True:
-            command_name = CLI_COMMAND.STOP
 
         cmd_opts = {
             CLI_CMDOPT.CMD_NAME: command_name,
@@ -107,7 +104,6 @@ class DCOSInstallationManager:
 def main():
     """"""
     log_level = LOG_LEVEL.DEBUG
-    # log_fpath = Path('.', cm_const.APP_LOG_FNAME)
     log_fpath = Path('C:\\d2iq\\dcos\\var\\log\\winpanda',
                      cm_const.APP_LOG_FNAME)
     try:
