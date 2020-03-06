@@ -69,7 +69,7 @@ module "dcos" {
   dcos_variant              = "${var.variant}"
   dcos_version              = "2.1.0-beta1"
   dcos_license_key_contents = "${file("~/license.txt")}"
-  ansible_bundled_container = "alwh2004/dcos-ansible-bundle-win:windows-beta-support-update-win"
+  ansible_bundled_container = "mesosphere/dcos-ansible-bundle:windows-beta-support"
 
   custom_dcos_download_path = "${var.custom_dcos_download_path}"
 
