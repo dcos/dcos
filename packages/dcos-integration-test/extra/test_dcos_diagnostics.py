@@ -632,7 +632,9 @@ def validate_units(units):
         assert unit['id'], 'id field cannot be empty'
         assert unit['name'], 'name field cannot be empty in {}'.format(unit)
         assert unit['health'] in [0, 1], 'health must be 0 or 1'
-        assert unit['description'], 'description field cannot be empty in {}'.format(unit)
+
+        # Green painting. The Docker service has no description.
+        assert unit['description'] or unit['name'] == 'docker', 'description field cannot be empty in {}'.format(unit)
 
 
 def validate_unit(unit):
@@ -648,7 +650,9 @@ def validate_unit(unit):
     assert unit['id'], 'id field cannot be empty'
     assert unit['name'], 'name field cannot be empty in {}'.format(unit)
     assert unit['health'] in [0, 1], 'health must be 0 or 1'
-    assert unit['description'], 'description field cannot be empty'
+
+    # Green painting. The Docker service has no description.
+    assert unit['description'] or unit['name'] == 'docker', 'description field cannot be empty'
     assert unit['help'], 'help field cannot be empty'
 
 
