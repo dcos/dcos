@@ -44,6 +44,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Calico in DC/OS: introduced Calico networking into DC/OS, and provided network policy support (DCOS-58413)
 
+* The config option `calico_network_cidr` can be set to a valid IPv4 CIDR range for Calico networks to use (default 172.29.0.0/16) (DCOS-60734)
+
 * Updated DC/OS UI to [master+v2.154.16](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.16).
 
 ### Breaking changes
