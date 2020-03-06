@@ -42,6 +42,7 @@ resolvers:
 process_timeout: 10000
 bootstrap_url: file:///opt/dcos_install_tmp
 master_list: ['10.0.0.1', '10.0.0.2', '10.0.0.5']
+calico_network_cidr: 192.168.0.0/16
 """
     monkeypatch.setenv('BOOTSTRAP_VARIANT', '')
     create_config(upgrade_config, tmpdir)
@@ -100,7 +101,8 @@ def test_get_config(tmpdir):
         'exhibitor_storage_backend': 'static',
         'resolvers': ['8.8.8.8', '8.8.4.4'],
         'process_timeout': 10000,
-        'bootstrap_url': 'file:///opt/dcos_install_tmp'
+        'bootstrap_url': 'file:///opt/dcos_install_tmp',
+        'calico_network_cidr': '192.168.0.0/16'
     }
 
     make_default_config_if_needed(temp_config_path)
@@ -153,6 +155,7 @@ exhibitor_storage_backend: static
 master_list:
  - 127.0.0.1
 bootstrap_url: http://example.com
+calico_network_cidr: 192.168.0.0/16
 """
 
 
@@ -262,6 +265,7 @@ def test_do_configure_logs_validation_errors(tmpdir, monkeypatch, caplog):
     master_list:
     - 127.0.0.1
     bootstrap_url: http://example.com
+    calico_network_cidr: 192.168.0.0/16
     """)
     create_config(invalid_config, tmpdir)
     create_fake_build_artifacts(tmpdir)

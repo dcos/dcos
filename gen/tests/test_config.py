@@ -5,10 +5,10 @@ import pkg_resources
 import pytest
 import yaml
 
-import gen
 import pkgpanda.util
 from gen.exceptions import ExhibitorTLSBootstrapError
-from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_error_multikey, validate_success
+from gen.tests.utils import generate_wrapper, make_arguments, true_false_msg, \
+    validate_error, validate_error_multikey, validate_success
 
 
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
@@ -257,7 +257,7 @@ def test_exhibitor_tls_required():
 
 def test_exhibitor_tls_initialize_fail():
     with pytest.raises(ExhibitorTLSBootstrapError) as exc:
-        gen.generate(arguments=make_arguments({
+        generate_wrapper(arguments=make_arguments({
             'platform': 'onprem',
             'exhibitor_tls_enabled': 'false',
             'exhibitor_tls_required': 'true',
@@ -270,7 +270,7 @@ def test_exhibitor_tls_initialize_fail():
     ]
 
     with pytest.raises(ExhibitorTLSBootstrapError) as exc:
-        gen.generate(arguments=make_arguments({
+        generate_wrapper(arguments=make_arguments({
             'platform': 'onprem',
             'exhibitor_tls_enabled': 'true',
             'exhibitor_tls_required': 'true',
@@ -281,7 +281,7 @@ def test_exhibitor_tls_initialize_fail():
     ]
 
     with pytest.raises(ExhibitorTLSBootstrapError) as exc:
-        gen.generate(arguments=make_arguments({
+        generate_wrapper(arguments=make_arguments({
             'platform': 'onprem',
             'exhibitor_tls_enabled': 'true',
             'exhibitor_tls_required': 'true',
@@ -297,7 +297,7 @@ def test_exhibitor_tls_initialize_fail():
 
 
 def test_exhibitor_tls_initialize_prints_errors(capsys):
-    gen.generate(arguments=make_arguments({
+    generate_wrapper(arguments=make_arguments({
         'platform': 'onprem',
         'exhibitor_tls_enabled': 'true',
     }))
@@ -905,7 +905,7 @@ def test_fault_domain_disabled():
         'fault_domain_detect_filename': pkg_resources.resource_filename('gen', 'fault-domain-detect/aws.sh')
     })
 
-    generated = gen.generate(arguments=arguments)
+    generated = generate_wrapper(arguments=arguments)
 
     assert generated.arguments['fault_domain_enabled'] == 'false'
     assert 'fault_domain_detect_contents' not in generated.arguments
@@ -916,7 +916,7 @@ def test_fault_domain_disabled():
 def test_exhibitor_admin_password_obscured():
     var_name = 'exhibitor_admin_password'
     var_value = 'secret'
-    generated = gen.generate(make_arguments(new_arguments={var_name: var_value}))
+    generated = generate_wrapper(make_arguments(new_arguments={var_name: var_value}))
 
     assert var_name not in json.loads(generated.arguments['expanded_config'])
     assert json.loads(generated.arguments['expanded_config_full'])[var_name] == var_value
@@ -935,17 +935,17 @@ def test_edited_ip_detect_script_yields_new_packages():
 
         f.write('initial script contents\n'.encode('utf-8'))
         f.flush()
-        initial_cluster_packages = gen.generate(arguments).cluster_packages
+        initial_cluster_packages = generate_wrapper(arguments).cluster_packages
 
         # Running genconf with the same config yields the same set of packages.
-        initial_cluster_packages_rerun = gen.generate(arguments).cluster_packages
+        initial_cluster_packages_rerun = generate_wrapper(arguments).cluster_packages
         assert initial_cluster_packages == initial_cluster_packages_rerun
 
         f.seek(0)
         f.truncate()
         f.write('edited script contents\n'.encode('utf-8'))
         f.flush()
-        edited_cluster_packages = gen.generate(arguments).cluster_packages
+        edited_cluster_packages = generate_wrapper(arguments).cluster_packages
 
         # Running genconf with an edited IP detect script yields a new set of packages.
         assert initial_cluster_packages != edited_cluster_packages

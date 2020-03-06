@@ -22,6 +22,7 @@ resolvers:
 - 8.8.4.4
 process_timeout: 10000
 bootstrap_url: file:///opt/dcos_install_tmp
+calico_network_cidr: 192.168.0.0/16
 """
 
 
