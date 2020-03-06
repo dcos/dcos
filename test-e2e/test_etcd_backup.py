@@ -111,15 +111,7 @@ def get_etcdctl_with_base_args(
 )-> List[str]:
     """Returns args including etcd endpoint and certificates if necessary."""
     args = [ETCDCTL_PATH]
-    if is_dcos_ee():
-        args += ["--endpoints=https://{}:2379".format(endpoint_ip)]
-        args += [
-            "--cert=/run/dcos/pki/tls/certs/etcd-client-{}.crt".format(cert_type),
-            "--key=/run/dcos/pki/tls/private/etcd-client-{}.key".format(cert_type),
-            "--cacert={}".format(cert_type),
-        ]
-    else:
-        args += ["--endpoints=http://{}".format(endpoint_ip)]
+    args += ["--endpoints=http://{}:2379".format(endpoint_ip)]
 
     return args
 
