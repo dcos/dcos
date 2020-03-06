@@ -37,8 +37,13 @@ def assert_system_unit_state(node: Node, unit_name: str, active: bool=True) -> N
 
 
 @pytest.fixture(scope="module")
-def calico_ipip_cluster(docker_backend: Docker, artifact_path: Path,
-                        request: SubRequest, log_dir: Path) -> Iterator[Cluster]:
+def calico_ipip_cluster(
+    docker_backend: Docker,
+    artifact_path: Path,
+    request: SubRequest,
+    log_dir: Path,
+    docker_backend_cluster_config: dict,
+) -> Iterator[Cluster]:
     with Cluster(
             cluster_backend=docker_backend,
             masters=1,
@@ -52,8 +57,9 @@ def calico_ipip_cluster(docker_backend: Docker, artifact_path: Path,
             # We choose `sha512_crypt` arbitrarily.
             "superuser_password_hash": sha512_crypt.hash(superuser_password),
             "calico_vxlan_enabled": "false",
-            "calico_network_cidr": "192.168.128.0/17",
+            **docker_backend_cluster_config,
         }
+        config.update({"calico_network_cidr": "192.168.128.0/17"})
         cluster.install_dcos_from_path(
             dcos_installer=artifact_path,
             dcos_config={

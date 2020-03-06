@@ -22,7 +22,8 @@ def test_adminrouter_grpc_proxy_port(docker_backend: Docker,
                                      request: SubRequest,
                                      log_dir: Path,
                                      rsa_keypair: Tuple[str, str],
-                                     jwt_token: Callable[[str, str, int], str]
+                                     jwt_token: Callable[[str, str, int], str],
+                                     docker_backend_cluster_config: dict,
                                      ) -> None:
     random_port = random.randint(63000, 64000)
 
@@ -38,6 +39,7 @@ def test_adminrouter_grpc_proxy_port(docker_backend: Docker,
             'superuser_service_account_uid': uid,
             'superuser_service_account_public_key': rsa_keypair[1],
             'adminrouter_grpc_proxy_port': '{}'.format(random_port),
+            **docker_backend_cluster_config,
         }
 
         cluster.install_dcos_from_path(
