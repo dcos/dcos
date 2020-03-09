@@ -183,13 +183,13 @@ class TestEtcdBackup:
         # Restore etcd from backup on all master nodes.
         _do_restore(three_master_cluster.masters, backup_local_path)
 
-        # assert all etcd containers
-        for master in three_master_cluster.masters:
-            assert etcd_client.get_key_from_node(test_key, master) == test_val
-
         # Assert DC/OS is intact.
         wait_for_dcos_oss(
             cluster=three_master_cluster,
             request=request,
             log_dir=log_dir,
         )
+
+        # assert all etcd containers
+        for master in three_master_cluster.masters:
+            assert etcd_client.get_key_from_node(test_key, master) == test_val
