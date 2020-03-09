@@ -205,6 +205,13 @@ package:
       [[inputs.docker]]
          endpoint = "ENV"
 
+      # Read metrics from DC/OS Diagnostics Prometheus endpoint.
+      [[inputs.prometheus]]
+        urls = ["http://$DCOS_NODE_PRIVATE_IP:1050/metrics"]
+        insecure_skip_verify = true
+        [inputs.prometheus.tags]
+        dcos-component-name = "DC/OS Diagnostics"
+
       [[inputs.mesos]]
 
         timeout = 100
@@ -217,6 +224,8 @@ package:
            "tasks",
            "messages",
       ]
+      ## The user agent to send with requests
+      user_agent = "Telegraf-mesos"
 
       [[outputs.prometheus_client]]
         ## Address to listen on
