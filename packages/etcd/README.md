@@ -2,11 +2,13 @@
 
 This section describes the process of backing up and restoring the state of etcd running inside a DC/OS cluster.
 
-The etcd cluster is possible to recover from temporary failures and tolerates up to (N-1)/2 permanent failures for a cluster with N members. Howerever, the following scenarios, the operator is recommended to backup and restore etcd data:
+The etcd cluster is possible to recover from temporary failures and tolerates up to (N-1)/2 permanent failures for a cluster with N members. However, the following scenarios, the operator is recommended to backup and restore etcd data:
 - to recover from a disastrous failure to return a cluster to a healthy state
 - to perform maintenance operations, such as an upgrade or downgrade
 
 As only etcd v3 keys require to be stored persistently in DC/OS, only v3 keys are backed up through snapshot and restored in the following process.
+
+NOTE: As etcd relies on ZooKeeper in DC/OS, the operator MUST maintain etcd while ZooKeepr functions normally.
 
 ## Backing up an etcd cluster
 

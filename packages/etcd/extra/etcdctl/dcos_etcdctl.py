@@ -16,6 +16,8 @@ import requests
 
 
 ETCD_DATA_DIR = "/var/lib/dcos/etcd/default.etcd"
+CLUSTER_NODES_PATH = "/run/dcos/etcd/initial-nodes"
+CLUSTER_STATE_PATH = "/run/dcos/etcd/initial-state"
 
 
 def run_command(cmd: str,
@@ -93,7 +95,7 @@ class EtcdExecutorCommon():
         endpoint_ip = self.private_ip
         if user_master_endpoint:
             endpoint_ip = self.master_ip
-        endpoint = "{}://{}:2379".format(self.scheme, endpoint_ip)
+        endpoint = "{}://{}:2379".format(scheme, endpoint_ip)
         return endpoint
 
 
@@ -151,6 +153,7 @@ class EtcdExecutorInsecure(EtcdExecutorCommon):
 class EtcdCmdBase():
 
     def __init__(self) -> None:
+        self.supported_cmd = []
         self.executor = EtcdExecutorInsecure()
         if self.is_dcos_ee():
             self.executor = EtcdExecutorSecure()
@@ -249,6 +252,13 @@ class EtcdBackupAndRestore(EtcdCmdBase):
         except FileNotFoundError:
             pass
 
+        def _set_etcd_file_owner(file_path):
+            p = Path(file_path)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            chown_cmd = "/usr/bin/chown -R dcos_etcd:dcos_etcd {}".format(
+                file_path)
+            run_command(chown_cmd)
+
         # Restoring will overwrite some snapshot metadata, like member ID and
         # cluster ID, to form a new cluster from the snapshot.
         # Here we initialize a standalone cluster, and new members will be
@@ -263,12 +273,10 @@ class EtcdBackupAndRestore(EtcdCmdBase):
                 private_ip = detect_ip()
                 master_ips = _get_master_ips()
                 initial_cluster_items = [
-                    "etcd-{}={}://{}:2380".format(
-                        master_ip, self.scheme, master_ip)
+                    "etcd-{}=https://{}:2380".format(master_ip, master_ip)
                     for master_ip in master_ips]
                 initial_cluster = ",".join(initial_cluster_items)
-                advertise_peer_urls = "{}://{}:2380".format(
-                    self.scheme, private_ip)
+                advertise_peer_urls = "https://{}:2380".format(private_ip)
                 restore_cmd = (
                     "snapshot restore {} "
                     "--name etcd-{} "
@@ -284,9 +292,18 @@ class EtcdBackupAndRestore(EtcdCmdBase):
                     ))
                 self.execute_etcdctl(restore_cmd)
 
-                chown_cmd = "/usr/bin/chown -R dcos_etcd:dcos_etcd {}".format(
-                    ETCD_DATA_DIR)
-                run_command(chown_cmd)
+                _set_etcd_file_owner(ETCD_DATA_DIR)
+
+                # initial state and cluster are required by etcd_discovery.py,
+                # which expect an restored etcd behave the same as an normally
+                # restarted one.
+                Path(CLUSTER_NODES_PATH)
+                with open(CLUSTER_NODES_PATH, "w") as f:
+                    f.write(initial_cluster)
+                _set_etcd_file_owner(CLUSTER_NODES_PATH)
+                with open(CLUSTER_STATE_PATH, "w") as f:
+                    f.write("new")
+                _set_etcd_file_owner(CLUSTER_NODES_PATH)
 
         print('Local etcd instance restored successfully')
 
@@ -306,7 +323,7 @@ class EtcdDiagnostic(EtcdCmdBase):
         self.check_cmd_list = self.check_commands()
 
     @classmethod
-    def check_commands(cls) -> None:
+    def check_commands(cls) -> list:
         # check the status of the current etcd instance
         endpoint_check_cmd = "endpoint health"
         # local endpoint is used for returning the etcd members, this is useful
