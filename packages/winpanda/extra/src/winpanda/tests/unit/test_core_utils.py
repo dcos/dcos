@@ -17,20 +17,6 @@ def mock_load_template(func):
                 return func(*args, **kwargs)
     return wrapper
 
-
-def test_rc_load_string_should_fail():
-    """Check error validation when path not found."""
-    with pytest.raises(AssertionError):
-        utils.rc_load_json('')
-
-
-@mock.patch('core.utils.Path.is_absolute', return_value=True)
-def test_rc_load_empty_content_should_fail(*args):
-    """Check error validation when path is absolute but context has been provided."""
-    with pytest.raises(AssertionError):
-        utils.rc_load_json(Path(), context='')
-
-
 @mock.patch('core.utils.Path.is_absolute', return_value=True)
 @mock.patch('core.utils.jj2.Environment.get_template', side_effect=FileNotFoundError)
 def test_rc_load_unavailable_template_should_fail(*args):

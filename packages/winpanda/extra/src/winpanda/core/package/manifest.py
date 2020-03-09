@@ -19,9 +19,10 @@ LOG = logger.get_logger(__name__)
 
 class PackageManifest:
     """Package manifest container."""
-    def __init__(self, pkg_id, istor_nodes, cluster_conf,
-                 pkg_info=None, pkg_extcfg=None, pkg_svccfg=None,
-                 extra_context=None):
+    def __init__(self, pkg_id: PackageId, istor_nodes: IStorNodes,
+                 cluster_conf: dict, pkg_info: dict=None,
+                 pkg_extcfg: dict=None, pkg_svccfg: dict=None,
+                 extra_context: dict=None):
         """Constructor.
 
         :param pkg_id:        PackageId, package ID
@@ -39,20 +40,6 @@ class PackageManifest:
                               resource rendering context
         """
         self.msg_src = self.__class__.__name__
-
-        assert isinstance(pkg_id, PackageId), (
-            f'Argument: pkg_id:'
-            f' Got {type(pkg_id).__name__} instead of PackageId'
-        )
-        assert isinstance(istor_nodes, IStorNodes), (
-            f'Argument: istor_nodes:'
-            f' Got {type(istor_nodes).__name__} instead of IStorNodes'
-        )
-        assert isinstance(cluster_conf, dict), (
-            f'Argument: cluster_conf:'
-            f'Got {type(cluster_conf).__name__} instead of dict'
-        )
-
         self._pkg_id = pkg_id
         self._istor_nodes = istor_nodes
         self._context = ResourceContext(
@@ -183,10 +170,10 @@ class PackageManifest:
         return json.dumps(self.body, indent=4, sort_keys=True)
 
     @ classmethod
-    def load(cls, fpath):
+    def load(cls, fpath: Path):
         """Load package manifest from a file.
 
-        :param fpath: pathlib.Path, path to a JSON-formatted manifest file.
+        :param fpath: Path, path to a JSON-formatted manifest file.
         :return:      dict, package manifest.
         """
         m_body = cr_utl.rc_load_json(fpath, emheading='Package manifest')
@@ -217,18 +204,13 @@ class PackageManifest:
 
         return manifest
 
-    def save(self, dpath=None):
+    def save(self, dpath: Path=None):
         """Save package manifest to a file.
 
-        :param dpath: pathlib.Path, absolute path to the host directory where
+        :param dpath: Path, absolute path to the host directory where
                       to save to
         """
-        if dpath is not None:
-            assert isinstance(dpath, Path) and dpath.is_absolute(), (
-                f'{self.msg_src}: Argument: dpath:'
-                f' Absolute pathlib.Path is required: {dpath}'
-            )
-        else:
+        if dpath is None:
             # Manifest host directory defaults to the active packages index
             dpath = getattr(self._istor_nodes, ISTOR_NODE.PKGACTIVE)
 
@@ -243,18 +225,13 @@ class PackageManifest:
 
         LOG.debug(f'{self.msg_src}: Save: {fpath}')
 
-    def delete(self, dpath=None):
+    def delete(self, dpath: Path=None):
         """Delete package manifest file.
 
-        :param dpath: pathlib.Path, absolute path to the host directory where
+        :param dpath: Path, absolute path to the host directory where
                       to delete from
         """
-        if dpath is not None:
-            assert isinstance(dpath, Path) and dpath.is_absolute(), (
-                f'{self.msg_src}: Argument: dpath:'
-                f' Absolute pathlib.Path is required: {dpath}'
-            )
-        else:
+        if dpath is None:
             dpath = getattr(self._istor_nodes, ISTOR_NODE.PKGACTIVE)
 
         fpath = dpath.joinpath(f'{self._pkg_id.pkg_id}.json')
@@ -267,7 +244,7 @@ class PackageManifest:
 
         LOG.debug(f'{self.msg_src}: Delete: {fpath}')
 
-    def update_context(self, values=None):
+    def update_context(self, values: dict=None):
         """Update context data.
 
         :param values: dict, 'key=value' data to be added to / updated in the

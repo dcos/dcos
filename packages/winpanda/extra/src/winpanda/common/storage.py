@@ -41,7 +41,8 @@ import tempfile as tf
 from common import logger
 from common import utils as cm_utl
 from core import exceptions as cr_exc
-
+from core.package.id import PackageId
+from typing import Callable, Set, List
 
 LOG = logger.get_logger(__name__)
 
@@ -101,7 +102,7 @@ class ISTOR_NODE:
     LIB = 'inst_lib'
 
 
-IStorNodes = namedtuple('IStorNodes', [
+IStorNodes = namedtuple('IStorNodes', [  # type: ignore
     ISTOR_NODE.ROOT, ISTOR_NODE.CFG, ISTOR_NODE.PKGREPO,
     ISTOR_NODE.STATE, ISTOR_NODE.PKGACTIVE, ISTOR_NODE.VAR, ISTOR_NODE.WORK,
     ISTOR_NODE.RUN, ISTOR_NODE.LOG, ISTOR_NODE.TMP, ISTOR_NODE.BIN,
@@ -112,18 +113,18 @@ IStorNodes = namedtuple('IStorNodes', [
 class InstallationStorage:
     """DC/OS installation storage manager."""
     def __init__(self,
-                 root_dpath=DCOS_INST_ROOT_DPATH_DFT,
-                 cfg_dpath=DCOS_INST_CFG_DPATH_DFT,
-                 pkgrepo_dpath=DCOS_INST_PKGREPO_DPATH_DFT,
-                 state_dpath=DCOS_INST_STATE_DPATH_DFT,
-                 pkgactive_dpath=DCOS_PKGACTIVE_DPATH_DFT,
-                 var_dpath=DCOS_INST_VAR_DPATH_DFT,
-                 work_dpath=DCOS_INST_WORK_DPATH_DFT,
-                 run_dpath=DCOS_INST_RUN_DPATH_DFT,
-                 log_dpath=DCOS_INST_LOG_DPATH_DFT,
-                 tmp_dpath=DCOS_INST_TMP_DPATH_DFT,
-                 bin_dpath=DCOS_INST_BIN_DPATH_DFT,
-                 lib_dpath=DCOS_INST_LIB_DPATH_DFT):
+                 root_dpath: str=DCOS_INST_ROOT_DPATH_DFT,
+                 cfg_dpath: str=DCOS_INST_CFG_DPATH_DFT,
+                 pkgrepo_dpath: str=DCOS_INST_PKGREPO_DPATH_DFT,
+                 state_dpath: str=DCOS_INST_STATE_DPATH_DFT,
+                 pkgactive_dpath: str=DCOS_PKGACTIVE_DPATH_DFT,
+                 var_dpath: str=DCOS_INST_VAR_DPATH_DFT,
+                 work_dpath: str=DCOS_INST_WORK_DPATH_DFT,
+                 run_dpath: str=DCOS_INST_RUN_DPATH_DFT,
+                 log_dpath: str=DCOS_INST_LOG_DPATH_DFT,
+                 tmp_dpath: str=DCOS_INST_TMP_DPATH_DFT,
+                 bin_dpath: str=DCOS_INST_BIN_DPATH_DFT,
+                 lib_dpath: str=DCOS_INST_LIB_DPATH_DFT):
         """Constructor.
 
         :param root_dpath:      str, DC/OS installation root dir path
@@ -160,7 +161,8 @@ class InstallationStorage:
         self.bin_dpath = self.root_dpath.joinpath(bin_dpath)
         self.lib_dpath = self.root_dpath.joinpath(lib_dpath)
 
-        self.istor_nodes = IStorNodes(**{
+        # TODO Fix Too many arguments for "IStorNodes"
+        self.istor_nodes = IStorNodes(**{  # type: ignore
             ISTOR_NODE.ROOT: self.root_dpath,
             ISTOR_NODE.CFG: self.cfg_dpath,
             ISTOR_NODE.PKGREPO: self.pkgrepo_dpath,
@@ -175,7 +177,7 @@ class InstallationStorage:
             ISTOR_NODE.LIB: self.lib_dpath,
         })
 
-    def _inst_stor_is_clean_ready(self, clean=False):
+    def _inst_stor_is_clean_ready(self, clean: bool = False) -> bool:
         """Check if the DC/OS installation storage may be safely (re-)created
         from the scratch, cleaning up any leftovers from the previous
         installation storage instances.
@@ -186,7 +188,7 @@ class InstallationStorage:
         # TODO: Implement logic for discovering cleanup readiness.
         return clean
 
-    def construct(self, clean=False):
+    def construct(self, clean: bool = False) -> None:
         """Construct DC/OS installation storage.
 
         :param clean: boolean, create a clean FS folder structure, wiping
@@ -197,19 +199,19 @@ class InstallationStorage:
         clean_ready = self._inst_stor_is_clean_ready(clean=clean)
         LOG.debug(f'{self.__class__.__name__}:'
                   f' Construction: Clean ready: {clean_ready}')
-        rollback_path_list = []
+        rollback_path_list = []  # type: List
 
-        def rollback():
+        def rollback() -> None:
             """"""
-            for path in rollback_path_list:
+            for path in rollback_path_list:  # type: Path
                 # Remove an existing DC/OS installation storage element
                 try:
-                    cm_utl.rmdir(path=path, recursive=True)
+                    cm_utl.rmdir(path=str(path), recursive=True)
                 except (OSError, RuntimeError) as e:
                     LOG.error(f'{self.__class__.__name__}: Construction:'
                               f' Rollback: {path}: {type(e).__name__}: {e}')
 
-        for path in self.istor_nodes:
+        for path in self.istor_nodes:  # type: Path
             if path.exists():
                 if path.is_symlink():
                     rollback()
@@ -248,7 +250,7 @@ class InstallationStorage:
                     if clean_ready is True:
                         # Remove an existing DC/OS installation storage element
                         try:
-                            cm_utl.rmdir(path=path, recursive=True)
+                            cm_utl.rmdir(path=str(path), recursive=True)
                             LOG.debug(f'{self.__class__.__name__}:'
                                       f' Construction: Cleanup: {path}')
                         except (OSError, RuntimeError) as e:
@@ -288,12 +290,12 @@ class InstallationStorage:
                         f' {type(e).__name__}: {e}'
                     ) from e
 
-    def destruct(self):
+    def destruct(self) -> None:
         """Remove entire existing DC/OS installation storage."""
-        for path in self.istor_nodes[1:]:
+        for path in self.istor_nodes[1:]:  # type: Path
             if path.is_absolute() and path.is_dir():
                 try:
-                    cm_utl.rmdir(path=path, recursive=True)
+                    cm_utl.rmdir(path=str(path), recursive=True)
                     LOG.debug(f'{self.__class__.__name__}: Destruction:'
                               f' Remove directory: {path}')
                 except (OSError, RuntimeError) as e:
@@ -302,7 +304,7 @@ class InstallationStorage:
                         f' {type(e).__name__}: {e}'
                     )
 
-    def get_pkgactive(self, manifest_loader=None):
+    def get_pkgactive(self, manifest_loader: Callable) -> Set:
         """Retrieve set of manifests of active packages.
 
         :param manifest_loader: callable, package manifest loader
@@ -331,7 +333,8 @@ class InstallationStorage:
         return pkg_manifests
 
     @staticmethod
-    def _make_pkg_url(pkg_id, dstor_root_url, dstor_pkgrepo_path):
+    def _make_pkg_url(pkg_id: PackageId, dstor_root_url:  str,
+                      dstor_pkgrepo_path: str) -> str:
         """Construct a direct URL to a package tarball at DC/OS distribution
         storage.
 
@@ -346,7 +349,8 @@ class InstallationStorage:
 
         return pkg_url
 
-    def add_package(self, pkg_id, dstor_root_url, dstor_pkgrepo_path):
+    def add_package(self, pkg_id: PackageId, dstor_root_url: str,
+                    dstor_pkgrepo_path: str) -> None:
         """Add a package to the local package repository.
 
         :param pkg_id:             PackageId, package ID
@@ -510,7 +514,7 @@ class InstallationStorage:
                     f'Add package: {pkg_id}: {type(e).__name__}: {e}'
                 )
 
-    def remove_package(self, pkg_id):
+    def remove_package(self, pkg_id: PackageId) -> None:
         """Remove a package from the local package repository.
 
         :param pkg_id: PackageId, package ID
