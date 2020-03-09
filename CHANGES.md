@@ -62,7 +62,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Remove the dcos-history-service from DC/OS. (DCOS-58529)
 
-* New format for Admin Router access logs. (DCOS-59598)
+* New format for Admin Router access logs. (D2IQ-43957, DCOS-59598, D2IQ-62839)
 
 * Update OpenResty to 1.15.8.2. (DCOS-61159)
 

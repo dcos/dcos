@@ -180,7 +180,6 @@ local function validate_jwt(auth_token_verification_key)
         return nil, 401
     end
 
-    ngx.log(ngx.NOTICE, "UID from the valid DC/OS authentication token: `".. uid .. "`")
     return uid, nil
 end
 
