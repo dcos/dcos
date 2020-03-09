@@ -4,6 +4,7 @@ Tests for the etcd backup/restore via `dcos-etcdctl`.
 import logging
 import uuid
 from pathlib import Path
+from shlex import split
 from typing import Generator, List, Set
 
 import pytest
@@ -110,12 +111,15 @@ def _do_restore(all_masters: Set[Node], backup_local_path: Path) -> None:
             output=Output.LOG_AND_CAPTURE,
         )
 
+    # etcd instances are required to start up simultaneously to meet the
+    # requirement of peer communication when starting up
     for master in all_masters:
-        master.run(args=["systemctl", "start", "dcos-etcd"])
+        cmd_in_background = "nohup systemctl start dcos-etcd >/dev/null 2>&1 &"
+        master.run(args=split(cmd_in_background), shell=True)
 
 
 class EtcdClient():
-    """Communicates with etcd through CLI on master nodes."""
+    """Communicates with etcd thsrough CLI on master nodes."""
 
     def __init__(self, all_masters: Set[Node]) -> None:
         self.masters = all_masters
