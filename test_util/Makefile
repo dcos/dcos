@@ -1,6 +1,7 @@
 SHELL := /bin/bash -euo pipefail
 
 export AWS_REGION ?= us-west-2
+export TF_VAR_custom_dcos_download_path ?= https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh
 export TF_VAR_custom_dcos_download_path_win ?= https://downloads.dcos.io/dcos/testing/master/windows/dcos_generate_config_win.sh
 export TF_VAR_variant ?= open
 export OUTPUT_FILE ?= /dev/stdout
@@ -41,6 +42,7 @@ ssh-keygen-add: ssh-agent
 .PHONY: test
 test: terraform-init ssh-keygen-add
 	./terraform apply -auto-approve
+	./terraform_test.sh group5 
 
 .PHONY: output
 output:
