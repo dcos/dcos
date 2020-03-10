@@ -17,19 +17,15 @@ endif
 
 SSH_KEY ?= ./tf-dcos-rsa.pem
 
-ifndef DCOS_LICENSE_CONTENTS 
+ifndef DCOS_LICENSE_CONTENTS
 $(error DCOS_LICENSE_CONTENTS is not set)
 endif
 
-################################### TARGETS ################################### 
+################################### TARGETS ###################################
 
 .DEFAULT_GOAL := test
 
-license.txt:
-	@echo ${DCOS_LICENSE_CONTENTS} > $@
-
-.terraform: license.txt $(TERRAFORM) main.tf
-	@echo "##teamcity[blockOpened name='terraform-init' description='Terraform initialization']"
+.terraform: $(TERRAFORM) main.tf
 	$(TERRAFORM) init -input=false --upgrade
 	@echo "##teamcity[blockClosed name='terraform-init']"
 
@@ -40,7 +36,10 @@ cluster.json: $(SSH_KEY) .terraform
 	@echo "##teamcity[blockOpened name='terraform-apply' description='Terraform cluster creation']"
 	if [ -z "$$SSH_AUTH_SOCK" ]; then eval $$(ssh-agent -s); fi; \
 	ssh-add "$(SSH_KEY)"; \
-	$(TERRAFORM) apply -auto-approve -input=false -var ssh_public_key_file="$(SSH_KEY).pub" -var windowsagent_num=1
+	$(TERRAFORM) apply -auto-approve -input=false \
+		-var ssh_public_key_file="$(SSH_KEY).pub" \
+		-var windowsagent_num=1 \
+		-var dcos_license_key_contents=$(DCOS_USER_PASSWORD_ENV)
 	$(TERRAFORM) output -json > $@.work
 	@echo "##teamcity[blockClosed name='terraform-apply']"
 	mv $@.work $@
@@ -59,7 +58,7 @@ test: cluster.json
 		$(DCOS_USER_PASSWORD_ENV) \
 		dcos-shell pytest -vv --teamcity --log-level=DEBUG --windows-only"
 
-.PHONY: ssh 
+.PHONY: ssh
 ssh: cluster.json
 	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<)
 
@@ -79,9 +78,8 @@ clean:
 	rm -rf ./terraform_*.zip
 	rm -rf ./*.pem
 	rm -rf ./*.pub
-	rm -rf ./license.txt
 
-################################### HELPERS ################################### 
+################################### HELPERS ###################################
 
 # Provision Terraform if not available.
 
