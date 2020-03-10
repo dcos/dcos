@@ -32,6 +32,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
     * /v2/tasks plaintext output in Marathon 1.5 returned container network endpoints in an unusable way (MARATHON-8721)
     * Unreachable instances would interfere with replacements when using GROUP_BY / UNIQUE placement constraints, even if expungeAfter is configured the same as inactiveAfter (MARATHON-8719)
 
+* Adjust dcos-net (l4lb) to allow for graceful shutdown of connections by changing the VIP backend weight to `0`
+  when tasks are unhealthy or enter the `TASK_KILLING` state instead of removing them. (D2IQ-61077)
+
 ### Security updates
 
 
