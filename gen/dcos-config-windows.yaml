@@ -28,11 +28,6 @@ package:
         "HTTPEndpoints": [
             {
                 "Port": 5051,
-                "Uri": "/overlay-agent/overlay",
-                "Role": ["agent"]
-            },
-            {
-                "Port": 5051,
                 "Uri": "/__processes__",
                 "Role": [ "agent" ]
             },
