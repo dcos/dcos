@@ -42,7 +42,8 @@ ssh-keygen-add: ssh-agent
 .PHONY: test
 test: terraform-init ssh-keygen-add
 	./terraform apply -auto-approve
-	./terraform_test.sh 5 
+    export DCOS_SSH_KEY_PATH=./tf-dcos-rsa.pem
+	./terraform_test.sh 5 open
 
 .PHONY: output
 output:
