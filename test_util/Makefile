@@ -42,8 +42,15 @@ ssh-keygen-add: ssh-agent
 .PHONY: test
 test: terraform-init ssh-keygen-add
 	./terraform apply -auto-approve
-    export DCOS_SSH_KEY_PATH=./tf-dcos-rsa.pem
-	./terraform_test.sh 5 open
+    cd ../packages/dcos-integration-test
+    pip3 install virtualenv
+    virtualenv venv
+    . venv/bin/activate
+    pip3 install -r requirements.txt	
+    cd extra
+    export DCOS_ACS_TOKEN="$(dcos config show core.dcos_acs_token)"
+    export DCOS_SSH_USE=centos
+    pytest -v -x --capture=no --full-trace --log-level=DEBUG --windows-only
 
 .PHONY: output
 output:
