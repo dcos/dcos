@@ -42,7 +42,7 @@ ssh-keygen-add: ssh-agent
 .PHONY: test
 test: terraform-init ssh-keygen-add
 	./terraform apply -auto-approve
-	./terraform_test.sh group5 
+	./terraform_test.sh 5 
 
 .PHONY: output
 output:
