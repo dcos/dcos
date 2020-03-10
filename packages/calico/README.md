@@ -20,8 +20,11 @@ This package provides DC/OS Calico component to support Calico networking contai
     * [5.3.2. Test the connectivity between the frontends and the server](#532-test-the-connectivity-between-the-frontends-and-the-server)
     * [5.3.3. Apply network policy](#533-apply-network-policy)
   - [5.4. Adding network profiles](#54-adding-network-profiles)
-* [6. Troubleshooting](#6-troubleshooting)
-* [7. Development](#7-development)
+* [6. Migrate applications from DC/OS Overlay to Calico](#6-migrate-applications-from-dcos-overlay-to-calico)
+  - [6.1. For Marathon application\(aka DC/OS services\)](#61-for-marathon-applicationaka-dcos-services)
+  - [6.2. For DC/OS services built on top of dcos-common](#62-for-dcos-services-built-on-top-of-dcos-common)
+* [7. Troubleshooting](#6-troubleshooting)
+* [8. Development](#7-development)
 
 <!-- /MarkdownTOC -->
 
@@ -423,11 +426,68 @@ That said, to add a network profile, you should:
       <network-name> 
   ```
 
-## 6. Troubleshooting
+## 6. Migrate applications from DC/OS Overlay to Calico
+
+This section describes how to migrate services from DC/OS overlay in DC/OS,
+Automatic Migration for all services existing a DC/OS cluster is impossible, for they can be launched by a variety of Apache Mesos frameworks ranging from production-proven platform [Marathon](https://mesosphere.github.io/marathon/) to services built on top of [dcos-common](https://github.com/mesosphere/dcos-commons), like existing stateful services [Cassandra](https://docs.d2iq.com/mesosphere/dcos/services/cassandra) and [Spark](https://docs.d2iq.com/mesosphere/dcos/services/spark), or even the ones hosted by the customers.
+
+### 6.1. For Marathon application(aka DC/OS services)
+
+We have the following, but not limited to, two ways to take effect the change for marathon application:
+
+- DC/OS CLI
+Update the application definition to replace the network name `dcos` with `calico`
+`dcos app update calico_network_app.json`
+
+in which `calico_network_app.json` contains the definition of a calico network application differing from a dcos networking one as follows:
+```
+   "networks": [
+     {
+       "mode": "container",
+-      "name": "dcos"
++      "name": "calico"
+     }
+   ],
+   "healthChecks": [],
+```
+
+- DC/OS GUI
+
+Navigate to the networking tab for services, change the network type from `Virtual Network: dcos` to `Virtual Network: calico`
+
+### 6.2. For DC/OS services built on top of dcos-common
+
+Normally, there are two components in DC/OS services:
+- Scheduler, a Marathon application executing plan to launch Pod
+- Pods, worker applications serving the actual responsibility
+
+As the definition of the scheduler and pods are defined as release packages, and to make a permanent change in case the scheduler and Pods are using a virtual network, we have to cut new releases of DC/OS services after executing the following changes:
+- For schedulers
+The Marathon application definition of a scheduler is defined as a template, marathon.json.mustache, inside the package definition, and filled out by the operators according to the variables defined in `config.json`. The operator is expected to make sure `VIRTUAL_NETWORK_NAME` to be `calico` when the virtual network is enabled.
+
+- For Pods,
+`dcos-common` allows pods to join virtual networks, with the `dcos` virtual network available by default. Migrating the application from `dcos` to `calico` requires the change as follows:
+
+```
+pods:
+  pod-on-virtual-network:
+    count: {{COUNT}}
+    networks:
+-     dcos:
++     calico:
+    tasks:
+      ...
+  pod-on-host:
+    count: {{COUNT}}
+    tasks:
+      ...
+```
+
+## 7. Troubleshooting
 
 Diagnostic info including Calico resources, components logs, and BGP peer status are collected in DC/OS node diagnostic bundle to debug Calico networking issues, please execute  `dcos node diagnostic create` to create a diagnostic bundle, and download the diagnostic bundle by executing `dcos node diagnostic download <diagnostic-bundle-name>`.
 
-## 7. Development
+## 8. Development
 
 The address of calicoctl fork is [8], the libcalico-go fork is [9]. The CI job can be found in [1]. Each release of calicoctl should have a separate branch named release-vXXX-d2iq.YYY where XXX is the calico version (e.g. 3.12) and YYY is an internal build version (plain integer, e.g. `1`). The build from branch pushes into the dcos-calicoctl-artifacts bucket [2], sample URL for Linux binary is [3], darwin is [4], windows is [5]. Each build artifact from the release branch is auto removed after 7 days. The Jenkins task also builds from tags that are meant to be used in the dc/os CLI itself. The job build job for tags needs to be triggered manually (see [6] for reasoning). Once the tag build job finishes, the artifacts are pushed to download.mesosphere.io bucket into a path containing both parts of the commit sha and the sha of the binaries. Example URL for windows binary can be found in [7].
 
