@@ -46,7 +46,7 @@ pipeline {
 
     stage('Integration Tests') {
       agent {
-        label "shakedown"
+        label "python-dind"
       }
       environment {
           DCOS_LICENSE_CONTENT = credentials("ca159ad3-7323-4564-818c-46a8f03e1389")
