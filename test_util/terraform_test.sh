@@ -39,9 +39,10 @@ if [ "$2" == "enterprise" ]; then
             DCOS_LOGIN_PW=testpassword \
             py.test ${EXTRA_PYTEST_ARGS} ${TEST_NAMES}
 else
+    ${DCOS_SSH_KEY_PATH:=~/.ssh/id_rsa}
     TEST_GROUPS_PATH=/opt/mesosphere/active/dcos-integration-test/get_test_group.py
     PYTEST_LOCALE=${PYTEST_LOCALE:-en_US.utf8}
-    SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ./id_rsa ${ssh_user}@$MASTER_PUBLIC_IP"
+    SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $DCOS_SSH_KEY_PATH ${ssh_user}@$MASTER_PUBLIC_IP"
     TEST_DIR='$(find /opt/mesosphere/active/ -name dcos-integration-test* | sort | tail -n 1)'
     TEST_NAMES=$($SSH -- "LC_ALL=$PYTEST_LOCALE LANG=$PYTEST_LOCALE cd $TEST_DIR && dcos-shell python $TEST_GROUPS_PATH group_$1")
 
@@ -50,7 +51,7 @@ else
     export MASTERS_PRIVATE_IPS=$MASTER_PRIVATE_IP
     export MASTER_PUBLIC_IP=$MASTER_PUBLIC_IP
     export DCOS_SSH_USER=$ssh_user
-    export DCOS_SSH_KEY_PATH=~/.ssh/id_rsa
+    export DCOS_SSH_KEY_PATH
 
     cd packages/dcos-integration-test/extra
     pytest ${EXTRA_PYTEST_ARGS} ${TEST_NAMES}
