@@ -459,8 +459,7 @@ def test_metrics_diagnostics(dcos_api_session):
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
                 for sample in family.samples:
-                    if sample[0].startswith('bundle_creation_time_seconds'):
-                        assert sample[1]['dcos_component_name'] == 'DC/OS Diagnostics'
+                    if sample[1]['dcos_component_name'] == 'DC/OS Diagnostics':
                         return
             raise Exception('Expected DC/OS Diagnostics metrics not found')
         check_diagnostics_metrics()
