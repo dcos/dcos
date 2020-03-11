@@ -18,14 +18,13 @@ endif
 license.txt:
 	@echo ${DCOS_LICENSE_CONTENTS} > $@
 
+terraform_$(TERRAFORM_VERSION)_linux_amd64.zip:
+	wget https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/$@
+
 .PHONY: get-terraform
-get-terraform:
-	if ! command -v terraform >/dev/null 2>&1; then
-		rm -rf ./terraform_0.11.14_linux_amd64.zip
-		wget https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zip
-		unzip ./terraform*.zip
-		chmod +x terraform
-	fi
+get-terraform: terraform_$(TERRAFORM_VERSION)_linux_amd64.zip
+	unzip -n $<;
+	chmod +x terraform;
 
 .PHONY: terraform-init
 terraform-init: license.txt get-terraform 
@@ -37,8 +36,7 @@ ssh-agent:
 	  eval $$(ssh-agent -s); \
 	fi
 
-# TODO: make sure ssh-agent is active
-tf-dcos-rsa.pem: 
+tf-dcos-rsa.pem: ssh-agent
 	ssh-keygen -t rsa -b 2048 -f $@ -q -N ""; \
 
 .PHONY: cluster
@@ -46,7 +44,7 @@ cluster: terraform-init tf-dcos-rsa.pem
 	ssh-add ./tf-dcos-rsa.pem; \
 	$(TERRAFORM) apply -auto-approve -var ssh_public_key_file=./tf-dcos-rsa.pem.pub -var windowsagent_num=1
 
-cluster.json: # cluster
+cluster.json: cluster
 	$(TERRAFORM) output -json > $@ 
 
 .PHONY: test
@@ -70,7 +68,7 @@ clean:
 	rm -rf ./inventory
 	rm -rf ./terraform.tfstate
 	rm -rf ./terraform.tfstate.backup
-	rm -rf ./terraform_0.11.14_linux_amd64.zip
+	rm -rf ./terraform_*.zip
 	rm -rf ./*.pem
 	rm -rf ./*.pub
 	rm -rf ./license.txt
