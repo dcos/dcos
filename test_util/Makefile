@@ -18,8 +18,17 @@ endif
 license.txt:
 	@echo ${DCOS_LICENSE_CONTENTS} > $@
 
+.PHONY: get-terraform
+get-terraform:
+	if ! command -v terraform >/dev/null 2>&1; then
+		rm -rf ./terraform_0.11.14_linux_amd64.zip
+		wget https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zip
+		unzip ./terraform*.zip
+		chmod +x terraform
+	fi
+
 .PHONY: terraform-init
-terraform-init: license.txt 
+terraform-init: license.txt get-terraform 
 	$(TERRAFORM) init --upgrade
 
 .PHONY: ssh-agent
@@ -40,15 +49,14 @@ cluster: terraform-init tf-dcos-rsa.pem
 cluster.json: # cluster
 	$(TERRAFORM) output -json > $@ 
 
-.PHONY: test # TODO: omit DCOS_ACS_TOKEN
+.PHONY: test
+test: export DCOS_ACS_TOKEN
 test: cluster.json
-	STATE=/Users/kjeschkies/src/dcos/test_util/terraform.tfstate
 	cd ../packages/dcos-integration-test/extra; \
-	MASTER_PUBLIC_IP="$(shell terraform output -state=$(STATE) masters_public_ip)" \
-	MASTERS_PRIVATE_IPS="$(shell echo '172.16.0.130')" \
-	PRIVATE_AGENTS_PRIVATE_IPS="$(shell terraform output -state=/Users/kjeschkies/src/dcos/test_util/terraform.tfstate private_agent_ips)" \
-	PUBLIC_AGENTS_PRIVATE_IPS="$(shell terraform output -state=/Users/kjeschkies/src/dcos/test_util/terraform.tfstate public_agent_ips)" \
-	DCOS_ACS_TOKEN="$(shell dcos config show core.dcos_acs_token)" \
+	MASTER_PUBLIC_IP=$(shell jq '.masters_public_ip.value[]' $<) \
+	MASTERS_PRIVATE_IPS="$(shell jq '.masters_private_ip.value[]' $<)" \
+	PRIVATE_AGENTS_PRIVATE_IPS=$(shell jq '.private_agent_ips.value[]' $<) \
+	PUBLIC_AGENTS_PRIVATE_IPS=$(shell jq '.public_agent_ips.value[]' $<) \
 	DCOS_SSH_USER=centos \
 	pytest -v -x --capture=no --full-trace --log-level=DEBUG test_applications.py::test_if_marathon_app_can_be_deployed
 

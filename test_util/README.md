@@ -62,3 +62,8 @@ The following enviroment variables can be overriden to customize the clluster se
 * TF_VAR_variant
 * OUTPUT_FILE
 
+## Running all Tests
+
+```
+DCOS_ACS_TOKEN="$(dcos config show core.dcos_acs_token)" make test
+```
