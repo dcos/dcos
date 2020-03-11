@@ -2,7 +2,9 @@ SHELL := /bin/bash -euo pipefail
 
 TERRAFORM_VERSION := 0.11.14
 # TERRAFORM := TERRAFORM_VERSION=$(TERRAFORM_VERSION) bin/terraform
-TERRAFORM := ./terraform
+# Path to Terraform binary.
+TERRAFORM ?= ./terraform
+OS ?= $(shell uname|tr A-Z a-z)
 
 export AWS_REGION ?= us-west-2
 export TF_VAR_custom_dcos_download_path ?= https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh
@@ -18,17 +20,8 @@ endif
 license.txt:
 	@echo ${DCOS_LICENSE_CONTENTS} > $@
 
-# TODO: infer OS or use Docker image.
-terraform_$(TERRAFORM_VERSION)_linux_amd64.zip:
-	wget -nv https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/$@
-
-.PHONY: get-terraform
-get-terraform: terraform_$(TERRAFORM_VERSION)_linux_amd64.zip
-	unzip -n $<;
-	chmod +x terraform;
-
 .PHONY: terraform-init
-terraform-init: license.txt get-terraform 
+terraform-init: license.txt $(TERRAFORM)
 	$(TERRAFORM) init --upgrade
 
 .PHONY: ssh-agent
@@ -51,8 +44,8 @@ cluster.json: cluster
 .PHONY: test
 test: cluster.json
 	cd ../packages/dcos-integration-test/extra; \
-	MASTER_PUBLIC_IP=$(shell jq '.masters_public_ip.value[]' $<) \
-	MASTERS_PRIVATE_IPS="$(shell jq '.masters_private_ip.value[]' $<)" \
+	MASTER_PUBLIC_IP=$(shell jq '.masters_public_ip.value' $<) \
+	MASTERS_PRIVATE_IPS=$(shell jq '.masters_private_ip.value' $<) \
 	PRIVATE_AGENTS_PRIVATE_IPS=$(shell jq '.private_agent_ips.value' $<) \
 	PUBLIC_AGENTS_PRIVATE_IPS=$(shell jq '.public_agent_ips.value' $<) \
 	DCOS_SSH_USER=centos \
@@ -72,3 +65,12 @@ clean:
 	rm -rf ./*.pem
 	rm -rf ./*.pub
 	rm -rf ./license.txt
+
+# Provision Terraform is not available.
+
+terraform_$(TERRAFORM_VERSION)_$(OS)_amd64.zip:
+	wget -nv https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/$@
+
+$(TERRAFORM): terraform_$(TERRAFORM_VERSION)_$(OS)_amd64.zip
+	unzip -n $<;
+	chmod +x terraform;

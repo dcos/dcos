@@ -67,3 +67,8 @@ The following enviroment variables can be overriden to customize the clluster se
 ```
 DCOS_ACS_TOKEN="$(dcos config show core.dcos_acs_token)" make test
 ```
+
+Use the local Terrform installation via
+```
+TERRAFORM=$(which terraform) make test
+```

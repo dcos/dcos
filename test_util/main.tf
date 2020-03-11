@@ -174,12 +174,12 @@ output "dcos_ui" {
 
 output "masters_public_ip" {
     description = "This is the public masters IP to SSH"
-    value       = "${module.dcos.infrastructure.masters.public_ips}"
+    value       = "${element(module.dcos.infrastructure.masters.public_ips, 0)}"
 }
 
 output "masters_private_ip" {
     description = "This is the private masters IP address"
-    value       = "${module.dcos.infrastructure.masters.private_ips}"
+    value       = "${element(module.dcos.infrastructure.masters.private_ips, 0)}"
 }
 
 output "private_agent_ips" {
