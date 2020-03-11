@@ -13,12 +13,8 @@ import tempfile
 from contextlib import contextmanager, ExitStack
 from itertools import chain
 from multiprocessing import Process
-<<<<<<< HEAD
 from shutil import rmtree, which
 from subprocess import check_call
-=======
-from shutil import rmtree
->>>>>>> af7112c... Add more logs to pkgpanda
 from typing import List
 
 import requests
