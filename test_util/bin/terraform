@@ -6,4 +6,4 @@ if [ -z "$TERRAFORM_VERSION" ]; then
 fi
 
 set -x -e
-docker run -it hashicorp/terraform:${TERRAFORM_VERSION} "$@"
+docker run -t hashicorp/terraform:${TERRAFORM_VERSION} "$@"
