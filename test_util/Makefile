@@ -2,7 +2,7 @@ SHELL := /bin/bash -euo pipefail
 
 TERRAFORM_VERSION := 0.11.14
 # TERRAFORM := TERRAFORM_VERSION=$(TERRAFORM_VERSION) bin/terraform
-TERRAFORM := terraform
+TERRAFORM := ./terraform
 
 export AWS_REGION ?= us-west-2
 export TF_VAR_custom_dcos_download_path ?= https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh
