@@ -33,6 +33,18 @@ variable "windowsagent_num" {
   description = "Defines the number of Windows agents for the cluster."
 }
 
+variable "ssh_public_key_file" {
+  type = "string"
+  default = "~/.ssh/id_rsa.pub"
+  description = "Defines the public key to log on the cluster."
+}
+
+variable "license_file" {
+  type = "string"
+  default = "./license.txt"
+  description = "Defines location of license used for EE."
+}
+
 # Used to determine your public IP for forwarding rules
 data "http" "whatismyip" {
   url = "http://whatismyip.akamai.com/"
@@ -163,6 +175,17 @@ output "dcos_ui" {
 output "masters_public_ip" {
     description = "This is the public masters IP to SSH"
     value       = "${module.dcos.infrastructure.masters.public_ips}"
+}
+
+output "private_agent_ips" {
+    description = "These are the IP addresses of all private agents"
+    # TODO: value = "${join(",", module.dcos.infrastructure.private_agents.private_ips)}"
+    value       ="${module.dcos.infrastructure.private_agents.private_ips}"
+}
+
+output "public_agent_ips" {
+    description = "These are the IP addresses of all public agents"
+    value       ="${module.dcos.infrastructure.public_agents.private_ips}"
 }
 
 output "passwords" {

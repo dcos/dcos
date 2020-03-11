@@ -6,4 +6,7 @@ if [ -z "$TERRAFORM_VERSION" ]; then
 fi
 
 set -x -e
-docker run -t hashicorp/terraform:${TERRAFORM_VERSION} "$@"
+docker run -it -v $(pwd):/config -w /config \
+	-e AWS_REGION -e AWS_PROFILE \
+        -e TF_VAR_custom_dcos_download_path -e TF_VAR_custom_dcos_download_path_win -e TF_VAR_variant \
+	"dcosterraform/terraform-jenkins:${TERRAFORM_VERSION}" "$@"
