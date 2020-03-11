@@ -54,12 +54,14 @@ pipeline {
               DCOS_LICENSE_CONTENT = credentials("ca159ad3-7323-4564-818c-46a8f03e1389")
           }
           steps {
+	    ansiColor('xterm') {
                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'mesosphere-ci-marathon',
                accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                  dir('test_util') {
                      sh('make test')	       
                  }
                }
+	     }
           }
           post {
               always {
