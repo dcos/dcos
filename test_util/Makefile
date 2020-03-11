@@ -18,8 +18,9 @@ endif
 license.txt:
 	@echo ${DCOS_LICENSE_CONTENTS} > $@
 
+# TODO: infer OS or use Docker image.
 terraform_$(TERRAFORM_VERSION)_linux_amd64.zip:
-	wget https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/$@
+	wget -nv https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/$@
 
 .PHONY: get-terraform
 get-terraform: terraform_$(TERRAFORM_VERSION)_linux_amd64.zip
