@@ -48,7 +48,6 @@ cluster.json: cluster
 	$(TERRAFORM) output -json > $@ 
 
 .PHONY: test
-test: export DCOS_ACS_TOKEN
 test: cluster.json
 	cd ../packages/dcos-integration-test/extra; \
 	MASTER_PUBLIC_IP=$(shell jq '.masters_public_ip.value[]' $<) \
