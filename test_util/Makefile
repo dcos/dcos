@@ -40,9 +40,17 @@ cluster: terraform-init tf-dcos-rsa.pem
 cluster.json: # cluster
 	$(TERRAFORM) output -json > $@ 
 
-.PHONY: test 
+.PHONY: test # TODO: omit DCOS_ACS_TOKEN
 test: cluster.json
-	@echo "Run tests..."
+	STATE=/Users/kjeschkies/src/dcos/test_util/terraform.tfstate
+	cd ../packages/dcos-integration-test/extra; \
+	MASTER_PUBLIC_IP="$(shell terraform output -state=$(STATE) masters_public_ip)" \
+	MASTERS_PRIVATE_IPS="$(shell echo '172.16.0.130')" \
+	PRIVATE_AGENTS_PRIVATE_IPS="$(shell terraform output -state=/Users/kjeschkies/src/dcos/test_util/terraform.tfstate private_agent_ips)" \
+	PUBLIC_AGENTS_PRIVATE_IPS="$(shell terraform output -state=/Users/kjeschkies/src/dcos/test_util/terraform.tfstate public_agent_ips)" \
+	DCOS_ACS_TOKEN="$(shell dcos config show core.dcos_acs_token)" \
+	DCOS_SSH_USER=centos \
+	pytest -v -x --capture=no --full-trace --log-level=DEBUG test_applications.py::test_if_marathon_app_can_be_deployed
 
 .PHONY: destroy
 destroy:

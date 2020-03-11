@@ -177,15 +177,19 @@ output "masters_public_ip" {
     value       = "${module.dcos.infrastructure.masters.public_ips}"
 }
 
+output "masters_private_ip" {
+    description = "This is the private masters IP address"
+    value       = "${module.dcos.infrastructure.masters.private_ips}"
+}
+
 output "private_agent_ips" {
     description = "These are the IP addresses of all private agents"
-    # TODO: value = "${join(",", module.dcos.infrastructure.private_agents.private_ips)}"
-    value       ="${module.dcos.infrastructure.private_agents.private_ips}"
+    value       = "${join(",", module.dcos.infrastructure.private_agents.private_ips)}"
 }
 
 output "public_agent_ips" {
     description = "These are the IP addresses of all public agents"
-    value       ="${module.dcos.infrastructure.public_agents.private_ips}"
+    value       = "${join(",", module.dcos.infrastructure.public_agents.private_ips)}"
 }
 
 output "passwords" {
