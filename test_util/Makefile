@@ -41,8 +41,8 @@ ssh-keygen-add: ssh-agent
 
 .PHONY: test
 test: terraform-init ssh-keygen-add
-	./terraform apply -auto-approve
-	./run_windows_tests.sh
+	./terraform apply -auto-approve ;\
+	./run_windows_tests.sh;
 
 .PHONY: output
 output:
