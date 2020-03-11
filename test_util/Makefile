@@ -52,8 +52,8 @@ test: cluster.json
 	cd ../packages/dcos-integration-test/extra; \
 	MASTER_PUBLIC_IP=$(shell jq '.masters_public_ip.value[]' $<) \
 	MASTERS_PRIVATE_IPS="$(shell jq '.masters_private_ip.value[]' $<)" \
-	PRIVATE_AGENTS_PRIVATE_IPS=$(shell jq '.private_agent_ips.value[]' $<) \
-	PUBLIC_AGENTS_PRIVATE_IPS=$(shell jq '.public_agent_ips.value[]' $<) \
+	PRIVATE_AGENTS_PRIVATE_IPS=$(shell jq '.private_agent_ips.value' $<) \
+	PUBLIC_AGENTS_PRIVATE_IPS=$(shell jq '.public_agent_ips.value' $<) \
 	DCOS_SSH_USER=centos \
 	pytest -v -x --capture=no --full-trace --log-level=DEBUG test_applications.py::test_if_marathon_app_can_be_deployed
 
