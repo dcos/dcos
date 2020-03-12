@@ -74,7 +74,7 @@ module "dcos" {
   }
 
   cluster_name        = "${local.cluster_name}"
-  ssh_public_key_file = "./tf-dcos-rsa.pem.pub"
+  ssh_public_key_file = "${var.ssh_public_key_file}"
   admin_ips           = ["${data.http.whatismyip.body}/32"]
 
   num_masters        = "1"
