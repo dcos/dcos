@@ -27,13 +27,13 @@ from pySmartDL import SmartDL
 
 from common import logger
 from common import exceptions as cm_exc
-
+from typing import Any, Callable, Tuple
 
 LOG = logger.get_logger(__name__)
 
 
 # TODO: Needs refactoring
-def download(url, location):
+def download(url: str, location: str) -> Any:
     """
     Downloads from url to location
     uses  pySmartDL from https://pypi.org/project/pySmartDL/
@@ -45,8 +45,9 @@ def download(url, location):
     # print("Downloaded to {} ".format(path), " from {}".format(url),sep='\n')
     return path
 
+
 # TODO: Needs refactoring
-def unpack(tarpath, location):
+def unpack(tarpath: str, location: str) -> str:
     """
     unpacks tar.xz to  location
     """
@@ -64,7 +65,7 @@ def unpack(tarpath, location):
     return _location
 
 
-def rmdir(path, recursive=False):
+def rmdir(path: str, recursive: bool = False) -> None:
     """Remove a directory.
 
     :param path:      str, target directory path. It must be a direct directory
@@ -73,7 +74,9 @@ def rmdir(path, recursive=False):
                       if a nested directory encountered.
     """
     path_ = Path(str(path))
-    path_ = path_ if path_.is_absolute() else Path(Path('.').resolve(), path_)
+    if not path_.is_absolute():
+        path_ = Path(Path('.').resolve(), path_)
+
     LOG.debug(f'rmdir(): Target path: {path_}')
 
     if path_.exists():
@@ -88,7 +91,7 @@ def rmdir(path, recursive=False):
             for sub_path in path_.iterdir():
                 if sub_path.is_dir():
                     if recursive is True:
-                        rmdir(path_.joinpath(sub_path), recursive=True)
+                        rmdir(str(path_.joinpath(sub_path)), recursive=True)
                     else:
                         raise RuntimeError(f'Nested directory: {sub_path}')
                 else:
@@ -101,7 +104,7 @@ def rmdir(path, recursive=False):
         LOG.debug(f'rmdir(): Path not found: {path_}')
 
 
-def run_external_command(cl_elements, timeout=30):
+def run_external_command(cl_elements: str, timeout: float = 30) -> subprocess.CompletedProcess:
     """Run external command.
 
     :param cl_elements: str|list, string, representing a whole command line, or
@@ -136,7 +139,8 @@ def run_external_command(cl_elements, timeout=30):
     return subproc_run
 
 
-def get_retry_interval(attempt, retry_interval_base, retry_interval_cap):
+def get_retry_interval(attempt: int, retry_interval_base: float,
+                       retry_interval_cap: float) -> float:
     """Calculate interval before the next retry of an operation put into
     retrying loop.
 
@@ -154,13 +158,14 @@ def get_retry_interval(attempt, retry_interval_base, retry_interval_cap):
     )
 
 
-def retry_on_exc(exceptions=(Exception,), max_attempts=1,
-                 retry_interval_base=0.5, retry_interval_cap=5.0):
+def retry_on_exc(exceptions: Any = (Exception,), max_attempts: int = 1,
+                 retry_interval_base: float = 0.5,
+                 retry_interval_cap: float = 5.0) -> Callable:
     """Apply retrying logic to a function/method being decorated.
     """
-    def decorator(func):
+    def decorator(func: Callable) -> Callable:
         """"""
-        def call_proxy(*args, **kwargs):
+        def call_proxy(*args: Any, **kwargs: Any) -> Any:
             """"""
             exc_ = None
             result = None
@@ -197,7 +202,7 @@ def retry_on_exc(exceptions=(Exception,), max_attempts=1,
     return decorator
 
 
-def transfer_files(src, dst):
+def transfer_files(src: str, dst: str) -> None:
     """
     Transfer files from one directory to another on the same partition.
     """
