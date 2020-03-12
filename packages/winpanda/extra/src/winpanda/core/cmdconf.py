@@ -38,7 +38,7 @@ def create(**cmd_opts):
     return CMDCONF_TYPES[command_name](**cmd_opts)
 
 
-def cmdconf_type(command_name):
+def cmdconf_type(command_name: str):
     """Register a command configuration class in the config types registry.
 
     :param command_name: str, name of a command
@@ -407,7 +407,8 @@ class CmdConfigSetup(CommandConfig):
         finally:
             dcoscfg_pkg_fpath.unlink()
 
-    def get_dstor_dcoscfgpkg_path(self, dstor_root_url, dstor_lpi_path):
+    def get_dstor_dcoscfgpkg_path(self, dstor_root_url: str,
+                                  dstor_lpi_path: str):
         """Retrieve the Linux Package Index (LPI) object from the DC/OS
         distribution storage and discover a relative URL to the DC/OS
         aggregated configuration package.
@@ -499,10 +500,10 @@ class CmdConfigSetup(CommandConfig):
         return dstor_dcoscfgpkg_path
 
     @staticmethod
-    def load_dcos_conf_template(fpath):
+    def load_dcos_conf_template(fpath: Path):
         """Load the DC/OS aggregated configuration template from disk.
 
-        :param fpath: pathlib.Path, path to template
+        :param fpath: Path, path to template
         """
         # TODO: Functionality implemented in this method needs to be reused
         #       in other application parts (e.g. CmdConfigUpgrade) and so, it
@@ -581,10 +582,10 @@ class CmdConfigStart(CommandConfig):
 #
 # Configuration utility functions
 #
-def get_cluster_conf(istor_cfg_dpath, **cmd_opts):
+def get_cluster_conf(istor_cfg_dpath: Path, **cmd_opts):
     """"Get a collection of DC/OS cluster configuration options.
 
-    :param istor_cfg_dpath: pathlib.Path, absolute path to the DC/OS
+    :param istor_cfg_dpath: Path, absolute path to the DC/OS
                             configuration directory within the local DC/OS
                             installation storage
 
@@ -727,7 +728,7 @@ def get_ref_pkg_list(cluster_conf, tmp_dpath):
         rpl_fpath.unlink()
 
 
-def get_dcos_conf(cluster_conf, tmp_dpath):
+def get_dcos_conf(cluster_conf, tmp_dpath: Path):
     """Get the DC/OS aggregated configuration object.
 
     :return: dict, set of DC/OS shared and package specific configuration
@@ -813,7 +814,8 @@ def get_dcos_conf(cluster_conf, tmp_dpath):
         dcoscfg_pkg_fpath.unlink()
 
 
-def get_dstor_dcoscfgpkg_path(dstor_root_url, dstor_lpi_path, tmp_dpath):
+def get_dstor_dcoscfgpkg_path(dstor_root_url: str, dstor_lpi_path: str,
+                              tmp_dpath: str):
     """Retrieve the Linux Package Index (LPI) object from the DC/OS
     distribution storage and discover a relative URL to the DC/OS
     aggregated configuration package.
@@ -832,7 +834,7 @@ def get_dstor_dcoscfgpkg_path(dstor_root_url, dstor_lpi_path, tmp_dpath):
     :param dstor_lpi_path:         str, URL path to the DC/OS Linux package
                                    index object at the DC/OS distribution
                                    storage
-    :return dstor_dcoscfgpkg_path: str, URL path to the DC/OS aggregated
+    :return tmp_dpath:             str, URL path to the DC/OS aggregated
                                    config package at the DC/OS distribution
                                    storage
     """
@@ -896,10 +898,10 @@ def get_dstor_dcoscfgpkg_path(dstor_root_url, dstor_lpi_path, tmp_dpath):
     return dstor_dcoscfgpkg_path
 
 
-def load_dcos_conf_template(fpath):
+def load_dcos_conf_template(fpath: Path):
     """Load the DC/OS aggregated configuration template from disk.
 
-    :param fpath: pathlib.Path, path to template
+    :param fpath: Path, path to template
     """
     try:
         with fpath.open() as f:

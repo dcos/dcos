@@ -227,6 +227,8 @@ function main($url, $masters) {
 
     Write-Log -Level "Info" -LogContent "Running Winpanda.py upgrade ..."
     Invoke-NativeApplication {python.exe "$($basedir)\winpanda\bin\winpanda.py" --inst-root-dir="$($basedir)" upgrade}
+    Write-Log -Level "Info" -LogContent "Running Winpanda.py start ..."
+    Invoke-NativeApplication {python.exe "$($basedir)\winpanda\bin\winpanda.py" --inst-root-dir="$($basedir)" start}
     Write-Log -Level "Info" -LogContent "dcos_node_upgrade.ps1 successfully finished."
 }
 

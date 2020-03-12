@@ -7,7 +7,7 @@ from . import base
 class DStorHTTP(base.DistStorage):
     """DC/OS distribution storage employing HTTP-communications.
     """
-    def __init__(self, dse_opts):
+    def __init__(self, dse_opts: dict):
         """Constructor.
 
         :param dse_opts: dict, distribution storage endpoint options:
