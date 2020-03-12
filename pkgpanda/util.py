@@ -27,6 +27,7 @@ from teamcity.messages import TeamcityServiceMessages
 
 from pkgpanda.exceptions import FetchError, IncompleteDownloadError, ValidationError
 
+log = logging.getLogger(__name__)
 is_windows = platform.system() == "Windows"
 
 
@@ -51,7 +52,7 @@ def remove_file(path):
         if os.path.exists(path):
             subprocess.call(['cmd.exe', '/c', 'del', '/q', path])
     else:
-        subprocess.check_call(['rm', '-f', path])
+        _check_call(['rm', '-f', path])
 
 
 def remove_directory(path):
@@ -63,7 +64,7 @@ def remove_directory(path):
         if os.path.exists(path):
             subprocess.call(['cmd.exe', '/c', 'rmdir', '/s', '/q', path])
     else:
-        subprocess.check_call(['rm', '-rf', path])
+        _check_call(['rm', '-rf', path])
 
 
 def make_directory(path):
@@ -83,9 +84,9 @@ def copy_file(src_path, dst_path):
         # thrown at it.
         src = src_path.replace('/', '\\')
         dst = dst_path.replace('/', '\\')
-        subprocess.check_call(['cmd.exe', '/c', 'copy', src, dst])
+        _check_call(['cmd.exe', '/c', 'copy', src, dst])
     else:
-        subprocess.check_call(['cp', src_path, dst_path])
+        _check_call(['cp', src_path, dst_path])
 
 
 def copy_directory(src_path, dst_path):
@@ -96,9 +97,9 @@ def copy_directory(src_path, dst_path):
         # thrown at it.
         src = src_path.replace('/', '\\')
         dst = dst_path.replace('/', '\\')
-        subprocess.check_call(['cmd.exe', '/c', 'xcopy', src, dst, '/E', '/B', '/I'])
+        _check_call(['cmd.exe', '/c', 'xcopy', src, dst, '/E', '/B', '/I'])
     else:
-        subprocess.check_call(['cp', '-r', src_path, dst_path])
+        _check_call(['cp', '-r', src_path, dst_path])
 
 
 def variant_str(variant):
@@ -240,9 +241,9 @@ def extract_tarball(path, target):
         make_directory(target)
 
         if is_windows:
-            check_call(['bsdtar', '-xf', path, '-C', target])
+            _check_call(['bsdtar', '-xf', path, '-C', target])
         else:
-            check_call(['tar', '-xf', path, '-C', target])
+            _check_call(['tar', '-xf', path, '-C', target])
 
     except:
         # If there are errors, we can't really cope since we are already in an error state.
@@ -308,6 +309,7 @@ def write_string(filename, data):
     try:
         permissions = os.stat(filename).st_mode
     except FileNotFoundError:
+        log.debug("File %s does not exist, creating", filename)
         permissions = 0o644
 
     try:
@@ -339,7 +341,8 @@ def json_prettyprint(data):
 def if_exists(fn, *args, **kwargs):
     try:
         return fn(*args, **kwargs)
-    except FileNotFoundError:
+    except FileNotFoundError as e:
+        log.debug(e)
         return None
 
 
@@ -391,6 +394,7 @@ def make_tar(result_filename, change_folder):
 
 
 def rewrite_symlinks(root, old_prefix, new_prefix):
+    log.info("Rewrite symlinks in %s from %s to %s", root, old_prefix, new_prefix)
     # Find the symlinks and rewrite them from old_prefix to new_prefix
     # All symlinks not beginning with old_prefix are ignored because
     # packages may contain arbitrary symlinks.
@@ -402,7 +406,7 @@ def rewrite_symlinks(root, old_prefix, new_prefix):
                 target = os.readlink(full_path)
                 if target.startswith(old_prefix):
                     new_target = os.path.join(new_prefix, target[len(old_prefix) + 1:].lstrip('/'))
-                    # Remove the old link and write a new one.
+                    log.debug("Remove the old link (%s) and write a new one (%s).", target, new_target)
                     os.remove(full_path)
                     os.symlink(new_target, full_path)
 
@@ -485,6 +489,7 @@ class MessageLogger:
 
     TeamCity docs: https://confluence.jetbrains.com/display/TCD10/Build+Script+Interaction+with+TeamCity
     """
+
     def __init__(self):
         self.loggers = []
         if teamcity.is_running_under_teamcity():
@@ -572,7 +577,6 @@ def hash_list(l: List[str]):
 
 
 def hash_checkout(item):
-
     if isinstance(item, str) or isinstance(item, bytes):
         return hash_str(item)
     elif isinstance(item, dict):
@@ -656,3 +660,8 @@ def split_by_token(token_prefix, token_suffix, string_, strip_token_decoration=F
 
         # Update the chars consumed count for the next iteration.
         num_chars_consumed = token_end[1]
+
+
+def _check_call(cmd):
+    log.debug(" ".join(cmd))
+    subprocess.check_call(cmd)
