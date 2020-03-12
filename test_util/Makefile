@@ -10,6 +10,8 @@ export TF_VAR_custom_dcos_download_path ?= https://downloads.dcos.io/dcos/testin
 export TF_VAR_custom_dcos_download_path_win ?= https://downloads.dcos.io/dcos/testing/master/windows/dcos_generate_config_win.sh
 export TF_VAR_variant ?= open
 
+SSH_KEY ?= ./tf-dcos-rsa.pem
+
 ifndef DCOS_LICENSE_CONTENTS 
 $(error DCOS_LICENSE_CONTENTS is not set)
 endif
@@ -29,30 +31,31 @@ ssh-agent:
 	  eval $$(ssh-agent -s); \
 	fi
 
-tf-dcos-rsa.pem: ssh-agent
+$(SSH_KEY):
 	ssh-keygen -t rsa -b 2048 -f $@ -q -N ""; \
 
 .PHONY: cluster
-cluster: terraform-init tf-dcos-rsa.pem 
-	ssh-add ./tf-dcos-rsa.pem; \
-	$(TERRAFORM) apply -auto-approve -var ssh_public_key_file=./tf-dcos-rsa.pem.pub -var windowsagent_num=1
+cluster: terraform-init $(SSH_KEY) ssh-agent
+	ssh-add "$(SSH_KEY)"; \
+	$(TERRAFORM) apply -auto-approve -var ssh_public_key_file="$(SSH_KEY).pub" -var windowsagent_num=1
 
 cluster.json: cluster
 	$(TERRAFORM) output -json > $@ 
 
 .PHONY: test
 test: cluster.json
-	cd ../packages/dcos-integration-test/extra; \
-	MASTER_PUBLIC_IP=$(shell jq '.masters_public_ip.value' $<) \
-	MASTERS_PRIVATE_IPS=$(shell jq '.masters_private_ip.value' $<) \
-	PRIVATE_AGENTS_PRIVATE_IPS=$(shell jq '.private_agent_ips.value' $<) \
-	PUBLIC_AGENTS_PRIVATE_IPS=$(shell jq '.public_agent_ips.value' $<) \
-	DCOS_SSH_USER=centos \
-	pytest -v -x --capture=no --full-trace --log-level=DEBUG test_applications.py::test_if_marathon_app_can_be_deployed
+	ssh  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
+            source /opt/mesosphere/environment.export && cd `find /opt/mesosphere/active/ -name dcos-integration-test* | sort | tail -n 1` && \
+	    MASTER_PUBLIC_IP=$(shell jq '.masters_public_ip.value' $<) \
+	    MASTERS_PRIVATE_IPS=$(shell jq '.masters_private_ip.value' $<) \
+	    PRIVATE_AGENTS_PRIVATE_IPS=$(shell jq '.private_agent_ips.value' $<) \
+    	    PUBLIC_AGENTS_PRIVATE_IPS=$(shell jq '.public_agent_ips.value' $<) \
+	    pytest -v -x --capture=no --full-trace --log-level=DEBUG test_applications.py::test_if_marathon_app_can_be_deployed
 
 .PHONY: destroy
 destroy:
-	$(TERRAFORM) destroy -auto-approve
+	$(TERRAFORM) destroy -auto-approve;
+	rm cluster.json || true;
 
 .PHONY: clean
 clean:

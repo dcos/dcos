@@ -32,6 +32,8 @@ The file is used to run the tests.
 `TERRAFORM` defines the path to the Terraform executable. If this variable is not set `make` will download the binary to
 the local folder.
 
+`SSH_KEY` can be set to your local private SSH key file. If no key exists it creates it. Defaults to
+`./tf-dcos-rsa.pem`.
 
 `TF_VAR_custom_dcos_download_path` defines the download for `dcos_generate_config.sh`. It defaults to the master
 version. It can be used to test pull request clusters: `TF_VAR_custom_dcos_download_path=https://downloads.dcos.io/dcos/testing/pull/6956/dcos_generate_config.sh`.
