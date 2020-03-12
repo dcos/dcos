@@ -24,7 +24,7 @@ variable "owner" {
 
 variable "expiration" {
     type = "string"
-    default = "1h"
+    default = "3h"
 }
 
 variable "windowsagent_num" {

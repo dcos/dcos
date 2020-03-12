@@ -25,17 +25,12 @@ license.txt:
 terraform-init: license.txt $(TERRAFORM)
 	$(TERRAFORM) init --upgrade
 
-.PHONY: ssh-agent
-ssh-agent:
-	if [ -z "$$SSH_AUTH_SOCK" ] ; then \
-	  eval $$(ssh-agent -s); \
-	fi
-
 $(SSH_KEY):
 	ssh-keygen -t rsa -b 2048 -f $@ -q -N ""; \
 
 .PHONY: cluster
-cluster: terraform-init $(SSH_KEY) ssh-agent
+cluster: terraform-init $(SSH_KEY)
+	if [ -z "$$SSH_AUTH_SOCK" ]; then eval $$(ssh-agent -s); fi; \
 	ssh-add "$(SSH_KEY)"; \
 	$(TERRAFORM) apply -auto-approve -var ssh_public_key_file="$(SSH_KEY).pub" -var windowsagent_num=1
 
@@ -44,13 +39,20 @@ cluster.json: cluster
 
 .PHONY: test
 test: cluster.json
-	ssh  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
-            source /opt/mesosphere/environment.export && cd `find /opt/mesosphere/active/ -name dcos-integration-test* | sort | tail -n 1` && \
-	    MASTER_PUBLIC_IP=$(shell jq '.masters_public_ip.value' $<) \
-	    MASTERS_PRIVATE_IPS=$(shell jq '.masters_private_ip.value' $<) \
-	    PRIVATE_AGENTS_PRIVATE_IPS=$(shell jq '.private_agent_ips.value' $<) \
-    	    PUBLIC_AGENTS_PRIVATE_IPS=$(shell jq '.public_agent_ips.value' $<) \
-	    pytest -v -x --capture=no --full-trace --log-level=DEBUG test_applications.py::test_if_marathon_app_can_be_deployed
+	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
+		"source /opt/mesosphere/environment.export && cd /opt/mesosphere/active/dcos-integration-test && \
+		MASTER_PUBLIC_IP=$(shell jq '.masters_public_ip.value' $<) \
+		MASTERS_PRIVATE_IPS=$(shell jq '.masters_private_ip.value' $<) \
+		MASTER_HOSTS=$(shell jq '.masters_private_ip.value' $<) \
+		PRIVATE_AGENTS_PRIVATE_IPS=$(shell jq '.private_agent_ips.value' $<) \
+		SLAVE_HOSTS=$(shell jq '.private_agent_ips.value' $<) \
+		PUBLIC_AGENTS_PRIVATE_IPS=$(shell jq '.public_agent_ips.value' $<) \
+		PUBLIC_SLAVE_HOSTS=$(shell jq '.public_agent_ips.value' $<) \
+		pytest --full-trace --log-level=DEBUG --windows-only"
+
+.PHONY: ssh 
+ssh: cluster.json
+	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<)
 
 .PHONY: destroy
 destroy:
