@@ -1,9 +1,10 @@
 SHELL := /bin/bash -euo pipefail
 
 TERRAFORM_VERSION := 0.11.14
+OS ?= $(shell uname|tr A-Z a-z)
+
 # Path to Terraform binary.
 TERRAFORM ?= ./terraform
-OS ?= $(shell uname|tr A-Z a-z)
 
 export AWS_REGION ?= us-west-2
 export TF_VAR_custom_dcos_download_path ?= https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh
@@ -15,6 +16,8 @@ SSH_KEY ?= ./tf-dcos-rsa.pem
 ifndef DCOS_LICENSE_CONTENTS 
 $(error DCOS_LICENSE_CONTENTS is not set)
 endif
+
+################################### TARGETS ################################### 
 
 .DEFAULT_GOAL := test
 
@@ -70,7 +73,9 @@ clean:
 	rm -rf ./*.pub
 	rm -rf ./license.txt
 
-# Provision Terraform is not available.
+################################### HELPERS ################################### 
+
+# Provision Terraform if not available.
 
 terraform_$(TERRAFORM_VERSION)_$(OS)_amd64.zip:
 	wget -nv https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/$@
@@ -78,3 +83,4 @@ terraform_$(TERRAFORM_VERSION)_$(OS)_amd64.zip:
 $(TERRAFORM): terraform_$(TERRAFORM_VERSION)_$(OS)_amd64.zip
 	unzip -n $<;
 	chmod +x terraform;
+

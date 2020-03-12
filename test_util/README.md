@@ -21,6 +21,8 @@ The file is used to run the tests.
 
 `destroy` destroys a cluster.
 
+`ssh` will SSH into the master of the cluster.
+
 `test` launches a cluster if no `cluster.json` is found and runs all tests.
 
 ### Options
