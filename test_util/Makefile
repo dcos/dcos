@@ -1,7 +1,6 @@
 SHELL := /bin/bash -euo pipefail
 
 TERRAFORM_VERSION := 0.11.14
-# TERRAFORM := TERRAFORM_VERSION=$(TERRAFORM_VERSION) bin/terraform
 # Path to Terraform binary.
 TERRAFORM ?= ./terraform
 OS ?= $(shell uname|tr A-Z a-z)
