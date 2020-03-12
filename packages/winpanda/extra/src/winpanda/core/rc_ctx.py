@@ -9,7 +9,7 @@ from common import constants as cm_const
 from common import logger
 from common.storage import ISTOR_NODE, IStorNodes
 from core.package.id import PackageId
-
+from typing import Dict
 
 LOG = logger.get_logger(__name__)
 
@@ -50,8 +50,8 @@ def _escape_json_string(s):
 class ResourceContext:
     """Resource rendering context manager."""
 
-    def __init__(self, istor_nodes=None, cluster_conf=None, pkg_id=None,
-                 extra_values=None):
+    def __init__(self, istor_nodes: IStorNodes=None, cluster_conf: dict=None,
+                 pkg_id: PackageId=None, extra_values: dict=None):
         """Constructor.
 
         :param istor_nodes:  IStorNodes, DC/OS installation storage nodes (set
@@ -62,32 +62,12 @@ class ResourceContext:
         :param extra_values: dict, extra 'key=value' data to be added to the
                              resource rendering context.
         """
-        if istor_nodes is not None:
-            assert isinstance(istor_nodes, IStorNodes), (
-                f'Argument: istor_nodes:'
-                f' Got {type(istor_nodes).__name__} instead of IStorNodes'
-            )
-        if cluster_conf is not None:
-            assert isinstance(cluster_conf, dict), (
-                f'Argument: cluster_conf:'
-                f'Got {type(cluster_conf).__name__} instead of dict'
-            )
-        if pkg_id is not None:
-            assert isinstance(pkg_id, PackageId), (
-                f'Argument: pkg_id: PackageId is required: {pkg_id}'
-            )
-        if extra_values is not None:
-            assert isinstance(extra_values, dict), (
-                f'Argument: extra_values:'
-                f'Got {type(extra_values).__name__} instead of dict'
-            )
-
         self._istor_nodes = istor_nodes
         self._cluster_conf = cluster_conf
         self._pkg_id = pkg_id
         self._extra_values = extra_values
 
-    def get_items(self, json_ready=False):
+    def get_items(self, json_ready=False) -> Dict:
         """Get resource rendering context items.
 
         :param json_ready: bool, get JSON-compatible context items, if True
@@ -255,15 +235,11 @@ class ResourceContext:
             'extra_values': self._extra_values
         }
 
-    def update(self, values=None):
+    def update(self, values: dict=None):
         """Update context data.
 
         :param values: dict, 'key=value' data to be added to / updated in the
                              resource rendering context.
         """
-        if values is not None:
-            assert isinstance(values, dict), (
-                f'Argument: values:'
-                f'Got {type(values).__name__} instead of dict'
-            )
-            self._extra_values.update(values)
+
+        self._extra_values.update(values)

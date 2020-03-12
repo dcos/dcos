@@ -397,7 +397,7 @@ class Template:
         return isinstance(other, Template) and self.ast == other.ast
 
 
-def _parse_for(tokenizer):
+def _parse_for(tokenizer: Tokenizer):
     token_type, value = tokenizer.peek()
     assert token_type == 'for'
 
@@ -417,7 +417,7 @@ def _parse_for(tokenizer):
     return For(new_var, iterable, body)
 
 
-def _parse_switch(tokenizer):
+def _parse_switch(tokenizer: Tokenizer):
     token_type, identifier = tokenizer.peek()
     assert(token_type == 'switch')
 
@@ -447,7 +447,7 @@ def _parse_switch(tokenizer):
     raise RuntimeError("Unexpectedly exited the while loop in _parse_switch")
 
 
-def _parse_chunks(tokenizer):
+def _parse_chunks(tokenizer: Tokenizer):
     # Read Chunks
     chunks = []
     while True:
@@ -466,7 +466,7 @@ def _parse_chunks(tokenizer):
             return chunks
 
 
-def parse_str(text):
+def parse_str(text: str):
     tokenizer = Tokenizer(text)
     ast = _parse_chunks(tokenizer)
     token_type, _ = tokenizer.peek()
@@ -476,7 +476,7 @@ def parse_str(text):
     return Template(ast)
 
 
-def parse_resources(filename):
+def parse_resources(filename: str):
     try:
         return parse_str(resource_string(__name__, filename).decode())
     except SyntaxError as ex:
