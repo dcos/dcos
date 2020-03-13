@@ -21,13 +21,14 @@ from pprint import pprint as pp
 import random
 import subprocess
 import tarfile
+import tempfile
 import time
 
 from pySmartDL import SmartDL
 
 from common import logger
 from common import exceptions as cm_exc
-from typing import Any, Callable, Tuple
+from typing import Any, Callable
 
 LOG = logger.get_logger(__name__)
 
@@ -54,14 +55,14 @@ def unpack(tarpath: str, location: str) -> str:
 
     _location = os.path.abspath(location)
 
-    if  not os.path.exists(_location):
+    if not os.path.exists(_location):
         print("no Directory exist creating...\n{}".format(_location))
         os.mkdir(_location)
 
     with tarfile.open(tarpath) as tar:
         tar.extractall(_location)
         print("extracted to {}".format(_location))
-        pp({tarinfo.name:tarinfo.size for tarinfo in tar})
+        pp({tarinfo.name: tarinfo.size for tarinfo in tar})
     return _location
 
 
@@ -215,3 +216,29 @@ def transfer_files(src: str, dst: str) -> None:
             transfer_files(src_path, dstdir)
         else:
             os.link(src_path, os.path.join(dst, name))
+
+
+def write_file_bytes(filename: str, data: bytes):
+    """
+    Set the contents of file to a byte string.
+
+    The code ensures an atomic write by creating a temporary file and then
+    moving that temporary file to the given ``filename``. This prevents race
+    conditions such as the file being read by another process after it is
+    created but not yet written to.
+
+    It also prevents an invalid file being created if the `write` fails (e.g.
+    because of low disk space).
+    """
+    prefix = os.path.basename(filename)
+    tmp_file_dir = os.path.dirname(os.path.realpath(filename))
+    fd, temporary_filename = tempfile.mkstemp(prefix=prefix, dir=tmp_file_dir)
+    try:
+        try:
+            os.write(fd, data)
+        finally:
+            os.close(fd)
+        os.replace(temporary_filename, filename)
+    except Exception:
+        os.remove(temporary_filename)
+        raise

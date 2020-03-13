@@ -6,6 +6,7 @@ import abc
 import os
 from pathlib import Path
 import shutil
+from typing import Optional
 import yaml
 
 from cfgm import exceptions as cfgm_exc
@@ -24,13 +25,31 @@ from core.package.package import Package
 from core import utils as cr_utl
 from extm import exceptions as extm_exc
 from svcm import exceptions as svcm_exc
-from svcm.base import WindowsServiceManager
 from svcm.nssm import SVC_STATUS
 
 
 LOG = logger.get_logger(__name__)
 
 CMD_TYPES = {}
+
+
+class CommandState:
+
+    def __init__(self, filename: str):
+        self.filename = filename
+
+    def get_state(self) -> Optional[str]:
+        try:
+            with open(self.filename, 'rb') as f:
+                return f.read().decode('utf-8')
+        except FileNotFoundError:
+            return None
+
+    def set_state(self, state: str):
+        cm_utl.write_file_bytes(self.filename, state.encode('utf-8'))
+
+    def unset_state(self):
+        os.remove(self.filename)
 
 
 def create(**cmd_opts):
