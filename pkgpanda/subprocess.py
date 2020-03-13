@@ -1,7 +1,7 @@
 
 import logging
 import subprocess
-from subprocess import CalledProcessError, PIPE, Popen
+from subprocess import CalledProcessError, PIPE, Popen  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
