@@ -90,11 +90,14 @@ class TestCommandSetup:
             ),
         )
 
-        bindir = tmp_path / 'root' / 'bin'
-        bindir.mkdir(parents=True)
-        # Installation fails due to existing state
+        varlib = tmp_path / 'root' / 'var' / 'lib'
+        varlib.mkdir(parents=True)
+        cluster_id = varlib / 'cluster-id'
+        cluster_id.write_text('cluster-id')
+
+        # Installation fails due to existing cluster-id
         with pytest.raises(exceptions.InstallationError) as e:
             setup.execute()
 
-        # Error message mentions bindir path
-        assert str(bindir) in e.value.args[0]
+        # Error message mentions cluster-id path
+        assert str(cluster_id) in e.value.args[0]

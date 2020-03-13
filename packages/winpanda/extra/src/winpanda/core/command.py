@@ -146,17 +146,17 @@ class CmdSetup(Command):
             )
         elif cmd_target == CLI_CMDTARGET.PKGALL:
             # If there is a state file, then install/update failed previously.
-            # If there is a bin directory, then there is an existing installation.
+            # If there is a cluster id, then there is an existing installation.
             # In either case, we fail setup.
             state = self.state.get_state()
             if state is not None:
                 raise cm_exc.InstallationError(
                     f'Cannot install DC/OS: detected state {state}'
                 )
-            bindir = self.config.inst_storage.root_dpath / 'bin'
-            if bindir.exists():
+            cluster_id = self.config.inst_storage.var_dpath / 'lib' / 'cluster-id'
+            if cluster_id.exists():
                 raise cm_exc.InstallationError(
-                    f'Cannot install DC/OS: detected existing directory {bindir}'
+                    f'Cannot install DC/OS: detected existing directory {cluster_id}'
                 )
             self.state.set_state('INSTALLING')
             self._handle_cmdtarget_pkgall()
