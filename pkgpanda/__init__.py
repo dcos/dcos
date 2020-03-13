@@ -25,7 +25,7 @@ from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
                                 STATE_DIR_ROOT)
 from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
                                  ValidationError)
-from pkgpanda.subprocess import CalledProcessError, check_call
+from pkgpanda.subprocess import CalledProcessError, check_call, check_output
 from pkgpanda.util import (download, extract_tarball, if_exists, is_windows,
                            load_json, make_directory, remove_directory, write_json, write_string)
 
