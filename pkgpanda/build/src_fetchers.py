@@ -1,8 +1,8 @@
 import abc
 import os.path
 import shutil
-from subprocess import CalledProcessError, check_call, check_output
 
+from pkgpanda.subprocess import CalledProcessError, check_call, check_output
 from pkgpanda.exceptions import ValidationError
 from pkgpanda.util import download_atomic, is_windows, logger, sha1
 
