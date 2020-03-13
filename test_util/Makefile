@@ -59,7 +59,7 @@ ssh: cluster.json
 
 .PHONY: destroy
 destroy:
-	$(TERRAFORM) destroy -auto-approve;
+	$(TERRAFORM) destroy -auto-approve -var ssh_public_key_file="$(SSH_KEY).pub";
 	rm cluster.json || true;
 
 .PHONY: clean
