@@ -27,17 +27,12 @@ class EXTCFG_OPTION:
 
 class PkgInstExtrasManager:
     """DC/OS package extra installation options manager."""
-    def __init__(self, pkg_manifest):
+    def __init__(self, pkg_manifest: PackageManifest):
         """Constructor.
 
         :param pkg_manifest: PackageManifest, DC/OS package manifest object
         """
         self._msg_src_base = self.__class__.__name__
-
-        assert isinstance(pkg_manifest, PackageManifest), (
-            f'{self._msg_src_base}: Argument: pkg_manifest:'
-            f' Got {type(pkg_manifest).__name__} instead of PackageManifest'
-        )
         self._pkg_manifest = pkg_manifest
         self._pkg_id = self._pkg_manifest.pkg_id
         self._ext_conf = self._pkg_manifest.pkg_extcfg
@@ -113,7 +108,7 @@ class PkgInstExtrasManager:
                     f'{type(e).__name__}: {e}'
                 ) from e
 
-    def _save_extcmd_output(self, cmd_id, cmd_run_result):
+    def _save_extcmd_output(self, cmd_id: str, cmd_run_result: subprocess.CompletedProcess):
         """Save external command's return code and content of its standard
         output and error streams.
 

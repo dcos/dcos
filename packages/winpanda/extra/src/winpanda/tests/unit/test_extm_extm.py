@@ -18,11 +18,6 @@ class TestPkgInstExtrasManager(unittest.TestCase):
         manifest.pkg_extcfg = cfg
         return manifest
 
-    def test_wrong_manifest_type_should_fail(self):
-        """Create package extra installation options manager with empty manifest."""
-        with pytest.raises(AssertionError):
-            PkgInstExtrasManager(pkg_manifest=None)
-
     def test_to_string_should_convert_manifest_configuration(self):
         """Create package extra installation options manager."""
         manifest = self.generate_mock_manifest(cfg={

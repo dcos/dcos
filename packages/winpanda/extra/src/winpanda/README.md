@@ -47,7 +47,7 @@ venv\Scripts\activate.bat
 
 In a new virtualenv, install `pytest` and the `winpanda` dependencies.
 ```sh
-pip install pytest
+pip install pytest mock
 pip install -r src/winpanda/requirements.txt
 ``` 
 
