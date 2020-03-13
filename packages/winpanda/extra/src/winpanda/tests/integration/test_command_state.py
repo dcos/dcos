@@ -76,3 +76,25 @@ class TestCommandSetup:
 
         # Error message mentions found state
         assert existing_state in e.value.args[0]
+
+    def test_command_detect_bindir(self, tmp_path: Path):
+        """
+        winpanda setup command fails if a bin directory is found,
+        indicating that a previous setup has installed files.
+        """
+        setup = command.CmdSetup(
+            command_name='test',
+            command_target='pkgall',
+            inst_storage=storage.InstallationStorage(
+                root_dpath=str(tmp_path / 'root')
+            ),
+        )
+
+        bindir = tmp_path / 'root' / 'bin'
+        bindir.mkdir(parents=True)
+        # Installation fails due to existing state
+        with pytest.raises(exceptions.InstallationError) as e:
+            setup.execute()
+
+        # Error message mentions bindir path
+        assert str(bindir) in e.value.args[0]
