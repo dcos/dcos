@@ -45,6 +45,16 @@ class ServiceSetupError(ServiceError):
     pass
 
 
+class ServiceWipeError(ServiceError):
+    """Service wipe off error."""
+    pass
+
+
+class ServiceStopError(ServiceError):
+    """Service stop error."""
+    pass
+
+
 class ServiceTransientError(ServiceError):
     """Service intermittent error."""
     pass

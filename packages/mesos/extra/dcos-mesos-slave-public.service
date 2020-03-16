@@ -1,6 +1,5 @@
 [Unit]
 Description=Mesos Agent Public: distributed systems kernel public agent
-Requires=dcos-mesos-slave-public.socket
 
 [Service]
 Restart=always
@@ -27,3 +26,4 @@ ExecStartPre=/opt/mesosphere/bin/upgrade_cni.py /var/lib/cni/networks /var/run/d
 ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos/mesos/resource-providers
 ExecStartPre=/bin/bash -c 'for i in /proc/sys/net/ipv4/conf/*/rp_filter; do echo 2 > $i; echo -n "$i: "; cat $i; done'
 ExecStart=$PKG_PATH/bin/start_mesos.sh $PKG_PATH/bin/mesos-agent
+Sockets=dcos-mesos-slave-public.socket

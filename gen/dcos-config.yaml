@@ -1387,10 +1387,11 @@ package:
 {% case "true" %}
       MESOS_HTTP_COMMAND_EXECUTOR=true
       MESOS_HTTP_EXECUTOR_DOMAIN_SOCKETS=true
-      # TODO(bevers): With systemd versions before 227, named sockets are not supported and
-      # all socket names are rendered as "unknown". Change this to a named socket (i.e.
-      # `systemd:mesos-agent.socket`) once we switch to  more modern platforms.
-      MESOS_DOMAIN_SOCKET_LOCATION=systemd:unknown
+      # This variable is taken from the `FileDescriptorName` field from the unit
+      # file describing socket name of the Mesos agent service. Note that with systemd
+      # versions before 227, named sockets are not supported. However, Mesos agent
+      # handles this case.
+      MESOS_DOMAIN_SOCKET_LOCATION=systemd:dcos-mesos-slave
 {% case "false" %}
 {% endswitch %}
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
@@ -2087,7 +2088,20 @@ package:
       # For post-installation customization, edit the file /var/lib/dcos/marathon/environment
       MARATHON_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/marathon
       LIBPROCESS_PORT=15101
-      MARATHON_JAVA_ARGS={{ marathon_java_args }}
+      JAVA_OPTS={{ marathon_java_args }}
+      MARATHON_EXTRA_ARGS=
+      MARATHON_MESOS_ROLE="slave_public"
+      MARATHON_MAX_INSTANCES_PER_OFFER=100
+      MARATHON_TASK_LAUNCH_CONFIRM_TIMEOUT=1800000
+      MARATHON_TASK_LAUNCH_TIMEOUT=86400000
+      MARATHON_TASK_RESERVATION_TIMEOUT=1800000
+      MARATHON_DECLINE_OFFER_DURATION=300000
+      STATSD_UDP_HOST="localhost"
+      STATSD_UDP_PORT="61825"
+      MARATHON_ENABLE_FEATURES="vips,task_killing,external_volumes,gpu_resources"
+      MARATHON_MESOS_AUTHENTICATION_PRINCIPAL="dcos_marathon"
+      MARATHON_MESOS_USER="root"
+
 {% switch dcos_overlay_enable %}
 {% case "true" %}
       MARATHON_DEFAULT_NETWORK_NAME={{ dcos_overlay_network_default_name }}
@@ -2188,6 +2202,9 @@ package:
     content: |
       # Browser security settings for the DC/OS UI
       add_header X-Frame-Options "{{ adminrouter_x_frame_options }}";
+  - path: /etc_master/adminrouter-grpc-proxy-port.conf
+    content: |
+      listen {{ adminrouter_grpc_proxy_port }} http2;
   - path: /etc/adminrouter-tls-master.conf
     content: |
       # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf

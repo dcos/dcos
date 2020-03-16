@@ -32,7 +32,11 @@ The ACS token is valid only once.
 Run the simple test with
 
 ```bash
+export DCOS_ACS_TOKEN="$(dcos config show core.dcos_acs_token)"
+export DCOS_SSH_USE=centos
 pytest -v -x --capture=no --full-trace --log-level=DEBUG test_applications.py::test_if_marathon_app_can_be_deployed
 ```
 
 Alternatively you should be able to run `terraform_test.sh` in case you provisioned the cluster with Terraform.
+
+The Windows tests are run by passing `--windows-only`.
