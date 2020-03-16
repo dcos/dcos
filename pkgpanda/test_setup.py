@@ -21,6 +21,7 @@ def test_setup(tmpdir):
 
     check_call(["pkgpanda",
                 "setup",
+                "--silent",
                 "--root={0}/root".format(tmpdir),
                 "--rooted-systemd",
                 "--repository={}".format(repo_path),
@@ -76,6 +77,7 @@ def test_setup(tmpdir):
     active = set(check_output([
         "pkgpanda",
         "active",
+        "--silent",
         "--root={0}/root".format(tmpdir),
         "--rooted-systemd",
         "--repository={}".format(repo_path),
@@ -90,6 +92,7 @@ def test_setup(tmpdir):
     # If we setup the same directory again we should get .old files.
     check_call(["pkgpanda",
                 "setup",
+                "--silent",
                 "--root={0}/root".format(tmpdir),
                 "--rooted-systemd",
                 "--repository={}".format(repo_path),
@@ -135,6 +138,7 @@ def test_setup(tmpdir):
     active = set(check_output([
         "pkgpanda",
         "active",
+        "--silent",
         "--root={0}/root".format(tmpdir),
         "--rooted-systemd",
         "--repository={}".format(repo_path),
@@ -158,6 +162,7 @@ def test_setup(tmpdir):
     # Uninstall / deactivate everything,
     check_call(["pkgpanda",
                 "uninstall",
+                "--silent",
                 "--root={0}/root".format(tmpdir),
                 "--rooted-systemd",
                 "--repository={}".format(repo_path),
@@ -178,6 +183,7 @@ def test_activate(tmpdir):
     # TODO(cmaloney): Depending on setup here is less than ideal, but meh.
     check_call(["pkgpanda",
                 "setup",
+                "--silent",
                 "--root={0}/root".format(tmpdir),
                 "--rooted-systemd",
                 "--repository={}".format(repo_path),
@@ -187,6 +193,7 @@ def test_activate(tmpdir):
 
     assert run(["pkgpanda",
                 "activate",
+                "--silent",
                 "mesos--0.22.0",
                 "mesos-config--ffddcfb53168d42f92e4771c6f8a8a9a818fd6b8",
                 "--root={0}/root".format(tmpdir),
@@ -199,6 +206,7 @@ def test_activate(tmpdir):
     active = set(check_output([
         "pkgpanda",
         "active",
+        "--silent",
         "--root={0}/root".format(tmpdir),
         "--rooted-systemd",
         "--repository={}".format(repo_path),
@@ -209,6 +217,7 @@ def test_activate(tmpdir):
     # Swap out one package
     assert run(["pkgpanda",
                 "swap",
+                "--silent",
                 "mesos-config--justmesos",
                 "--root={0}/root".format(tmpdir),
                 "--rooted-systemd",
@@ -220,6 +229,7 @@ def test_activate(tmpdir):
     active = set(check_output([
         "pkgpanda",
         "active",
+        "--silent",
         "--root={0}/root".format(tmpdir),
         "--rooted-systemd",
         "--repository={}".format(repo_path),
@@ -229,6 +239,7 @@ def test_activate(tmpdir):
 
     assert run(["pkgpanda",
                 "activate",
+                "--silent",
                 "mesos--0.22.0",
                 "--root={0}/root".format(tmpdir),
                 "--rooted-systemd",
@@ -240,6 +251,7 @@ def test_activate(tmpdir):
     active = set(check_output([
         "pkgpanda",
         "active",
+        "--silent",
         "--root={0}/root".format(tmpdir),
         "--rooted-systemd",
         "--repository={}".format(repo_path),
@@ -251,6 +263,7 @@ def test_activate(tmpdir):
     assert not os.path.isdir(str(state_dir_root) + '/mesos')
     assert run(["pkgpanda",
                 "activate",
+                "--silent",
                 "mesos--0.23.0",
                 "--root={0}/root".format(tmpdir),
                 "--rooted-systemd",
@@ -272,6 +285,7 @@ def test_systemd_unit_files(tmpdir):
 
     check_call(["pkgpanda",
                 "setup",
+                "--silent",
                 "--root={0}/root".format(tmpdir),
                 "--rooted-systemd",
                 "--repository={}".format(repo_path),
