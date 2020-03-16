@@ -8,7 +8,6 @@ import re
 import shutil
 import socketserver
 import stat
-import subprocess
 import tarfile
 import tempfile
 from contextlib import contextmanager, ExitStack
@@ -25,6 +24,7 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from teamcity.messages import TeamcityServiceMessages
 
+from pkgpanda import subprocess
 from pkgpanda.exceptions import FetchError, IncompleteDownloadError, ValidationError
 
 log = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ def remove_file(path):
         if os.path.exists(path):
             subprocess.call(['cmd.exe', '/c', 'del', '/q', path])
     else:
-        _check_call(['rm', '-f', path])
+        subprocess.check_call(['rm', '-f', path])
 
 
 def remove_directory(path):
@@ -64,7 +64,7 @@ def remove_directory(path):
         if os.path.exists(path):
             subprocess.call(['cmd.exe', '/c', 'rmdir', '/s', '/q', path])
     else:
-        _check_call(['rm', '-rf', path])
+        subprocess.check_call(['rm', '-rf', path])
 
 
 def make_directory(path):
@@ -84,9 +84,9 @@ def copy_file(src_path, dst_path):
         # thrown at it.
         src = src_path.replace('/', '\\')
         dst = dst_path.replace('/', '\\')
-        _check_call(['cmd.exe', '/c', 'copy', src, dst])
+        subprocess.check_call(['cmd.exe', '/c', 'copy', src, dst])
     else:
-        _check_call(['cp', src_path, dst_path])
+        subprocess.check_call(['cp', src_path, dst_path])
 
 
 def copy_directory(src_path, dst_path):
@@ -97,9 +97,9 @@ def copy_directory(src_path, dst_path):
         # thrown at it.
         src = src_path.replace('/', '\\')
         dst = dst_path.replace('/', '\\')
-        _check_call(['cmd.exe', '/c', 'xcopy', src, dst, '/E', '/B', '/I'])
+        subprocess.check_call(['cmd.exe', '/c', 'xcopy', src, dst, '/E', '/B', '/I'])
     else:
-        _check_call(['cp', '-r', src_path, dst_path])
+        subprocess.check_call(['cp', '-r', src_path, dst_path])
 
 
 def variant_str(variant):
@@ -244,9 +244,9 @@ def extract_tarball(path, target):
         # Make this cross-platform via Python's tarfile module once
         # https://bugs.python.org/issue21872 is fixed.
         if is_windows:
-            _check_call(['bsdtar', '-xf', path, '-C', target])
+            subprocess.check_call(['bsdtar', '-xf', path, '-C', target])
         else:
-            _check_call(['tar', '-xf', path, '-C', target])
+            subprocess.check_call(['tar', '-xf', path, '-C', target])
 
     except:
         # If there are errors, we can't really cope since we are already in an error state.
@@ -410,7 +410,6 @@ def rewrite_symlinks(root, old_prefix, new_prefix):
                 target = os.readlink(full_path)
                 if target.startswith(old_prefix):
                     new_target = os.path.join(new_prefix, target[len(old_prefix) + 1:].lstrip('/'))
-                    log.debug("Remove the old link (%s) and write a new one (%s).", target, new_target)
                     os.remove(full_path)
                     os.symlink(new_target, full_path)
 
@@ -664,8 +663,3 @@ def split_by_token(token_prefix, token_suffix, string_, strip_token_decoration=F
 
         # Update the chars consumed count for the next iteration.
         num_chars_consumed = token_end[1]
-
-
-def _check_call(cmd):
-    log.debug(" ".join(cmd))
-    subprocess.check_call(cmd)
