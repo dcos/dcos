@@ -1,6 +1,6 @@
 [service]
 DisplayName = telegraf
-Description = Telegraf Data Collector Service
+Description = Telegraf: collects and reports metrics
 Application = {{ pkg_inst_dpath }}\bin\telegraf.exe
 AppDirectory = {{ pkg_inst_dpath }}\bin
 AppParameters = --config {{ dcos_cfg_dpath }}\telegraf\telegraf.conf --console

@@ -88,7 +88,6 @@ def test_dcos_diagnostics_health(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_nodes(dcos_api_session):
     """
     test a list of nodes with statuses endpoint /system/health/v1/nodes
@@ -120,7 +119,6 @@ def test_dcos_diagnostics_nodes_node(dcos_api_session):
             validate_node([node_response])
 
 
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_nodes_node_units(dcos_api_session):
     """
     test a list of units from a specific node, endpoint /system/health/v1/nodes/<node>/units
@@ -138,7 +136,6 @@ def test_dcos_diagnostics_nodes_node_units(dcos_api_session):
             validate_units(units_response['units'])
 
 
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session):
     """
     test a specific unit for a specific node, endpoint /system/health/v1/nodes/<node>/units/<unit>
@@ -156,7 +153,6 @@ def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_units(dcos_api_session):
     """
     test a list of collected units, endpoint /system/health/v1/units
@@ -216,7 +212,6 @@ def test_systemd_units_health(dcos_api_session):
         raise AssertionError('\n'.join(unhealthy_output))
 
 
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_units_unit(dcos_api_session):
     """
     test a unit response in a right format, endpoint: /system/health/v1/units/<unit>
@@ -316,8 +311,8 @@ def test_dcos_diagnostics_report(dcos_api_session):
         assert len(report_response['Nodes']) > 0
 
 
-@pytest.mark.parametrize('use_legacy_api', [False, True])
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
+@pytest.mark.parametrize('use_legacy_api',
+                         [False, pytest.param(True, marks=pytest.mark.xfail("config.getoption('--windows-only')"))])
 def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_legacy_api):
     """
     test bundle create, read, delete workflow
@@ -634,9 +629,9 @@ def validate_units(units):
 
         # a unit must have all 3 fields not empty
         assert unit['id'], 'id field cannot be empty'
-        assert unit['name'], 'name field cannot be empty'
+        assert unit['name'], 'name field cannot be empty in {}'.format(unit)
         assert unit['health'] in [0, 1], 'health must be 0 or 1'
-        assert unit['description'], 'description field cannot be empty'
+        assert unit['description'], 'description field cannot be empty in {}'.format(unit)
 
 
 def validate_unit(unit):
@@ -650,7 +645,7 @@ def validate_unit(unit):
 
     # id, name, health, description, help should not be empty
     assert unit['id'], 'id field cannot be empty'
-    assert unit['name'], 'name field cannot be empty'
+    assert unit['name'], 'name field cannot be empty in {}'.format(unit)
     assert unit['health'] in [0, 1], 'health must be 0 or 1'
     assert unit['description'], 'description field cannot be empty'
     assert unit['help'], 'help field cannot be empty'

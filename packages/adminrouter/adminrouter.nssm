@@ -1,6 +1,6 @@
 [service]
 DisplayName = adminrouter
-Description = Adminrouter
+Description = Admin Router Agent: exposes a unified control plane proxy for components and services using NGINX
 Application = {{ pkg_inst_dpath }}\bin\nginx.exe
 AppDirectory = {{ pkg_inst_dpath }}\bin
 AppParameters = -c {{ pkg_shrcfg_dpath }}\nginx.agent.windows.conf
