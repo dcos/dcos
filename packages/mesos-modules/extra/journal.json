@@ -1,0 +1,50 @@
+{
+  "libraries": [
+    {
+      "file": "libjournaldlogger.dll",
+      "modules": [
+        {
+          "name": "com_mesosphere_mesos_JournaldLogger",
+          "parameters": [
+            {
+              "key": "destination_type",
+              "value": "logrotate"
+            },
+            {
+              "key": "companion_dir",
+              "value": "./"
+            },
+            {
+              "key": "libprocess_num_worker_threads",
+              "value": "2"
+            },
+            {
+              "key": "logrotate_max_stdout_size",
+              "value": "2MB"
+            },
+            {
+              "key": "logrotate_stdout_options",
+              "value": "rotate 9"
+            },
+            {
+              "key": "logrotate_max_stderr_size",
+              "value": "2MB"
+            },
+            {
+              "key": "logrotate_stderr_options",
+              "value": "rotate 9"
+            },
+            {
+              "key": "fluentbit_ip",
+              "value": "127.0.0.1"
+            },
+            {
+              "key": "fluentbit_port",
+              "value": "61092"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

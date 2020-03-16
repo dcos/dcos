@@ -1,14 +1,15 @@
 {
   "variants": {
-    "mesos": "windows",
-    "winpanda" : "windows",
-    "dcos-diagnostics": "windows",
+  	"bootstrap": "windows",
     "adminrouter": "windows",
+    "dcos-diagnostics": "windows",
+    "mesos-modules": "windows",
+    "mesos": "windows",
+    "nssm": "windows",
+    "python": "windows",
     "telegraf": "windows",
     "vcredist": "windows",
-    "nssm": "windows",
-	"bootstrap": "windows",
-    "python": "windows"
+    "winpanda": "windows"
   },
   "exclude": [
     "erlang",
@@ -54,7 +55,6 @@
     "logrotate",
     "marathon",
     "mesos-dns",
-    "mesos-modules",
     "metronome",
     "ncurses",
     "openssl",
