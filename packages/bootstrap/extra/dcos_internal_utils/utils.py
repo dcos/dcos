@@ -82,6 +82,11 @@ def _write_file_bytes(filepath, data, mode):
     because of low disk space).
 
     On Linux the new file is created with permissions `mode`.
+
+    This function does not attempt to fsync the file to disk. fsync protects
+    files being lost following an OS crash. However, the bootstrap process is
+    always re-run before services restart. Hence, any files not persisted to
+    disk will be recreated after a crash.
     """
     filename = str(filepath)
     prefix = os.path.basename(filename)

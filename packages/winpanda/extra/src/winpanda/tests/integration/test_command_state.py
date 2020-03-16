@@ -23,7 +23,7 @@ class TestCommandState:
         State file can be set and unset.
         """
         filename = tmp_path / 'state'
-        state = 'THE_STATE'
+        state = '\u0394STATE\n'
         cs = command.CommandState(str(filename))
         cs.set_state(state)
         assert filename.exists()
@@ -37,7 +37,7 @@ class TestCommandState:
         State file can be set when directory does not exist.
         """
         filename = tmp_path / 'not_exist' / 'state'
-        state = 'THE_STATE'
+        state = '\u0394STATE\n'
         cs = command.CommandState(str(filename))
         cs.set_state(state)
         assert cs.get_state() == state

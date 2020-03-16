@@ -9,6 +9,8 @@ import shutil
 from typing import Optional
 import yaml
 
+from atomicwrites import atomic_write
+
 from cfgm import exceptions as cfgm_exc
 from common import exceptions as cm_exc
 from common import logger
@@ -43,14 +45,15 @@ class CommandState:
 
     def get_state(self) -> Optional[str]:
         try:
-            with open(self.filename, 'rb') as f:
-                return f.read().decode('utf-8')
+            with open(self.filename, encoding='utf-8') as f:
+                return f.read()
         except FileNotFoundError:
             return None
 
     def set_state(self, state: str):
         os.makedirs(os.path.dirname(self.filename), exist_ok=True)
-        cm_utl.write_file_bytes(self.filename, state.encode('utf-8'))
+        with atomic_write(self.filename, overwrite=True, encoding='utf-8') as f:
+            f.write(state)
 
     def unset_state(self):
         try:
