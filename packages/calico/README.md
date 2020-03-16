@@ -5,32 +5,32 @@ This package provides DC/OS Calico component to support Calico networking contai
 <!-- MarkdownTOC -->
 
 * [1. System Requirements](#1-system-requirements)
-  - [1.1. Network requirements](#11-network-requirements)
-* [2. DC/OS Calico components](#2-dcos-calico-components)
-  - [2.1. DC/OS Calico services](#21-dcos-calico-services)
+  - [1.1. Network Requirements](#11-network-requirements)
+* [2. DC/OS Calico Components](#2-dcos-calico-components)
+  - [2.1. DC/OS Calico Services](#21-dcos-calico-services)
 * [3. DC/OS Configuration Reference \(Networking\)](#3-dcos-configuration-reference-networking)
 * [4. Application Example](#4-application-example)
   - [4.1. Calico Networking \(Universal Container Runtime\)](#41-calico-networking-universal-container-runtime)
   - [4.2. Calico Networking \(Docker Engine\)](#42-calico-networking-docker-engine)
 * [5. Administration Topics](#5-administration-topics)
   - [5.1. Network Policies](#51-network-policies)
-  - [5.2. Default profile](#52-default-profile)
-  - [5.3. Network policy examples](#53-network-policy-examples)
-    * [5.3.1. Launch Marathon applications](#531-launch-marathon-applications)
-    * [5.3.2. Test the connectivity between the frontends and the server](#532-test-the-connectivity-between-the-frontends-and-the-server)
-    * [5.3.3. Apply network policy](#533-apply-network-policy)
-  - [5.4. Adding network profiles](#54-adding-network-profiles)
-* [6. Migrate applications from DC/OS Overlay to Calico](#6-migrate-applications-from-dcos-overlay-to-calico)
-  - [6.1. For Marathon application\(aka DC/OS services\)](#61-for-marathon-applicationaka-dcos-services)
-  - [6.2. For DC/OS services built on top of dcos-common](#62-for-dcos-services-built-on-top-of-dcos-common)
-* [7. Troubleshooting](#6-troubleshooting)
-* [8. Development](#7-development)
+  - [5.2. Default Profile](#52-default-profile)
+  - [5.3. Network Policy Examples](#53-network-policy-examples)
+    * [5.3.1. Launch Marathon Applications](#531-launch-marathon-applications)
+    * [5.3.2. Frontends and Server Connectivity Test](#532-frontends-and-server-connectivity-test)
+    * [5.3.3. Apply Network Policy](#533-apply-network-policy)
+  - [5.4. Adding Network Profiles](#54-adding-network-profiles)
+* [6. Migrate Applications from DC/OS Overlay to Calico](#6-migrate-applications-from-dcos-overlay-to-calico)
+  - [6.1. Marathon application\(aka DC/OS Services\)](#61-marathon-applicationaka-dcos-services)
+  - [6.2. DC/OS Services Built on Top of dcos-common](#62-dcos-services-built-on-top-of-dcos-common)
+* [7. Troubleshooting](#7-troubleshooting)
+* [8. Development](#8-development)
 
 <!-- /MarkdownTOC -->
 
 ## 1. System Requirements
 
-### 1.1. Network requirements
+### 1.1. Network Requirements
 
 | Port | DC/OS Component | systemd Unit             | Source       | Destination  | Description                                                                                                                         |
 |------|-----------------|--------------------------|--------------|--------------|-------------------------------------------------------------------------------------------------------------------------------------|
@@ -40,11 +40,11 @@ This package provides DC/OS Calico component to support Calico networking contai
 | 64000 | Calico          | dcos-calico-felix.service | agent/master | agent/master | (Configurable) calico VXLAN networking can be configurable by calico_vxlan_port, by default, this shares the same value with dcos overlay vxlan port  |
 | 62091 | Calico          | dcos-calico-felix.service | agent/master | agent/master | TCP port that the Prometheus metrics server should bind to                                                                   |
 
-## 2. DC/OS Calico components
+## 2. DC/OS Calico Components
 
 DC/OS Calico component integrates the [Calico networking](https://www.projectcalico.org) into DC/OS, by providing the Calico CNI plugin for Mesos Universal Container Runtime and the Calico libnetwork plugin for Docker Engine. In addition, the calico control panel will provide the functionality of configuring the network policy for DC/OS workloads.
 
-### 2.1. DC/OS Calico services
+### 2.1. DC/OS Calico Services
 
 DC/OS Calico integrates Calico into DC/OS for managing container networking and network security, three services are introduced:
 
@@ -165,7 +165,7 @@ limitations on network policy we have in DC/OS:
 }
 ```
 
-### 5.2. Default profile
+### 5.2. Default Profile
 
 Calico Profile groups endpoints which inherit labels defined in the profile, for example, each namespace has one corresponding profile to granting labels to Pods in the namespace. Calico profile supports policy rules for traffic control but is deprecated in favor of much more flexible NetworkPolicy and GlobalNetworkPolicy resources.
 
@@ -196,7 +196,7 @@ spec:
 To resolve this problem, calico profile `calico` is initialized by default by `dcos-calico-felix`, and allows all traffic into and out of Calico networking containers, and `calico` is the only profile supported for now and shared across all Calico networking containers.
 For a more detailed description of the Calico profile, please read [here](https://docs.projectcalico.org/v3.8/reference/resources/profile).
 
-### 5.3. Network policy examples
+### 5.3. Network Policy Examples
 
 In the following business isolation example, we have three application definitions as shown below, and both bookstore-frontend and bookstore-server are labeled with `"biz_type": "bookstore"`, while fruitstore-frontend is labeled with `"biz_type": "fruitstore"`. Here we will create a network policy to deny the requests from fruitstore-frontend to bookstore-server while allow requests from bookstore-frontend to bookstore-server.
 
@@ -217,7 +217,7 @@ In the following business isolation example, we have three application definitio
              +------------------------+
 ```
 
-#### 5.3.1. Launch Marathon applications
+#### 5.3.1. Launch Marathon Applications
 
 The Marathon application definition of bookstore-frontend with policy label `"biz_type": "bookstore"`:
 
@@ -324,7 +324,7 @@ $ dcos task list
   bookstore-frontend   172.16.2.233  root  TASK_RUNNING  bookstore-frontend.instance-79853919-2a47-11ea-91b3-66db602e14f5._app.1   0a1399a2-fe1f-4613-a618-f45159e12f2a-S0  N/A     N/A
 ```
 
-#### 5.3.2. Test the connectivity between the frontends and the server
+#### 5.3.2. Frontends and Server Connectivity Test
 
 Before applying network policy, the requests from bookstore-frontend and fruitstore-frontend to bookstore-server are successful, here we expect the FQDN `bookstore-server.marathon.containerip.dcos.thisdcos.directory` to return the bookstore-server container IP address:
 ```
@@ -335,7 +335,7 @@ $ dcos task exec bookstore-frontend wget -qO- bookstore-server.marathon.containe
 hubfeu2yculh%
 ```
 
-#### 5.3.3. Apply network policy
+#### 5.3.3. Apply Network Policy
 
 This network policy takes effect on bookstore-server and allows requests from applications with label `biz_type` set as `bookstore` while rejects those from applications with label `biz_type` set as `fruitstore`:
 ```
@@ -379,7 +379,7 @@ $ dcos task exec fruitstore-frontend wget -qO- --timeout=5 bookstore-server.mara
 wget: can't connect to remote host (192.168.219.133): Connection timed out
 ```
 
-### 5.4. Adding network profiles
+### 5.4. Adding Network Profiles
 
 In most of the use cases a single calico profile is enough. However if for any reason more networks needs to be created, you should be aware of some corner cases.
 
@@ -426,20 +426,20 @@ That said, to add a network profile, you should:
       <network-name> 
   ```
 
-## 6. Migrate applications from DC/OS Overlay to Calico
+## 6. Migrate Applications from DC/OS Overlay to Calico
 
 This section describes how to migrate services from DC/OS overlay in DC/OS,
 Automatic Migration for all services existing a DC/OS cluster is impossible, for they can be launched by a variety of Apache Mesos frameworks ranging from production-proven platform [Marathon](https://mesosphere.github.io/marathon/) to services built on top of [dcos-common](https://github.com/mesosphere/dcos-commons), like existing stateful services [Cassandra](https://docs.d2iq.com/mesosphere/dcos/services/cassandra) and [Spark](https://docs.d2iq.com/mesosphere/dcos/services/spark), or even the ones hosted by the customers.
 
-### 6.1. For Marathon application(aka DC/OS services)
+### 6.1. Marathon application(aka DC/OS services)
 
-We have the following, but not limited to, two ways to take effect the change for marathon application:
+There are at least two ways to effect a change for the Marathon application:
 
 - DC/OS CLI
 Update the application definition to replace the network name `dcos` with `calico`
 `dcos app update calico_network_app.json`
 
-in which `calico_network_app.json` contains the definition of a calico network application differing from a dcos networking one as follows:
+for this method, the corresponding file, `calico_network_app.json` contains the definition of a Calico network application that differs from a DC/OS network application as follows:
 ```
    "networks": [
      {
@@ -453,19 +453,20 @@ in which `calico_network_app.json` contains the definition of a calico network a
 
 - DC/OS GUI
 
-Navigate to the networking tab for services, change the network type from `Virtual Network: dcos` to `Virtual Network: calico`
+Navigate to the networking tab for services, and change the network type from `Virtual Network: dcos` to `Virtual Network: calico`.
 
-### 6.2. For DC/OS services built on top of dcos-common
+### 6.2. DC/OS services built on top of dcos-common
 
 Normally, there are two components in DC/OS services:
-- Scheduler, a Marathon application executing plan to launch Pod
-- Pods, worker applications serving the actual responsibility
+- Scheduler - a Marathon application executing a plan to launch a Pod
+- Pods - worker applications performing the service's responsibilities.
 
-As the definition of the scheduler and pods are defined as release packages, and to make a permanent change in case the scheduler and Pods are using a virtual network, we have to cut new releases of DC/OS services after executing the following changes:
-- For schedulers
-The Marathon application definition of a scheduler is defined as a template, marathon.json.mustache, inside the package definition, and filled out by the operators according to the variables defined in `config.json`. The operator is expected to make sure `VIRTUAL_NETWORK_NAME` to be `calico` when the virtual network is enabled.
+As the definition of the scheduler and pods are defined as release packages, and to make a permanent change in case the scheduler and Pods are using a virtual network, we have to generate new releases of DC/OS services after executing the following changes:
 
-- For Pods,
+- For Schedulers
+The Marathon application definition of a scheduler is defined as a template, marathon.json.mustache, inside the package definition, and is filled out by the operators according to the variables defined in `config.json`. The operator is expected to make sure `VIRTUAL_NETWORK_NAME` to be `calico` when the virtual network is enabled.
+
+- For Pods
 `dcos-common` allows pods to join virtual networks, with the `dcos` virtual network available by default. Migrating the application from `dcos` to `calico` requires the change as follows:
 
 ```
