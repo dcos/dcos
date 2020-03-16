@@ -7,4 +7,7 @@ AppParameters = --config {{ dcos_cfg_dpath }}\dcos-diagnostics\dcos-diagnostics-
 Start = SERVICE_AUTO_START
 AppStdout = {{ pkg_log_dpath }}\dcos-diagnostics.log
 AppStderr = {{ pkg_log_dpath }}\dcos-diagnostics.log
+AppRotateFiles = 1
+AppRotateSeconds = 86400
+AppRotateBytes = 1048576
 AppEnvironmentExtra = DCOS_VERSION=13.3
