@@ -11,6 +11,11 @@ export TF_VAR_custom_dcos_download_path ?= https://downloads.dcos.io/dcos/testin
 export TF_VAR_custom_dcos_download_path_win ?= https://downloads.dcos.io/dcos/testing/master/windows/dcos_generate_config_win.sh
 export TF_VAR_variant ?= open
 
+DCOS_USER_PASSWORD_ENV=""
+ifneq ($(TF_VAR_variant), open)
+DCOS_USER_PASSWORD_ENV="DCOS_LOGIN_UNAME='demo-super' DCOS_LOGIN_UNAME='deleteme'"
+endif
+
 SSH_KEY ?= ./tf-dcos-rsa.pem
 
 ifndef DCOS_LICENSE_CONTENTS 
@@ -48,7 +53,7 @@ test: cluster.json
 		SLAVE_HOSTS=$(shell jq '.private_agent_ips.value' $<) \
 		PUBLIC_AGENTS_PRIVATE_IPS=$(shell jq '.public_agent_ips.value' $<) \
 		PUBLIC_SLAVE_HOSTS=$(shell jq '.public_agent_ips.value' $<) \
-	        @if [ "$(TF_VAR_variant)" != "open" ]; then DCOS_LOGIN_UNAME="demo-super" DCOS_LOGIN_UNAME="deleteme"; fi; \
+		$(DCOS_USER_PASSWORD_ENV) \
 		dcos-shell pytest -vv --teamcity --log-level=DEBUG --windows-only"
 
 .PHONY: ssh 
