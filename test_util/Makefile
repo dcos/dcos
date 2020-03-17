@@ -11,9 +11,8 @@ export TF_VAR_custom_dcos_download_path ?= https://downloads.dcos.io/dcos/testin
 export TF_VAR_custom_dcos_download_path_win ?= https://downloads.dcos.io/dcos/testing/master/windows/dcos_generate_config_win.sh
 export TF_VAR_variant ?= open
 
-DCOS_USER_PASSWORD_ENV=""
 ifneq ($(TF_VAR_variant), open)
-DCOS_USER_PASSWORD_ENV="DCOS_LOGIN_UNAME='demo-super' DCOS_LOGIN_UNAME='deleteme'"
+	DCOS_USER_PASSWORD_ENV := DCOS_LOGIN_UNAME='demo-super' DCOS_LOGIN_UNAME='deleteme'
 endif
 
 SSH_KEY ?= ./tf-dcos-rsa.pem
