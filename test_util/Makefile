@@ -30,16 +30,20 @@ license.txt:
 	@echo ${DCOS_LICENSE_CONTENTS} > $@
 
 .terraform: license.txt $(TERRAFORM) main.tf
+	@echo "##teamcity[blockOpened name='terraform-init' description='Terraform initialization']"
 	$(TERRAFORM) init -input=false --upgrade
+	@echo "##teamcity[blockClosed name='terraform-init']"
 
 $(SSH_KEY):
 	ssh-keygen -t rsa -b 2048 -f $@ -q -N ""
 
 cluster.json: $(SSH_KEY) .terraform
+	@echo "##teamcity[blockOpened name='terraform-apply' description='Terraform cluster creation']"
 	if [ -z "$$SSH_AUTH_SOCK" ]; then eval $$(ssh-agent -s); fi; \
 	ssh-add "$(SSH_KEY)"; \
 	$(TERRAFORM) apply -auto-approve -input=false -var ssh_public_key_file="$(SSH_KEY).pub" -var windowsagent_num=1
 	$(TERRAFORM) output -json > $@.work
+	@echo "##teamcity[blockClosed name='terraform-apply']"
 	mv $@.work $@
 
 .PHONY: test
@@ -62,8 +66,10 @@ ssh: cluster.json
 
 .PHONY: destroy
 destroy: cluster.json
+	@echo "##teamcity[blockOpened name='terraform-destroy' description='Terraform cluster teardown']"
 	$(TERRAFORM) destroy -auto-approve -var ssh_public_key_file="$(SSH_KEY).pub";
 	rm cluster.json || true;
+	@echo "##teamcity[blockClosed name='terraform-destroy']"
 
 .PHONY: clean
 clean:
