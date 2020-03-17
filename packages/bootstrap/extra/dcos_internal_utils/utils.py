@@ -57,60 +57,54 @@ def read_file_bytes(filepath):
         return f.read()
 
 
-if is_windows:
-    def write_readonly_file(filepath, data):
-        # TODO - make this atomic
-        with filepath.open('wb') as f:
-            f.write(data)
+def write_readonly_file(filepath, data):
+    _write_file_bytes(filepath, data, 0o400)
 
-    def write_private_file(filepath, data):
-        # TODO - make this atomic
-        with filepath.open('wb') as f:
-            f.write(data)
 
-    def write_public_file(filepath, data):
-        # TODO - make this atomic
-        with filepath.open('wb') as f:
-            f.write(data)
-else:
-    def write_readonly_file(filepath, data):
-        _write_file_bytes(filepath, data, 0o400)
+def write_private_file(filepath, data):
+    _write_file_bytes(filepath, data, 0o600)
 
-    def write_private_file(filepath, data):
-        _write_file_bytes(filepath, data, 0o600)
 
-    def write_public_file(filepath, data):
-        _write_file_bytes(filepath, data, 0o644)
+def write_public_file(filepath, data):
+    _write_file_bytes(filepath, data, 0o644)
 
-    def _write_file_bytes(filepath, data, mode):
-        """
-        Set the contents of file to a byte string.
 
-        The code ensures an atomic write by creating a temporary file and then
-        moving that temporary file to the given ``filename``. This prevents race
-        conditions such as the file being read by another process after it is
-        created but not yet written to.
+def _write_file_bytes(filepath, data, mode):
+    """
+    Set the contents of file to a byte string.
 
-        It also prevents an invalid file being created if the `write` fails (e.g.
-        because of low disk space).
+    The code ensures an atomic write by creating a temporary file and then
+    moving that temporary file to the given ``filename``. This prevents race
+    conditions such as the file being read by another process after it is
+    created but not yet written to.
 
-        The new file is created with permissions `mode`.
-        """
-        filename = str(filepath)
-        prefix = os.path.basename(filename)
-        tmp_file_dir = os.path.dirname(os.path.realpath(filename))
-        fd, temporary_filename = tempfile.mkstemp(prefix=prefix, dir=tmp_file_dir)
-        # `mkstemp` initially creates file with permissions 0o600
+    It also prevents an invalid file being created if the `write` fails (e.g.
+    because of low disk space).
+
+    On Linux the new file is created with permissions `mode`.
+
+    This function does not attempt to fsync the file to disk. fsync protects
+    files being lost following an OS crash. However, the bootstrap process is
+    always re-run before services restart. Hence, any files not persisted to
+    disk will be recreated after a crash.
+    """
+    filename = str(filepath)
+    prefix = os.path.basename(filename)
+    tmp_file_dir = os.path.dirname(os.path.realpath(filename))
+    fd, temporary_filename = tempfile.mkstemp(prefix=prefix, dir=tmp_file_dir)
+    # On Linux `mkstemp` initially creates file with permissions 0o600
+    try:
         try:
-            try:
-                os.write(fd, data)
-            finally:
-                os.close(fd)
+            os.write(fd, data)
+        finally:
+            os.close(fd)
+        if is_linux:
+            # TODO - provide a Windows equivalent
             os.chmod(temporary_filename, stat.S_IMODE(mode))
-            os.replace(temporary_filename, filename)
-        except Exception:
-            os.remove(temporary_filename)
-            raise
+        os.replace(temporary_filename, filename)
+    except Exception:
+        os.remove(temporary_filename)
+        raise
 
 
 def write_file_on_mismatched_content(desired_content, target, write):

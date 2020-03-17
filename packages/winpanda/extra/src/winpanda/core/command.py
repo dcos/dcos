@@ -6,7 +6,10 @@ import abc
 import os
 from pathlib import Path
 import shutil
+from typing import Optional
 import yaml
+
+from atomicwrites import atomic_write
 
 from cfgm import exceptions as cfgm_exc
 from common import exceptions as cm_exc
@@ -24,13 +27,39 @@ from core.package.package import Package
 from core import utils as cr_utl
 from extm import exceptions as extm_exc
 from svcm import exceptions as svcm_exc
-from svcm.base import WindowsServiceManager
 from svcm.nssm import SVC_STATUS
 
 
 LOG = logger.get_logger(__name__)
 
 CMD_TYPES = {}
+
+
+class CommandState:
+    """
+    Save and retrieve a state in a file.
+    """
+
+    def __init__(self, filename: str):
+        self.filename = filename
+
+    def get_state(self) -> Optional[str]:
+        try:
+            with open(self.filename, encoding='utf-8') as f:
+                return f.read()
+        except FileNotFoundError:
+            return None
+
+    def set_state(self, state: str):
+        os.makedirs(os.path.dirname(self.filename), exist_ok=True)
+        with atomic_write(self.filename, overwrite=True, encoding='utf-8') as f:
+            f.write(state)
+
+    def unset_state(self):
+        try:
+            os.remove(self.filename)
+        except FileNotFoundError:
+            pass
 
 
 def create(**cmd_opts):
@@ -90,6 +119,7 @@ class Command(metaclass=abc.ABCMeta):
 @command_type(CLI_COMMAND.SETUP)
 class CmdSetup(Command):
     """Setup command implementation."""
+
     def __init__(self, **cmd_opts):
         """"""
         super(CmdSetup, self).__init__(**cmd_opts)
@@ -98,6 +128,7 @@ class CmdSetup(Command):
             self.cmd_opts[CLI_CMDOPT.DCOS_CLUSTERCFGPATH] = 'NOP'
 
         self.config = cmdconf.create(**self.cmd_opts)
+        self.state = CommandState(str(self.config.inst_storage.var_dpath / 'state'))
 
         LOG.debug(f'{self.msg_src}: cmd_opts: {self.cmd_opts}')
 
@@ -110,40 +141,33 @@ class CmdSetup(Command):
         LOG.debug(f'{self.msg_src}: Execute: Target:'
                   f' {self.cmd_opts.get(CLI_CMDOPT.CMD_TARGET)}')
 
-        try:
-            cmd_target = self.cmd_opts.get(CLI_CMDOPT.CMD_TARGET)
-            if cmd_target == CLI_CMDTARGET.STORAGE:
-                # (Re)build/repair the installation storage structure.
-                self.config.inst_storage.construct(
-                    clean=self.cmd_opts.get(CLI_CMDOPT.INST_CLEAN)
+        cmd_target = self.cmd_opts.get(CLI_CMDOPT.CMD_TARGET)
+        if cmd_target == CLI_CMDTARGET.STORAGE:
+            # (Re)build/repair the installation storage structure.
+            self.config.inst_storage.construct(
+                clean=self.cmd_opts.get(CLI_CMDOPT.INST_CLEAN)
+            )
+        elif cmd_target == CLI_CMDTARGET.PKGALL:
+            # If there is a state file, then install/update failed previously.
+            # If there is a cluster id, then there is an existing installation.
+            # In either case, we fail setup.
+            state = self.state.get_state()
+            if state is not None:
+                raise cm_exc.InstallationError(
+                    f'Cannot install DC/OS: detected state {state}'
                 )
-            elif cmd_target == CLI_CMDTARGET.PKGALL:
-                istate = self.config.inst_state.istate
-                if istate == ISTATE.INSTALLATION_IN_PROGRESS:
-                    self._handle_cmdtarget_pkgall()
-                    self._register_istate(ISTATE.INSTALLED)
-                else:
-                    LOG.info(
-                        f'{self.msg_src}: Execute: Invalid DC/OS installation'
-                        f' state detected: {istate}: NOP'
-                    )
+            cluster_id = self.config.inst_storage.var_dpath / 'lib' / 'cluster-id'
+            if cluster_id.exists():
+                raise cm_exc.InstallationError(
+                    f'Cannot install DC/OS: detected existing directory {cluster_id}'
+                )
+            self.state.set_state('INSTALLING')
+            self._handle_cmdtarget_pkgall()
+            self.state.unset_state()
+        else:
+            raise NotImplementedError()
 
-            LOG.info(f'{self.msg_src}: Execute: OK')
-        except cm_exc.WinpandaError:
-            self._register_istate(ISTATE.INSTALLATION_FAILED)
-            raise
-
-    def _register_istate(self, inst_state):
-        """"""
-        # TODO: Move this method to the abstract base parent class Command to
-        #       avoid code duplication in command manager classes.
-        msg_base = (f'{self.msg_src}:'
-                    f' Execute: Register installation state: {inst_state}')
-        try:
-            self.config.inst_state.istate = inst_state
-            LOG.debug(f'{msg_base}: OK')
-        except cr_exc.RCError as e:
-            raise cr_exc.SetupCommandError(f'Execute: {type(e).__name__}: {e}')
+        LOG.info(f'{self.msg_src}: Install: OK')
 
     def _handle_cmdtarget_pkgall(self):
         """"""

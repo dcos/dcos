@@ -4,7 +4,6 @@ import json
 import os
 import os.path
 import shutil
-import subprocess
 import tempfile
 
 import checksumdir
@@ -22,6 +21,7 @@ from gen.calc import (
     validate_true_false,
 )
 from gen.internals import Source
+from pkgpanda import subprocess
 from pkgpanda.constants import (
     cloud_config_yaml, dcos_services_yaml, install_root
 )

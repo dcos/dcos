@@ -24,26 +24,23 @@ endif
 license.txt:
 	@echo ${DCOS_LICENSE_CONTENTS} > $@
 
-.PHONY: terraform-init
-terraform-init: license.txt $(TERRAFORM)
-	$(TERRAFORM) init --upgrade
+.terraform: license.txt $(TERRAFORM) main.tf
+	$(TERRAFORM) init -input=false --upgrade
 
 $(SSH_KEY):
-	ssh-keygen -t rsa -b 2048 -f $@ -q -N ""; \
+	ssh-keygen -t rsa -b 2048 -f $@ -q -N ""
 
-.PHONY: cluster
-cluster: terraform-init $(SSH_KEY)
+cluster.json: $(SSH_KEY) .terraform
 	if [ -z "$$SSH_AUTH_SOCK" ]; then eval $$(ssh-agent -s); fi; \
 	ssh-add "$(SSH_KEY)"; \
-	$(TERRAFORM) apply -auto-approve -var ssh_public_key_file="$(SSH_KEY).pub" -var windowsagent_num=1
-
-cluster.json: cluster
-	$(TERRAFORM) output -json > $@ 
+	$(TERRAFORM) apply -auto-approve -input=false -var ssh_public_key_file="$(SSH_KEY).pub" -var windowsagent_num=1
+	$(TERRAFORM) output -json > $@.work
+	mv $@.work $@
 
 .PHONY: test
 test: cluster.json
 	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
-		"source /opt/mesosphere/environment.export && cd /opt/mesosphere/active/dcos-integration-test && \
+		"cd /opt/mesosphere/active/dcos-integration-test && \
 		MASTER_PUBLIC_IP=$(shell jq '.masters_public_ip.value' $<) \
 		MASTERS_PRIVATE_IPS=$(shell jq '.masters_private_ip.value' $<) \
 		MASTER_HOSTS=$(shell jq '.masters_private_ip.value' $<) \
@@ -51,15 +48,15 @@ test: cluster.json
 		SLAVE_HOSTS=$(shell jq '.private_agent_ips.value' $<) \
 		PUBLIC_AGENTS_PRIVATE_IPS=$(shell jq '.public_agent_ips.value' $<) \
 		PUBLIC_SLAVE_HOSTS=$(shell jq '.public_agent_ips.value' $<) \
-		pytest --full-trace --log-level=DEBUG --windows-only"
+		dcos-shell pytest --full-trace --log-level=DEBUG --windows-only"
 
 .PHONY: ssh 
 ssh: cluster.json
 	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<)
 
 .PHONY: destroy
-destroy:
-	$(TERRAFORM) destroy -auto-approve;
+destroy: cluster.json
+	$(TERRAFORM) destroy -auto-approve -var ssh_public_key_file="$(SSH_KEY).pub";
 	rm cluster.json || true;
 
 .PHONY: clean

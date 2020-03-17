@@ -19,17 +19,13 @@ package:
         "endpoint-config": "{{ windows_dcos_install_path_json }}\\etc\\dcos-diagnostics\\dcos-diagnostics-endpoint-config.json",
         "agent-port": 61001,
         "port": 1050,
-        "no-unix-socket": true
+        "no-unix-socket": true,
+        "ip-discovery-command-location": "{{ windows_dcos_install_path_json }}\\bin\\detect_ip.ps1"
       }
   - path: {{ windows_dcos_install_path }}\etc\dcos-diagnostics\dcos-diagnostics-endpoint-config.json
     content: |
       {
         "HTTPEndpoints": [
-            {
-                "Port": 5051,
-                "Uri": "/overlay-agent/overlay",
-                "Role": ["agent"]
-            },
             {
                 "Port": 5051,
                 "Uri": "/__processes__",
