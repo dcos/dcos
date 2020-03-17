@@ -146,6 +146,60 @@ class CmdConfigSetup(CommandConfig):
             self.ref_pkg_list = []
             self.dcos_conf = {}
 
+    @staticmethod
+    def get_master_ip(cluster_conf):
+        """"Get a Master IPs of DC/OS cluster configuration.
+
+            :param istor_ccluster_conf fg_dpath: pathlib.Path, absolute path to the DC/OS
+                                    configuration directory within the local DC/OS
+                                    installation storage
+
+            :return: dict, configparser.ConfigParser.read_dict() compatible data
+            """
+        # CLI options take precedence, if any.
+        # list(tuple('ipaddr', 'port'))
+        cli_master_priv_ipaddrs = [
+            ipaddr.partition(':')[::2] for ipaddr in
+            cmd_opts.get(CLI_CMDOPT.MASTER_PRIVIPADDR, '').split(' ') if
+            ipaddr != ''
+        ]
+        mnode_sects = [
+            sect for sect in self.cluster_conf if sect.startswith('master-node')
+        ]
+        # iterator(tuple('ipaddr', 'port'), str)
+        change_map = zip(cli_master_priv_ipaddrs, mnode_sects)
+        for item in change_map:
+            if item[0][0]:
+                cluster_conf[item[1]]['privateipaddr'] = item[0][0]
+                if item[0][1]:
+                    try:
+                        port = int(item[0][1])
+                    except (ValueError, TypeError):
+                        port = cm_const.ZK_CLIENTPORT_DFT
+                    port = (port if 0 < port < 65536 else
+                            cm_const.ZK_CLIENTPORT_DFT)
+                    cluster_conf[item[1]]['zookeeperclientport'] = port
+        # Add extra 'master-node' sections, if CLI provides extra arguments
+        extra_cli_items = cli_master_priv_ipaddrs[len(mnode_sects):]
+        for n, item in enumerate(extra_cli_items):
+            if item[0]:
+                # TODO: Implement collision tolerance for section names.
+                cluster_conf[f'master-node-extra{n}'] = {}
+                cluster_conf[f'master-node-extra{n}']['privateipaddr'] = (
+                    item[0]
+                )
+                if item[1]:
+                    try:
+                        port = int(item[1])
+                    except (ValueError, TypeError):
+                        port = cm_const.ZK_CLIENTPORT_DFT
+                    port = (port if 0 < port < 65536 else
+                            cm_const.ZK_CLIENTPORT_DFT)
+                    cluster_conf[f'master-node-extra{n}'][
+                        'zookeeperclientport'
+                    ] = port
+        return cluster_conf
+
     def get_cluster_conf(self):
         """"Get a collection of DC/OS cluster configuration options.
 
@@ -173,53 +227,12 @@ class CmdConfigSetup(CommandConfig):
             else:
                 fpath = Path('.').resolve().joinpath(fpath)
 
-        cluster_conf = cr_utl.rc_load_ini(
+        cluster_conf_ini = cr_utl.rc_load_ini(
             fpath, emheading='Cluster setup descriptor'
         )
 
-        # CLI options take precedence, if any.
-        # list(tuple('ipaddr', 'port'))
-        cli_master_priv_ipaddrs = [
-            ipaddr.partition(':')[::2] for ipaddr in
-            self.cmd_opts.get(CLI_CMDOPT.MASTER_PRIVIPADDR, '').split(' ') if
-            ipaddr != ''
-        ]
-        mnode_sects = [
-            sect for sect in cluster_conf if sect.startswith('master-node')
-        ]
-        # iterator(tuple('ipaddr', 'port'), str)
-        change_map = zip(cli_master_priv_ipaddrs, mnode_sects)
-        for item in change_map:
-            if item[0][0]:
-                cluster_conf[item[1]]['privateipaddr'] = item[0][0]
-                if item[0][1]:
-                    try:
-                        port = int(item[0][1])
-                    except (ValueError, TypeError):
-                        port = cm_const.ZK_CLIENTPORT_DFT
-                    port = (port if 0 < port < 65536 else
-                            cm_const.ZK_CLIENTPORT_DFT)
-                    cluster_conf[item[1]]['zookeeperclientport'] = port
+        cluster_conf = self.get_master_ip(cluster_conf_ini)
 
-        # Add extra 'master-node' sections, if CLI provides extra arguments
-        extra_cli_items = cli_master_priv_ipaddrs[len(mnode_sects):]
-        for n, item in enumerate(extra_cli_items):
-            if item[0]:
-                # TODO: Implement collision tolerance for section names.
-                cluster_conf[f'master-node-extra{n}'] = {}
-                cluster_conf[f'master-node-extra{n}']['privateipaddr'] = (
-                    item[0]
-                )
-                if item[1]:
-                    try:
-                        port = int(item[1])
-                    except (ValueError, TypeError):
-                        port = cm_const.ZK_CLIENTPORT_DFT
-                    port = (port if 0 < port < 65536 else
-                            cm_const.ZK_CLIENTPORT_DFT)
-                    cluster_conf[f'master-node-extra{n}'][
-                        'zookeeperclientport'
-                    ] = port
         # DC/OS storage distribution parameters
         cli_dstor_url = self.cmd_opts.get(CLI_CMDOPT.DSTOR_URL)
         cli_dstor_pkgrepo_path = self.cmd_opts.get(
