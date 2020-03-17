@@ -184,7 +184,7 @@ output "masters_private_ip" {
 
 output "private_agent_ips" {
     description = "These are the IP addresses of all private agents"
-    value       = "${join(",", module.dcos.infrastructure.private_agents.private_ips)}"
+    value       = "${join(",", concat(module.windowsagent.private_ips, module.dcos.infrastructure.private_agents.private_ips))}"
 }
 
 output "public_agent_ips" {
