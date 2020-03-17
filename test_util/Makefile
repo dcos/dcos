@@ -48,6 +48,7 @@ test: cluster.json
 		SLAVE_HOSTS=$(shell jq '.private_agent_ips.value' $<) \
 		PUBLIC_AGENTS_PRIVATE_IPS=$(shell jq '.public_agent_ips.value' $<) \
 		PUBLIC_SLAVE_HOSTS=$(shell jq '.public_agent_ips.value' $<) \
+	        @if [ "$(TF_VAR_variant)" != "open" ]; then DCOS_LOGIN_UNAME="demo-super" DCOS_LOGIN_UNAME="deleteme"; fi; \
 		dcos-shell pytest -vv --teamcity --log-level=DEBUG --windows-only"
 
 .PHONY: ssh 
