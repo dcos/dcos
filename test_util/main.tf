@@ -35,7 +35,7 @@ variable "windowsagent_num" {
 
 variable "ssh_public_key_file" {
   type = "string"
-  default = "./tf-dcos-rsa.pem.pub"
+  default = "~/.ssh/id_rsa.pub"
   description = "Defines the public key to log on the cluster."
 }
 

@@ -48,7 +48,7 @@ test: cluster.json
 		SLAVE_HOSTS=$(shell jq '.private_agent_ips.value' $<) \
 		PUBLIC_AGENTS_PRIVATE_IPS=$(shell jq '.public_agent_ips.value' $<) \
 		PUBLIC_SLAVE_HOSTS=$(shell jq '.public_agent_ips.value' $<) \
-		dcos-shell pytest --full-trace --log-level=DEBUG --windows-only"
+		dcos-shell pytest --teamcity --log-level=DEBUG --windows-only"
 
 .PHONY: ssh 
 ssh: cluster.json
