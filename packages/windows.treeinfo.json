@@ -1,15 +1,15 @@
 {
   "variants": {
-  	"bootstrap": "windows",
-    "adminrouter": "windows",
-    "dcos-diagnostics": "windows",
-    "mesos-modules": "windows",
     "mesos": "windows",
-    "nssm": "windows",
-    "python": "windows",
+    "mesos-modules": "windows",
+    "winpanda" : "windows",
+    "dcos-diagnostics": "windows",
+    "adminrouter": "windows",
     "telegraf": "windows",
     "vcredist": "windows",
-    "winpanda": "windows"
+    "nssm": "windows",
+	"bootstrap": "windows",
+    "python": "windows"
   },
   "exclude": [
     "erlang",
