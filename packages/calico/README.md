@@ -383,7 +383,7 @@ wget: can't connect to remote host (192.168.219.133): Connection timed out
 
 In most of the use cases a single calico profile is enough. However if for any reason more networks needs to be created, you should be aware of some corner cases.
 
-> ⚠️ NOTE: The `calico-libnetwork-plugin` (the network interface to Docker Runtime) implicitly links the IP Pool to the calico profile associated with the respective calico docker network. 
+> ⚠️ NOTE: The `calico-libnetwork-plugin` (the network interface to Docker Runtime) implicitly links the IP Pool to the calico profile associated with the respective calico docker network.
 
 That said, to add a network profile, you should:
 
@@ -396,7 +396,7 @@ That said, to add a network profile, you should:
     cidr: 10.1.0.0/16
   spec:
     nat-outgoing: true
-    disabled: false  
+    disabled: false
   ```
 2. Create a new calico profile. For example:
   ```yaml
@@ -423,13 +423,12 @@ That said, to add a network profile, you should:
       --driver calico \
       --ipam-driver calico-ipam \
       --subnet=10.1.0.0/16 \
-      <network-name> 
+      <network-name>
   ```
 
 ## 6. Migrate Applications from DC/OS Overlay to Calico
 
-This section describes how to migrate services from DC/OS overlay in DC/OS,
-Automatic Migration for all services existing a DC/OS cluster is impossible, for they can be launched by a variety of Apache Mesos frameworks ranging from production-proven platform [Marathon](https://mesosphere.github.io/marathon/) to services built on top of [dcos-common](https://github.com/mesosphere/dcos-commons), like existing stateful services [Cassandra](https://docs.d2iq.com/mesosphere/dcos/services/cassandra) and [Spark](https://docs.d2iq.com/mesosphere/dcos/services/spark), or even the ones hosted by the customers.
+Automatic Migration for all services existing within a DC/OS cluster is impossible. Services can be launched by a variety of Apache Mesos frameworks ranging from production-proven platform [Marathon](https://mesosphere.github.io/marathon/) to services built on top of [dcos-common](https://github.com/mesosphere/dcos-commons. This includes existing, stateful services such as [Cassandra](https://docs.d2iq.com/mesosphere/dcos/services/cassandra) and [Spark](https://docs.d2iq.com/mesosphere/dcos/services/spark), or services being hosted from your environment.
 
 ### 6.1. Marathon application(aka DC/OS services)
 
@@ -516,4 +515,3 @@ As soon as the tasks finish, the artifacts will be available in `downloads.mesos
 [8] https://github.com/dcos/calicoctl<br/>
 [9] https://github.com/dcos/libcalico-go/<br/>
 [10] https://github.com/projectcalico/calicoctl
-
