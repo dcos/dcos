@@ -96,7 +96,6 @@ function Build-Mesos-Modules {
 }
 
 New-Item -ItemType Directory -Force -Path $env:PKG_PATH/bin
-New-Item -ItemType Directory -Force -Path $env:PKG_PATH/etc/mesos/modules
 New-Item -ItemType Directory -Force -Path $PKG_DIR/src/mesos/build
 New-Item -ItemType Directory -Force -Path $PKG_DIR/src/mesos-modules/build
 
@@ -110,5 +109,3 @@ Copy-Item $PKG_DIR/src/mesos-modules/build/journald/Release/libjournaldlogger.dl
     $env:PKG_PATH/bin
 Copy-Item $PKG_DIR/src/mesos-modules/build/Release/metrics.dll `
     $env:PKG_PATH/bin
-
-Copy-Item $PKG_DIR/extra/*.json $env:PKG_PATH/etc/mesos/modules
