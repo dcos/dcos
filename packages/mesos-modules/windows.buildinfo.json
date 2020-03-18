@@ -2,8 +2,8 @@
   "sources": {
     "openssl": {
       "kind": "url",
-      "url": "https://slproweb.com/download/Win64OpenSSL-1_1_1d.exe",
-      "sha1": "df9c40e9e82edf693c15302cbc8e8a057857a13c"
+      "url": "https://slproweb.com/download/Win64OpenSSL-1_1_1e.exe",
+      "sha1": "b0b2fa45fd4e4ab6b502495bd2d706b570196911"
     },
     "mesos": {
       "kind": "git",
