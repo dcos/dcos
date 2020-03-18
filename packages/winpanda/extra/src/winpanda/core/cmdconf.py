@@ -212,65 +212,38 @@ class CmdConfigSetup(CommandConfig):
         #       function instead of this method to avoid massive code
         #       duplication.
 
-        # Load cluster configuration file
-        fpath = Path(self.cmd_opts.get(CLI_CMDOPT.DCOS_CLUSTERCFGPATH))
-
-        # Unblock irrelevant local operations
-        if str(fpath) == 'NOP':
-            self.cluster_conf_nop = True
-            LOG.info(f'{self.msg_src}: cluster_conf: NOP')
-            return {}
-
-        if not fpath.is_absolute():
-            if self.inst_storage.cfg_dpath.exists():
-                fpath = self.inst_storage.cfg_dpath.joinpath(fpath)
-            else:
-                fpath = Path('.').resolve().joinpath(fpath)
-
-        cluster_conf_ini = cr_utl.rc_load_ini(
-            fpath, emheading='Cluster setup descriptor'
-        )
-
-        cluster_conf = self.get_master_ip(cluster_conf_ini)
+        _cluster_conf = {}
 
         # DC/OS storage distribution parameters
         cli_dstor_url = self.cmd_opts.get(CLI_CMDOPT.DSTOR_URL)
-        cli_dstor_pkgrepo_path = self.cmd_opts.get(
-            CLI_CMDOPT.DSTOR_PKGREPOPATH
-        )
-        cli_dstor_pkglist_path = self.cmd_opts.get(
-            CLI_CMDOPT.DSTOR_PKGLISTPATH
-        )
-        cli_dstor_dcoscfg_path = self.cmd_opts.get(
-            CLI_CMDOPT.DSTOR_DCOSCFGPATH
-        )
-        if not cluster_conf.get('distribution-storage'):
-            cluster_conf['distribution-storage'] = {}
+        cli_dstor_pkgrepo_path = "windows/packages"
+        cli_dstor_pkglist_path = "windows/package_lists/latest.package_list.json"
+        cli_dstor_dcoscfg_path = "cluster-package-info.json"
 
         if cli_dstor_url:
-            cluster_conf['distribution-storage']['rooturl'] = cli_dstor_url
+            _cluster_conf['distribution-storage']['rooturl'] = cli_dstor_url
         if cli_dstor_pkgrepo_path:
-            cluster_conf['distribution-storage']['pkgrepopath'] = (
+            _cluster_conf['distribution-storage']['pkgrepopath'] = (
                 cli_dstor_pkgrepo_path
             )
         if cli_dstor_pkglist_path:
-            cluster_conf['distribution-storage']['pkglistpath'] = (
+            _cluster_conf['distribution-storage']['pkglistpath'] = (
                 cli_dstor_pkglist_path
             )
         if cli_dstor_dcoscfg_path:
-            cluster_conf['distribution-storage']['dcoscfgpath'] = (
+            _cluster_conf['distribution-storage']['dcoscfgpath'] = (
                 cli_dstor_dcoscfg_path
             )
 
         # Local parameters of DC/OS node
         cli_local_priv_ipaddr = self.cmd_opts.get(CLI_CMDOPT.LOCAL_PRIVIPADDR)
-        if not cluster_conf.get('local'):
-            cluster_conf['local'] = {}
+        if not _cluster_conf.get('local'):
+            _cluster_conf['local'] = {}
 
         if cli_local_priv_ipaddr:
-            cluster_conf['local']['privateipaddr'] = cli_local_priv_ipaddr
+            _cluster_conf['local']['privateipaddr'] = cli_local_priv_ipaddr
 
-        return cluster_conf
+        return _cluster_conf
 
     def get_ref_pkg_list(self):
         """Get the current reference package list.
@@ -346,16 +319,7 @@ class CmdConfigSetup(CommandConfig):
         #       Thus the CmdConfigSetup is to be moved to use that standalone
         #       function instead of this method to avoid massive code
         #       duplication.
-        dstor_root_url = (
-            self.cluster_conf.get('distribution-storage', {}).get(
-                'rooturl', ''
-            )
-        )
-        dstor_linux_pkg_index_path = (
-            self.cluster_conf.get('distribution-storage', {}).get(
-                'dcosclusterpkginfopath', ''
-            )
-        )
+        dstor_linux_pkg_index_path = 'cluster-package-info.json'
         template_fname = 'dcos-config-windows.yaml'
         values_fname = 'expanded.config.full.json'
 
