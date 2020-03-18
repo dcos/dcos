@@ -84,3 +84,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Updated dcos-config.yaml to support some Mesos Flags. (DCOS-59021)
 
 * Fix Telegraf migration when no containers present. (D2IQ-64507)
+
+* Update OpenSSL to 1.1.1d. (D2IQ-65604)

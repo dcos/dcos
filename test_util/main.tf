@@ -35,7 +35,7 @@ variable "windowsagent_num" {
 
 variable "ssh_public_key_file" {
   type = "string"
-  default = "./tf-dcos-rsa.pem.pub"
+  default = "~/.ssh/id_rsa.pub"
   description = "Defines the public key to log on the cluster."
 }
 
@@ -184,7 +184,7 @@ output "masters_private_ip" {
 
 output "private_agent_ips" {
     description = "These are the IP addresses of all private agents"
-    value       = "${join(",", module.dcos.infrastructure.private_agents.private_ips)}"
+    value       = "${join(",", concat(module.windowsagent.private_ips, module.dcos.infrastructure.private_agents.private_ips))}"
 }
 
 output "public_agent_ips" {
