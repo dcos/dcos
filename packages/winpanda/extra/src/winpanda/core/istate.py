@@ -32,15 +32,14 @@ VALID_ISTATES = [
 
 class InstallationState:
     """DC/OS installation state descriptor."""
-    def __init__(self, istor_nodes: IStorNodes=None,
-                 istate: str=ISTATE.UNDEFINED, istate_dpath: Path=None,
-                 save: bool=True):
+    def __init__(self, istor_nodes=None,
+                 istate=ISTATE.UNDEFINED, istate_dpath=None, save=True):
         """Constructor.
 
         :param istor_nodes:  IStorNodes, DC/OS installation storage nodes (set
                              of pathlib.Path objects)
         :param istate:       str, DC/OS installation state code
-        :param istate_dpath: Path, absolute path to the DC/OS state
+        :param istate_dpath: pathlib.Path, absolute path to the DC/OS state
                              directory within the local DC/OS installation
                              storage
         :param save:         bool, save DC/OS installation state descriptor to
@@ -49,12 +48,27 @@ class InstallationState:
         self.msg_src = self.__class__.__name__
 
         if istor_nodes is not None:
+            assert isinstance(istor_nodes, IStorNodes), (
+                f'{self.msg_src}: Argument: istor_nodes:'
+                f' Got {type(istor_nodes).__name__} instead of IStorNodes'
+            )
             istate_dpath = getattr(istor_nodes, ISTOR_NODE.STATE)
-        elif istate_dpath is None:
+        elif istate_dpath is not None:
+            assert (
+                isinstance(istate_dpath, Path) and istate_dpath.is_absolute()
+            ), (
+                f'{self.msg_src}: Argument: istate_dpath: Absolute'
+                f' pathlib.Path is required: {istate_dpath}'
+            )
+        else:
             assert False, (
                 f'{self.msg_src}: Argument: Either istor_nodes or istate_dpath'
                 f'must be specified'
             )
+        assert isinstance(istate, str), (
+            f'{self.msg_src}: Argument: istate:'
+            f' Got {type(istate).__name__} instead of str'
+        )
         assert istate in VALID_ISTATES, (
             f'{self.msg_src}: Argument: istate: Invalid value: {istate}'
         )
@@ -96,10 +110,10 @@ class InstallationState:
         }
 
     @ classmethod
-    def load(cls, fpath: Path):
+    def load(cls, fpath):
         """Load DC/OS installation state descriptor from a file.
 
-        :param fpath: Path, path to a JSON-formatted descriptor file.
+        :param fpath: pathlib.Path, path to a JSON-formatted descriptor file.
         :return:      InstallationState, DC/OS installation state descriptor
                       object.
         """
@@ -148,7 +162,7 @@ class InstallationState:
         return self._istor_nodes
 
     @istor_nodes.setter
-    def istor_nodes(self, istor_nodes: IStorNodes):
+    def istor_nodes(self, istor_nodes):
         """Set DC/OS installation storage layout part of the DC/OS installation
         state descriptor.
 
@@ -159,6 +173,8 @@ class InstallationState:
 
         if self._istor_nodes is not None:
             raise RuntimeError(f'{err_msg_base}: Already set')
+        elif not isinstance(istor_nodes, IStorNodes):
+            raise TypeError(f'{err_msg_base}: {istor_nodes}')
         elif getattr(istor_nodes, ISTOR_NODE.STATE) != self._istate_dpath:
             raise ValueError(f'{err_msg_base}: Installation'
                              f' state directory mismatch: {istor_nodes}')
@@ -176,12 +192,15 @@ class InstallationState:
         return self._istate
 
     @istate.setter
-    def istate(self, istate: str):
+    def istate(self, istate):
         """Set DC/OS installation state code.
 
         :param istate: str, DC/OS installation state code
         """
         err_msg = f'{self.msg_src}: Set state: {istate}'
+
+        if not isinstance(istate, str):
+            raise TypeError(err_msg)
 
         if istate not in VALID_ISTATES:
             raise ValueError(err_msg)

@@ -6,14 +6,14 @@ import abc
 
 from common import logger
 from svcm import exceptions as svcm_exc
-from typing import Dict, Callable, Any, Tuple
+
 
 LOG = logger.get_logger(__name__)
 
-SVCM_TYPES = {}  # type: Dict
+SVCM_TYPES = {}
 
 
-def create(**svcm_opts: Dict) -> Any:
+def create(**svcm_opts):
     """Instantiate a Windows service manager.
 
     :param svcm_opts: dict, Windows service manager options:
@@ -39,13 +39,13 @@ def create(**svcm_opts: Dict) -> Any:
     return SVCM_TYPES[executor_name](**svcm_opts)
 
 
-def svcm_type(executor_name: str) -> Callable:
+def svcm_type(executor_name):
     """Register a Windows service manager class in the service manager types
     registry.
 
     :param executor_name: str, name of underlying executor tool
     """
-    def decorator(cls: Any) -> Any:
+    def decorator(cls):
         """"""
         SVCM_TYPES[executor_name] = cls
         return cls
@@ -56,7 +56,7 @@ def svcm_type(executor_name: str) -> Callable:
 class WindowsServiceManager(metaclass=abc.ABCMeta):
     """Abstract base class for Windows service manager types.
     """
-    def __init__(self, **svcm_opts: Dict):
+    def __init__(self, **svcm_opts):
         """Constructor.
 
         :param svcm_opts: dict, service manager options:
@@ -67,65 +67,65 @@ class WindowsServiceManager(metaclass=abc.ABCMeta):
         """
         self.svcm_opts = svcm_opts
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return (
             '<%s(svcm_opts="%s")>' % (self.__class__.__name__, self.svcm_opts)
         )
 
-    def __str__(self) -> str:
+    def __str__(self):
         return self.__repr__()
 
     @abc.abstractmethod
-    def verify_svcm_options(self, *args: Any, **kwargs: Any) -> Any:
+    def verify_svcm_options(self, *args, **kwargs):
         """Verify Windows service manager options.
         """
         pass
 
     @abc.abstractmethod
-    def setup(self) -> None:
+    def setup(self, *args, **kwargs):
         """Setup (register) configuration for a Windows service.
         """
         pass
 
     @abc.abstractmethod
-    def remove(self) -> None:
+    def remove(self, *args, **kwargs):
         """Uninstall configuration for a Windows service.
         """
         pass
 
     @abc.abstractmethod
-    def enable(self) -> None:
+    def enable(self, *args, **kwargs):
         """Turn service's  auto-start flag on (start service at OS bootstrap).
         """
         pass
 
     @abc.abstractmethod
-    def disable(self) -> None:
+    def disable(self, *args, **kwargs):
         """Turn service's  auto-start flag off (do not start service at OS
         bootstrap).
         """
         pass
 
     @abc.abstractmethod
-    def start(self) -> None:
+    def start(self, *args, **kwargs):
         """Start a registered service (immediately).
         """
         pass
 
     @abc.abstractmethod
-    def stop(self) -> None:
+    def stop(self, *args, **kwargs):
         """Stop a registered service (immediately).
         """
         pass
 
     @abc.abstractmethod
-    def restart(self) -> None:
+    def restart(self, *args, **kwargs):
         """Restart   a registered service (immediately).
         """
         pass
 
     @abc.abstractmethod
-    def status(self) -> Tuple:
+    def status(self, *args, **kwargs):
         """Discover status of a registered service.
         """
         pass

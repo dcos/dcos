@@ -5,12 +5,11 @@ DC/OS package controller and helper type definitions.
 from pathlib import Path
 
 from .manifest import PackageManifest
-from .id import PackageId
 from cfgm import exceptions as cfgm_exc
 from cfgm.cfgm import PkgConfManager
 from common import logger
 from common import utils as cm_utl
-from common.storage import ISTOR_NODE, IStorNodes
+from common.storage import ISTOR_NODE
 from core import exceptions as cr_exc
 from extm.extm import PkgInstExtrasManager
 from svcm import exceptions as svcm_exc
@@ -22,9 +21,8 @@ LOG = logger.get_logger(__name__)
 
 class Package:
     """Package manager."""
-    def __init__(self, pkg_id: PackageId = None, istor_nodes: IStorNodes = None,
-                 cluster_conf: dict = None, extra_context: dict = None,
-                 manifest: PackageManifest = None):
+    def __init__(self, pkg_id=None, istor_nodes=None, cluster_conf=None,
+                 extra_context=None, manifest=None):
         """Constructor.
 
         :param pkg_id:        PackageId, package ID
@@ -38,12 +36,17 @@ class Package:
         """
         self.msg_src = self.__class__.__name__
 
-        if manifest is None:
-            manifest = PackageManifest(
+        if manifest is not None:
+            assert isinstance(manifest, PackageManifest), (
+                f'Argument: manifest:'
+                f' Got {type(manifest).__name__} instead of PackageManifest'
+            )
+            self.manifest = manifest
+        else:
+            self.manifest = PackageManifest(
                 pkg_id=pkg_id, istor_nodes=istor_nodes,
                 cluster_conf=cluster_conf, extra_context=extra_context
             )
-        self.manifest = manifest
 
         LOG.debug(f'{self.msg_src}: {self.manifest.pkg_id.pkg_id}: Manifest:'
                   f' {self.manifest}')
@@ -73,7 +76,7 @@ class Package:
         """"""
         return self.manifest.pkg_id
 
-    def handle_config_setup(self, mheading: str=None):
+    def handle_config_setup(self, mheading=None):
         """Execute steps on setting up package configuration files.
 
         :param mheading: str, descriptive heading to be added to error/log
@@ -90,7 +93,7 @@ class Package:
         else:
             LOG.debug(f'{mheading}: Setup configuration: OK')
 
-    def handle_inst_extras(self, mheading: str=None):
+    def handle_inst_extras(self, mheading=None):
         """Process package's extra installation options.
 
         :param mheading: str, descriptive heading to be added to error/log
@@ -106,7 +109,7 @@ class Package:
         else:
             LOG.debug(f'{mheading}: Handle extra installation options: NOP')
 
-    def handle_uninst_extras(self, mheading: str=None):
+    def handle_uninst_extras(self, mheading=None):
         """Process package's extra uninstall options.
 
         :param mheading: str, descriptive heading to be added to error/log
@@ -122,7 +125,7 @@ class Package:
         else:
             LOG.debug(f'{mheading}: Handle extra uninstall options: NOP')
 
-    def handle_svc_setup(self, mheading: str=None):
+    def handle_svc_setup(self, mheading=None):
         """Execute steps on package's service setup.
 
         :param mheading: str, descriptive heading to be added to error/log
@@ -190,7 +193,7 @@ class Package:
         else:
             LOG.debug(f'{mheading}: Setup service: NOP')
 
-    def handle_svc_wipe(self, mheading: str=None):
+    def handle_svc_wipe(self, mheading=None):
         """Execute steps on package's service wipe off.
 
         :param mheading: str, descriptive heading to be added to error/log
@@ -233,7 +236,7 @@ class Package:
         else:
             LOG.debug(f'{mheading}: Wipe service: NOP')
 
-    def handle_svc_start(self, mheading: str=None):
+    def handle_svc_start(self, mheading=None):
         """Execute steps on package's service start.
 
         :param mheading: str, descriptive heading to be added to error/log
@@ -246,7 +249,7 @@ class Package:
         #       Overall design of this method should resemble one of the
         #       Package.handle_svc_stop() method.
 
-    def handle_svc_stop(self, mheading: str=None):
+    def handle_svc_stop(self, mheading=None):
         """Execute steps on package's service stop.
 
         :param mheading: str, descriptive heading to be added to error/log
@@ -287,7 +290,7 @@ class Package:
         else:
             LOG.debug(f'{mheading}: Stop service: NOP')
 
-    def handle_vardata_wipe(self, mheading: str=None):
+    def handle_vardata_wipe(self, mheading=None):
         """Execute steps on wiping of package's variable data.
 
         :param mheading: str, descriptive heading to be added to error/log
@@ -310,12 +313,12 @@ class Package:
                            f' {type(e).__name__}: {e}')
                 raise cr_exc.RCError(err_msg) from e
 
-    def save_manifest(self, mheading: str=None, dpath: Path=None):
+    def save_manifest(self, mheading=None, dpath=None):
         """Save package's manifest to filesystem.
 
         :param mheading: str, descriptive heading to be added to error/log
                          messages
-        :param dpath:    Path, absolute path to the host directory
+        :param dpath:    pathlib.Path, absolute path to the host directory
                          where to save to
         """
         mhd_base = f'{self.msg_src}: {self.id.pkg_name}'
@@ -328,12 +331,12 @@ class Package:
             err_msg = f'{mheading}: Register package: {self.id}: {e}'
             raise cr_exc.RCError(err_msg) from e
 
-    def delete_manifest(self, mheading: str=None, dpath: Path=None):
+    def delete_manifest(self, mheading=None, dpath=None):
         """Delete package's manifest from filesystem.
 
         :param mheading: str, descriptive heading to be added to error/log
                          messages
-        :param dpath:    Path, absolute path to the host directory
+        :param dpath:    pathlib.Path, absolute path to the host directory
                          where to delete from
         """
         mhd_base = f'{self.msg_src}: {self.id.pkg_name}'

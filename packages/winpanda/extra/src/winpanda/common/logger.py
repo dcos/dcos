@@ -6,8 +6,6 @@ import logging
 import logging.handlers as loghandlers
 import time
 
-from pathlib import Path
-
 
 class LOG_LEVEL:
     """Log level constants."""
@@ -19,7 +17,7 @@ class LOG_LEVEL:
     NOTSET = logging.NOTSET
 
 
-def get_logger(name: str) -> logging.Logger:
+def get_logger(name):
     """Instantiate a regular module-level logger.
 
     :param name: str, logger name
@@ -28,12 +26,11 @@ def get_logger(name: str) -> logging.Logger:
     return logging.getLogger(name=name)
 
 
-def master_setup(log_level: int, file_path: Path, file_size: int,
-                 history_size: int) -> None:
+def master_setup(log_level, file_path, file_size, history_size):
     """Setup the master part of logging infrastructure.
 
     :param log_level:         int, log-level constant (ex. logging.INFO)
-    :param file_path:         Path, local FS path to the log-file
+    :param file_path:         pathlib.Path, local FS path to the log-file
     :param file_size:         int, maximum size (bytes) of a single log-file
                               before it gets rotated
     :param history_size:      int, maximum size of log-file history. The oldest
@@ -53,7 +50,7 @@ def master_setup(log_level: int, file_path: Path, file_size: int,
             ' %(levelname)s: %(message)s'
         )
     # Use UTC-based timestamps in log
-    log_fmt.converter = time.gmtime  # type: ignore
+    log_fmt.converter = time.gmtime
     # Suppress error reporting during logging operations
     logging.raiseExceptions = False
     # Setup log handler

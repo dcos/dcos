@@ -12,16 +12,22 @@ from common import exceptions as cm_exc
 from common import logger
 from core.rc_ctx import ResourceContext
 from core import exceptions as cr_exc
-from core.package.package import Package
-from typing import Dict, List, Any, Callable
 
 
 LOG = logger.get_logger(__name__)
 
 
-def exception_handler(func: Callable) -> Callable:
-    def wrapper(fpath: Path, emheading: str = None, render: bool = False,
-                context: ResourceContext = None) -> Any:
+def exception_handler(func):
+    def wrapper(fpath, emheading=None, render=False, context=None):
+        assert isinstance(fpath, Path) and fpath.is_absolute(), (
+            f'Argument: fpath: Absolute pathlib.Path is required: {fpath}'
+        )
+        if context is not None:
+            assert isinstance(context, ResourceContext), (
+                f'Argument: context:'
+                f' Got {type(context).__name__} instead of ResourceContext'
+            )
+
         try:
             content = func(fpath, emheading, render, context)
 
@@ -44,13 +50,12 @@ def exception_handler(func: Callable) -> Callable:
 
 
 @exception_handler
-def rc_load_json(fpath: Path, emheading: str = None, render: bool = False,
-                 context: ResourceContext = None) -> Any:
+def rc_load_json(fpath, emheading=None, render=False, context=None):
     """Load JSON-formatted data from a resource file. Content of a resource
     file can be pre-processed by Jinja2 rendering engine before being passed to
     JSON-parser.
 
-    :param fpath:     Path, path to a source file.
+    :param fpath:     pathlib.Path, path to a source file.
     :param emheading: str, heading to be added to the exception's description
     :param render:    bool, perform template rendering
     :param context:   ResourceContext, rendering context data object
@@ -73,8 +78,7 @@ def rc_load_json(fpath: Path, emheading: str = None, render: bool = False,
 
 
 @exception_handler
-def rc_load_ini(fpath: Path, emheading: str = None, render: bool = False,
-                context: ResourceContext = None) -> Any:
+def rc_load_ini(fpath, emheading=None, render=False, context=None):
     """Load INI-formatted data from a resource file. Content of a resource
     file can be pre-processed by Jinja2 rendering engine before being passed to
     INI-parser.
@@ -105,8 +109,7 @@ def rc_load_ini(fpath: Path, emheading: str = None, render: bool = False,
 
 
 @exception_handler
-def rc_load_yaml(fpath: Path, emheading: str = "", render: bool = False,
-                 context: ResourceContext = None) -> Any:
+def rc_load_yaml(fpath, emheading=None, render=False, context=None):
     """Load YAML-formatted data from a resource file. Content of a resource
     file can be pre-processed by Jinja2 rendering engine before being passed to
     YAML-parser.
@@ -133,7 +136,7 @@ def rc_load_yaml(fpath: Path, emheading: str = "", render: bool = False,
     return y_body
 
 
-def pkg_sort_by_deps(packages: Dict[str, Package]) -> List[Package]:
+def pkg_sort_by_deps(packages):
     """Get a list of package manager objects sorted by mutual dependencies of
     their associated DC/OS packages.
     Ref:

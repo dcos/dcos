@@ -20,7 +20,6 @@ from . import exceptions as svcm_exc
 from common import exceptions as cm_exc
 from common import logger
 from common import utils as cm_utl
-from typing import List, Tuple
 
 
 LOG = logger.get_logger(__name__)
@@ -116,7 +115,6 @@ def _verify_svcm_executor(command):
         :return:        object, result of a method being decorated
         """
         if manager.exec_path is None:
-            # TODO redesign access to the private method
             manager.exec_path = manager._verify_executor()
 
         return command(manager, *args, **kwargs)
@@ -302,8 +300,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
 
         return setup_pchain
 
-    def _run_external_command(self, svcm_op_name: str, cl_elements: List
-                              ) -> subprocess.CompletedProcess:
+    def _run_external_command(self, svcm_op_name, cl_elements):
         """Run an external command within the scope of a service manager's
         operation of a higher level.
 
@@ -312,6 +309,11 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         :param cl_elements:  list[str], a sequence of individual elements of
                              command line, beginning with executable name
         """
+        assert isinstance(cl_elements, list), (
+            f'{self.msg_src}: Argument: cl_elements:'
+            f' Got {type(cl_elements).__name__} instead of list'
+        )
+
         cmd_line = ' '.join(cl_elements)
         try:
             ext_cmd_run = cm_utl.run_external_command(cmd_line)
@@ -327,7 +329,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         return ext_cmd_run
 
     @_verify_svcm_executor
-    def setup(self) -> None:
+    def setup(self):
         """Setup (register) configuration for a Windows service.
         """
         svc_setup_pchain = self._get_svc_setup_pchain()
@@ -352,7 +354,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         #       setup operation.
 
     @_verify_svcm_executor
-    def remove(self) -> None:
+    def remove(self):
         """Remove configuration for a Windows service."""
         cl_elements = [
             f'{self.exec_path}', NSSMCommand.REMOVE.value,
@@ -362,7 +364,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         self._run_external_command('remove', cl_elements)
 
     @_verify_svcm_executor
-    def enable(self) -> None:
+    def enable(self):
         """Turn service's  auto-start flag on (start service at OS bootstrap).
         """
         cl_elements = [
@@ -373,7 +375,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         self._run_external_command('enable', cl_elements)
 
     @_verify_svcm_executor
-    def disable(self) -> None:
+    def disable(self):
         """Turn service's  auto-start flag off (do not start service at OS
         bootstrap).
         """
@@ -385,7 +387,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         self._run_external_command('disable', cl_elements)
 
     @_verify_svcm_executor
-    def _primitive_command(self, command_name: str) -> subprocess.CompletedProcess:
+    def _primitive_command(self, command_name):
         """Primitive command template."""
         assert command_name in NSSMCommand.values_primitive(), (
             f'{self.msg_src}: Non primitive command: {command_name}'
@@ -395,19 +397,19 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
 
         return self._run_external_command(command_name, cl_elements)
 
-    def start(self) -> None:
+    def start(self):
         """Start a registered service (immediately)."""
         self._primitive_command(NSSMCommand.START.value)
 
-    def stop(self) -> None:
+    def stop(self):
         """Stop a registered service (immediately)."""
         self._primitive_command(NSSMCommand.STOP.value)
 
-    def restart(self) -> None:
+    def restart(self):
         """Restart a registered service (immediately)."""
         self._primitive_command(NSSMCommand.RESTART.value)
 
-    def status(self) -> Tuple:
+    def status(self):
         """Discover status of a registered service.
         """
         cmd_run = self._primitive_command(NSSMCommand.STATUS.value)

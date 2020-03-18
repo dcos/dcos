@@ -76,7 +76,7 @@ def create(**cmd_opts):
     return CMD_TYPES[command_name](**cmd_opts)
 
 
-def command_type(command_name: str):
+def command_type(command_name):
     """Register a command class in the command types registry.
 
     :param command_name: str, name of a command
@@ -260,7 +260,7 @@ class CmdSetup(Command):
             LOG.info(f'{self.msg_src}: Setup package:'
                      f' {package.manifest.pkg_id.pkg_id}: OK')
 
-    def _handle_pkg_dir_setup(self, package: Package):
+    def _handle_pkg_dir_setup(self, package):
         """Transfer files from special directories into location.
 
         :param package: Package, DC/OS package manager object
@@ -282,7 +282,7 @@ class CmdSetup(Command):
                 dstdir.mkdir(exist_ok=True)
                 cm_utl.transfer_files(str(srcdir), str(dstdir))
 
-    def _handle_pkg_cfg_setup(self, package: Package):
+    def _handle_pkg_cfg_setup(self, package):
         """Execute steps on package configuration files setup.
 
         :param package: Package, DC/OS package manager object
@@ -306,7 +306,7 @@ class CmdSetup(Command):
             LOG.debug(f'{self.msg_src}: Execute: {pkg_id.pkg_name}: Setup'
                       f' configuration: OK')
 
-    def _handle_pkg_inst_extras(self, package: Package):
+    def _handle_pkg_inst_extras(self, package):
         """Process package extra installation options.
 
         :param package: Package, DC/OS package manager object
@@ -332,7 +332,7 @@ class CmdSetup(Command):
             LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
                       f' Handle extra installation options: NOP')
 
-    def _handle_pkg_svc_setup(self, package: Package):
+    def _handle_pkg_svc_setup(self, package):
         """Execute steps on package service setup.
 
         :param package: Package, DC/OS package manager object
@@ -701,7 +701,7 @@ class CmdUpgrade(Command):
             LOG.info(f'{self.msg_src}: Setup package:'
                      f' {package.manifest.pkg_id.pkg_id}: OK')
 
-    def _handle_pkg_dir_setup(self, package: Package):
+    def _handle_pkg_dir_setup(self, package):
         """Transfer files from special directories into location.
 
         :param package: Package, DC/OS package manager object
@@ -723,7 +723,7 @@ class CmdUpgrade(Command):
                 dstdir.mkdir(exist_ok=True)
                 cm_utl.transfer_files(str(srcdir), str(dstdir))
 
-    def _handle_pkg_cfg_setup(self, package: Package):
+    def _handle_pkg_cfg_setup(self, package):
         """Execute steps on package configuration files setup.
 
         :param package: Package, DC/OS package manager object
@@ -747,7 +747,7 @@ class CmdUpgrade(Command):
             LOG.debug(f'{self.msg_src}: Execute: {pkg_id.pkg_name}: Setup'
                       f' configuration: OK')
 
-    def _handle_pkg_inst_extras(self, package: Package):
+    def _handle_pkg_inst_extras(self, package):
         """Process package extra installation options.
 
         :param package: Package, DC/OS package manager object
@@ -773,7 +773,7 @@ class CmdUpgrade(Command):
             LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}:'
                       f' Handle extra installation options: NOP')
 
-    def _handle_pkg_svc_setup(self, package: Package):
+    def _handle_pkg_svc_setup(self, package):
         """Execute steps on package service setup.
 
         :param package: Package, DC/OS package manager object
@@ -973,4 +973,3 @@ class CmdStart(Command):
         else:
             err_msg = f'Invalid service status: {svc_name}: {svc_status}'
             raise svcm_exc.ServicePersistentError(err_msg)
-
