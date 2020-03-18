@@ -191,7 +191,6 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'WinRM',
         'adminrouter',
         'dcos-diagnostics',
-        'docker',
         'mesos-agent',
         'telegraf',
     }
