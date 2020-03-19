@@ -270,7 +270,7 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
             dcos_api_session.health.get('/units/mesos-agent/nodes', node=master))
         windows_agent_nodes = get_nodes_from_response(windows_agent_nodes_response)
 
-        assert (agent_nodes + windows_agent_nodes) == dcos_api_session.slaves
+        assert set(agent_nodes + windows_agent_nodes) == set(dcos_api_session.slaves)
 
 
 def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
