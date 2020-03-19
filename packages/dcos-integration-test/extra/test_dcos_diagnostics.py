@@ -476,21 +476,21 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
 
     # for Windows host
     expected_windows_agent_files = [
-        '5051 - __processes__.json',
-        '5051 - state.json',
-        '5051 - containers.json',
-        '5051 - system_stats_json.json',
-        '5051 - flags.json',
-        '5051 - metrics_snapshot.json',
-        'dcos - diagnostics - health.json'
-        'C:\d2iq\dcos\\var\log\\adminrouter\\adminrouter-nssm.log',
-        'C:\d2iq\dcos\\var\log\\telegraf\\telegraf.log',
-        'C:\d2iq\dcos\\var\log\dcos-diagnostics\dcos-diagnostics.log',
-        'C:\d2iq\dcos\\var\log\winpanda\winpanda.log',
-        'C:\d2iq\dcos\\var\log\\adminrouter\\adminrouter-access.log',
-        'C:\d2iq\dcos\\var\log\dcos_install.log',
-        'C:\d2iq\dcos\\var\log\\adminrouter\\adminrouter-error.log',
-        'C:\d2iq\dcos\\var\log\mesos\mesos-agent.log'
+        '5051-__processes__.json',
+        '5051-state.json',
+        '5051-containers.json',
+        '5051-system_stats_json.json',
+        '5051-flags.json',
+        '5051-metrics_snapshot.json',
+        'dcos-diagnostics-health.json'
+        'C:\\d2iq\\dcos\\var\log\\adminrouter\\adminrouter-nssm.log',
+        'C:\\d2iq\\dcos\\var\log\\telegraf\\telegraf.log',
+        'C:\\d2iq\\dcos\\var\log\dcos-diagnostics\\dcos-diagnostics.log',
+        'C:\\d2iq\\dcos\\var\\log\\winpanda\\winpanda.log',
+        'C:\\d2iq\\dcos\\var\\log\\adminrouter\\adminrouter-access.log',
+        'C:\\d2iq\\dcos\\var\\log\dcos_install.log',
+        'C:\\d2iq\\dcos\\var\\log\\adminrouter\\adminrouter-error.log',
+        'C:\\d2iq\\dcos\\var\\log\\mesos\\mesos-agent.log'
     ]
 
     # for public agent host
