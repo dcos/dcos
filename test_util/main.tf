@@ -17,6 +17,11 @@ variable "variant" {
   default = "open"
 }
 
+variable "dcos_security" {
+  type = "string"
+  default = ""
+}
+
 variable "owner" {
     type = "string"
     default = "dcos/test_util"
@@ -39,10 +44,10 @@ variable "ssh_public_key_file" {
   description = "Defines the public key to log on the cluster."
 }
 
-variable "license_file" {
+variable "dcos_license_key_contents" {
   type = "string"
-  default = "./license.txt"
-  description = "Defines location of license used for EE."
+  default = ""
+  description = "Defines content of license used for EE."
 }
 
 # Used to determine your public IP for forwarding rules
@@ -85,8 +90,9 @@ module "dcos" {
   bootstrap_instance_type = "m4.xlarge"
 
   dcos_variant              = "${var.variant}"
+  dcos_security             = "${var.dcos_security}"
   dcos_version              = "2.1.0-beta1"
-  dcos_license_key_contents = "${file("./license.txt")}"
+  dcos_license_key_contents = "${var.dcos_license_key_contents}"
   ansible_bundled_container = "mesosphere/dcos-ansible-bundle:windows-beta-support"
 
   custom_dcos_download_path = "${var.custom_dcos_download_path}"
