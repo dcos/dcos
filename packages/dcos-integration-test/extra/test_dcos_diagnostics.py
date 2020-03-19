@@ -470,6 +470,26 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
         'binsh_-c_cat proc`systemctl show dcos-mesos-slave.service -p MainPID| cut -d\'=\' -f2`environ.output'
     ] + expected_agent_common_files + expected_common_files
 
+    # for Windows host
+    expected_windows_agent_files = [
+        '5051 - __processes__.json',
+        '5051 - state.json',
+        '5051 - containers.json',
+        '5051 - system_stats_json.json',
+        '5051 - flags.json',
+        '5051 - metrics_snapshot.json',
+        'dcos - diagnostics - health.json'
+        'C:\d2iq\dcos\\var\log\\adminrouter\\adminrouter-nssm.log',
+        'C:\d2iq\dcos\\var\log\\telegraf\\telegraf.log',
+        'C:\d2iq\dcos\\var\log\dcos-diagnostics\dcos-diagnostics.log',
+        'C:\d2iq\dcos\\var\log\winpanda\winpanda.log',
+        'C:\d2iq\dcos\\var\log\\adminrouter\\adminrouter-access.log' ,
+        'C:\d2iq\dcos\\var\log\dcos_install.log',
+        'C:\d2iq\dcos\\var\log\\adminrouter\\adminrouter-error.log',
+        'C:\d2iq\dcos\\var\log\mesos\mesos-agent.log'
+    ]
+
+
     # for public agent host
     expected_public_agent_files = [
         'dcos-mesos-slave-public.service',
@@ -561,7 +581,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
                 unit_output = get_file_content(agent_folder + 'C:\d2iq\dcos\var\log\mesos\mesos-agent.log', z)
                 verify_unit_response(unit_output, 100)
 
-                verify_archived_items(agent_folder, archived_items, expected_agent_files)
+                verify_archived_items(agent_folder, archived_items, expected_windows_agent_files)
             else:
                 # make sure systemd unit output is correct and does not contain error message
                 unit_output = get_file_content(agent_folder + 'dcos-mesos-slave.service', z)
