@@ -482,7 +482,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
         '5051-system_stats_json.json',
         '5051-flags.json',
         '5051-metrics_snapshot.json',
-        'dcos-diagnostics-health.json'
+        'dcos-diagnostics-health.json',
         'C:\\d2iq\\dcos\\var\log\\adminrouter\\adminrouter-nssm.log',
         'C:\\d2iq\\dcos\\var\log\\telegraf\\telegraf.log',
         'C:\\d2iq\\dcos\\var\log\dcos-diagnostics\\dcos-diagnostics.log',
