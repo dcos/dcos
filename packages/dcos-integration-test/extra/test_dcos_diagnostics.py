@@ -266,9 +266,13 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
             dcos_api_session.health.get('/units/dcos-mesos-slave.service/nodes', node=master))
         agent_nodes = get_nodes_from_response(agent_nodes_response)
 
-        windows_agent_nodes_response = check_json(
-            dcos_api_session.health.get('/units/mesos-agent/nodes', node=master))
-        windows_agent_nodes = get_nodes_from_response(windows_agent_nodes_response)
+        # Fetch Windows nodes if we have some.
+        if 'WinRM' in pulled_units:
+            windows_agent_nodes_response = check_json(
+                dcos_api_session.health.get('/units/mesos-agent/nodes', node=master))
+            windows_agent_nodes = get_nodes_from_response(windows_agent_nodes_response)
+        else:
+            windows_agent_nodes = list()
 
         assert set(agent_nodes + windows_agent_nodes) == set(dcos_api_session.slaves)
 
