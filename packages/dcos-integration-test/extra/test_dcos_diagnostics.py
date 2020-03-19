@@ -555,11 +555,19 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
             assert 'ip' in health_report
             assert health_report['ip'] == slave_ip
 
-            # make sure systemd unit output is correct and does not contain error message
-            unit_output = get_file_content(agent_folder + 'dcos-mesos-slave.service', z)
-            verify_unit_response(unit_output, 100)
+            # Decide if we have a Windows or Linux agent based on the health report.
+            assert 'units' in health_report
+            if 'WinRM' in health_report['units']:
+                unit_output = get_file_content(agent_folder + 'C:\d2iq\dcos\var\log\mesos\mesos-agent.log', z)
+                verify_unit_response(unit_output, 100)
 
-            verify_archived_items(agent_folder, archived_items, expected_agent_files)
+                verify_archived_items(agent_folder, archived_items, expected_agent_files)
+            else:
+                # make sure systemd unit output is correct and does not contain error message
+                unit_output = get_file_content(agent_folder + 'dcos-mesos-slave.service', z)
+                verify_unit_response(unit_output, 100)
+
+                verify_archived_items(agent_folder, archived_items, expected_agent_files)
 
         # make sure all required log files for public agent node are in place.
         for public_slave_ip in dcos_api_session.public_slaves:
