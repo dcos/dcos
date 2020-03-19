@@ -101,6 +101,10 @@ class CmdConfigSetup(CommandConfig):
         # DC/OS aggregated configuration object
         self.dcos_conf = self.get_dcos_conf()
 
+        # Add discovery configuration for dcos_conf
+        discovery_type = self.dcos_conf.get('values').get('master_discovery')
+        self.cluster_conf['discovery'] = {'type': discovery_type}
+
     def get_cluster_conf(self):
         """"Get a collection of DC/OS cluster configuration options.
 

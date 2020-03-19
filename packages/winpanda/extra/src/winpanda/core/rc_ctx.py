@@ -14,9 +14,12 @@ from typing import Dict
 
 LOG = logger.get_logger(__name__)
 
+CMD_GET_IP = ('powershell', '-executionpolicy', 'Bypass', '-File',
+              'C:\\d2iq\\dcos\\bin\\detect_ip.ps1')
 
 class RCCONTEXT_ITEM:
     """Element of resource rendering context."""
+    MASTER_LOCATION = 'master_location'
     MASTER_PRIV_IPADDR = 'master_priv_ipaddr'
     LOCAL_PRIV_IPADDR = 'local_priv_ipaddr'
     ZK_CLIENT_PORT = 'zk_client_port'
@@ -67,6 +70,20 @@ class ResourceContext:
         self._cluster_conf = cluster_conf
         self._pkg_id = pkg_id
         self._extra_values = extra_values
+        self._local_priv_ipaddr = None
+
+    @property
+    def local_priv_ipaddr(self):
+        if self._local_priv_ipaddr is None:
+            if self._extra_values:
+                # TODO replace this hardcoded value 'privateipaddr' on constant
+                local_priv_ipaddr = self._extra_values['privateipaddr']
+            else:
+                result = subprocess.run(CMD_GET_IP, stdout=subprocess.PIPE, check=True)
+                local_priv_ipaddr = result.stdout.decode('ascii').strip()
+            self._local_priv_ipaddr = local_priv_ipaddr
+
+        return self._local_priv_ipaddr
 
     def get_items(self, json_ready=False) -> Dict:
         """Get resource rendering context items.
@@ -148,25 +165,26 @@ class ResourceContext:
                               fallback=cm_const.ZK_CLIENTPORT_DFT))
             for s in cluster_conf.sections() if s.startswith('master-node')
         ]
-        master_priv_ipaddr = mnode_cfg_items[0][0] if mnode_cfg_items else (
-            '127.0.0.1'
-        )
-        zk_client_port = mnode_cfg_items[0][1] if mnode_cfg_items else (
-            cm_const.ZK_CLIENTPORT_DFT
-        )
-        if self._extra_values:
-            local_priv_ipaddr = self._extra_values['privateipaddr']
+
+        if mnode_cfg_items:
+            master_priv_ipaddr = mnode_cfg_items[0][0]
+            zk_client_port = mnode_cfg_items[0][1]
+            dsc_type = self._cluster_conf.get('discovery', {}).get('type')
+            if dsc_type == 'static':
+                master_location = f'{master_priv_ipaddr}:{zk_client_port}'
+            else:
+                master_location = ",".join(
+                    [escape(f'{v[0]}:{v[1]}') for v in mnode_cfg_items])
         else:
-            result = subprocess.run(
-                ('powershell', '-executionpolicy', 'Bypass', '-File', 'C:\\d2iq\\dcos\\bin\\detect_ip.ps1'),
-                stdout=subprocess.PIPE,
-                check=True
-            )
-            local_priv_ipaddr = result.stdout.decode('ascii').strip()
+            master_priv_ipaddr = '127.0.0.1'
+            zk_client_port = cm_const.ZK_CLIENTPORT_DFT
+
+            master_location = f'{master_priv_ipaddr}:{zk_client_port}'
 
         items = {
+            RCCONTEXT_ITEM.MASTER_LOCATION: escape(master_location),
             RCCONTEXT_ITEM.MASTER_PRIV_IPADDR: escape(master_priv_ipaddr),
-            RCCONTEXT_ITEM.LOCAL_PRIV_IPADDR: escape(local_priv_ipaddr),
+            RCCONTEXT_ITEM.LOCAL_PRIV_IPADDR: escape(self.local_priv_ipaddr),
             RCCONTEXT_ITEM.ZK_CLIENT_PORT: escape(zk_client_port)
         }
 
