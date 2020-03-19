@@ -581,7 +581,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
             # Decide if we have a Windows or Linux agent based on the health report.
             unit_ids = [unit['id'] for unit in health_report['units']]
             if 'WinRM' in unit_ids:
-                unit_output = get_file_content(agent_folder + 'C:\d2iq\dcos\var\log\mesos\mesos-agent.log', z)
+                unit_output = get_file_content(agent_folder + 'C:\\d2iq\\dcos\\var\\log\\mesos\\mesos-agent.log', z)
                 verify_unit_response(unit_output, 100)
 
                 verify_archived_items(agent_folder, archived_items, expected_windows_agent_files)
