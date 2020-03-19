@@ -5,6 +5,8 @@ import os
 import tempfile
 import zipfile
 
+from typing import List
+
 import pytest
 import retrying
 import test_helpers
@@ -230,14 +232,14 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
     test a list of nodes for a specific unit, endpoint /system/health/v1/units/<unit>/nodes
     """
 
-    def get_nodes_from_response(response):
+    def get_nodes_from_response(response) -> List[str]:
         assert 'nodes' in response, 'response must have field `nodes`. Got {}'.format(response)
         nodes_ip_map = make_nodes_ip_map(dcos_api_session)
         nodes = []
         for node in response['nodes']:
             assert 'host_ip' in node, 'node response must have `host_ip` field. Got {}'.format(node)
-            assert node['host_ip'] in nodes_ip_map, 'nodes_ip_map must have node {}.Got {}'.format(node['host_ip'],
-                                                                                                   nodes_ip_map)
+            assert node['host_ip'] in nodes_ip_map, 'nodes_ip_map must have node {}. Got {}'.format(node['host_ip'],
+                                                                                                    nodes_ip_map)
             nodes.append(nodes_ip_map.get(node['host_ip']))
         return nodes
 
@@ -262,10 +264,13 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
 
         agent_nodes_response = check_json(
             dcos_api_session.health.get('/units/dcos-mesos-slave.service/nodes', node=master))
-
         agent_nodes = get_nodes_from_response(agent_nodes_response)
 
-        assert len(agent_nodes) == len(dcos_api_session.slaves), '{} != {}'.format(agent_nodes, dcos_api_session.slaves)
+        windows_agent_nodes_response = check_json(
+            dcos_api_session.health.get('/units/mesos-agent/nodes', node=master))
+        windows_agent_nodes = get_nodes_from_response(windows_agent_nodes_response)
+
+        assert (agent_nodes + windows_agent_nodes) == dcos_api_session.slaves
 
 
 def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
