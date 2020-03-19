@@ -579,8 +579,8 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
             assert health_report['ip'] == slave_ip
 
             # Decide if we have a Windows or Linux agent based on the health report.
-            assert 'units' in health_report
-            if 'WinRM' in health_report['units']:
+            unit_ids = [unit['id'] for unit in health_report['units']]
+            if 'WinRM' in unit_ids:
                 unit_output = get_file_content(agent_folder + 'C:\d2iq\dcos\var\log\mesos\mesos-agent.log', z)
                 verify_unit_response(unit_output, 100)
 
