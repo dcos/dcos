@@ -483,12 +483,11 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
         'C:\d2iq\dcos\\var\log\\telegraf\\telegraf.log',
         'C:\d2iq\dcos\\var\log\dcos-diagnostics\dcos-diagnostics.log',
         'C:\d2iq\dcos\\var\log\winpanda\winpanda.log',
-        'C:\d2iq\dcos\\var\log\\adminrouter\\adminrouter-access.log' ,
+        'C:\d2iq\dcos\\var\log\\adminrouter\\adminrouter-access.log',
         'C:\d2iq\dcos\\var\log\dcos_install.log',
         'C:\d2iq\dcos\\var\log\\adminrouter\\adminrouter-error.log',
         'C:\d2iq\dcos\\var\log\mesos\mesos-agent.log'
     ]
-
 
     # for public agent host
     expected_public_agent_files = [
