@@ -141,7 +141,7 @@ class TestWinSvcManagerNSSM(unittest.TestCase):
         mock_subprocess.assert_called_once_with(cmd, **RUN_COMMAND_DEFAULT_KWARGS)
 
     @patch_subprocess_run
-    def test_start_shoud_run_start(self, mock_subprocess, *args):
+    def test_start_should_run_start(self, mock_subprocess, *args):
         """Start valid package."""
         sm = WinSvcManagerNSSM(svc_conf=CONF_STUB)
         sm.start()
