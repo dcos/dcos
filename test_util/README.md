@@ -43,7 +43,9 @@ version. It can be used to test pull request clusters: `TF_VAR_custom_dcos_downl
 `TF_VAR_custom_dcos_download_path_win` define the download for `dcos_generate_config_win.sh`. It defaults to the master
 version. It can be used to test pull request clusters: `TF_VAR_custom_dcos_download_path_win=https://downloads.dcos.io/dcos/testing/pull/6956/windows/dcos_generate_config_win.sh`.
 
-`TF_VAR_variant` determines wether the cluster is `open`, `permissive` or `strict`. It defaults to `open`.
+`TF_VAR_variant` determines wether the cluster is `open` or `ee`. It defaults to `open`.
+
+`TF_VAR_dcos_security` determines wether the cluster is `permissive`, `strict` (only in enterprise) or empty. It defaults to empty string.
 
 ### Under the Hood
 
