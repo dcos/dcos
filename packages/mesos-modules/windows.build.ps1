@@ -100,11 +100,11 @@ New-Item -ItemType Directory -Force -Path $PKG_DIR/src/mesos/build
 New-Item -ItemType Directory -Force -Path $PKG_DIR/src/mesos-modules/build
 
 Install-OpenSSL
+# TODO(akornatskyy): get rid of extra mesos build
+# see https://jira.d2iq.com/browse/D2IQ-65779
 Build-Mesos
 Build-Mesos-Modules
 
-Copy-Item $PKG_DIR/src/mesos-modules/build/logsink/Release/logsink.dll `
-    $env:PKG_PATH/bin
 Copy-Item $PKG_DIR/src/mesos-modules/build/journald/Release/libjournaldlogger.dll `
     $env:PKG_PATH/bin
 Copy-Item $PKG_DIR/src/mesos-modules/build/Release/metrics.dll `

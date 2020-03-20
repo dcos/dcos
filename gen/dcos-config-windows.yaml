@@ -256,27 +256,6 @@ package:
     content: |
         listen 61001 default_server;
 
-  - path: {{ windows_dcos_install_path }}\etc\mesos\modules\logsink.json
-    content: |
-      {
-        "libraries": [
-          {
-            "file": "logsink.dll",
-            "modules": [
-              {
-                "name": "com_mesosphere_mesos_LogSink",
-                "parameters": [
-                  {
-                    "key": "output_file",
-                    "value": "nul"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
-
   - path: {{ windows_dcos_install_path }}\etc\mesos\modules\journal.json
     content: |
       {
