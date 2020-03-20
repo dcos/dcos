@@ -117,7 +117,6 @@ def test_metrics_master_mesos(dcos_api_session):
     check_mesos_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_agents_mesos_overlay(dcos_api_session):
     """Assert that mesos agent overlay module metrics on master and agents are present."""
 
@@ -181,7 +180,6 @@ def test_metrics_master_cockroachdb(dcos_api_session):
     check_cockroachdb_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_master_calico(dcos_api_session):
     """Assert that DC/OS Calico metrics on master are present."""
 
