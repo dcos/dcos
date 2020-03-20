@@ -34,9 +34,13 @@ def check_tags(tags: dict, required_tag_names: set, optional_tag_names: set = se
         assert tag_val != '', 'Value for tag "%s" must not be empty'.format(tag_name)
 
 
-@pytest.mark.supportedwindows
 def test_metrics_ping(dcos_api_session):
-    """ Test that the metrics service is up on master and agents.
+    """ Test that the dcos-metrics service is up on master and agents.
+
+        This test is not supported on Windows since dcos_metrics
+        plugin is not supported on Windows
+        https://github.com/dcos/telegraf/blame/d3666e/plugins/outputs/dcos_metrics/README.md#L5
+        TODO: https://jira.d2iq.com/browse/D2IQ-65777
     """
     nodes = get_master_and_agents(dcos_api_session)
 
@@ -694,10 +698,14 @@ def test_executor_metrics_metadata(dcos_api_session):
         check_executor_metrics_metadata()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_node(dcos_api_session):
     """Test that the '/system/v1/metrics/v0/node' endpoint returns the expected
     metrics and metric metadata.
+
+    This test is not supported on Windows since dcos_metrics
+    plugin is not supported on Windows
+    https://github.com/dcos/telegraf/blame/d3666e/plugins/outputs/dcos_metrics/README.md#L5
+    TODO: https://jira.d2iq.com/browse/D2IQ-65777
     """
     def expected_datapoint_response(response):
         """Enure that the "node" endpoint returns a "datapoints" dict.
@@ -1245,15 +1253,18 @@ def get_metrics_for_task(dcos_api_session, node: str, task_name: str):
     )
 
 
-# TODO: D2IQ-65401 - muted Windows tests requiring investigation
-@pytest.mark.supportedwindows
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-65401")
 def test_standalone_container_metrics(dcos_api_session):
     """
     An operator should be able to launch a standalone container using the
     LAUNCH_CONTAINER call of the agent operator API. Additionally, if the
     process running within the standalone container emits statsd metrics, they
     should be accessible via the DC/OS metrics API.
+
+    This test is not supported on Windows since dcos_metrics
+    plugin is not supported on Windows
+    https://github.com/dcos/telegraf/blame/d3666e/plugins/outputs/dcos_metrics/README.md#L5
+    TODO: https://jira.d2iq.com/browse/D2IQ-65777
+    TODO: https://jira.d2iq.com/browse/D2IQ-65401
     """
     expanded_config = get_expanded_config()
     if expanded_config.get('security') == 'strict':
@@ -1396,12 +1407,16 @@ def test_standalone_container_metrics(dcos_api_session):
         _post_agent(kill_data)
 
 
-@pytest.mark.supportedwindows
 def test_pod_application_metrics(dcos_api_session):
     """Launch a pod, wait for its containers to be added to the metrics service,
     and then verify that:
     1) Container statistics metrics are provided for the executor container
     2) Application metrics are exposed for the task container
+
+    This test is not supported on Windows since dcos_metrics
+    plugin is not supported on Windows
+    https://github.com/dcos/telegraf/blame/d3666e/plugins/outputs/dcos_metrics/README.md#L5
+    TODO: https://jira.d2iq.com/browse/D2IQ-65777
     """
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
     def test_application_metrics(agent_ip, agent_id, task_name, num_containers):
