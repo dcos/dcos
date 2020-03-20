@@ -5,6 +5,8 @@ import os
 import tempfile
 import zipfile
 
+from typing import List
+
 import pytest
 import retrying
 import test_helpers
@@ -230,14 +232,14 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
     test a list of nodes for a specific unit, endpoint /system/health/v1/units/<unit>/nodes
     """
 
-    def get_nodes_from_response(response):
+    def get_nodes_from_response(response) -> List[str]:
         assert 'nodes' in response, 'response must have field `nodes`. Got {}'.format(response)
         nodes_ip_map = make_nodes_ip_map(dcos_api_session)
         nodes = []
         for node in response['nodes']:
             assert 'host_ip' in node, 'node response must have `host_ip` field. Got {}'.format(node)
-            assert node['host_ip'] in nodes_ip_map, 'nodes_ip_map must have node {}.Got {}'.format(node['host_ip'],
-                                                                                                   nodes_ip_map)
+            assert node['host_ip'] in nodes_ip_map, 'nodes_ip_map must have node {}. Got {}'.format(node['host_ip'],
+                                                                                                    nodes_ip_map)
             nodes.append(nodes_ip_map.get(node['host_ip']))
         return nodes
 
@@ -262,10 +264,17 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
 
         agent_nodes_response = check_json(
             dcos_api_session.health.get('/units/dcos-mesos-slave.service/nodes', node=master))
-
         agent_nodes = get_nodes_from_response(agent_nodes_response)
 
-        assert len(agent_nodes) == len(dcos_api_session.slaves), '{} != {}'.format(agent_nodes, dcos_api_session.slaves)
+        # Fetch Windows nodes if we have some.
+        if 'WinRM' in pulled_units:
+            windows_agent_nodes_response = check_json(
+                dcos_api_session.health.get('/units/mesos-agent/nodes', node=master))
+            windows_agent_nodes = get_nodes_from_response(windows_agent_nodes_response)
+        else:
+            windows_agent_nodes = list()
+
+        assert set(agent_nodes + windows_agent_nodes) == set(dcos_api_session.slaves)
 
 
 def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
@@ -465,6 +474,25 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
         'binsh_-c_cat proc`systemctl show dcos-mesos-slave.service -p MainPID| cut -d\'=\' -f2`environ.output'
     ] + expected_agent_common_files + expected_common_files
 
+    # for Windows host
+    expected_windows_agent_files = [
+        '5051-__processes__.json',
+        '5051-state.json',
+        '5051-containers.json',
+        '5051-system_stats_json.json',
+        '5051-flags.json',
+        '5051-metrics_snapshot.json',
+        'dcos-diagnostics-health.json',
+        'C:\\d2iq\\dcos\\var\log\\adminrouter\\adminrouter-nssm.log',
+        'C:\\d2iq\\dcos\\var\log\\telegraf\\telegraf.log',
+        'C:\\d2iq\\dcos\\var\log\dcos-diagnostics\\dcos-diagnostics.log',
+        'C:\\d2iq\\dcos\\var\\log\\winpanda\\winpanda.log',
+        'C:\\d2iq\\dcos\\var\\log\\adminrouter\\adminrouter-access.log',
+        'C:\\d2iq\\dcos\\var\\log\dcos_install.log',
+        'C:\\d2iq\\dcos\\var\\log\\adminrouter\\adminrouter-error.log',
+        'C:\\d2iq\\dcos\\var\\log\\mesos\\mesos-agent.log'
+    ]
+
     # for public agent host
     expected_public_agent_files = [
         'dcos-mesos-slave-public.service',
@@ -550,11 +578,19 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
             assert 'ip' in health_report
             assert health_report['ip'] == slave_ip
 
-            # make sure systemd unit output is correct and does not contain error message
-            unit_output = get_file_content(agent_folder + 'dcos-mesos-slave.service', z)
-            verify_unit_response(unit_output, 100)
+            # Decide if we have a Windows or Linux agent based on the health report.
+            unit_ids = [unit['id'] for unit in health_report['units']]
+            if 'WinRM' in unit_ids:
+                unit_output = get_file_content(agent_folder + 'C:\\d2iq\\dcos\\var\\log\\mesos\\mesos-agent.log', z)
+                verify_unit_response(unit_output, 20)
 
-            verify_archived_items(agent_folder, archived_items, expected_agent_files)
+                verify_archived_items(agent_folder, archived_items, expected_windows_agent_files)
+            else:
+                # make sure systemd unit output is correct and does not contain error message
+                unit_output = get_file_content(agent_folder + 'dcos-mesos-slave.service', z)
+                verify_unit_response(unit_output, 100)
+
+                verify_archived_items(agent_folder, archived_items, expected_agent_files)
 
         # make sure all required log files for public agent node are in place.
         for public_slave_ip in dcos_api_session.public_slaves:
