@@ -26,6 +26,7 @@ endif
 .DEFAULT_GOAL := test
 
 .terraform: $(TERRAFORM) main.tf
+	@echo "##teamcity[blockOpened name='terraform-init' description='Terraform initialization']"
 	$(TERRAFORM) init -input=false --upgrade
 	@echo "##teamcity[blockClosed name='terraform-init']"
 
@@ -39,7 +40,7 @@ cluster.json: $(SSH_KEY) .terraform
 	$(TERRAFORM) apply -auto-approve -input=false \
 		-var ssh_public_key_file="$(SSH_KEY).pub" \
 		-var windowsagent_num=1 \
-		-var dcos_license_key_contents=$(DCOS_USER_PASSWORD_ENV)
+		-var dcos_license_key_contents=$(DCOS_LICENSE_CONTENTS)
 	$(TERRAFORM) output -json > $@.work
 	@echo "##teamcity[blockClosed name='terraform-apply']"
 	mv $@.work $@
