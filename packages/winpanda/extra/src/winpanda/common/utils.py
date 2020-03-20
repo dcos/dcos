@@ -21,9 +21,10 @@ from pprint import pprint as pp
 import random
 import subprocess
 import tarfile
+import tempfile
 import time
 
-from pySmartDL import SmartDL
+import requests
 
 from common import logger
 from common import exceptions as cm_exc
@@ -32,17 +33,22 @@ from typing import Any, Callable
 LOG = logger.get_logger(__name__)
 
 
-# TODO: Needs refactoring
-def download(url: str, location: str) -> Any:
+def download(url: str, location: str) -> str:
     """
-    Downloads from url to location
-    uses  pySmartDL from https://pypi.org/project/pySmartDL/
+    Download from `url` and store in the `location` directory.
     """
-    _location = os.path.abspath(location)
-    dl = SmartDL(url, _location)
-    dl.start()
-    path = os.path.abspath(dl.get_dest())
-    # print("Downloaded to {} ".format(path), " from {}".format(url),sep='\n')
+    r = requests.get(url, stream=True)
+    fd, path = tempfile.mkstemp(dir=location)
+    try:
+        try:
+            for chunk in r.iter_content(chunk_size=8192):
+                os.write(fd, chunk)
+        finally:
+            os.close(fd)
+        r.raise_for_status()
+    except:
+        os.unlink(path)
+        raise
     return path
 
 
