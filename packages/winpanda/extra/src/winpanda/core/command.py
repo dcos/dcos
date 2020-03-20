@@ -20,7 +20,6 @@ from common.cli import CLI_COMMAND, CLI_CMDTARGET, CLI_CMDOPT
 from common.storage import ISTOR_NODE
 from core import cmdconf
 from core import exceptions as cr_exc
-from core.istate import ISTATE
 from core.package.id import PackageId
 from core.package.manifest import PackageManifest
 from core.package.package import Package
@@ -33,6 +32,11 @@ from svcm.nssm import SVC_STATUS
 LOG = logger.get_logger(__name__)
 
 CMD_TYPES = {}
+
+
+STATE_INSTALLING = 'INSTALLING'
+STATE_UPGRADING = 'UPGRADING'
+STATE_NEEDS_START = 'NEEDS_START'
 
 
 class CommandState:
@@ -149,21 +153,21 @@ class CmdSetup(Command):
             )
         elif cmd_target == CLI_CMDTARGET.PKGALL:
             # If there is a state file, then install/update failed previously.
-            # If there is a cluster id, then there is an existing installation.
+            # If there is a Mesos exe, then there is an existing installation.
             # In either case, we fail setup.
             state = self.state.get_state()
             if state is not None:
                 raise cm_exc.InstallationError(
                     f'Cannot install DC/OS: detected state {state}'
                 )
-            cluster_id = self.config.inst_storage.var_dpath / 'lib' / 'cluster-id'
-            if cluster_id.exists():
+            test_file = self.config.inst_storage.root_dpath / 'bin' / 'mesos-agent.exe'
+            if test_file.exists():
                 raise cm_exc.InstallationError(
-                    f'Cannot install DC/OS: detected existing directory {cluster_id}'
+                    f'Cannot install DC/OS: detected existing cluster {test_file}'
                 )
-            self.state.set_state('INSTALLING')
+            self.state.set_state(STATE_INSTALLING)
             self._handle_cmdtarget_pkgall()
-            self.state.unset_state()
+            self.state.set_state(STATE_NEEDS_START)
         else:
             raise NotImplementedError()
 
@@ -295,7 +299,7 @@ class CmdSetup(Command):
                   f' configuration: ...')
         try:
             package.cfg_manager.setup_conf()
-        except cfgm_exc.PkgConfNotFoundError as e:
+        except cfgm_exc.PkgConfNotFoundError:
             LOG.debug(f'{self.msg_src}: Execute: {pkg_id.pkg_name}: Setup'
                       f' configuration: NOP')
         except cfgm_exc.PkgConfManagerError as e:
@@ -428,11 +432,13 @@ class CmdSetup(Command):
 @command_type(CLI_COMMAND.UPGRADE)
 class CmdUpgrade(Command):
     """Implementation of the Upgrade command manager."""
+
     def __init__(self, **cmd_opts):
         """"""
         super(CmdUpgrade, self).__init__(**cmd_opts)
 
         self.config = cmdconf.create(**self.cmd_opts)
+        self.state = CommandState(str(self.config.inst_storage.var_dpath / 'state'))
 
         LOG.debug(f'{self.msg_src}: cmd_opts: {self.cmd_opts}')
 
@@ -444,33 +450,19 @@ class CmdUpgrade(Command):
         """Execute command."""
         LOG.debug(f'{self.msg_src}: Execute ...')
 
-        try:
-            istate = self.config.inst_state.istate
-            if istate == ISTATE.UPGRADE_IN_PROGRESS:
-                self._handle_upgrade()
-                self._register_istate(ISTATE.INSTALLED)
-            else:
-                LOG.info(
-                    f'{self.msg_src}: Execute: Invalid DC/OS installation'
-                    f' state detected: {istate}: NOP'
-                )
-
-            LOG.info(f'{self.msg_src}: Execute: OK')
-        except cm_exc.WinpandaError:
-            self._register_istate(ISTATE.UPGRADE_FAILED)
-            raise
-
-    def _register_istate(self, inst_state):
-        """"""
-        # TODO: Move this method to the abstract base parent class Command to
-        #       avoid code duplication in command manager classes.
-        msg_base = (f'{self.msg_src}:'
-                    f' Execute: Register installation state: {inst_state}')
-        try:
-            self.config.inst_state.istate = inst_state
-            LOG.debug(f'{msg_base}: OK')
-        except cr_exc.RCError as e:
-            raise cr_exc.SetupCommandError(f'Execute: {type(e).__name__}: {e}')
+        state = self.state.get_state()
+        if state is not None:
+            raise cm_exc.InstallationError(
+                f'Cannot upgrade DC/OS: detected state {state}'
+            )
+        test_file = self.config.inst_storage.root_dpath / 'bin' / 'mesos-agent.exe'
+        if not test_file.exists():
+            raise cm_exc.InstallationError(
+                f'Cannot upgrade DC/OS: no file at {test_file}'
+            )
+        self.state.set_state(STATE_UPGRADING)
+        self._handle_upgrade()
+        self.state.set_state(STATE_NEEDS_START)
 
     def _handle_upgrade(self):
         """"""
@@ -480,11 +472,10 @@ class CmdUpgrade(Command):
         self._handle_clean_setup()
 
     def _handle_upgrade_pre(self):
-        """"""
-        mheading = f'{self.msg_src}: Execute'
         # TODO: Add all the upgrade preparation steps (package download,
         # TODO: rendering configs, etc.) here. I.e. everything that can be
         # TODO: done without affecting the currently running system.
+        pass
 
     def _handle_teardown(self):
         """Teardown the currently installed DC/OS."""
@@ -614,7 +605,6 @@ class CmdUpgrade(Command):
         # TODO: This code duplicates the CmdSetup._handle_cmdtarget_pkgall()
         #       stuff and so should be made standalone to be reused in both
         #       classes avoiding massive code duplication.
-        mheading = f'{self.msg_src}: Execute'
         dstor_root_url = self.config.cluster_conf.get(
             'distribution-storage', {}
         ).get('rooturl', '')
@@ -736,7 +726,7 @@ class CmdUpgrade(Command):
                   f' configuration: ...')
         try:
             package.cfg_manager.setup_conf()
-        except cfgm_exc.PkgConfNotFoundError as e:
+        except cfgm_exc.PkgConfNotFoundError:
             LOG.debug(f'{self.msg_src}: Execute: {pkg_id.pkg_name}: Setup'
                       f' configuration: NOP')
         except cfgm_exc.PkgConfManagerError as e:
@@ -865,15 +855,18 @@ class CmdUpgrade(Command):
 
         LOG.debug(f'{self.msg_src}: Execute: Deploy aggregated config: OK')
 
+
 @command_type(CLI_COMMAND.START)
 class CmdStart(Command):
     """Start command implementation."""
+
     def __init__(self, **cmd_opts):
         """Constructor."""
         self.msg_src = self.__class__.__name__
         super(CmdStart, self).__init__(**cmd_opts)
 
         self.config = cmdconf.create(**self.cmd_opts)
+        self.state = CommandState(str(self.config.inst_storage.var_dpath / 'state'))
         LOG.debug(f'{self.msg_src}: cmd_opts: {self.cmd_opts}')
 
     def verify_cmd_options(self):
@@ -882,10 +875,16 @@ class CmdStart(Command):
 
     def execute(self):
         """Execute command."""
-        # TODO: Implement DC/OS installation state detection here (alike how
-        #       it's done in CmdSetup.execute() or CmdSetup.execute()) to
-        #       allow attempts to start services only if
-        #       istate == ISTATE.INSTALLED:
+        state = self.state.get_state()
+        if state is not None and state != STATE_NEEDS_START:
+            raise cm_exc.InstallationError(
+                f'Cannot start DC/OS: detected state {state}'
+            )
+        test_file = self.config.inst_storage.root_dpath / 'bin' / 'mesos-agent.exe'
+        if not test_file.exists():
+            raise cm_exc.InstallationError(
+                f'Cannot start DC/OS: no file at {test_file}'
+            )
 
         pkg_manifests = (
             self.config.inst_storage.get_pkgactive(PackageManifest.load)
@@ -914,6 +913,8 @@ class CmdStart(Command):
                     LOG.debug(f'{mheading}: Start service: {svc_name}: OK')
             else:
                 LOG.debug(f'{mheading}: Start service: NOP')
+
+        self.state.unset_state()
 
     @cm_utl.retry_on_exc((svcm_exc.ServiceManagerCommandError,
                           svcm_exc.ServiceTransientError), max_attempts=3)
