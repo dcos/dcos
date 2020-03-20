@@ -96,7 +96,7 @@ def test_if_all_exhibitors_are_in_sync(dcos_api_session):
 
 @pytest.mark.supportedwindows
 def test_mesos_agent_role_assignment(dcos_api_session):
-    state_endpoint = '/state.json'
+    state_endpoint = '/state'
     for agent in dcos_api_session.public_slaves:
         r = dcos_api_session.get(state_endpoint, host=agent, port=5051)
         assert r.json()['flags']['default_role'] == 'slave_public'
@@ -191,7 +191,6 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'WinRM',
         'adminrouter',
         'dcos-diagnostics',
-        'docker',
         'mesos-agent',
         'telegraf',
     }
