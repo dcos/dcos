@@ -153,17 +153,17 @@ class CmdSetup(Command):
             )
         elif cmd_target == CLI_CMDTARGET.PKGALL:
             # If there is a state file, then install/update failed previously.
-            # If there is a cluster id, then there is an existing installation.
+            # If there is a Mesos exe, then there is an existing installation.
             # In either case, we fail setup.
             state = self.state.get_state()
             if state is not None:
                 raise cm_exc.InstallationError(
                     f'Cannot install DC/OS: detected state {state}'
                 )
-            cluster_id = self.config.inst_storage.var_dpath / 'lib' / 'cluster-id'
-            if cluster_id.exists():
+            test_file = self.config.inst_storage.root_dpath / 'bin' / 'mesos-agent.exe'
+            if test_file.exists():
                 raise cm_exc.InstallationError(
-                    f'Cannot install DC/OS: detected existing cluster {cluster_id}'
+                    f'Cannot install DC/OS: detected existing cluster {test_file}'
                 )
             self.state.set_state(STATE_INSTALLING)
             self._handle_cmdtarget_pkgall()
@@ -455,10 +455,10 @@ class CmdUpgrade(Command):
             raise cm_exc.InstallationError(
                 f'Cannot upgrade DC/OS: detected state {state}'
             )
-        cluster_id = self.config.inst_storage.var_dpath / 'lib' / 'cluster-id'
-        if not cluster_id.exists():
+        test_file = self.config.inst_storage.root_dpath / 'bin' / 'mesos-agent.exe'
+        if not test_file.exists():
             raise cm_exc.InstallationError(
-                f'Cannot upgrade DC/OS: no cluster ID at {cluster_id}'
+                f'Cannot upgrade DC/OS: no file at {test_file}'
             )
         self.state.set_state(STATE_UPGRADING)
         self._handle_upgrade()
@@ -880,10 +880,10 @@ class CmdStart(Command):
             raise cm_exc.InstallationError(
                 f'Cannot start DC/OS: detected state {state}'
             )
-        cluster_id = self.config.inst_storage.root_dpath / 'bin'
-        if not cluster_id.exists():
+        test_file = self.config.inst_storage.root_dpath / 'bin' / 'mesos-agent.exe'
+        if not test_file.exists():
             raise cm_exc.InstallationError(
-                f'Cannot start DC/OS: no directory at {cluster_id}'
+                f'Cannot start DC/OS: no file at {test_file}'
             )
 
         pkg_manifests = (

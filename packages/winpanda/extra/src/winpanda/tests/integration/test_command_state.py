@@ -90,17 +90,17 @@ class TestCommandSetup:
             ),
         )
 
-        varlib = tmp_path / 'root' / 'var' / 'lib'
-        varlib.mkdir(parents=True)
-        cluster_id = varlib / 'cluster-id'
-        cluster_id.write_text('cluster-id')
+        bindir = tmp_path / 'root' / 'bin'
+        bindir.mkdir(parents=True)
+        mesos_exe = bindir / 'mesos-agent.exe'
+        mesos_exe.write_text('fake')
 
-        # Installation fails due to existing cluster-id
+        # Installation fails due to existing cluster
         with pytest.raises(exceptions.InstallationError) as e:
             cmd.execute()
 
-        # Error message mentions cluster-id path
-        assert str(cluster_id) in e.value.args[0]
+        # Error message mentions mesos-agent.exe
+        assert str(mesos_exe) in e.value.args[0]
 
 
 class TestCommandUpgrade:
@@ -140,16 +140,16 @@ class TestCommandUpgrade:
             ),
         )
 
-        varlib = tmp_path / 'root' / 'var' / 'lib'
-        varlib.mkdir(parents=True)
-        cluster_id = varlib / 'cluster-id'
+        bindir = tmp_path / 'root' / 'bin'
+        bindir.mkdir(parents=True)
+        mesos_exe = bindir / 'mesos-agent.exe'
 
-        # Installation fails due to non-existing cluster-id
+        # Installation fails due to non-existing Mesos agent
         with pytest.raises(exceptions.InstallationError) as e:
             cmd.execute()
 
-        # Error message mentions cluster-id path
-        assert str(cluster_id) in e.value.args[0]
+        # Error message mentions Mesos agent path
+        assert str(mesos_exe) in e.value.args[0]
 
 
 class TestCommandStart:
@@ -190,10 +190,12 @@ class TestCommandStart:
         )
 
         bindir = tmp_path / 'root' / 'bin'
+        bindir.mkdir(parents=True)
+        mesos_exe = bindir / 'mesos-agent.exe'
 
         # Installation fails due to non-existing bindir
         with pytest.raises(exceptions.InstallationError) as e:
             cmd.execute()
 
-        # Error message mentions cluster-id path
-        assert str(bindir) in e.value.args[0]
+        # Error message mentions Mesos agent path
+        assert str(mesos_exe) in e.value.args[0]
