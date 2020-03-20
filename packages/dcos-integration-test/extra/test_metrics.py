@@ -73,7 +73,6 @@ def get_metrics_prom(dcos_api_session, node):
     return response
 
 
-@pytest.mark.supportedwindows
 def test_metrics_procstat(dcos_api_session):
     """Assert that procstat metrics are present on master and agent nodes."""
     nodes = get_master_and_agents(dcos_api_session)
@@ -302,9 +301,8 @@ def test_metrics_master_adminrouter_nginx_drop_requests_seconds(dcos_api_session
     check_adminrouter_metrics()
 
 
-# TODO: D2IQ-65403 - muted Windows tests requiring investigation
-@pytest.mark.supportedwindows
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-65403")
+# TODO(D2IQ-65403): Expose Adminrouter metrics on Windows
+# @pytest.mark.supportedwindows
 def test_metrics_agent_adminrouter_nginx_drop_requests_seconds(dcos_api_session):
     """
     nginx_vts_*_request_seconds* metrics are not present.
@@ -420,9 +418,8 @@ def test_metrics_agents_adminrouter_nginx_vts(dcos_api_session):
         check_adminrouter_metrics()
 
 
-# TODO: D2IQ-65403 - muted Windows tests requiring investigation
-@pytest.mark.supportedwindows
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-65403")
+# TODO(D2IQ-65403): Expose Adminrouter metrics on Windows
+# @pytest.mark.supportedwindows
 def test_metrics_agent_adminrouter_nginx_vts_processor(dcos_api_session):
     """Assert that processed Admin Router metrics on agent are present."""
     # Make request to Admin Router on every agent to ensure metrics.
@@ -489,7 +486,6 @@ def test_metrics_diagnostics(dcos_api_session):
         check_diagnostics_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_fluentbit(dcos_api_session):
     """Ensure that fluent bit metrics are present on masters and agents"""
     nodes = get_master_and_agents(dcos_api_session)
@@ -533,7 +529,6 @@ def check_statsd_app_metrics(dcos_api_session, marathon_app, node, expected_metr
         check_statsd_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_agent_statsd(dcos_api_session):
     """Assert that statsd metrics on private agent are present."""
     task_name = 'test-metrics-statsd-app'
@@ -674,7 +669,6 @@ def test_task_metrics_metadata(dcos_api_session):
         check_metrics_metadata()
 
 
-@pytest.mark.supportedwindows
 def test_executor_metrics_metadata(dcos_api_session):
     """Test that executor metrics have expected metadata/labels"""
     expanded_config = get_expanded_config()
@@ -1572,6 +1566,7 @@ def test_pod_application_metrics(dcos_api_session):
 
                 return True
 
+    # FIXME(D2IQ-65812): Make the following app works on Windows
     marathon_pod_config = {
         "id": "/statsd-emitter-task-group",
         "containers": [{
