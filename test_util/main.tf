@@ -83,7 +83,7 @@ module "dcos" {
   admin_ips           = ["${data.http.whatismyip.body}/32"]
 
   num_masters        = "1"
-  num_private_agents = "1"
+  num_private_agents = "0"
   num_public_agents  = "1"
 
   dcos_instance_os        = "centos_7.5"
