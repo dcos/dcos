@@ -8,7 +8,6 @@ import posixpath
 import tempfile as tf
 
 from common import constants as cm_const
-from common import exceptions as cm_exc
 from common import logger
 from common import utils as cm_utl
 from common.cli import CLI_COMMAND, CLI_CMDOPT, CLI_CMDTARGET
@@ -16,7 +15,6 @@ from common.storage import InstallationStorage
 from core import exceptions as cr_exc
 from core import template
 from core import utils as cr_utl
-from core.istate import ISTATE, InstallationState
 
 
 LOG = logger.get_logger(__name__)
@@ -70,34 +68,6 @@ class CommandConfig(metaclass=abc.ABCMeta):
         LOG.debug(f'{self.msg_src}: istor_nodes:'
                   f' {self.inst_storage.istor_nodes}')
 
-        # DC/OS installation state descriptor
-        self.inst_state = self._get_inst_state()
-
-    def _get_inst_state(self):
-        """"""
-        istate_fpath = self.inst_storage.state_dpath.joinpath(
-            cm_const.DCOS_INST_STATE_FNAME_DFT
-        )
-        try:
-            inst_state = InstallationState.load(istate_fpath)
-            LOG.debug(f'{self.msg_src}: DC/OS installation state descriptor:'
-                      f' Load: {inst_state}')
-        except cr_exc.RCNotFoundError:
-            inst_state = None
-
-        if inst_state is None:
-            msg_base = (f'{self.msg_src}:'
-                        f' DC/OS installation state descriptor: Create')
-            try:
-                inst_state = InstallationState(self.inst_storage.istor_nodes)
-                LOG.debug(f'{msg_base}: {inst_state}')
-            except AssertionError as e:
-                raise cr_exc.RCError(f'{msg_base}: {type(e).__name__}: {e}')
-            except cr_exc.RCError as e:
-                raise cr_exc.RCError(f'{msg_base}: {e}')
-
-        return inst_state
-
     def __repr__(self):
         return (
             '<%s(cmd_opts="%s")>' % (self.__class__.__name__, self.cmd_opts)
@@ -115,36 +85,22 @@ class CmdConfigSetup(CommandConfig):
         """"""
         super(CmdConfigSetup, self).__init__(**cmd_opts)
 
-        if self.inst_state.istate == ISTATE.UNDEFINED:
-            self.inst_state.istate = ISTATE.INSTALLATION_IN_PROGRESS
-            try:
-                if cmd_opts.get(CLI_CMDOPT.CMD_TARGET) == CLI_CMDTARGET.PKGALL:
-                    # Make sure that the installation storage is in consistent state
-                    self.inst_storage.construct()
+        if cmd_opts.get(CLI_CMDOPT.CMD_TARGET) == CLI_CMDTARGET.PKGALL:
+            # Make sure that the installation storage is in consistent state
+            self.inst_storage.construct()
 
-                # DC/OS cluster setup parameters
-                self.cluster_conf_nop = False
-                self.cluster_conf = self.get_cluster_conf()
-                LOG.debug(f'{self.msg_src}: cluster_conf: {self.cluster_conf}')
+        # DC/OS cluster setup parameters
+        self.cluster_conf_nop = False
+        self.cluster_conf = self.get_cluster_conf()
+        LOG.debug(f'{self.msg_src}: cluster_conf: {self.cluster_conf}')
 
-                # Reference list of DC/OS packages
-                self.ref_pkg_list = self.get_ref_pkg_list()
-                LOG.debug(f'{self.msg_src}: ref_pkg_list: {self.ref_pkg_list}')
+        # Reference list of DC/OS packages
+        self.ref_pkg_list = self.get_ref_pkg_list()
+        LOG.debug(f'{self.msg_src}: ref_pkg_list: {self.ref_pkg_list}')
 
-                # DC/OS aggregated configuration object
-                self.dcos_conf = self.get_dcos_conf()
-                LOG.debug(f'{self.msg_src}: dcos_conf: {self.dcos_conf}')
-            except cm_exc.WinpandaError:
-                self.inst_state.istate = ISTATE.INSTALLATION_FAILED
-                raise
-        else:
-            LOG.info(f'{self.msg_src}: Invalid DC/OS installation state'
-                     f' detected: {self.inst_state.istate}: NOP'
-                     )
-            self.cluster_conf_nop = False
-            self.cluster_conf = {}
-            self.ref_pkg_list = []
-            self.dcos_conf = {}
+        # DC/OS aggregated configuration object
+        self.dcos_conf = self.get_dcos_conf()
+        LOG.debug(f'{self.msg_src}: dcos_conf: {self.dcos_conf}')
 
     def get_cluster_conf(self):
         """"Get a collection of DC/OS cluster configuration options.
@@ -528,43 +484,29 @@ class CmdConfigUpgrade(CommandConfig):
         """"""
         super(CmdConfigUpgrade, self).__init__(**cmd_opts)
 
-        # DC/OS installation state
-        if self.inst_state.istate == ISTATE.INSTALLED:
-            self.inst_state.istate = ISTATE.UPGRADE_IN_PROGRESS
-            try:
-                # DC/OS cluster setup parameters
-                self.cluster_conf = get_cluster_conf(
-                    self.inst_storage.cfg_dpath, **cmd_opts
-                )
-                if not self.cluster_conf:
-                    LOG.info(f'{self.msg_src}: cluster_conf: NOP')
-                LOG.debug(f'{self.msg_src}: cluster_conf: {self.cluster_conf}')
+        # DC/OS cluster setup parameters
+        self.cluster_conf = get_cluster_conf(
+            self.inst_storage.cfg_dpath, **cmd_opts
+        )
+        if not self.cluster_conf:
+            LOG.info(f'{self.msg_src}: cluster_conf: NOP')
+        LOG.debug(f'{self.msg_src}: cluster_conf: {self.cluster_conf}')
 
-                # Reference list of DC/OS packages
-                self.ref_pkg_list = get_ref_pkg_list(
-                    self.cluster_conf, self.inst_storage.tmp_dpath
-                )
-                if not self.ref_pkg_list:
-                    LOG.info(f'{self.msg_src}: ref_pkg_list: NOP')
-                LOG.debug(f'{self.msg_src}: ref_pkg_list: {self.ref_pkg_list}')
+        # Reference list of DC/OS packages
+        self.ref_pkg_list = get_ref_pkg_list(
+            self.cluster_conf, self.inst_storage.tmp_dpath
+        )
+        if not self.ref_pkg_list:
+            LOG.info(f'{self.msg_src}: ref_pkg_list: NOP')
+        LOG.debug(f'{self.msg_src}: ref_pkg_list: {self.ref_pkg_list}')
 
-                # DC/OS aggregated configuration object
-                self.dcos_conf = get_dcos_conf(
-                    self.cluster_conf, self.inst_storage.tmp_dpath
-                )
-                if not self.dcos_conf:
-                    LOG.info(f'{self.msg_src}: dcos_conf: NOP')
-                LOG.debug(f'{self.msg_src}: dcos_conf: {self.dcos_conf}')
-            except cm_exc.WinpandaError:
-                self.inst_state.istate = ISTATE.UPGRADE_FAILED
-                raise
-        else:
-            LOG.info(f'{self.msg_src}: Invalid DC/OS installation state'
-                     f' detected: {self.inst_state.istate}: NOP'
-                     )
-            self.cluster_conf = {}
-            self.ref_pkg_list = []
-            self.dcos_conf = {}
+        # DC/OS aggregated configuration object
+        self.dcos_conf = get_dcos_conf(
+            self.cluster_conf, self.inst_storage.tmp_dpath
+        )
+        if not self.dcos_conf:
+            LOG.info(f'{self.msg_src}: dcos_conf: NOP')
+        LOG.debug(f'{self.msg_src}: dcos_conf: {self.dcos_conf}')
 
 
 @cmdconf_type(CLI_COMMAND.START)

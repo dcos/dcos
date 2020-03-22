@@ -18,7 +18,6 @@ import shutil
 import tempfile
 from collections import Iterable
 from itertools import chain
-from subprocess import CalledProcessError, check_output
 from typing import Union
 
 from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
@@ -26,7 +25,8 @@ from pkgpanda.constants import (DCOS_SERVICE_CONFIGURATION_FILE,
                                 STATE_DIR_ROOT)
 from pkgpanda.exceptions import (InstallError, PackageError, PackageNotFound,
                                  ValidationError)
-from pkgpanda.util import (_check_call, download, extract_tarball, if_exists, is_windows,
+from pkgpanda.subprocess import CalledProcessError, check_call, check_output
+from pkgpanda.util import (download, extract_tarball, if_exists, is_windows,
                            load_json, make_directory, remove_directory, write_json, write_string)
 
 if not is_windows:
@@ -88,7 +88,7 @@ class Systemd:
                 cmd = ["systemctl", "stop", name]
                 if not self.__block:
                     cmd.append("--no-block")
-                _check_call(cmd)
+                check_call(cmd)
             except CalledProcessError as ex:
                 # If the service doesn't exist, don't error. This happens when a
                 # bootstrap tarball has just been extracted but nothing started
@@ -903,7 +903,7 @@ class Install:
                     make_directory(state_dir_path)
                     if package.username and not is_windows:
                         uid = sysusers.get_uid(package.username)
-                        _check_call(['chown', '-R', str(uid), state_dir_path])
+                        check_call(['chown', '-R', str(uid), state_dir_path])
 
             if package.sysctl:
                 service_names = _get_service_names(package.path)

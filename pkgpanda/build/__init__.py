@@ -9,7 +9,6 @@ import tempfile
 from contextlib import contextmanager
 from os import chdir, getcwd, mkdir
 from os.path import exists
-from subprocess import CalledProcessError, check_call, check_output
 
 import pkgpanda.build.constants
 import pkgpanda.build.src_fetchers
@@ -18,6 +17,7 @@ from pkgpanda import Install, PackageId, Repository
 from pkgpanda.actions import add_package_file
 from pkgpanda.constants import install_root, PKG_DIR, RESERVED_UNIT_NAMES
 from pkgpanda.exceptions import FetchError, PackageError, ValidationError
+from pkgpanda.subprocess import CalledProcessError, check_call, check_output
 from pkgpanda.util import (check_forbidden_services, download_atomic,
                            hash_checkout, is_windows, load_json, load_string, logger,
                            make_directory, make_file, make_tar, remove_directory, rewrite_symlinks, write_json,

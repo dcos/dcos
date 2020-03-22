@@ -12,5 +12,4 @@ APP_LOG_FSIZE_MAX = 10485760  # 10 MiB
 APP_LOG_HSIZE_MAX = 10       # Log file history max size
 
 DCOS_CLUSTER_CFG_FNAME_DFT = 'cluster.conf'
-DCOS_INST_STATE_FNAME_DFT = 'inst_state.json'
 ZK_CLIENTPORT_DFT = 2181

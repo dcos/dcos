@@ -28,3 +28,7 @@ packages/dcos-provider-*
 package_lists
 .vscode
 .python-version
+/dev
+/*.egg-info
+/packages/cache
+/dcos-release.config.yaml

@@ -13,7 +13,6 @@ import inspect
 import json
 import logging
 import os.path
-import subprocess
 import sys
 from distutils.version import LooseVersion
 from typing import Optional
@@ -26,8 +25,16 @@ import pkgpanda.build
 import pkgpanda.util
 import release.storage
 from gen.calc import DCOS_VERSION
+from pkgpanda import subprocess
 from pkgpanda.constants import DOCKERFILE_DIR
 from pkgpanda.util import is_windows, logger
+
+
+logging.basicConfig(
+    format='[%(name)s] %(message)s',
+    level=logging.DEBUG)
+
+log = logging.getLogger(__name__)
 
 
 class ConfigError(Exception):
@@ -388,20 +395,12 @@ def built_resource_to_artifacts(built_resource: dict):
 #       'content_file': '',
 #       }]}}
 def make_channel_artifacts(metadata, provider_names):
+    log.debug('making channel artifacts')
     artifacts = [{
         'channel_path': 'version',
         'local_content': DCOS_VERSION,
         'content_type': 'text/plain; charset=utf-8',
     }]
-
-    # Set logging to debug so we get gen error messages, since those are
-    # logging.DEBUG currently to not show up when people are using `--genconf`
-    # and friends.
-    # TODO(cmaloney): Remove this and make the core bits of gen, code log at
-    # the proper info / warning / etc. level.
-    log = logging.getLogger()
-    original_log_level = log.getEffectiveLevel()
-    log.setLevel(logging.DEBUG)
 
     provider_data = {}
     providers = load_providers(provider_names)
@@ -465,8 +464,6 @@ def make_channel_artifacts(metadata, provider_names):
             # TODO(cmaloney): Check the provider artifacts adhere to the artifact template.
             artifacts += provider_data.get('artifacts', list())
 
-    log.setLevel(original_log_level)
-
     return artifacts
 
 
@@ -485,7 +482,7 @@ def _do_build_docker(name, path):
     path_sha = pkgpanda.build.hash_folder_abs(path, os.path.dirname(path))
     container_name = 'dcos/dcos-builder:{}_dockerdir-{}'.format(name, path_sha)
 
-    print("Attempting to pull docker:", container_name)
+    log.debug("Attempting to pull docker: %s", container_name)
     pulled = False
     try:
         # TODO(cmaloney): Rather than pushing / pulling from Docker Hub upload as a build artifact.
@@ -497,7 +494,7 @@ def _do_build_docker(name, path):
         pulled = False
 
     if not pulled:
-        print("Pull failed, building instead:", container_name)
+        log.debug("Pull failed, building instead: %s", container_name)
         # Pull failed, build it
         subprocess.check_call(['docker', 'build', '-t', container_name, path])
 
@@ -680,9 +677,9 @@ def apply_storage_commands(storage_providers: dict, storage_commands: dict) -> N
                 # If it is only supposed to be if the artifact does not exist, check for existence
                 # and skip if it exists.
                 if artifact['if_not_exists'] and provider.exists(path):
-                    print("Store to", provider_name, "artifact", path, "skipped because it already exists")
+                    log.debug("Store to %s artifact %s skipped because it already exists", provider_name, path)
                     continue
-                print("Store to", provider_name, "artifact", path, "by method", artifact['method'])
+                log.debug("Store to %s artifact %s by method %s", provider_name, path, artifact['method'])
                 getattr(provider, artifact['method'])(**artifact['args'])
 
 
@@ -694,6 +691,7 @@ def apply_storage_commands(storage_providers: dict, storage_commands: dict) -> N
 # upload artifacts. By having the two steps we guarantee that a user is never able to download
 # something such as a cloudformation template which won't work.
 class ReleaseManager():
+    log = logging.getLogger('release manager')
 
     def _setup_storage(self, storage_config):
         self.__storage_providers = {}
@@ -739,7 +737,7 @@ class ReleaseManager():
         assert metadata['repository_path'][-1] != '/'
 
         def fetch_artifact(artifact):
-            print("Fetching core artifact if it doesn't exist: ", artifact)
+            log.debug("Fetching core artifact if it doesn't exist: %s", artifact)
             if 'channel_path' in artifact:
                 assert artifact['channel_path'][0] != '/'
                 src_path = metadata['reproducible_artifact_path'] + '/' + artifact['channel_path']
@@ -770,6 +768,8 @@ class ReleaseManager():
             fetch_artifact(artifact)
 
     def promote(self, src_channel, destination_repository, destination_channel):
+        self.log.debug('promote: source channel: %s, destination repository: %s, destination channel: %s',
+                       src_channel, destination_repository, destination_channel)
         metadata = self.get_metadata(src_channel)
 
         # Can't run a release promotion with a different version of the scripts than the one that
@@ -793,6 +793,7 @@ class ReleaseManager():
         return metadata
 
     def create_installer(self, src_channel):
+        self.log.debug('create installer: source channel: %s', src_channel)
         assert not src_channel.startswith('/')
         metadata = self.get_metadata(src_channel)
         self.fetch_key_artifacts(metadata)
@@ -802,6 +803,8 @@ class ReleaseManager():
         return metadata
 
     def create(self, repository_path, channel, tag, tree_variants):
+        self.log.debug('create: repository_path: %s, channel: %s, tag: %s, tree_variants: %s',
+                       repository_path, channel, tag, tree_variants)
         assert len(channel) > 0  # channel must be a non-empty string.
 
         assert ('options' in self.__config) and \
