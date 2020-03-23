@@ -67,7 +67,9 @@ ssh: cluster.json
 .PHONY: destroy
 destroy: $(diagnostics_bundle_file)
 	@echo "##teamcity[blockOpened name='terraform-destroy' description='Terraform cluster teardown']"
-	$(TERRAFORM) destroy -auto-approve -var ssh_public_key_file="$(SSH_KEY).pub";
+	$(TERRAFORM) destroy -auto-approve \
+		-var ssh_public_key_file="$(SSH_KEY).pub" \
+		-var dcos_license_key_contents=$(DCOS_LICENSE_CONTENTS)
 	rm cluster.json || true;
 	@echo "##teamcity[blockClosed name='terraform-destroy']"
 
