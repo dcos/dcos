@@ -41,7 +41,7 @@ def download(url: str, location: str) -> str:
     fd, path = tempfile.mkstemp(dir=location)
     try:
         try:
-            for chunk in r.iter_content(chunk_size=8192):
+            for chunk in r.iter_content(chunk_size=32*1024):
                 os.write(fd, chunk)
         finally:
             os.close(fd)
