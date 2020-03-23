@@ -86,3 +86,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Fix Telegraf migration when no containers present. (D2IQ-64507)
 
 * Update OpenSSL to 1.1.1d. (D2IQ-65604)
+
+* Update Metronome to 0.6.41
+
+    * There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
