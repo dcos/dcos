@@ -8,7 +8,6 @@ import posixpath
 import tempfile as tf
 
 from common import constants as cm_const
-from common import exceptions as cm_exc
 from common import logger
 from common import utils as cm_utl
 from common.cli import CLI_COMMAND, CLI_CMDOPT, CLI_CMDTARGET
@@ -16,7 +15,6 @@ from common.storage import InstallationStorage
 from core import exceptions as cr_exc
 from core import template
 from core import utils as cr_utl
-from core.istate import ISTATE, InstallationState
 
 
 LOG = logger.get_logger(__name__)
@@ -70,34 +68,6 @@ class CommandConfig(metaclass=abc.ABCMeta):
         LOG.debug(f'{self.msg_src}: istor_nodes:'
                   f' {self.inst_storage.istor_nodes}')
 
-        # DC/OS installation state descriptor
-        self.inst_state = self._get_inst_state()
-
-    def _get_inst_state(self):
-        """"""
-        istate_fpath = self.inst_storage.state_dpath.joinpath(
-            cm_const.DCOS_INST_STATE_FNAME_DFT
-        )
-        try:
-            inst_state = InstallationState.load(istate_fpath)
-            LOG.debug(f'{self.msg_src}: DC/OS installation state descriptor:'
-                      f' Load: {inst_state}')
-        except cr_exc.RCNotFoundError:
-            inst_state = None
-
-        if inst_state is None:
-            msg_base = (f'{self.msg_src}:'
-                        f' DC/OS installation state descriptor: Create')
-            try:
-                inst_state = InstallationState(self.inst_storage.istor_nodes)
-                LOG.debug(f'{msg_base}: {inst_state}')
-            except AssertionError as e:
-                raise cr_exc.RCError(f'{msg_base}: {type(e).__name__}: {e}')
-            except cr_exc.RCError as e:
-                raise cr_exc.RCError(f'{msg_base}: {e}')
-
-        return inst_state
-
     def __repr__(self):
         return (
             '<%s(cmd_opts="%s")>' % (self.__class__.__name__, self.cmd_opts)
@@ -115,36 +85,22 @@ class CmdConfigSetup(CommandConfig):
         """"""
         super(CmdConfigSetup, self).__init__(**cmd_opts)
 
-        if self.inst_state.istate == ISTATE.UNDEFINED:
-            self.inst_state.istate = ISTATE.INSTALLATION_IN_PROGRESS
-            try:
-                if cmd_opts.get(CLI_CMDOPT.CMD_TARGET) == CLI_CMDTARGET.PKGALL:
-                    # Make sure that the installation storage is in consistent state
-                    self.inst_storage.construct()
+        if cmd_opts.get(CLI_CMDOPT.CMD_TARGET) == CLI_CMDTARGET.PKGALL:
+            # Make sure that the installation storage is in consistent state
+            self.inst_storage.construct()
 
-                # DC/OS cluster setup parameters
-                self.cluster_conf_nop = False
-                self.cluster_conf = self.get_cluster_conf()
-                LOG.debug(f'{self.msg_src}: cluster_conf: {self.cluster_conf}')
+        # DC/OS cluster setup parameters
+        self.cluster_conf_nop = False
+        self.cluster_conf = self.get_cluster_conf()
+        LOG.debug(f'{self.msg_src}: cluster_conf: {self.cluster_conf}')
 
-                # Reference list of DC/OS packages
-                self.ref_pkg_list = self.get_ref_pkg_list()
-                LOG.debug(f'{self.msg_src}: ref_pkg_list: {self.ref_pkg_list}')
+        # Reference list of DC/OS packages
+        self.ref_pkg_list = self.get_ref_pkg_list()
+        LOG.debug(f'{self.msg_src}: ref_pkg_list: {self.ref_pkg_list}')
 
-                # DC/OS aggregated configuration object
-                self.dcos_conf = self.get_dcos_conf()
-                LOG.debug(f'{self.msg_src}: dcos_conf: {self.dcos_conf}')
-            except cm_exc.WinpandaError:
-                self.inst_state.istate = ISTATE.INSTALLATION_FAILED
-                raise
-        else:
-            LOG.info(f'{self.msg_src}: Invalid DC/OS installation state'
-                     f' detected: {self.inst_state.istate}: NOP'
-                     )
-            self.cluster_conf_nop = False
-            self.cluster_conf = {}
-            self.ref_pkg_list = []
-            self.dcos_conf = {}
+        # DC/OS aggregated configuration object
+        self.dcos_conf = self.get_dcos_conf()
+        LOG.debug(f'{self.msg_src}: dcos_conf: {self.dcos_conf}')
 
     def get_cluster_conf(self):
         """"Get a collection of DC/OS cluster configuration options.
@@ -286,22 +242,19 @@ class CmdConfigSetup(CommandConfig):
             return []
 
         rpl_url = posixpath.join(dstor_root_url, dstor_pkglist_path)
-        rpl_fname = Path(dstor_pkglist_path).name
-
         try:
-            cm_utl.download(rpl_url, str(self.inst_storage.tmp_dpath))
+            rpl_fpath = cm_utl.download(rpl_url, self.inst_storage.tmp_dpath)
             LOG.debug(f'{self.msg_src}: Reference package list: Download:'
-                      f' {rpl_fname}: {rpl_url}')
+                      f' {rpl_fpath}: {rpl_url}')
         except Exception as e:
             raise cr_exc.RCDownloadError(
-                f'Reference package list: Download: {rpl_fname}: {rpl_url}:'
+                f'Reference package list: Download: {rpl_fpath}: {rpl_url}:'
                 f' {type(e).__name__}: {e}'
             ) from e
 
-        rpl_fpath = self.inst_storage.tmp_dpath.joinpath(rpl_fname)
         try:
             return cr_utl.rc_load_json(
-                rpl_fpath, emheading=f'Reference package list: {rpl_fname}'
+                rpl_fpath, emheading=f'Reference package list: {rpl_fpath}'
             )
         except cr_exc.RCError as e:
             raise e
@@ -359,11 +312,10 @@ class CmdConfigSetup(CommandConfig):
         dcoscfg_pkg_url = posixpath.join(
             dstor_root_url, dstor_dcoscfg_pkg_path
         )
-        dcoscfg_pkg_fname = Path(dstor_dcoscfg_pkg_path).name
 
         # Download DC/OS aggregated configuration package ...
         try:
-            cm_utl.download(dcoscfg_pkg_url, str(self.inst_storage.tmp_dpath))
+            dcoscfg_pkg_fpath = cm_utl.download(dcoscfg_pkg_url, self.inst_storage.tmp_dpath)
             LOG.debug(f'{self.msg_src}: DC/OS aggregated config package:'
                       f' Download: {dcoscfg_pkg_url}')
         except Exception as e:
@@ -373,15 +325,11 @@ class CmdConfigSetup(CommandConfig):
             ) from e
 
         # Process DC/OS aggregated configuration package.
-        dcoscfg_pkg_fpath = self.inst_storage.tmp_dpath.joinpath(
-            dcoscfg_pkg_fname
-        )
-
         try:
             with tf.TemporaryDirectory(
                 dir=str(self.inst_storage.tmp_dpath)
             ) as tmp_dpath:
-                cm_utl.unpack(str(dcoscfg_pkg_fpath), tmp_dpath)
+                cm_utl.unpack(dcoscfg_pkg_fpath, tmp_dpath)
                 LOG.debug(f'{self.msg_src}: DC/OS aggregated config package:'
                           f' {dcoscfg_pkg_fpath}: Extract: OK')
 
@@ -442,10 +390,9 @@ class CmdConfigSetup(CommandConfig):
 
         # Linux package index direct URL
         lpi_url = posixpath.join(dstor_root_url, dstor_lpi_path)
-        lpi_fname = Path(dstor_lpi_path).name
 
         try:
-            cm_utl.download(lpi_url, str(self.inst_storage.tmp_dpath))
+            lpi_fpath = cm_utl.download(lpi_url, self.inst_storage.tmp_dpath)
             LOG.debug(f'{self.msg_src}: DC/OS Linux package index: Download:'
                       f' {lpi_url}')
         except Exception as e:
@@ -453,8 +400,6 @@ class CmdConfigSetup(CommandConfig):
                 f'DC/OS Linux package index: {lpi_url}: {type(e).__name__}:'
                 f' {e}'
             ) from e
-
-        lpi_fpath = self.inst_storage.tmp_dpath.joinpath(lpi_fname)
 
         try:
             lpi = cr_utl.rc_load_json(lpi_fpath,
@@ -528,43 +473,29 @@ class CmdConfigUpgrade(CommandConfig):
         """"""
         super(CmdConfigUpgrade, self).__init__(**cmd_opts)
 
-        # DC/OS installation state
-        if self.inst_state.istate == ISTATE.INSTALLED:
-            self.inst_state.istate = ISTATE.UPGRADE_IN_PROGRESS
-            try:
-                # DC/OS cluster setup parameters
-                self.cluster_conf = get_cluster_conf(
-                    self.inst_storage.cfg_dpath, **cmd_opts
-                )
-                if not self.cluster_conf:
-                    LOG.info(f'{self.msg_src}: cluster_conf: NOP')
-                LOG.debug(f'{self.msg_src}: cluster_conf: {self.cluster_conf}')
+        # DC/OS cluster setup parameters
+        self.cluster_conf = get_cluster_conf(
+            self.inst_storage.cfg_dpath, **cmd_opts
+        )
+        if not self.cluster_conf:
+            LOG.info(f'{self.msg_src}: cluster_conf: NOP')
+        LOG.debug(f'{self.msg_src}: cluster_conf: {self.cluster_conf}')
 
-                # Reference list of DC/OS packages
-                self.ref_pkg_list = get_ref_pkg_list(
-                    self.cluster_conf, self.inst_storage.tmp_dpath
-                )
-                if not self.ref_pkg_list:
-                    LOG.info(f'{self.msg_src}: ref_pkg_list: NOP')
-                LOG.debug(f'{self.msg_src}: ref_pkg_list: {self.ref_pkg_list}')
+        # Reference list of DC/OS packages
+        self.ref_pkg_list = get_ref_pkg_list(
+            self.cluster_conf, self.inst_storage.tmp_dpath
+        )
+        if not self.ref_pkg_list:
+            LOG.info(f'{self.msg_src}: ref_pkg_list: NOP')
+        LOG.debug(f'{self.msg_src}: ref_pkg_list: {self.ref_pkg_list}')
 
-                # DC/OS aggregated configuration object
-                self.dcos_conf = get_dcos_conf(
-                    self.cluster_conf, self.inst_storage.tmp_dpath
-                )
-                if not self.dcos_conf:
-                    LOG.info(f'{self.msg_src}: dcos_conf: NOP')
-                LOG.debug(f'{self.msg_src}: dcos_conf: {self.dcos_conf}')
-            except cm_exc.WinpandaError:
-                self.inst_state.istate = ISTATE.UPGRADE_FAILED
-                raise
-        else:
-            LOG.info(f'{self.msg_src}: Invalid DC/OS installation state'
-                     f' detected: {self.inst_state.istate}: NOP'
-                     )
-            self.cluster_conf = {}
-            self.ref_pkg_list = []
-            self.dcos_conf = {}
+        # DC/OS aggregated configuration object
+        self.dcos_conf = get_dcos_conf(
+            self.cluster_conf, self.inst_storage.tmp_dpath
+        )
+        if not self.dcos_conf:
+            LOG.info(f'{self.msg_src}: dcos_conf: NOP')
+        LOG.debug(f'{self.msg_src}: dcos_conf: {self.dcos_conf}')
 
 
 @cmdconf_type(CLI_COMMAND.START)
@@ -706,21 +637,18 @@ def get_ref_pkg_list(cluster_conf, tmp_dpath):
         return []
 
     rpl_url = posixpath.join(dstor_root_url, dstor_pkglist_path)
-    rpl_fname = Path(dstor_pkglist_path).name
-
     try:
-        cm_utl.download(rpl_url, str(tmp_dpath))
-        LOG.debug(f'Reference package list: Download: {rpl_fname}: {rpl_url}')
+        rpl_fpath = cm_utl.download(rpl_url, tmp_dpath)
+        LOG.debug(f'Reference package list: Download: {rpl_fpath}: {rpl_url}')
     except Exception as e:
         raise cr_exc.RCDownloadError(
-            f'Reference package list: Download: {rpl_fname}: {rpl_url}:'
+            f'Reference package list: Download: {rpl_fpath}: {rpl_url}:'
             f' {type(e).__name__}: {e}'
         ) from e
 
-    rpl_fpath = tmp_dpath.joinpath(rpl_fname)
     try:
         return cr_utl.rc_load_json(
-            rpl_fpath, emheading=f'Reference package list: {rpl_fname}'
+            rpl_fpath, emheading=f'Reference package list: {rpl_fpath}'
         )
     except cr_exc.RCError as e:
         raise e
@@ -768,12 +696,10 @@ def get_dcos_conf(cluster_conf, tmp_dpath: Path):
         dstor_root_url, dstor_linux_pkg_index_path, tmp_dpath
     )
 
-    dcoscfg_pkg_url = posixpath.join(dstor_root_url, dstor_dcoscfg_pkg_path)
-    dcoscfg_pkg_fname = Path(dstor_dcoscfg_pkg_path).name
-
     # Download DC/OS aggregated configuration package ...
+    dcoscfg_pkg_url = posixpath.join(dstor_root_url, dstor_dcoscfg_pkg_path)
     try:
-        cm_utl.download(dcoscfg_pkg_url, str(tmp_dpath))
+        dcoscfg_pkg_fpath = cm_utl.download(dcoscfg_pkg_url, tmp_dpath)
         LOG.debug(f'DC/OS aggregated config package:'
                   f' Download: {dcoscfg_pkg_url}')
     except Exception as e:
@@ -783,8 +709,6 @@ def get_dcos_conf(cluster_conf, tmp_dpath: Path):
         ) from e
 
     # Process DC/OS aggregated configuration package.
-    dcoscfg_pkg_fpath = tmp_dpath.joinpath(dcoscfg_pkg_fname)
-
     try:
         with tf.TemporaryDirectory(dir=str(tmp_dpath)) as tmp_dpath_:
             cm_utl.unpack(str(dcoscfg_pkg_fpath), tmp_dpath_)
@@ -842,17 +766,13 @@ def get_dstor_dcoscfgpkg_path(dstor_root_url: str, dstor_lpi_path: str,
 
     # Linux package index direct URL
     lpi_url = posixpath.join(dstor_root_url, dstor_lpi_path)
-    lpi_fname = Path(dstor_lpi_path).name
-
     try:
-        cm_utl.download(lpi_url, str(tmp_dpath))
+        lpi_fpath = cm_utl.download(lpi_url, tmp_dpath)
         LOG.debug(f'DC/OS Linux package index: Download: {lpi_url}')
     except Exception as e:
         raise cr_exc.RCDownloadError(
             f'DC/OS Linux package index: {lpi_url}: {type(e).__name__}: {e}'
         ) from e
-
-    lpi_fpath = tmp_dpath.joinpath(lpi_fname)
 
     try:
         lpi = cr_utl.rc_load_json(lpi_fpath,

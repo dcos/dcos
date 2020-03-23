@@ -9,5 +9,6 @@ AppStderr = {{ pkg_log_dpath }}\telegraf.log
 AppRotateFiles = 1
 AppRotateSeconds = 86400
 AppRotateBytes = 1048576
+AppTimestampLog = 1
 Start = SERVICE_AUTO_START
 AppEnvironmentExtra = DCOS_NODE_PRIVATE_IP={{ local_priv_ipaddr }}
