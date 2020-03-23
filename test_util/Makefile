@@ -27,7 +27,7 @@ endif
 
 terraform.initialized: $(TERRAFORM) main.tf
 	@echo "##teamcity[blockOpened name='terraform-init' description='Terraform initialization']"
-	$(TERRAFORM) init -input=false --upgrade | tee terrform.log
+	$(TERRAFORM) init -input=false --upgrade | tee terraform.log
 	mv terraform.log $@
 	@echo "##teamcity[blockClosed name='terraform-init']"
 
