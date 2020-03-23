@@ -17,6 +17,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update OpenSSL to 1.1.1d. (D2IQ-65604)
 
+* Update Metronome to 0.6.41
+
+    * There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
+
 ## DC/OS 2.0.2 (2020-01-17)
 
 * Updated DC/OS UI to [master+v2.154.16](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.16).
@@ -173,3 +177,4 @@ The Marathon option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES` has been deprecat
 * Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
 
 * DC/OS Net: wait till agents become active before fanning out Mesos tasks. (DCOS_OSS-5463)
+* Update OpenSSL to 1.1.1d. (D2IQ-65604)
