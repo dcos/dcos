@@ -17,6 +17,19 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update OpenSSL to 1.1.1d. (D2IQ-65604)
 
+* Marathon updated to 1.9.136
+
+    * /v2/tasks plaintext output in Marathon 1.5 returned container network endpoints in an unusable way (MARATHON-8721)
+
+    * Marathon launched too many tasks. (DCOS_OSS-5679)
+
+    * Marathon used to omit pod status report with tasks in `TASK_UNKOWN` state. (MARATHON-8710)
+
+    * With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
+      instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
+
+    * Marathon was checking authorization for unrelated apps when performing a kill-and-scale operations; this has been resolved. (MARATHON-8731)
+
 ## DC/OS 2.0.2 (2020-01-17)
 
 * Updated DC/OS UI to [master+v2.154.16](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.16).
