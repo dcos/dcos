@@ -65,7 +65,7 @@ ssh: cluster.json
 	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<)
 
 .PHONY: destroy
-destroy: diagnostics-1234.zip
+destroy: $(diagnostics_bundle_file)
 	@echo "##teamcity[blockOpened name='terraform-destroy' description='Terraform cluster teardown']"
 	$(TERRAFORM) destroy -auto-approve -var ssh_public_key_file="$(SSH_KEY).pub";
 	rm cluster.json || true;
@@ -83,6 +83,8 @@ clean:
 
 
 ################################# DISGNOSTICS #################################
+
+diagnostics_bundle_file := diagnostics-$(shell date +%Y-%m-%d_%H-%M-%S).zip
 
 # Start diagnostics bundle creation.
 diagnostics-%.started: cluster.json
