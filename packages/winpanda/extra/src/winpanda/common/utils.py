@@ -33,12 +33,12 @@ from typing import Any, Callable
 LOG = logger.get_logger(__name__)
 
 
-def download(url: str, location: str) -> str:
+def download(url: str, location: Path) -> Path:
     """
     Download from `url` and store in the `location` directory.
     """
     r = requests.get(url, stream=True)
-    fd, path = tempfile.mkstemp(dir=location)
+    fd, path = tempfile.mkstemp(dir=str(location))
     try:
         try:
             for chunk in r.iter_content(chunk_size=32*1024):
@@ -49,11 +49,11 @@ def download(url: str, location: str) -> str:
     except:
         os.unlink(path)
         raise
-    return path
+    return Path(path)
 
 
 # TODO: Needs refactoring
-def unpack(tarpath: str, location: str) -> str:
+def unpack(tarpath: Path, location: str) -> str:
     """
     unpacks tar.xz to  location
     """
@@ -64,7 +64,7 @@ def unpack(tarpath: str, location: str) -> str:
         print("no Directory exist creating...\n{}".format(_location))
         os.mkdir(_location)
 
-    with tarfile.open(tarpath) as tar:
+    with tarfile.open(str(tarpath)) as tar:
         tar.extractall(_location)
         print("extracted to {}".format(_location))
         pp({tarinfo.name: tarinfo.size for tarinfo in tar})

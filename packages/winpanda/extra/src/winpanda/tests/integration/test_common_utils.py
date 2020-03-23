@@ -18,10 +18,8 @@ def test_download(rget, tmp_path):
     response.iter_content.return_value = [EXPECTED_FILE_CONTENT.encode('utf-8')]
 
     path = download('', str(tmp_path))
-    assert os.path.exists(path)
-    with open(path) as f:
-        content = f.read()
-    assert content == EXPECTED_FILE_CONTENT
+    assert path.exists()
+    assert path.read_text(encoding='utf-8') == EXPECTED_FILE_CONTENT
 
 
 _cmd_success = """$ErrorActionPreference = "stop"
