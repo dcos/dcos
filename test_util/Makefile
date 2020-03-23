@@ -25,15 +25,16 @@ endif
 
 .DEFAULT_GOAL := test
 
-.terraform: $(TERRAFORM) main.tf
+terraform.initialized: $(TERRAFORM) main.tf
 	@echo "##teamcity[blockOpened name='terraform-init' description='Terraform initialization']"
-	$(TERRAFORM) init -input=false --upgrade
+	$(TERRAFORM) init -input=false --upgrade | tee terrform.log
+	mv terraform.log $@
 	@echo "##teamcity[blockClosed name='terraform-init']"
 
 $(SSH_KEY):
 	ssh-keygen -t rsa -b 2048 -f $@ -q -N ""
 
-cluster.json: $(SSH_KEY) .terraform
+cluster.json: $(SSH_KEY) terraform.initialized
 	@echo "##teamcity[blockOpened name='terraform-apply' description='Terraform cluster creation']"
 	if [ -z "$$SSH_AUTH_SOCK" ]; then eval $$(ssh-agent -s); fi; \
 	ssh-add "$(SSH_KEY)"; \
@@ -64,7 +65,7 @@ ssh: cluster.json
 	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<)
 
 .PHONY: destroy
-destroy:
+destroy: diagnostics-1234.zip
 	@echo "##teamcity[blockOpened name='terraform-destroy' description='Terraform cluster teardown']"
 	$(TERRAFORM) destroy -auto-approve -var ssh_public_key_file="$(SSH_KEY).pub";
 	rm cluster.json || true;
@@ -79,6 +80,32 @@ clean:
 	rm -rf ./terraform_*.zip
 	rm -rf ./*.pem
 	rm -rf ./*.pub
+
+
+################################# DISGNOSTICS #################################
+
+# Start diagnostics bundle creation.
+diagnostics-%.started: cluster.json
+	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
+		"curl -X PUT localhost:1050/system/health/v1/diagnostics/$*"
+	touch $@
+
+# Wait until diagnostics bundle is ready.
+diagnostics-%.done: diagnostics-%.started cluster.json
+	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
+		"curl -s localhost:1050/system/health/v1/diagnostics/$* -o status.json; \
+		until jq '.status' status.json | grep -q 'Done'; do cat status.json; curl -s localhost:1050/system/health/v1/diagnostics/$* -o status.json; sleep 5; done;"
+	rm $< || true
+	touch $@
+
+# Download diagnostics bundle.
+diagnostics-%.zip : diagnostics-%.done cluster.json
+	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
+		"curl localhost:1050/system/health/v1/diagnostics/$*/file -o $@"
+	scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<):/home/centos/$@ $@.work
+	rm $< || true
+	mv $@.work $@
+
 
 ################################### HELPERS ###################################
 
