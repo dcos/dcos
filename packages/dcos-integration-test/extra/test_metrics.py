@@ -183,6 +183,7 @@ def test_metrics_master_cockroachdb(dcos_api_session):
     check_cockroachdb_metrics()
 
 
+@pytest.mark.supportedwindows
 def test_metrics_master_calico(dcos_api_session):
     """Assert that DC/OS Calico metrics on master are present."""
 
@@ -646,7 +647,6 @@ def get_task_hostname(dcos_api_session, framework_name, task_name):
     return node
 
 
-@pytest.mark.supportedwindows
 def test_task_metrics_metadata(dcos_api_session):
     """Test that task metrics have expected metadata/labels"""
     expanded_config = get_expanded_config()
