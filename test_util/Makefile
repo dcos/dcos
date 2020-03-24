@@ -102,7 +102,7 @@ diagnostics-%.started: cluster.json
 	touch $@
 
 # Wait until diagnostics bundle is ready.
-diagnostics-%.done: diagnostics-%.started cluster.json
+diagnostics-%.done: cluster.json diagnostics-%.started 
 	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
 		"curl -s $(diagnostics_api)/$* -o status.json; \
 		until jq '.status' status.json | grep -q 'Done'; do cat status.json; curl -s $(diagnostics_api)/$* -o status.json; sleep 5; done;"
@@ -110,7 +110,7 @@ diagnostics-%.done: diagnostics-%.started cluster.json
 	touch $@
 
 # Download diagnostics bundle.
-diagnostics-%.zip : diagnostics-%.done cluster.json
+diagnostics-%.zip : cluster.json diagnostics-%.done
 	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
 		"curl $(diagnostics_api)/$*/file -o $@"
 	scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<):/home/centos/$@ $@.work
