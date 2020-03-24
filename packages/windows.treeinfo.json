@@ -1,6 +1,6 @@
 {
   "variants": {
-    "openssl",
+    "openssl": "windows",
     "mesos": "windows",
     "mesos-modules": "windows",
     "winpanda" : "windows",
