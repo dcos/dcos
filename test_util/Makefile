@@ -89,9 +89,8 @@ clean:
 
 ################################# DISGNOSTICS #################################
 
-ifeq ($(TF_VAR_variant), open)
-	diagnostics_api = localhost:1050/system/health/v1/diagnostics
-else
+diagnostics_api = localhost:1050/system/health/v1/diagnostics
+ifneq ($(TF_VAR_variant), open)
 	diagnostics_api = --unix-socket /var/run/dcos/dcos-diagnostics.sock http:/system/health/v1/diagnostics
 endif
 
