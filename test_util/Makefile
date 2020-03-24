@@ -106,7 +106,7 @@ diagnostics-%.done: cluster.json diagnostics-%.started
 	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
 		"curl -s $(diagnostics_api)/$* -o status.json; \
 		until jq '.status' status.json | grep -q 'Done'; do cat status.json; curl -s $(diagnostics_api)/$* -o status.json; sleep 5; done;"
-	rm $< || true
+	rm diagnostics-%.started || true
 	touch $@
 
 # Download diagnostics bundle.
@@ -114,7 +114,7 @@ diagnostics-%.zip : cluster.json diagnostics-%.done
 	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
 		"curl $(diagnostics_api)/$*/file -o $@"
 	scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<):/home/centos/$@ $@.work
-	rm $< || true
+	rm diagnostics-%.done || true
 	mv $@.work $@
 	@echo "##teamcity[blockClosed name='diagnostics-bundle']"
 
