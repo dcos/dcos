@@ -198,7 +198,6 @@ def test_metrics_master_calico(dcos_api_session):
     _check_calico_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_agents_calico(dcos_api_session):
     """Assert that DC/OS Calico metrics on agents are present."""
 
@@ -394,7 +393,8 @@ def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
     check_adminrouter_metrics()
 
 
-@pytest.mark.supportedwindows
+# TODO(D2IQ-65403): Expose Adminrouter metrics on Windows
+# @pytest.mark.supportedwindows
 def test_metrics_agents_adminrouter_nginx_vts(dcos_api_session):
     """Assert that Admin Router Nginx VTS metrics on agents are present."""
     nodes = get_agents(dcos_api_session)
