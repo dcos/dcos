@@ -47,3 +47,30 @@ python -m venv "$tmpdir/dcos_build_venv"
 # Build a release of DC/OS
 release create $env:USERNAME local_build windows
 
+<<<<<<< HEAD
+=======
+# If release create returns non-zero exit code, then Fail, Deactivate and remove vEnv:
+if ( $LASTEXITCODE -ne 0 ) {
+    $release_lastexitcode = $LASTEXITCODE
+    . "$tmpdir\dcos_build_venv\Scripts\deactivate.bat"
+    rm -r -fo "$tmpdir/dcos_build_venv"
+    Throw "The 'release create' command exited with error code: $release_lastexitcode"
+}
+
+# Build tar ball for windows. 2 params: packages location and DC/OS variant:
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& .\build_genconf_windows.ps1 '$local_artifacts_dir\testing'"
+
+# Import AWS modules on Azure TeamCity runner
+Install-Module -Name AWS.Tools.Common -Force;
+Install-Module -Name AWS.Tools.S3 -Force;
+
+# Set and Read AWS Credentials:
+Set-AWSCredential -AccessKey $env:AWS_ACCESS_KEY_ID -SecretKey $env:AWS_SECRET_ACCESS_KEY -StoreAs aws_s3_windows;
+Set-AWSCredential -ProfileName aws_s3_windows;
+Set-DefaultAWSRegion -Region us-west-2;
+
+# Upload Tar Ball to dcos.download.io
+Write-S3Object -BucketName "downloads.dcos.io" -Key "dcos\testing\$env:TEAMCITY_BRANCH\windows\dcos_generate_config_win.sh" -File ".\dcos_generate_config_win.sh" -CannedACLName public-read -Metadata @{"Cache-Control" = "no-cache"};
+# Verify that the files were uploaded
+Get-S3BucketWebsite -BucketName "downloads.dcos.io";
+>>>>>>> 8a6c98f... Set Cache-Control header for Windows artifacts.
