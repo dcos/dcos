@@ -11,6 +11,7 @@ from common import constants as cm_const
 from common import logger
 from common import utils as cm_utl
 from common.cli import CLI_COMMAND, CLI_CMDOPT, CLI_CMDTARGET
+from common.exceptions import WinpandaError
 from common.storage import InstallationStorage
 from core import exceptions as cr_exc
 from core import template
@@ -89,21 +90,80 @@ class CmdConfigSetup(CommandConfig):
             # Make sure that the installation storage is in consistent state
             self.inst_storage.construct()
 
+        self._pkgrepopath = None
+        self._root_url = None
+        self._dstor_pkglist_path = None
+
         # DC/OS cluster setup parameters
         self.cluster_conf_nop = False
-        self.cluster_conf = self.get_cluster_conf()
-        LOG.debug(f'{self.msg_src}: cluster_conf: {self.cluster_conf}')
+        self.dcosclusterpkginfopath = 'cluster-package-info.json'
+        self._cluster_conf = None
+
+        # DC/OS aggregated configuration object
+        self._dcos_conf = None
 
         # Reference list of DC/OS packages
         self.ref_pkg_list = self.get_ref_pkg_list()
         LOG.debug(f'{self.msg_src}: ref_pkg_list: {self.ref_pkg_list}')
 
-        # DC/OS aggregated configuration object
-        self.dcos_conf = self.get_dcos_conf()
+    @property
+    def cluster_conf(self):
+        """"The collection of DC/OS cluster configuration options.
 
-        # Add discovery configuration for dcos_conf
-        discovery_type = self.dcos_conf.get('values').get('master_discovery')
-        self.cluster_conf['discovery'] = {'type': discovery_type}
+        :return: dict
+        """
+        if self._cluster_conf is None:
+            self._cluster_conf = self.get_cluster_conf()
+            LOG.debug(f'{self.msg_src}: cluster_conf: {self._cluster_conf}')
+
+        return self._cluster_conf
+
+    @property
+    def dcos_conf(self):
+        """The DC/OS aggregated configuration object.
+
+        :return: dict
+        """
+        if self._dcos_conf is None:
+            self._dcos_conf = self.get_dcos_conf()
+            LOG.debug(f'{self.msg_src}: dcos_conf: {self.dcos_conf}')
+        return self._dcos_conf
+
+
+    @property
+    def pkgrepopath(self):
+        if self._pkgrepopath is None:
+            cli_dstor_pkgrepo_path = self.cmd_opts.get(
+                CLI_CMDOPT.DSTOR_PKGREPOPATH
+            )
+            if cli_dstor_pkgrepo_path:
+                self._pkgrepopath = cli_dstor_pkgrepo_path
+
+        return self._pkgrepopath
+
+    @property
+    def root_url(self):
+        if self._root_url is None:
+            url = self.cmd_opts.get(CLI_CMDOPT.DSTOR_URL)
+            if url:
+                self._root_url = url
+            else:
+                raise WinpandaError(
+                    f'The following arguments are required: {CLI_CMDOPT.DSTOR_URL}'
+                )
+
+        return self._root_url
+
+    @property
+    def dstor_pkglist_path(self):
+        if self._dstor_pkglist_path is None:
+            pkglist_path = self.cmd_opts.get(
+                CLI_CMDOPT.DSTOR_PKGLISTPATH
+            )
+            if pkglist_path:
+                self._dstor_pkglist_path = pkglist_path
+
+        return self._dstor_pkglist_path
 
     def get_cluster_conf(self):
         """"Get a collection of DC/OS cluster configuration options.
@@ -117,25 +177,18 @@ class CmdConfigSetup(CommandConfig):
         #       function instead of this method to avoid massive code
         #       duplication.
 
-        # Load cluster configuration file
-        fpath = Path(self.cmd_opts.get(CLI_CMDOPT.DCOS_CLUSTERCFGPATH))
+        # Load cluster configuration from dcos_conf
+        cluster_conf = {}
+        dcos_conf = self.dcos_conf
 
-        # Unblock irrelevant local operations
-        if str(fpath) == 'NOP':
-            self.cluster_conf_nop = True
-            LOG.info(f'{self.msg_src}: cluster_conf: NOP')
-            return {}
-
-        if not fpath.is_absolute():
-            if self.inst_storage.cfg_dpath.exists():
-                fpath = self.inst_storage.cfg_dpath.joinpath(fpath)
-            else:
-                fpath = Path('.').resolve().joinpath(fpath)
-
-        cluster_conf = cr_utl.rc_load_ini(
-            fpath, emheading='Cluster setup descriptor'
-        )
-
+        i = 0
+        masters = dcos_conf.get('values').get('master_list').strip('][').split(', ')
+        for ipaddr in masters:
+            i += 1
+            cluster_conf[f'master-node-{i}'] = {
+                'privateipaddr': ipaddr,
+                'zookeeperlistenerport': cm_const.ZK_CLIENTPORT_DFT
+            }
         # CLI options take precedence, if any.
         # list(tuple('ipaddr', 'port'))
         cli_master_priv_ipaddrs = [
@@ -180,41 +233,46 @@ class CmdConfigSetup(CommandConfig):
                         'zookeeperclientport'
                     ] = port
         # DC/OS storage distribution parameters
-        cli_dstor_url = self.cmd_opts.get(CLI_CMDOPT.DSTOR_URL)
-        cli_dstor_pkgrepo_path = self.cmd_opts.get(
-            CLI_CMDOPT.DSTOR_PKGREPOPATH
-        )
-        cli_dstor_pkglist_path = self.cmd_opts.get(
-            CLI_CMDOPT.DSTOR_PKGLISTPATH
-        )
+
         cli_dstor_dcoscfg_path = self.cmd_opts.get(
             CLI_CMDOPT.DSTOR_DCOSCFGPATH
         )
-        if not cluster_conf.get('distribution-storage'):
-            cluster_conf['distribution-storage'] = {}
 
-        if cli_dstor_url:
-            cluster_conf['distribution-storage']['rooturl'] = cli_dstor_url
-        if cli_dstor_pkgrepo_path:
+        cluster_conf['distribution-storage'] = {
+            'dcosclusterpkginfopath': self.dcosclusterpkginfopath
+        }
+
+        if self.pkgrepopath is not None:
             cluster_conf['distribution-storage']['pkgrepopath'] = (
-                cli_dstor_pkgrepo_path
+                self.pkgrepopath
             )
-        if cli_dstor_pkglist_path:
+        if self.dstor_pkglist_path:
             cluster_conf['distribution-storage']['pkglistpath'] = (
-                cli_dstor_pkglist_path
+                self.dstor_pkglist_path
             )
         if cli_dstor_dcoscfg_path:
             cluster_conf['distribution-storage']['dcoscfgpath'] = (
                 cli_dstor_dcoscfg_path
             )
+        if self.root_url:
+            cluster_conf['distribution-storage']['rooturl'] = (
+                self.root_url
+            )
 
         # Local parameters of DC/OS node
         cli_local_priv_ipaddr = self.cmd_opts.get(CLI_CMDOPT.LOCAL_PRIVIPADDR)
-        if not cluster_conf.get('local'):
-            cluster_conf['local'] = {}
-
         if cli_local_priv_ipaddr:
-            cluster_conf['local']['privateipaddr'] = cli_local_priv_ipaddr
+            cluster_conf['local'] = {
+                'privateipaddr': cli_local_priv_ipaddr
+            }
+        else:
+            raise WinpandaError(
+                f'The following arguments are required: {CLI_CMDOPT.LOCAL_PRIVIPADDR}'
+            )
+
+        # Add discovery type configuration
+        discovery_type = dcos_conf.get('values').get('master_discovery')
+        cluster_conf['discovery'] = {'type': discovery_type}
 
         return cluster_conf
 
@@ -229,15 +287,10 @@ class CmdConfigSetup(CommandConfig):
         #       Thus the CmdConfigSetup is to be moved to use that standalone
         #       function instead of this method to avoid massive code
         #       duplication.
-        dstor_root_url = (
-            self.cluster_conf.get('distribution-storage', {}).get(
-                'rooturl', ''
-            )
-        )
+        dstor_root_url = self.root_url
+
         dstor_pkglist_path = (
-            self.cluster_conf.get('distribution-storage', {}).get(
-                'pkglistpath', ''
-            )
+            self.dstor_pkglist_path or ''
         )
         # Unblock irrelevant local operations
         if self.cluster_conf_nop or dstor_pkglist_path == 'NOP':
@@ -289,16 +342,9 @@ class CmdConfigSetup(CommandConfig):
         #       Thus the CmdConfigSetup is to be moved to use that standalone
         #       function instead of this method to avoid massive code
         #       duplication.
-        dstor_root_url = (
-            self.cluster_conf.get('distribution-storage', {}).get(
-                'rooturl', ''
-            )
-        )
-        dstor_linux_pkg_index_path = (
-            self.cluster_conf.get('distribution-storage', {}).get(
-                'dcosclusterpkginfopath', ''
-            )
-        )
+        dstor_root_url = self.root_url
+        dstor_linux_pkg_index_path = self.dcosclusterpkginfopath
+
         template_fname = 'dcos-config-windows.yaml'
         values_fname = 'expanded.config.full.json'
 
