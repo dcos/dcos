@@ -58,6 +58,7 @@ test: cluster.json
 		PUBLIC_AGENTS_PRIVATE_IPS=$(shell jq '.public_agent_ips.value' $<) \
 		PUBLIC_SLAVE_HOSTS=$(shell jq '.public_agent_ips.value' $<) \
 		$(DCOS_USER_PASSWORD_ENV) \
+		timeout -k 10m --preserve-status 90m \
 		dcos-shell pytest -vv --teamcity --log-level=DEBUG --windows-only"
 
 .PHONY: ssh
