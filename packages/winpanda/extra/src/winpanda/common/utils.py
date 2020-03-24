@@ -21,9 +21,10 @@ from pprint import pprint as pp
 import random
 import subprocess
 import tarfile
+import tempfile
 import time
 
-from pySmartDL import SmartDL
+import requests
 
 from common import logger
 from common import exceptions as cm_exc
@@ -32,22 +33,27 @@ from typing import Any, Callable
 LOG = logger.get_logger(__name__)
 
 
-# TODO: Needs refactoring
-def download(url: str, location: str) -> Any:
+def download(url: str, location: Path) -> Path:
     """
-    Downloads from url to location
-    uses  pySmartDL from https://pypi.org/project/pySmartDL/
+    Download from `url` and store in the `location` directory.
     """
-    _location = os.path.abspath(location)
-    dl = SmartDL(url, _location)
-    dl.start()
-    path = os.path.abspath(dl.get_dest())
-    # print("Downloaded to {} ".format(path), " from {}".format(url),sep='\n')
-    return path
+    r = requests.get(url, stream=True)
+    fd, path = tempfile.mkstemp(dir=str(location))
+    try:
+        try:
+            for chunk in r.iter_content(chunk_size=32*1024):
+                os.write(fd, chunk)
+        finally:
+            os.close(fd)
+        r.raise_for_status()
+    except:
+        os.unlink(path)
+        raise
+    return Path(path)
 
 
 # TODO: Needs refactoring
-def unpack(tarpath: str, location: str) -> str:
+def unpack(tarpath: Path, location: str) -> str:
     """
     unpacks tar.xz to  location
     """
@@ -58,7 +64,7 @@ def unpack(tarpath: str, location: str) -> str:
         print("no Directory exist creating...\n{}".format(_location))
         os.mkdir(_location)
 
-    with tarfile.open(tarpath) as tar:
+    with tarfile.open(str(tarpath)) as tar:
         tar.extractall(_location)
         print("extracted to {}".format(_location))
         pp({tarinfo.name: tarinfo.size for tarinfo in tar})
