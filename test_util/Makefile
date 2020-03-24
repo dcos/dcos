@@ -21,6 +21,8 @@ ifndef DCOS_LICENSE_CONTENTS
 $(error DCOS_LICENSE_CONTENTS is not set)
 endif
 
+diagnostics_bundle_file = diagnostics-$(shell date +%Y-%m-%d_%H-%M-%S).zip
+
 ################################### TARGETS ###################################
 
 .DEFAULT_GOAL := test
@@ -87,29 +89,35 @@ clean:
 
 ################################# DISGNOSTICS #################################
 
-diagnostics_bundle_file := diagnostics-$(shell date +%Y-%m-%d_%H-%M-%S).zip
+ifeq ($(TF_VAR_variant), open)
+	diagnostics_api = localhost:1050/system/health/v1/diagnostics
+else
+	diagnostics_api = --unix-socket /var/run/dcos/dcos-diagnostics.sock http:/system/health/v1/diagnostics
+endif
 
 # Start diagnostics bundle creation.
 diagnostics-%.started: cluster.json
+	@echo "##teamcity[blockOpened name='diagnostics-bundle' description='Download Diagnostics bundle']"
 	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
-		"curl -X PUT localhost:1050/system/health/v1/diagnostics/$*"
+		"curl -X PUT $(diagnostics_api)/$*"
 	touch $@
 
 # Wait until diagnostics bundle is ready.
 diagnostics-%.done: diagnostics-%.started cluster.json
 	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
-		"curl -s localhost:1050/system/health/v1/diagnostics/$* -o status.json; \
-		until jq '.status' status.json | grep -q 'Done'; do cat status.json; curl -s localhost:1050/system/health/v1/diagnostics/$* -o status.json; sleep 5; done;"
+		"curl -s $(diagnostics_api)/$* -o status.json; \
+		until jq '.status' status.json | grep -q 'Done'; do cat status.json; curl -s $(diagnostics_api)/$* -o status.json; sleep 5; done;"
 	rm $< || true
 	touch $@
 
 # Download diagnostics bundle.
 diagnostics-%.zip : diagnostics-%.done cluster.json
 	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
-		"curl localhost:1050/system/health/v1/diagnostics/$*/file -o $@"
+		"curl $(diagnostics_api)/$*/file -o $@"
 	scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<):/home/centos/$@ $@.work
 	rm $< || true
 	mv $@.work $@
+	@echo "##teamcity[blockClosed name='diagnostics-bundle']"
 
 
 ################################### HELPERS ###################################
