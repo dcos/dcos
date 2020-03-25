@@ -7,14 +7,6 @@ from common.exceptions import ExternalCommandError
 from subprocess import SubprocessError, CalledProcessError
 
 
-@mock.patch('common.utils.SmartDL')
-def test_download_should_return_destination_location(patch_smart_dl):
-    """Download fake content and save it into file."""
-    patch_smart_dl().get_dest.return_value = os.getcwd()
-    path = utils.download('', '')
-    assert path == os.getcwd()
-
-
 @mock.patch('os.path.exists', return_value=False)
 @mock.patch('os.mkdir')
 def test_unpack_unavailable_tar_path_should_fail(*args):

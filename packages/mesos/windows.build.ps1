@@ -1,184 +1,87 @@
 $ErrorActionPreference = "stop"
-# Mesos configurationsG
-$MESOS_DIR = "c:\mesos-tmp"
-$MESOS_BUILD_DIR = Join-Path $MESOS_DIR "build"
-$MESOS_GIT_REPO_DIR = Join-Path $MESOS_DIR "mesos"
-$MESOS_BUILD_OUT_DIR = Join-Path $MESOS_DIR "build-output"
 
-function New-Directory {
-    Param(
-        [Parameter(Mandatory=$true)]
-        [string]$Path,
-        [Parameter(Mandatory=$false)]
-        [switch]$RemoveExisting
-    )
-    if(Test-Path $Path) {
-        if($RemoveExisting) {
-            # Remove if it already exist
-            Remove-Item -Recurse -Force $Path
-        } else {
-            return
+$PKG_DIR = "c:\pkg"
+
+function Install-OpenSSL {
+    Write-Output "installing openssl"
+    # The argument options can be checked by running the installer
+    # with `/help`.
+    $p = Start-Process `
+        -FilePath $PKG_DIR/src/openssl/Win64OpenSSL-1_1_1e.exe `
+        -ArgumentList @("/VERYSILENT") `
+        -NoNewWindow `
+        -Wait `
+        -PassThru
+    if ($p.ExitCode -ne 0) {
+        Throw "failed to install OpenSSL"
+    }
+}
+
+function Patch-Mesos {
+    Write-Output "patching mesos"
+    Push-Location $PKG_DIR/src/mesos
+
+    Get-ChildItem -Path $PKG_DIR/extra/windows-ee.patches -Filter "*.patch" | `
+        ForEach-Object {
+            git -c user.name="Mesosphere CI" -c `
+                user.email="mesosphere-ci@users.noreply.github.com" `
+                am $_.FullName
         }
-    }
-    return (New-Item -ItemType Directory -Path $Path)
+
+    Pop-Location
 }
 
-function New-Environment {
-    Write-Output "Creating new tests environment"
-    New-Directory $MESOS_BUILD_DIR
-    New-Directory $MESOS_BUILD_OUT_DIR -RemoveExisting
-    Write-Output "New tests environment was successfully created"
-}
-
-function Start-ExternalCommand {
-    <#
-    .SYNOPSIS
-    Helper function to execute a script block and throw an exception in case of error.
-    .PARAMETER ScriptBlock
-    Script block to execute
-    .PARAMETER ArgumentList
-    A list of parameters to pass to Invoke-Command
-    .PARAMETER ErrorMessage
-    Optional error message. This will become part of the exception message we throw in case of an error.
-    #>
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$true)]
-        [Alias("Command")]
-        [ScriptBlock]$ScriptBlock,
-        [array]$ArgumentList=@(),
-        [string]$ErrorMessage
-    )
-    PROCESS {
-        if($LASTEXITCODE){
-            # Leftover exit code. Some other process failed, and this
-            # function was called before it was resolved.
-            # There is no way to determine if the ScriptBlock contains
-            # a powershell commandlet or a native application. So we clear out
-            # the LASTEXITCODE variable before we execute. By this time, the value of
-            # the variable is not to be trusted for error detection anyway.
-            $LASTEXITCODE = ""
+function Build-Mesos {
+    Write-Output "starting cmake config generation"
+    Push-Location $PKG_DIR/src/mesos/build
+    try {
+        $p = Start-Process `
+            -FilePath "cmake.exe" `
+            -ArgumentList @(
+                "..",
+                "-G", '"Visual Studio 15 2017 Win64"',
+                "-T", "host=x64",
+                "-DENABLE_SSL=ON",
+                "-DBUILD_TESTING=OFF"
+            ) `
+            -NoNewWindow `
+            -Wait `
+            -PassThru
+        if ($p.ExitCode -ne 0) {
+            Throw "cmake failed to generate config"
         }
-        $res = Invoke-Command -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList
-        if ($LASTEXITCODE) {
-            if(!$ErrorMessage){
-                Throw ("Command exited with status: {0}" -f $LASTEXITCODE)
-            }
-            Throw ("{0} (Exit code: $LASTEXITCODE)" -f $ErrorMessage)
+
+        Write-Output "starting cmake build"
+        $p = Start-Process `
+            -FilePath "cmake.exe" `
+            -ArgumentList @(
+                "--build", ".",
+                "--target", "mesos-agent",
+                "--config", "Release",
+                "--", "-m"
+            ) `
+            -NoNewWindow `
+            -Wait `
+            -PassThru
+        if ($p.ExitCode -ne 0) {
+            Throw "build failed"
         }
-        return $res
-    }
-}
-
-
-function Wait-ProcessToFinish {
-    Param(
-        [Parameter(Mandatory=$true)]
-        [String]$ProcessPath,
-        [Parameter(Mandatory=$false)]
-        [String[]]$ArgumentList,
-        [Parameter(Mandatory=$false)]
-        [String]$StandardOutput,
-        [Parameter(Mandatory=$false)]
-        [String]$StandardError,
-        [Parameter(Mandatory=$false)]
-        [int]$Timeout=7200
-    )
-    $parameters = @{
-        'FilePath' = $ProcessPath
-        'NoNewWindow' = $true
-        'PassThru' = $true
-    }
-    if ($ArgumentList.Count -gt 0) {
-        $parameters['ArgumentList'] = $ArgumentList
-    }
-    if ($StandardOutput) {
-        $parameters['RedirectStandardOutput'] = $StandardOutput
-    }
-    if ($StandardError) {
-        $parameters['RedirectStandardError'] = $StandardError
-    }
-    $process = Start-Process @parameters
-    $errorMessage = "The process $ProcessPath didn't finish successfully"
-    try {
-        Wait-Process -InputObject $process -Timeout $Timeout -ErrorAction Stop
-        Write-Output "Process finished within the timeout of $Timeout seconds"
-    } catch [System.TimeoutException] {
-        Write-Output "The process $ProcessPath exceeded the timeout of $Timeout seconds"
-        Stop-Process -InputObject $process -Force -ErrorAction SilentlyContinue
-        Throw $_
-    }
-    if($process.ExitCode -ne 0) {
-        Write-Output "$errorMessage. Exit code: $($process.ExitCode)"
-        Throw $errorMessage
-    }
-}
-
-function Start-MesosCIProcess {
-    Param(
-        [Parameter(Mandatory=$true)]
-        [string]$ProcessPath,
-        [Parameter(Mandatory=$false)]
-        [string[]]$ArgumentList,
-        [Parameter(Mandatory=$true)]
-        [string]$BuildErrorMessage
-    )
-    $command = $ProcessPath -replace '\\', '\\'
-    if($ArgumentList.Count) {
-        $ArgumentList | Foreach-Object { $command += " $($_ -replace '\\', '\\')" }
-    }
-    try {
-        Wait-ProcessToFinish -ProcessPath $ProcessPath -ArgumentList $ArgumentList 
-        $msg = "Successfully executed: $command"
-    } catch {
-        $msg = "Failed command: $command"
-        $global:BUILD_STATUS = 'FAIL'
-        Write-Output "Exception: $($_.ToString())"
-        Throw $BuildErrorMessage
-    } finally {
-        Write-Output $msg
-    }
-}
-
-function Start-MesosBuild {
-    Write-Output "Creating mesos cmake makefiles"
-    Push-Location $MESOS_BUILD_DIR
-    try {
-        $generatorName = "Visual Studio 15 2017 Win64"
-        $parameters = @("$MESOS_GIT_REPO_DIR", "-G", "`"$generatorName`"", "-T", "host=x64")
-
-        Start-MesosCIProcess -ProcessPath "cmake.exe" -ArgumentList $parameters -BuildErrorMessage "Mesos cmake files failed to generate."
-            #-StdoutFileName "mesos-build-cmake-stdout.log" -StderrFileName "mesos-build-cmake-stderr.log"
     } finally {
         Pop-Location
     }
-    Write-Output "mesos cmake makefiles were generated successfully"
-
-    Write-Output "Started building Mesos binaries"
-    Push-Location $MESOS_BUILD_DIR
-
-    try {
-
-        Start-MesosCIProcess -ProcessPath "cmake.exe" -ArgumentList @("--build", ".", "--config", "Release") -BuildErrorMessage "Mesos binaries failed to build."
-    } finally {
-        Pop-Location
-    }
-    Write-Output "Mesos binaries were successfully built"
-
-
 }
 
+New-Item -ItemType Directory -Force -Path $env:PKG_PATH/bin
+New-Item -ItemType Directory -Force -Path $env:PKG_PATH/conf/modules
+New-Item -ItemType Directory -Force -Path $PKG_DIR/src/mesos/build
 
-Copy-Item -Recurse "c:/pkg/src/" -destination "$MESOS_DIR"
+Install-OpenSSL
+Patch-Mesos
+Build-Mesos
 
-New-Environment
+Copy-Item $PKG_DIR/src/mesos/build/src/*.exe $env:PKG_PATH/bin
 
-Start-MesosBuild
-
-#Copy build directory to destination directory. 
-#For now we grab the whole lot
-New-Item -itemtype directory "$env:PKG_PATH\bin"
-Copy-Item -Path "$MESOS_BUILD_DIR\src\*" -Destination "$env:PKG_PATH\bin\" -Filter "*.exe"
-
-New-Item -ItemType Directory "$env:PKG_PATH/conf"
-Copy-Item "pkg/extra/mesos.nssm.j2" "$env:PKG_PATH/conf/"
+Copy-Item $PKG_DIR/extra/mesos.nssm.j2 $env:PKG_PATH/conf
+Copy-Item $PKG_DIR/extra/mesos.nssm-ssl.j2 $env:PKG_PATH/conf
+Copy-Item $PKG_DIR/extra/mesos.extra.j2 $env:PKG_PATH/conf
+Copy-Item $PKG_DIR/extra/mesos.ps1 $env:PKG_PATH/conf

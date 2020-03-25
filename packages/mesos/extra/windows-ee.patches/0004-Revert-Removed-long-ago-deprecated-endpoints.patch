@@ -1,7 +1,7 @@
-From 6f888a8f8f97a0d1c66402a7eb32c751a6ffb898 Mon Sep 17 00:00:00 2001
+From 19c75c5db0830ef56da4ce39e6769eff3f146f11 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Tue, 21 Aug 2018 17:59:27 +0200
-Subject: [PATCH 4/7] Revert "Removed long ago deprecated endpoints.".
+Subject: [PATCH] Revert "Removed long ago deprecated endpoints.".
 
 This reverts commit 42551cb5290b7b04101f7d800b4b8fd573e47b91.
 
@@ -50,10 +50,10 @@ index 091061a5a..665f73f91 100644
            authenticationRealm,
            FilesProcess::BROWSE_HELP,
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index a8cca622f..c81d1c54b 100644
+index 14b90a5e2..e366b51f8 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
-@@ -969,6 +969,16 @@ void Master::initialize()
+@@ -966,6 +966,16 @@ void Master::initialize()
            logRequest(request);
            return http.reserve(request, principal);
          });
@@ -70,7 +70,7 @@ index a8cca622f..c81d1c54b 100644
    route("/roles",
          READONLY_HTTP_AUTHENTICATION_REALM,
          Http::ROLES_HELP(),
-@@ -996,6 +1006,19 @@ void Master::initialize()
+@@ -993,6 +1003,19 @@ void Master::initialize()
                logResponse(request, response);
              });
          });
@@ -90,7 +90,7 @@ index a8cca622f..c81d1c54b 100644
    route("/state",
          READONLY_HTTP_AUTHENTICATION_REALM,
          Http::STATE_HELP(),
-@@ -1018,6 +1041,16 @@ void Master::initialize()
+@@ -1015,6 +1038,16 @@ void Master::initialize()
                logResponse(request, response);
              });
          });
@@ -108,10 +108,10 @@ index a8cca622f..c81d1c54b 100644
          READONLY_HTTP_AUTHENTICATION_REALM,
          Http::TASKS_HELP(),
 diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
-index 6a4802338..0e686b61e 100644
+index 3839a1204..eab83594f 100644
 --- a/src/slave/slave.cpp
 +++ b/src/slave/slave.cpp
-@@ -871,6 +871,17 @@ void Slave::initialize()
+@@ -795,6 +795,17 @@ void Slave::initialize()
  
          return resourceProviderManager->api(request, principal);
        });
@@ -129,7 +129,7 @@ index 6a4802338..0e686b61e 100644
    route("/state",
          READONLY_HTTP_AUTHENTICATION_REALM,
          Http::STATE_HELP(),
-@@ -903,6 +914,16 @@ void Slave::initialize()
+@@ -827,6 +838,16 @@ void Slave::initialize()
            logRequest(request);
            return http.statistics(request, principal);
          });
@@ -147,5 +147,5 @@ index 6a4802338..0e686b61e 100644
          READONLY_HTTP_AUTHENTICATION_REALM,
          Http::CONTAINERS_HELP(),
 -- 
-2.21.0
+2.23.0
 

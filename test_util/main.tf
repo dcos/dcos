@@ -17,6 +17,11 @@ variable "variant" {
   default = "open"
 }
 
+variable "dcos_security" {
+  type = "string"
+  default = ""
+}
+
 variable "owner" {
     type = "string"
     default = "dcos/test_util"
@@ -35,14 +40,14 @@ variable "windowsagent_num" {
 
 variable "ssh_public_key_file" {
   type = "string"
-  default = "./tf-dcos-rsa.pem.pub"
+  default = "~/.ssh/id_rsa.pub"
   description = "Defines the public key to log on the cluster."
 }
 
-variable "license_file" {
+variable "dcos_license_key_contents" {
   type = "string"
-  default = "./license.txt"
-  description = "Defines location of license used for EE."
+  default = ""
+  description = "Defines content of license used for EE."
 }
 
 # Used to determine your public IP for forwarding rules
@@ -85,8 +90,9 @@ module "dcos" {
   bootstrap_instance_type = "m4.xlarge"
 
   dcos_variant              = "${var.variant}"
+  dcos_security             = "${var.dcos_security}"
   dcos_version              = "2.1.0-beta1"
-  dcos_license_key_contents = "${file("./license.txt")}"
+  dcos_license_key_contents = "${var.dcos_license_key_contents}"
   ansible_bundled_container = "mesosphere/dcos-ansible-bundle:windows-beta-support"
 
   custom_dcos_download_path = "${var.custom_dcos_download_path}"
@@ -184,7 +190,7 @@ output "masters_private_ip" {
 
 output "private_agent_ips" {
     description = "These are the IP addresses of all private agents"
-    value       = "${join(",", module.dcos.infrastructure.private_agents.private_ips)}"
+    value       = "${join(",", concat(module.windowsagent.private_ips, module.dcos.infrastructure.private_agents.private_ips))}"
 }
 
 output "public_agent_ips" {

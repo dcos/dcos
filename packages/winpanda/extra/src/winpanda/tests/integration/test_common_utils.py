@@ -1,10 +1,26 @@
-import pytest
+import os
 import sys
 
+import mock
+import pytest
+
 from common.exceptions import ExternalCommandError
-from common.utils import run_external_command, transfer_files
+from common.utils import download, run_external_command, transfer_files
 
 EXPECTED_FILE_CONTENT = 'test'
+
+@mock.patch('requests.get')
+def test_download(rget, tmp_path):
+    # requests doesn't support file: URI's so, to avoid starting a HTTP
+    # server, mock requests behavior.
+    response = mock.Mock()
+    rget.return_value = response
+    response.iter_content.return_value = [EXPECTED_FILE_CONTENT.encode('utf-8')]
+
+    path = download('', str(tmp_path))
+    assert path.exists()
+    assert path.read_text(encoding='utf-8') == EXPECTED_FILE_CONTENT
+
 
 _cmd_success = """$ErrorActionPreference = "stop"
 Write-Output "output"

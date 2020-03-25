@@ -364,17 +364,13 @@ class InstallationStorage:
                                      dstor_root_url=dstor_root_url,
                                      dstor_pkgrepo_path=dstor_pkgrepo_path)
         try:
-            cm_utl.download(pkg_url, str(self.tmp_dpath))
+            pkgtarball_fpath = cm_utl.download(pkg_url, self.tmp_dpath)
             LOG.debug(f'{msg_src}: Add package: Download: {pkg_id}: {pkg_url}')
         except Exception as e:
             raise cr_exc.RCDownloadError(
                 f'Add package: {pkg_id}: {pkg_url}: {type(e).__name__}: {e}'
             ) from e
         # Unpack a package tarball
-        pkgtarball_fpath = (
-            self.tmp_dpath.joinpath(pkg_id.pkg_id).with_suffix('.tar.xz')
-        )
-
         try:
             # Try to cleanup local package repository before trying to
             # create a package installation directory there
@@ -402,7 +398,7 @@ class InstallationStorage:
                 ) from e
 
             with tf.TemporaryDirectory(dir=str(self.tmp_dpath)) as temp_dpath:
-                cm_utl.unpack(str(pkgtarball_fpath), temp_dpath)
+                cm_utl.unpack(pkgtarball_fpath, temp_dpath)
 
                 try:
                     # Lookup for a directory named after the package ID
