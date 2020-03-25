@@ -52,20 +52,17 @@ class TestPackageId(unittest.TestCase):
         assert items[RCCONTEXT_ITEM.DCOS_BIN_DPATH] == 'val_bin'
         assert items[RCCONTEXT_ITEM.DCOS_LIB_DPATH] == 'val_lib'
 
-    @mock.patch('subprocess.run')
-    def test_cluster_items_should_be_not_empty(self, mock_subprocess):
-        mock_subprocess.return_value = type(
-            "Foo", (object,), {'stdout': b'192.168.0.1'})()
-        context = ResourceContext(cluster_conf={})
+    def test_cluster_items_should_be_not_empty(self):
+        context = ResourceContext(cluster_conf={}, extra_values={'privateipaddr': '192.168.1.1'})
+        itms = context.get_items()
 
-        assert context.get_items() == {
+        assert itms == {
             RCCONTEXT_ITEM.MASTER_LOCATION: '127.0.0.1:2181',
             RCCONTEXT_ITEM.MASTER_PRIV_IPADDR: '127.0.0.1',
-            RCCONTEXT_ITEM.LOCAL_PRIV_IPADDR: '192.168.0.1',
-            RCCONTEXT_ITEM.ZK_CLIENT_PORT: 2181
+            RCCONTEXT_ITEM.LOCAL_PRIV_IPADDR: '192.168.1.1',
+            RCCONTEXT_ITEM.ZK_CLIENT_PORT: 2181,
+            'privateipaddr': '192.168.1.1'
         }
-
-    # TODO implement test for get_items with "@mock.patch('subprocess.run', side_effect=OSError)"
 
     def test_pkg_items_should_provide_all_keys(self):
         pkg_id = mock.Mock()
@@ -83,21 +80,17 @@ class TestPackageId(unittest.TestCase):
         context = ResourceContext(cluster_conf={
             'master-node-1': {'privateipaddr': '192.168.1.1', 'zookeeperlistenerport': '2181'},
             'master-node-2': {'privateipaddr': '192.168.1.2', 'zookeeperlistenerport': '2182'},
-        }, extra_values={
-            'privateipaddr': '182.168.0.1'
-        })
+        }, extra_values={'privateipaddr': '192.168.1.1'})
         items = context.get_items()
 
         assert items[RCCONTEXT_ITEM.MASTER_LOCATION] == '192.168.1.1:2181,192.168.1.2:2181'
 
     def test_discovery_type_static_should_provide_correct_location(self):
         context = ResourceContext(cluster_conf={
-            'master-node-1': {'privateipaddr': '178.168.1.1', 'zookeeperlistenerport': '2181'},
-            'master-node-2': {'privateipaddr': '178.168.1.2', 'zookeeperlistenerport': '2182'},
+            'master-node-1': {'privateipaddr': '192.168.1.1', 'zookeeperlistenerport': '2181'},
+            'master-node-2': {'privateipaddr': '192.168.1.2', 'zookeeperlistenerport': '2182'},
             'discovery': {'type': 'static'}
-        }, extra_values={
-            'privateipaddr': '182.168.0.1'
-        })
+        }, extra_values={'privateipaddr': '192.168.1.1'})
         items = context.get_items()
 
-        assert items[RCCONTEXT_ITEM.MASTER_LOCATION] == '178.168.1.1:2181'
+        assert items[RCCONTEXT_ITEM.MASTER_LOCATION] == '192.168.1.1:2181'
