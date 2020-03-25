@@ -120,7 +120,7 @@ Set-DefaultAWSRegion -Region us-west-2;
 # Upload Tar Ball to dcos.download.io
 
 Write-S3Object -BucketName "downloads.dcos.io" -Key "dcos\testing\$env:TEAMCITY_BRANCH\windows\dcos_generate_config_win.sh" -File ".\dcos_generate_config_win.sh" -CannedACLName public-read -Metadata @{"Cache-Control" = "no-cache"};
-Write-S3Object -BucketName "downloads.dcos.io" -Key "dcos\testing\$env:TEAMCITY_BRANCH\commit\$env:BUILD_VCS_NUMBER\windows\dcos_generate_config_win.sh" -File ".\dcos_generate_config_win.sh" -CannedACLName public-read -Metadata @{"Cache-Control" = "no-cache"};
+Write-S3Object -BucketName "downloads.dcos.io" -Key "dcos\testing\$env:TEAMCITY_BRANCH\commit\$env:BUILD_VCS_NUMBER\windows\dcos_generate_config_win.sh" -File ".\dcos_generate_config_win.sh" -CannedACLName public-read -Metadata @{"Cache-Control" = "max-age=604800"};
 
 # Verify that the files were uploaded
 Get-S3BucketWebsite -BucketName "downloads.dcos.io";
