@@ -9,6 +9,7 @@ from pathlib import Path
 from core.cmdconf import get_cluster_conf, CmdConfigSetup, load_dcos_conf_template
 from core import utils
 from common.exceptions import WinpandaError
+from core.exceptions import RCDownloadError
 
 
 class TestCmdConfigSetup(unittest.TestCase):
@@ -90,3 +91,14 @@ class TestCmdConfigSetup(unittest.TestCase):
         assert "local" in cluster_cfg.keys()
         assert "distribution-storage" in cluster_cfg.keys()
         assert "discovery" in cluster_cfg.keys()
+
+    @mock.patch('core.cmdconf.cm_utl.download', side_effect=Exception())
+    def test_get_ref_pkg_list_should_handle_exception(self, *args):
+
+        opts = self.cmd_config_opts
+        opts[CLI_CMDOPT.DSTOR_URL] = 'http://172.16.2.187:8080/2.1.0-beta1/genconf/serve'
+        opts[CLI_CMDOPT.LOCAL_PRIVIPADDR] = '172.16.27.209'
+        opts[CLI_CMDOPT.DSTOR_PKGLISTPATH] = 'dummy_path'
+
+        with pytest.raises(RCDownloadError):
+            CmdConfigSetup(**opts)

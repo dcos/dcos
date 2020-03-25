@@ -22,6 +22,10 @@ LOG = logger.get_logger(__name__)
 
 CMDCONF_TYPES = {}
 
+CMDCONF_PKG_REPO_PATH = 'windows/packages'
+CMDCONF_PKG_LIST_PATH = 'windows/package_lists/latest.package_list.json'
+CMDCONF_CLUSTER_PKG_INFO_PATH = 'cluster-package-info.json'
+
 
 def create(**cmd_opts):
     """Create configuration for a command.
@@ -96,7 +100,10 @@ class CmdConfigSetup(CommandConfig):
 
         # DC/OS cluster setup parameters
         self.cluster_conf_nop = False
-        self.dcosclusterpkginfopath = 'cluster-package-info.json'
+        self.dcosclusterpkginfopath = CMDCONF_CLUSTER_PKG_INFO_PATH
+        self.pkgrepopath = CMDCONF_PKG_REPO_PATH
+        self.dstor_pkglist_path = CMDCONF_PKG_LIST_PATH
+
         self._cluster_conf = None
 
         # DC/OS aggregated configuration object
@@ -129,18 +136,6 @@ class CmdConfigSetup(CommandConfig):
             LOG.debug(f'{self.msg_src}: dcos_conf: {self.dcos_conf}')
         return self._dcos_conf
 
-
-    @property
-    def pkgrepopath(self):
-        if self._pkgrepopath is None:
-            cli_dstor_pkgrepo_path = self.cmd_opts.get(
-                CLI_CMDOPT.DSTOR_PKGREPOPATH
-            )
-            if cli_dstor_pkgrepo_path:
-                self._pkgrepopath = cli_dstor_pkgrepo_path
-
-        return self._pkgrepopath
-
     @property
     def root_url(self):
         if self._root_url is None:
@@ -153,17 +148,6 @@ class CmdConfigSetup(CommandConfig):
                 )
 
         return self._root_url
-
-    @property
-    def dstor_pkglist_path(self):
-        if self._dstor_pkglist_path is None:
-            pkglist_path = self.cmd_opts.get(
-                CLI_CMDOPT.DSTOR_PKGLISTPATH
-            )
-            if pkglist_path:
-                self._dstor_pkglist_path = pkglist_path
-
-        return self._dstor_pkglist_path
 
     def get_cluster_conf(self):
         """"Get a collection of DC/OS cluster configuration options.
@@ -186,7 +170,7 @@ class CmdConfigSetup(CommandConfig):
         for ipaddr in masters:
             i += 1
             cluster_conf[f'master-node-{i}'] = {
-                'privateipaddr': ipaddr,
+                'privateipaddr': ipaddr.strip('\"'),
                 'zookeeperlistenerport': cm_const.ZK_CLIENTPORT_DFT
             }
         # CLI options take precedence, if any.
@@ -304,7 +288,7 @@ class CmdConfigSetup(CommandConfig):
                       f' {rpl_fpath}: {rpl_url}')
         except Exception as e:
             raise cr_exc.RCDownloadError(
-                f'Reference package list: Download: {rpl_fpath}: {rpl_url}:'
+                f'Reference package list: Download: {rpl_url}:'
                 f' {type(e).__name__}: {e}'
             ) from e
 
