@@ -1,6 +1,6 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
-## DC/OS 2.0.3 (In development)
+## DC/OS 2.0.3 (2020-03-25)
 
 * Updated to Mesos [1.9.1-dev](https://github.com/apache/mesos/blob/b84b0a4bd8945b0901214b90b61e6a54fa4b3215/CHANGELOG)
 
