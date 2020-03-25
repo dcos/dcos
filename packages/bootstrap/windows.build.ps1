@@ -10,5 +10,3 @@ $packages = Get-ChildItem -Recurse -Path c:\pkg\src\  -Name -File
 foreach ($package in $packages){
    & pip install "c:\pkg\src\$package" --target $PKG_STORE
 }
-Copy-Item "c:\pkg\extra\bootstrap.extra.j2" "$env:PKG_PATH/conf/"
-Copy-Item "c:\pkg\extra\bootstrap.ps1" "$env:PKG_PATH/conf/"
