@@ -10,5 +10,4 @@ AppStderr = {{ pkg_log_dpath }}\adminrouter-nssm.log
 AppRotateFiles = 1
 AppRotateSeconds = 86400
 AppRotateBytes = 1048576
-AppTimestampLog = 1
 AppEnvironmentExtra = AUTH_ERROR_PAGE_DIR_PATH={{ pkg_inst_dpath }}\etc\errorpages

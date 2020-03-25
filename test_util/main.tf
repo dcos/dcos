@@ -93,7 +93,7 @@ module "dcos" {
   dcos_security             = "${var.dcos_security}"
   dcos_version              = "2.1.0-beta1"
   dcos_license_key_contents = "${var.dcos_license_key_contents}"
-  ansible_bundled_container = "mesosphere/dcos-ansible-bundle:windows"
+  ansible_bundled_container = "mesosphere/dcos-ansible-bundle:windows-beta-support"
 
   custom_dcos_download_path = "${var.custom_dcos_download_path}"
 
