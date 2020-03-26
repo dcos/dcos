@@ -14,7 +14,22 @@ variable "custom_dcos_download_path_win" {
 
 variable "variant" {
   type = "string"
-  default = "ee"
+  default = "open"
+}
+
+variable "dcos_security" {
+  type = "string"
+  default = ""
+}
+
+variable "owner" {
+    type = "string"
+    default = "dcos/test_util"
+}
+
+variable "expiration" {
+    type = "string"
+    default = "3h"
 }
 
 variable "windowsagent_num" {
@@ -23,13 +38,31 @@ variable "windowsagent_num" {
   description = "Defines the number of Windows agents for the cluster."
 }
 
+variable "ssh_public_key_file" {
+  type = "string"
+  default = "~/.ssh/id_rsa.pub"
+  description = "Defines the public key to log on the cluster."
+}
+
+variable "dcos_license_key_contents" {
+  type = "string"
+  default = ""
+  description = "Defines content of license used for EE."
+}
+
 # Used to determine your public IP for forwarding rules
 data "http" "whatismyip" {
   url = "http://whatismyip.akamai.com/"
 }
 
+resource "random_string" "password" {
+  length = 6
+  special = true
+  override_special = "-"
+}
+
 locals {
-  cluster_name = "generic-dcos-ee-demo"
+  cluster_name = "generic-dcos-it-${random_string.password.result}"
 }
 
 module "dcos" {
@@ -40,20 +73,26 @@ module "dcos" {
     aws = "aws"
   }
 
+  tags {
+    owner = "${var.owner}"
+    expiration = "${var.expiration}"
+  }
+
   cluster_name        = "${local.cluster_name}"
-  ssh_public_key_file = "~/.ssh/id_rsa.pub"
+  ssh_public_key_file = "${var.ssh_public_key_file}"
   admin_ips           = ["${data.http.whatismyip.body}/32"]
 
   num_masters        = "1"
-  num_private_agents = "1"
+  num_private_agents = "0"
   num_public_agents  = "1"
 
   dcos_instance_os        = "centos_7.5"
   bootstrap_instance_type = "m4.xlarge"
 
   dcos_variant              = "${var.variant}"
+  dcos_security             = "${var.dcos_security}"
   dcos_version              = "2.1.0-beta1"
-  dcos_license_key_contents = "${file("~/license.txt")}"
+  dcos_license_key_contents = "${var.dcos_license_key_contents}"
   ansible_bundled_container = "mesosphere/dcos-ansible-bundle:windows-beta-support"
 
   custom_dcos_download_path = "${var.custom_dcos_download_path}"
@@ -77,6 +116,11 @@ dcos:
 module "windowsagent" {
   source  = "dcos-terraform/windows-instance/aws"
   version = "~> 0.2.0"
+
+  tags {
+    owner = "${var.owner}"
+    expiration = "${var.expiration}"
+  }
 
   cluster_name           = "${local.cluster_name}"
   hostname_format        = "%[3]s-winagent%[1]d-%[2]s"
@@ -129,9 +173,29 @@ agents_public
 EOF
 }
 
-output "masters_dns_name" {
+output "dcos_ui" {
   description = "This is the load balancer address to access the DC/OS UI"
-  value       = "${module.dcos.masters-loadbalancer}"
+  value       = "http://${module.dcos.masters-loadbalancer}/"
+}
+
+output "masters_public_ip" {
+    description = "This is the public masters IP to SSH"
+    value       = "${element(module.dcos.infrastructure.masters.public_ips, 0)}"
+}
+
+output "masters_private_ip" {
+    description = "This is the private masters IP address"
+    value       = "${element(module.dcos.infrastructure.masters.private_ips, 0)}"
+}
+
+output "private_agent_ips" {
+    description = "These are the IP addresses of all private agents"
+    value       = "${join(",", concat(module.windowsagent.private_ips, module.dcos.infrastructure.private_agents.private_ips))}"
+}
+
+output "public_agent_ips" {
+    description = "These are the IP addresses of all public agents"
+    value       = "${join(",", module.dcos.infrastructure.public_agents.private_ips)}"
 }
 
 output "passwords" {

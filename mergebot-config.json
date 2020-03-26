@@ -32,7 +32,7 @@
         "interactive": false,
         "fix_version_map": {
             "master": "DC/OS 2.1.0",
-            "2.0":  "DC/OS 2.0.3",
+            "2.0":  "DC/OS 2.0.4",
             "1.13": "DC/OS 1.13.9",
             "1.12": "DC/OS 1.12.6",
             "1.11": "DC/OS 1.11.14",
@@ -54,6 +54,7 @@
                     "teamcity/dcos/build/dcosWindows",
                     "teamcity/dcos/build/tox/windows",
                     "continuous-integration/jenkins/pr-head",
+                    "teamcity/dcos/windows/integration-test",
                     "teamcity/dcos/test/test-e2e/group1",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group1",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group2",

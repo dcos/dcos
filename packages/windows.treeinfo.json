@@ -1,6 +1,8 @@
 {
   "variants": {
+    "openssl": "windows",
     "mesos": "windows",
+    "mesos-modules": "windows",
     "winpanda" : "windows",
     "dcos-diagnostics": "windows",
     "adminrouter": "windows",
@@ -54,10 +56,8 @@
     "logrotate",
     "marathon",
     "mesos-dns",
-    "mesos-modules",
     "metronome",
     "ncurses",
-    "openssl",
     "pkgpanda-api",
     "pkgpanda-role",
     "pytest",

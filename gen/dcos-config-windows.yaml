@@ -19,17 +19,13 @@ package:
         "endpoint-config": "{{ windows_dcos_install_path_json }}\\etc\\dcos-diagnostics\\dcos-diagnostics-endpoint-config.json",
         "agent-port": 61001,
         "port": 1050,
-        "no-unix-socket": true
+        "no-unix-socket": true,
+        "ip-discovery-command-location": "{{ windows_dcos_install_path_json }}\\bin\\detect_ip.ps1"
       }
   - path: {{ windows_dcos_install_path }}\etc\dcos-diagnostics\dcos-diagnostics-endpoint-config.json
     content: |
       {
         "HTTPEndpoints": [
-            {
-                "Port": 5051,
-                "Uri": "/overlay-agent/overlay",
-                "Role": ["agent"]
-            },
             {
                 "Port": 5051,
                 "Uri": "/__processes__",
@@ -205,6 +201,13 @@ package:
       [[inputs.docker]]
          endpoint = "ENV"
 
+      # Read metrics from DC/OS Diagnostics Prometheus endpoint.
+      [[inputs.prometheus]]
+        urls = ["http://$DCOS_NODE_PRIVATE_IP:1050/metrics"]
+        insecure_skip_verify = true
+        [inputs.prometheus.tags]
+        dcos-component-name = "DC/OS Diagnostics"
+
       [[inputs.mesos]]
 
         timeout = 100
@@ -217,6 +220,8 @@ package:
            "tasks",
            "messages",
       ]
+      ## The user agent to send with requests
+      user_agent = "Telegraf-mesos"
 
       [[outputs.prometheus_client]]
         ## Address to listen on
@@ -250,3 +255,89 @@ package:
   - path: {{ windows_dcos_install_path }}\etc\adminrouter\adminrouter-listen-open.conf
     content: |
         listen 61001 default_server;
+
+  - path: {{ windows_dcos_install_path }}\etc\mesos\modules\journal.json
+    content: |
+      {
+        "libraries": [
+          {
+            "file": "libjournaldlogger.dll",
+            "modules": [
+              {
+                "name": "com_mesosphere_mesos_JournaldLogger",
+                "parameters": [
+                  {
+                    "key": "destination_type",
+                    "value": "logrotate"
+                  },
+                  {
+                    "key": "companion_dir",
+                    "value": "./"
+                  },
+                  {
+                    "key": "libprocess_num_worker_threads",
+                    "value": "2"
+                  },
+                  {
+                    "key": "logrotate_max_stdout_size",
+                    "value": "2MB"
+                  },
+                  {
+                    "key": "logrotate_stdout_options",
+                    "value": "rotate 9"
+                  },
+                  {
+                    "key": "logrotate_max_stderr_size",
+                    "value": "2MB"
+                  },
+                  {
+                    "key": "logrotate_stderr_options",
+                    "value": "rotate 9"
+                  },
+                  {
+                    "key": "fluentbit_ip",
+                    "value": "127.0.0.1"
+                  },
+                  {
+                    "key": "fluentbit_port",
+                    "value": "61092"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+
+  - path: {{ windows_dcos_install_path }}\etc\mesos\modules\metrics.json
+    content: |
+      {
+        "libraries": [
+          {
+            "file": "metrics.dll",
+            "modules": [
+              {
+                "name": "com_mesosphere_dcos_MetricsIsolatorModule",
+                "parameters": [
+                  {
+                    "key": "dcos_metrics_service_scheme",
+                    "value": "http"
+                  },
+                  {
+                    "key": "dcos_metrics_service_network",
+                    "value": "inet"
+                  },
+                  {
+                    "key": "dcos_metrics_service_address",
+                    "value": "127.0.0.1:61091"
+                  },
+                  {
+                    "key": "dcos_metrics_service_endpoint",
+                    "value": "/container"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }

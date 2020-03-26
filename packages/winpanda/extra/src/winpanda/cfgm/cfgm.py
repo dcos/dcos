@@ -3,7 +3,6 @@
 DC/OS package configuration files manager definition.
 """
 from pathlib import Path
-import shutil
 import tempfile as tf
 
 import jinja2 as j2
@@ -11,6 +10,7 @@ import jinja2 as j2
 from cfgm import exceptions as cfgm_exc
 from common import logger
 from common.storage import ISTOR_NODE
+from common.utils import transfer_files
 from core import constants as cr_const
 from core import exceptions as cr_exc
 from core.package.manifest import PackageManifest
@@ -22,17 +22,13 @@ LOG = logger.get_logger(__name__)
 
 class PkgConfManager:
     """DC/OS package configuration files manager."""
-    def __init__(self, pkg_manifest):
+
+    def __init__(self, pkg_manifest: PackageManifest):
         """Constructor.
 
         :param pkg_manifest: PackageManifest, DC/OS package manifest object
         """
         self.msg_src = self.__class__.__name__
-
-        assert isinstance(pkg_manifest, PackageManifest), (
-            f'{self.msg_src}: Argument: pkg_manifest:'
-            f' Got {type(pkg_manifest).__name__} instead of PackageManifest'
-        )
         self._pkg_manifest = pkg_manifest
 
     def __str__(self):
@@ -47,17 +43,15 @@ class PkgConfManager:
         LOG.debug(f'{self.msg_src}: Setup configuration: {pkg_id.pkg_name}:'
                   f' Source directory path: {pkg_cfg_dpath}')
 
-        pkg_shrcfg_dpath = getattr(
-            self._pkg_manifest.istor_nodes, ISTOR_NODE.CFG
-        ).joinpath(pkg_id.pkg_name)
+        config_dir = getattr(self._pkg_manifest.istor_nodes, ISTOR_NODE.CFG)
+        pkg_shrcfg_dpath = config_dir.joinpath(pkg_id.pkg_name)
         LOG.debug(f'{self.msg_src}: Setup configuration: {pkg_id.pkg_name}:'
                   f' Destination directory path: {pkg_shrcfg_dpath}')
 
-        inst_tmp_dpath = getattr(self._pkg_manifest.istor_nodes,
-                                 ISTOR_NODE.TMP)
         pkg_context = self._pkg_manifest.context
 
         if pkg_cfg_dpath.exists():
+            # Check source is a directory
             if pkg_cfg_dpath.is_symlink():
                 err_msg = (f'Source directory: Symlink conflict:'
                            f' {pkg_cfg_dpath}')
@@ -70,122 +64,87 @@ class PkgConfManager:
                 err_msg = (f'Source directory: Not a directory:'
                            f' {pkg_cfg_dpath}')
                 raise cfgm_exc.PkgConfInvalidError(err_msg)
-            else:
-                # Try to cleanup DC/OS shared configuration directory before
-                # trying to create a package-specific configuration directory
-                # there
-                try:
-                    if pkg_shrcfg_dpath.exists():
-                        if pkg_shrcfg_dpath.is_dir():
-                            shutil.rmtree(str(pkg_shrcfg_dpath))
-                        elif pkg_shrcfg_dpath.is_file and (
-                            not pkg_shrcfg_dpath.is_symlink()
-                        ):
-                            pkg_shrcfg_dpath.unlink()
-                        else:
-                            raise cr_exc.InstallationStorageError(
-                                f'Setup configuration: {pkg_id.pkg_name}:'
-                                f' Auto-cleanup: Removing objects other than'
-                                f' regular directories and files is not'
-                                f' supported: {pkg_shrcfg_dpath}'
-                            )
-                        LOG.debug(
-                            f'{self.msg_src}: Setup configuration:'
-                            f' {pkg_id.pkg_name}: Auto-cleanup:'
-                            f' {pkg_shrcfg_dpath}'
-                        )
-                except (OSError, RuntimeError) as e:
-                    raise cr_exc.InstallationStorageError(
-                        f'Setup configuration: {pkg_id.pkg_name}:'
-                        f' Auto-cleanup: {pkg_shrcfg_dpath}:'
-                        f' {type(e).__name__}: {e}'
-                    ) from e
 
-                try:
-                    with tf.TemporaryDirectory(dir=str(inst_tmp_dpath)) as tdp:
+            # Ensure destination exists and is a directory
+            try:
+                pkg_shrcfg_dpath.mkdir(parents=True, exist_ok=True)
+            except FileExistsError:
+                raise cr_exc.InstallationStorageError(
+                    f'Setup configuration: {pkg_id.pkg_name}:'
+                    f' {pkg_shrcfg_dpath} exists but is not a directory'
+                )
 
-                        self._process_pkgconf_srcdir(
-                            src_dpath=pkg_cfg_dpath,
-                            tmp_dpath=Path(tdp),
-                            context=pkg_context
-                        )
-                        shutil.copytree(tdp, str(pkg_shrcfg_dpath))
-                        LOG.debug(
-                            f'{self.msg_src}: Setup configuration:'
-                            f' {pkg_id.pkg_name}: Save: {pkg_shrcfg_dpath}: OK'
-                        )
-                except (OSError, RuntimeError) as e:
-                    err_msg = (f'Setup configuration: {pkg_id.pkg_name}:'
-                               f' Process configuration sources:'
-                               f' {pkg_cfg_dpath}: {type(e).__name__}: {e}')
-                    raise cfgm_exc.PkgConfManagerError(err_msg)
+            try:
+                with tf.TemporaryDirectory(dir=str(config_dir)) as tdp:
+
+                    self._process_pkgconf_srcdir(
+                        src_dpath=pkg_cfg_dpath,
+                        tmp_dpath=Path(tdp),
+                        context=pkg_context
+                    )
+                    transfer_files(tdp, str(pkg_shrcfg_dpath))
+                    LOG.debug(
+                        f'{self.msg_src}: Setup configuration:'
+                        f' {pkg_id.pkg_name}: Save: {pkg_shrcfg_dpath}: OK'
+                    )
+            except (OSError, RuntimeError) as e:
+                err_msg = (f'Setup configuration: {pkg_id.pkg_name}:'
+                           f' Process configuration sources:'
+                           f' {pkg_cfg_dpath}: {type(e).__name__}: {e}')
+                raise cfgm_exc.PkgConfManagerError(err_msg)
         else:
             err_msg = f'Source directory: Not found: {pkg_cfg_dpath}'
             raise cfgm_exc.PkgConfNotFoundError(err_msg)
 
-    def _process_pkgconf_srcdir(self, src_dpath, tmp_dpath, context=None):
+    def _process_pkgconf_srcdir(self, src_dpath: Path, tmp_dpath: Path,
+                                context=None):
         """Process (read, render, save) content of a DC/OS package
         configuration directory.
 
-        :param src_dpath: pathlib.Path, path to a source configuration
+        :param src_dpath: Path, path to a source configuration
                           directory
-        :param tmp_dpath: pathlib.Path, path to a temporary directory to save
+        :param tmp_dpath: Path, path to a temporary directory to save
                           intermediate rendered content
         :param context:   ResourceContext, rendering context data object
         """
-        assert isinstance(src_dpath, Path) and src_dpath.is_absolute(), (
-            f'Argument: src_dpath: Absolute pathlib.Path is required:'
-            f' {src_dpath}'
-        )
-        assert isinstance(tmp_dpath, Path) and tmp_dpath.is_absolute(), (
-            f'Argument: tmp_dpath: Absolute pathlib.Path is required:'
-            f' {tmp_dpath}'
-        )
+        if not src_dpath.exists():
+            return
 
-        if src_dpath.exists():
-            if src_dpath.is_symlink():
-                raise cfgm_exc.PkgConfInvalidError(f'Symlink conflict:'
-                                                   f' {src_dpath}')
-            elif src_dpath.is_reserved():
-                raise cfgm_exc.PkgConfInvalidError(f'Reserved name conflict:'
-                                                   f' {src_dpath}')
-            elif not src_dpath.is_dir():
-                raise cfgm_exc.PkgConfInvalidError(f'Not a directory:'
-                                                   f' {src_dpath}')
-            else:
-                for sub_path in src_dpath.iterdir():
-                    if sub_path.is_dir():
-                        sub_tmp_dpath = tmp_dpath.joinpath(sub_path.name)
-                        sub_tmp_dpath.mkdir()
-                        self._process_pkgconf_srcdir(
-                            src_dpath=sub_path,
-                            tmp_dpath=sub_tmp_dpath,
-                            context=context
-                        )
-                    else:
-                        self._process_pkgconf_srcfile(
-                            src_fpath=sub_path,
-                            tmp_dpath=tmp_dpath,
-                            context=context
-                        )
+        if src_dpath.is_symlink():
+            raise cfgm_exc.PkgConfInvalidError(f'Symlink conflict:'
+                                               f' {src_dpath}')
+        elif src_dpath.is_reserved():
+            raise cfgm_exc.PkgConfInvalidError(f'Reserved name conflict:'
+                                               f' {src_dpath}')
+        elif not src_dpath.is_dir():
+            raise cfgm_exc.PkgConfInvalidError(f'Not a directory:'
+                                               f' {src_dpath}')
+        else:
+            for sub_path in src_dpath.iterdir():
+                if sub_path.is_dir():
+                    sub_tmp_dpath = tmp_dpath.joinpath(sub_path.name)
+                    sub_tmp_dpath.mkdir()
+                    self._process_pkgconf_srcdir(
+                        src_dpath=sub_path,
+                        tmp_dpath=sub_tmp_dpath,
+                        context=context
+                    )
+                else:
+                    self._process_pkgconf_srcfile(
+                        src_fpath=sub_path,
+                        tmp_dpath=tmp_dpath,
+                        context=context
+                    )
 
-    def _process_pkgconf_srcfile(self, src_fpath, tmp_dpath, context=None):
+    def _process_pkgconf_srcfile(self, src_fpath: Path, tmp_dpath: Path,
+                                 context: ResourceContext=None):
         """Process DC/OS package configuration source file.
 
-        :param src_fpath: pathlib.Path, path to a source configuration file
-        :param tmp_dpath: pathlib.Path, path to a temporary directory to save
+        :param src_fpath: Path, path to a source configuration file
+        :param tmp_dpath: Path, path to a temporary directory to save
                           intermediate rendered content
         :param context:   ResourceContext, rendering context data object
         """
-        assert isinstance(src_fpath, Path) and src_fpath.is_absolute(), (
-            f'Argument: src_fpath: Absolute pathlib.Path is required:'
-            f' {src_fpath}'
-        )
-        assert isinstance(tmp_dpath, Path) and tmp_dpath.is_absolute(), (
-            f'Argument: tmp_dpath: Absolute pathlib.Path is required:'
-            f' {tmp_dpath}'
-        )
-
         if '.j2' in src_fpath.suffixes[-1:]:
             dst_fname = src_fpath.stem
             json_ready = '.json' in src_fpath.suffixes[-2:-1]
@@ -193,21 +152,13 @@ class PkgConfManager:
             dst_fname = src_fpath.name
             json_ready = '.json' in src_fpath.suffixes[-1:]
 
-        if context is None:
-            context_items = {}
-        else:
-            assert isinstance(context, ResourceContext), (
-                f'Argument: context:'
-                f' Got {type(context).__name__} instead of ResourceContext'
-            )
-
-            context_items = context.get_items(json_ready=json_ready)
-
         try:
             j2_env = j2.Environment(
                 loader=j2.FileSystemLoader(str(src_fpath.parent))
             )
             j2_tmpl = j2_env.get_template(str(src_fpath.name))
+            context_items = {} if context is None else context.get_items(
+                json_ready=json_ready)
             rendered_str = j2_tmpl.render(**context_items)
             LOG.debug(f'{self.msg_src}: Process configuration file:'
                       f' {src_fpath}: Rendered content: {rendered_str}')

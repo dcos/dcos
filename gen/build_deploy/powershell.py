@@ -21,7 +21,7 @@ def generate(gen_out, output_dir):
 def make_powershell(gen_out, output_dir):
     """Build powershell deployment script and store this at Bootstrap serve"""
 
-    output_dir = output_dir + '/windows/prerequisites/'
+    output_dir = output_dir + '/windows/'
     pkgpanda.util.make_directory(output_dir)
 
     bootstrap_url = gen_out.arguments['bootstrap_url']

@@ -5,6 +5,8 @@ import os
 import tempfile
 import zipfile
 
+from typing import List
+
 import pytest
 import retrying
 import test_helpers
@@ -88,7 +90,6 @@ def test_dcos_diagnostics_health(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_nodes(dcos_api_session):
     """
     test a list of nodes with statuses endpoint /system/health/v1/nodes
@@ -120,7 +121,6 @@ def test_dcos_diagnostics_nodes_node(dcos_api_session):
             validate_node([node_response])
 
 
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_nodes_node_units(dcos_api_session):
     """
     test a list of units from a specific node, endpoint /system/health/v1/nodes/<node>/units
@@ -138,7 +138,6 @@ def test_dcos_diagnostics_nodes_node_units(dcos_api_session):
             validate_units(units_response['units'])
 
 
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session):
     """
     test a specific unit for a specific node, endpoint /system/health/v1/nodes/<node>/units/<unit>
@@ -156,7 +155,6 @@ def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_units(dcos_api_session):
     """
     test a list of collected units, endpoint /system/health/v1/units
@@ -216,7 +214,6 @@ def test_systemd_units_health(dcos_api_session):
         raise AssertionError('\n'.join(unhealthy_output))
 
 
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_units_unit(dcos_api_session):
     """
     test a unit response in a right format, endpoint: /system/health/v1/units/<unit>
@@ -230,20 +227,19 @@ def test_dcos_diagnostics_units_unit(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
 def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
     """
     test a list of nodes for a specific unit, endpoint /system/health/v1/units/<unit>/nodes
     """
 
-    def get_nodes_from_response(response):
+    def get_nodes_from_response(response) -> List[str]:
         assert 'nodes' in response, 'response must have field `nodes`. Got {}'.format(response)
         nodes_ip_map = make_nodes_ip_map(dcos_api_session)
         nodes = []
         for node in response['nodes']:
             assert 'host_ip' in node, 'node response must have `host_ip` field. Got {}'.format(node)
-            assert node['host_ip'] in nodes_ip_map, 'nodes_ip_map must have node {}.Got {}'.format(node['host_ip'],
-                                                                                                   nodes_ip_map)
+            assert node['host_ip'] in nodes_ip_map, 'nodes_ip_map must have node {}. Got {}'.format(node['host_ip'],
+                                                                                                    nodes_ip_map)
             nodes.append(nodes_ip_map.get(node['host_ip']))
         return nodes
 
@@ -266,12 +262,19 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
             set(master_nodes).symmetric_difference(set(dcos_api_session.masters))
         )
 
-        agent_nodes_response = check_json(
-            dcos_api_session.health.get('/units/dcos-mesos-slave.service/nodes', node=master))
+        linux_agent_nodes = list()
+        if 'dcos-mesos-slave.service' in pulled_units:
+            agent_nodes_response = check_json(
+                dcos_api_session.health.get('/units/dcos-mesos-slave.service/nodes', node=master))
+            linux_agent_nodes = get_nodes_from_response(agent_nodes_response)
 
-        agent_nodes = get_nodes_from_response(agent_nodes_response)
+        windows_agent_nodes = list()
+        if 'WinRM' in pulled_units:
+            agent_nodes_response = check_json(
+                dcos_api_session.health.get('/units/mesos-agent/nodes', node=master))
+            windows_agent_nodes = get_nodes_from_response(agent_nodes_response)
 
-        assert len(agent_nodes) == len(dcos_api_session.slaves), '{} != {}'.format(agent_nodes, dcos_api_session.slaves)
+        assert set(linux_agent_nodes + windows_agent_nodes) == set(dcos_api_session.slaves)
 
 
 def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
@@ -317,8 +320,8 @@ def test_dcos_diagnostics_report(dcos_api_session):
         assert len(report_response['Nodes']) > 0
 
 
-@pytest.mark.parametrize('use_legacy_api', [False, True])
-@pytest.mark.xfail("config.getoption('--windows-only')", strict=True, reason="D2IQ-64753")
+@pytest.mark.parametrize('use_legacy_api',
+                         [False, pytest.param(True, marks=pytest.mark.xfail("config.getoption('--windows-only')"))])
 def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_legacy_api):
     """
     test bundle create, read, delete workflow
@@ -337,7 +340,7 @@ def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_le
         use_legacy_api=use_legacy_api,
     )
 
-    app, test_uuid = test_helpers.marathon_test_app()
+    app, test_uuid = test_helpers.marathon_test_docker_app('diag-bundle', constraints=[])
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         bundle = _create_bundle(diagnostics)
         _check_diagnostics_bundle_status(dcos_api_session)
@@ -471,6 +474,25 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
         'binsh_-c_cat proc`systemctl show dcos-mesos-slave.service -p MainPID| cut -d\'=\' -f2`environ.output'
     ] + expected_agent_common_files + expected_common_files
 
+    # for Windows host
+    expected_windows_agent_files = [
+        '5051-__processes__.json',
+        '5051-state.json',
+        '5051-containers.json',
+        '5051-system_stats_json.json',
+        '5051-flags.json',
+        '5051-metrics_snapshot.json',
+        'dcos-diagnostics-health.json',
+        'C:\\d2iq\\dcos\\var\log\\adminrouter\\adminrouter-nssm.log',
+        'C:\\d2iq\\dcos\\var\log\\telegraf\\telegraf.log',
+        'C:\\d2iq\\dcos\\var\log\dcos-diagnostics\\dcos-diagnostics.log',
+        'C:\\d2iq\\dcos\\var\\log\\winpanda\\winpanda.log',
+        'C:\\d2iq\\dcos\\var\\log\\adminrouter\\adminrouter-access.log',
+        'C:\\d2iq\\dcos\\var\\log\dcos_install.log',
+        'C:\\d2iq\\dcos\\var\\log\\adminrouter\\adminrouter-error.log',
+        'C:\\d2iq\\dcos\\var\\log\\mesos\\mesos-agent.log'
+    ]
+
     # for public agent host
     expected_public_agent_files = [
         'dcos-mesos-slave-public.service',
@@ -556,11 +578,19 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
             assert 'ip' in health_report
             assert health_report['ip'] == slave_ip
 
-            # make sure systemd unit output is correct and does not contain error message
-            unit_output = get_file_content(agent_folder + 'dcos-mesos-slave.service', z)
-            verify_unit_response(unit_output, 100)
+            # Decide if we have a Windows or Linux agent based on the health report.
+            unit_ids = [unit['id'] for unit in health_report['units']]
+            if 'WinRM' in unit_ids:
+                unit_output = get_file_content(agent_folder + 'C:\\d2iq\\dcos\\var\\log\\mesos\\mesos-agent.log', z)
+                verify_unit_response(unit_output, 20)
 
-            verify_archived_items(agent_folder, archived_items, expected_agent_files)
+                verify_archived_items(agent_folder, archived_items, expected_windows_agent_files)
+            else:
+                # make sure systemd unit output is correct and does not contain error message
+                unit_output = get_file_content(agent_folder + 'dcos-mesos-slave.service', z)
+                verify_unit_response(unit_output, 100)
+
+                verify_archived_items(agent_folder, archived_items, expected_agent_files)
 
         # make sure all required log files for public agent node are in place.
         for public_slave_ip in dcos_api_session.public_slaves:
@@ -635,9 +665,9 @@ def validate_units(units):
 
         # a unit must have all 3 fields not empty
         assert unit['id'], 'id field cannot be empty'
-        assert unit['name'], 'name field cannot be empty'
+        assert unit['name'], 'name field cannot be empty in {}'.format(unit)
         assert unit['health'] in [0, 1], 'health must be 0 or 1'
-        assert unit['description'], 'description field cannot be empty'
+        assert unit['description'], 'description field cannot be empty in {}'.format(unit)
 
 
 def validate_unit(unit):
@@ -651,7 +681,7 @@ def validate_unit(unit):
 
     # id, name, health, description, help should not be empty
     assert unit['id'], 'id field cannot be empty'
-    assert unit['name'], 'name field cannot be empty'
+    assert unit['name'], 'name field cannot be empty in {}'.format(unit)
     assert unit['health'] in [0, 1], 'health must be 0 or 1'
     assert unit['description'], 'description field cannot be empty'
     assert unit['help'], 'help field cannot be empty'

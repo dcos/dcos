@@ -7,9 +7,10 @@ Application CLI specification.
 class CLI_COMMAND:
     """CLI command set."""
     SETUP = 'setup'
-    TEARDOWN = 'teardown'
+    TEARDOWN = 'teardown'  # Not implemented
+    UPGRADE = 'upgrade'
     START = 'start'
-    STOP = 'stop'
+    STOP = 'stop'  # Not implemented
 
 
 class CLI_CMDTARGET:
@@ -45,9 +46,8 @@ CLI_ARGSPEC = '''Panda package management for Windows
 
 Usage:
   winpanda {cmd_setup} [options]
-  winpanda {cmd_teardown} [options]
+  winpanda {cmd_upgrade} [options]
   winpanda {cmd_start} [options]
-  winpanda {cmd_stop} [options]
 
 Options:
   --target=<target>                 target operational scope for a command

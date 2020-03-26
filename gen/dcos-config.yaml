@@ -2202,6 +2202,9 @@ package:
     content: |
       # Browser security settings for the DC/OS UI
       add_header X-Frame-Options "{{ adminrouter_x_frame_options }}";
+  - path: /etc_master/adminrouter-grpc-proxy-port.conf
+    content: |
+      listen {{ adminrouter_grpc_proxy_port }} http2;
   - path: /etc/adminrouter-tls-master.conf
     content: |
       # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf

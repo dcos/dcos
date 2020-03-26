@@ -14,12 +14,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Switched from Oracle Java 8 to OpenJDK 8 (DCOS-54902)
 
-* Updated DC/OS UI to [master+v2.150.2](https://github.com/dcos/dcos-ui/releases/tag/master+v2.150.2).
+* Updated DC/OS UI to [v3.0.7](https://github.com/dcos/dcos-ui/releases/tag/v3.0.7).
 
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
-* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/aefa4bdb8a111c74f1d0f7e851a486f4e2ec47e7/CHANGELOG)
-* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/aefa4bdb8a111c74f1d0f7e851a486f4e2ec47e7/CHANGELOG)
+* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/12e5e870c38681bfc0455960f89a41127dac3daf/CHANGELOG)
 
 * Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
 
@@ -84,3 +83,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Updated dcos-config.yaml to support some Mesos Flags. (DCOS-59021)
 
 * Fix Telegraf migration when no containers present. (D2IQ-64507)
+
+* Update OpenSSL to 1.1.1d. (D2IQ-65604)
