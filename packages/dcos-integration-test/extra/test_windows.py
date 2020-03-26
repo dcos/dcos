@@ -33,4 +33,5 @@ def test_if_docker_app_can_be_deployed_windows(dcos_api_session):
     Verifies that a marathon app inside of a docker daemon container can be
     deployed and accessed as expected on Windows.
     """
-    deploy_test_app_and_check_windows(dcos_api_session, *test_helpers.marathon_test_app_windows("simple-win"))
+    deploy_test_app_and_check_windows(dcos_api_session, *test_helpers.marathon_test_docker_app(
+        "simple-win", constraints=[['os', 'LIKE', 'windows']]))
