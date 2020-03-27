@@ -320,8 +320,9 @@ def test_dcos_diagnostics_report(dcos_api_session):
         assert len(report_response['Nodes']) > 0
 
 
-@pytest.mark.parametrize('use_legacy_api',
-                         [False, pytest.param(True, marks=pytest.mark.xfail("config.getoption('--windows-only')"))])
+@pytest.mark.parametrize('use_legacy_api', [
+    pytest.param(False, marks=pytest.mark.xfail("config.getoption('--windows-only')"), reason="D2IQ-65964"),
+    pytest.param(True, marks=pytest.mark.xfail("config.getoption('--windows-only')"))])
 def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_legacy_api):
     """
     test bundle create, read, delete workflow
@@ -341,7 +342,7 @@ def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_le
     )
 
     app, test_uuid = test_helpers.marathon_test_docker_app('diag-bundle', constraints=[])
-    with dcos_api_session.marathon.deploy_and_cleanup(app):
+    with dcos_api_session.marathon.deploy_and_cleanup(app, timeout=120):
         bundle = _create_bundle(diagnostics)
         _check_diagnostics_bundle_status(dcos_api_session)
         _download_and_extract_bundle(dcos_api_session, bundle, diagnostics)

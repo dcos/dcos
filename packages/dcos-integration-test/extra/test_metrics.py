@@ -91,6 +91,7 @@ def test_metrics_procstat(dcos_api_session):
 
 
 @pytest.mark.supportedwindows
+@pytest.mark.xfail(reason="D2IQ-66230: Telegraf cannot authorize with Mesos")
 def test_metrics_agents_mesos(dcos_api_session):
     """Assert that mesos metrics on agents are present."""
     nodes = get_agents(dcos_api_session)
