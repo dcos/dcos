@@ -1183,8 +1183,16 @@ def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
 
 
 _default_fault_domain_detect_windows_contents = '''
-if (-not (Test-Path env:AWS_REGION)) { $env:AWS_REGION = "windows" }
-Write-Output '{"fault_domain":{"region":{"name": $env:AWS_REGION},"zone":{"name": "windows"}}}'
+$ErrorActionPreference = "Stop"
+try {
+  $zone = Invoke-RestMethod -Uri http://169.254.169.254/latest/meta-data/placement/availability-zone
+  $region = $zone.Substring(0,$zone.Length-1)
+}
+catch {
+    $zone = "windows"
+    $region = "windows"
+}
+Write-Output "{`"fault_domain`":{`"region`":{`"name`": `"$region`"},`"zone`":{`"name`": `"$zone`"}}}"
 '''
 
 
@@ -1453,7 +1461,7 @@ entry = {
         'diagnostics_bundles_dir': '/var/lib/dcos/dcos-diagnostics/diag-bundles',
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
-        'fault_domain_detect_windows_filename': 'genconf/fault-domain-detect.ps1',
+        'fault_domain_detect_windows_filename': 'genconf/serve/windows/fault-domain-detect-win.ps1',
         'fault_domain_detect_windows_contents': calculate_fault_domain_detect_windows_contents,
         'license_key_contents': '',
         'enable_mesos_ipv6_discovery': 'false',
