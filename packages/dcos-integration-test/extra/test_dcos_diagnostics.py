@@ -86,7 +86,7 @@ def test_dcos_diagnostics_health(dcos_api_session):
         # check all required fields but units
         for required_field in required_fields[1:]:
             assert required_field in response, '{} field not found'.format(required_field)
-            assert response[required_field], '{} cannot be empty'.format(required_field)
+            assert response[required_field], '{} cannot be empty for node {}'.format(required_field, host)
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
