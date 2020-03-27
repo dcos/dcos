@@ -274,6 +274,12 @@ def calculate_ip_detect_public_contents(ip_detect_contents, ip_detect_public_fil
     return ip_detect_contents
 
 
+def calculate_ip6_detect_contents(ip6_detect_filename):
+    if ip6_detect_filename != '':
+        return yaml.dump(open(ip6_detect_filename, encoding='utf-8').read())
+    return yaml.dump("")
+
+
 _default_windows_ip_detect = """$ErrorActionPreference = "Stop"
 
 $ip = (
@@ -288,25 +294,16 @@ Write-Output $ip
 """
 
 
-def calculate_ip_detect_windows_contents(enable_windows_agents, ip_detect_windows):
-    # TODO - add this check and remove the default once all installers have a default
-    # if enable_windows_agents == 'true':
-    #     assert os.path.exists(ip_detect_windows), "ip-detect script `{}` must exist".format(ip_detect_windows)
-    if ip_detect_windows != '':
+def calculate_ip_detect_windows_contents(ip_detect_windows):
+    if os.path.exists(ip_detect_windows):
         return yaml.dump(open(ip_detect_windows, encoding='utf-8').read())
     return yaml.dump(_default_windows_ip_detect)
 
 
-def calculate_ip_detect_public_windows_contents(ip_detect_windows_contents, ip_detect_public_windows):
-    if ip_detect_public_windows != '':
+def calculate_ip_detect_public_windows_contents(ip_detect_public_windows, ip_detect_windows_contents):
+    if os.path.exists(ip_detect_public_windows):
         return yaml.dump(open(ip_detect_public_windows, encoding='utf-8').read())
     return ip_detect_windows_contents
-
-
-def calculate_ip6_detect_contents(ip6_detect_filename):
-    if ip6_detect_filename != '':
-        return yaml.dump(open(ip6_detect_filename, encoding='utf-8').read())
-    return yaml.dump("")
 
 
 def calculate_rexray_config_contents(rexray_config):
@@ -1339,9 +1336,9 @@ entry = {
         'ip_detect_contents': calculate_ip_detect_contents,
         'ip_detect_public_filename': '',
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
-        'ip_detect_windows': '',
+        'ip_detect_windows': 'genconf/serve/windows/ip-detect.ps1',
         'ip_detect_windows_contents': calculate_ip_detect_windows_contents,
-        'ip_detect_public_windows': '',
+        'ip_detect_public_windows': 'genconf/serve/windows/ip-detect-public.ps1',
         'ip_detect_public_windows_contents': calculate_ip_detect_public_windows_contents,
         'ip6_detect_contents': calculate_ip6_detect_contents,
         'dns_search': '',
