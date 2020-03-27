@@ -21,27 +21,24 @@ LOGGER = logging.getLogger(__name__)
 LOCAL_ETCD_ENDPOINT_IP = "127.0.0.1"
 MASTER_DNS = "master.dcos.thisdcos.directory"
 DCOS_SHELL_PATH = "/opt/mesosphere/bin/dcos-shell"
-ETCDCTL_PATH = "/opt/mesosphere/bin/etcdctl"
+ETCDCTL_PATH = "/opt/mesosphere/active/etcd/bin/etcdctl"
 
 
 def get_etcdctl_with_base_args(
-    cert_type: str="root",
-    endpoint_ip: str=LOCAL_ETCD_ENDPOINT_IP,
-)-> List[str]:
+    cert_type: str = "root",
+    endpoint_ip: str = LOCAL_ETCD_ENDPOINT_IP,
+) -> List[str]:
     """Returns args including etcd endpoint and certificates if necessary.
 
     As dcos-etcdctl and etcdctl share the same arguments, such as endpoints,
     ever considering the certificates involved, we group these arguments to
     generate the basic items to execute either etcdctl or dcos-etcdctl
     """
-    args = ["sudo", ETCDCTL_PATH]
-    args += ["--endpoints=http://{}:2379".format(endpoint_ip)]
-    return args
+    return [ETCDCTL_PATH, "--endpoints=http://{}:2379".format(endpoint_ip)]
 
 
 def get_dcos_etcdctl() -> List[str]:
-    args = ["sudo", DCOS_SHELL_PATH, "dcos-etcdctl"]
-    return args
+    return [DCOS_SHELL_PATH, "dcos-etcdctl"]
 
 
 @pytest.fixture
@@ -83,8 +80,6 @@ def _do_backup(master: Node, backup_local_path: Path) -> None:
         output=Output.LOG_AND_CAPTURE,
     )
 
-    master.run(args=["systemctl", "stop", "dcos-etcd"])
-
     master.download_file(
         remote_path=backup_remote_path,
         local_path=backup_local_path,
@@ -98,6 +93,7 @@ def _do_restore(all_masters: Set[Node], backup_local_path: Path) -> None:
     backup_remote_path = Path("/etc/") / backup_name
 
     for master in all_masters:
+        master.run(args=["systemctl", "stop", "dcos-etcd"])
         master.send_file(
             local_path=backup_local_path,
             remote_path=backup_remote_path,
@@ -145,7 +141,7 @@ class EtcdClient():
         """gets the value of the key on given master node"""
         etcdctl_with_args = get_etcdctl_with_base_args(
             endpoint_ip=str(master_node.private_ip_address))
-        etcdctl_with_args += ["get", key]
+        etcdctl_with_args += ["get", key, "--print-value-only"]
         result = master_node.run(
             args=etcdctl_with_args,
             output=Output.LOG_AND_CAPTURE,
@@ -182,13 +178,6 @@ class TestEtcdBackup:
 
         # Restore etcd from backup on all master nodes.
         _do_restore(three_master_cluster.masters, backup_local_path)
-
-        # Assert DC/OS is intact.
-        wait_for_dcos_oss(
-            cluster=three_master_cluster,
-            request=request,
-            log_dir=log_dir,
-        )
 
         # assert all etcd containers
         for master in three_master_cluster.masters:
