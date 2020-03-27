@@ -19,6 +19,7 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags -w -o $PKG_PATH/cni/cali
 mkdir -p $PKG_PATH/cni
 cp /pkg/src/calico/calico-amd64 $PKG_PATH/cni/calico-impl
 chmod +x $PKG_PATH/cni/calico
+chmod +x $PKG_PATH/cni/calico-impl
 cp /pkg/src/calico-ipam/calico-ipam-amd64 $PKG_PATH/cni/calico-ipam
 chmod +x $PKG_PATH/cni/calico-ipam
 
