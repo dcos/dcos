@@ -50,7 +50,7 @@ azure_base_source = Source(entry={
     ],
     'default': {
         'platform': 'azure',
-        'enable_docker_gc': 'true'
+        'enable_docker_gc': 'true',
     },
     'must': {
         'resolvers': '["168.63.129.16"]',
@@ -63,7 +63,7 @@ azure_base_source = Source(entry={
         'slave_cloud_config': '{{ slave_cloud_config }}',
         'slave_public_cloud_config': '{{ slave_public_cloud_config }}',
         'fault_domain_detect_contents': yaml.dump(
-            pkg_resources.resource_string('gen', 'fault-domain-detect/cloud.sh').decode())
+            pkg_resources.resource_string('gen', 'fault-domain-detect/cloud.sh').decode()),
     },
     'conditional': {
         'oauth_available': {

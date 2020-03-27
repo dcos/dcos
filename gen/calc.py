@@ -372,9 +372,16 @@ def validate_config_subnet(config_name, subnet, version=IPVersion.IPv4):
                 (version == IPVersion.IPv6 and not isinstance(network, ipaddress.IPv6Network)):
             raise ValueError("IP version not match")
     except ValueError as ex:
-        err_msg = "Incorrect value for {}: {}. Only IPv{} subnets are allowed".format(
+        err_msg = "Incorrect value for `{}`: `{}`. Only IPv{} subnets are allowed".format(
             config_name, subnet, version)
         raise AssertionError(err_msg) from ex
+
+
+def validate_calico_network_cidr(calico_network_cidr, enable_windows_agents):
+    # calico network is not supported on windows, we skip valiating calico
+    # networking CIDR format in case windows in enabled.
+    if enable_windows_agents.lower() != "true":
+        validate_config_subnet("calico_network_cidr", calico_network_cidr)
 
 
 def validate_dcos_overlay_network(dcos_overlay_network):
@@ -449,12 +456,15 @@ def validate_dcos_overlay_network(dcos_overlay_network):
 
 def validate_overlay_networks_not_overlap(dcos_overlay_network,
                                           dcos_overlay_enable,
-                                          calico_network_cidr):
+                                          calico_network_cidr,
+                                          enable_windows_agents):
     """ checks the subnets used for dcos overlay do not overlap calico network
 
     We assume the basic validations, like subnet cidr, have been done.
     """
     if dcos_overlay_enable.lower() != "true":
+        return
+    if enable_windows_agents.lower() == "true":
         return
     try:
         overlay_network = json.loads(dcos_overlay_network)
@@ -1284,8 +1294,7 @@ entry = {
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
         validate_marathon_new_group_enforce_role,
         lambda enable_windows_agents: validate_true_false(enable_windows_agents),
-        lambda calico_network_cidr: validate_config_subnet(
-            "calico_network_cidr", calico_network_cidr),
+        validate_calico_network_cidr,
         lambda calico_ipinip_mtu: validate_int_in_range(calico_ipinip_mtu, 552, None),
         lambda calico_veth_mtu: validate_int_in_range(calico_veth_mtu, 552, None),
         lambda calico_vxlan_mtu: validate_int_in_range(calico_vxlan_mtu, 552, None),
@@ -1451,7 +1460,7 @@ entry = {
         'enable_windows_agents': 'false',
         'windows_dcos_install_path': 'C:\\d2iq\\dcos',
         'windows_dcos_var_path': 'C:\\d2iq\\dcos\\var',
-        'calico_network_cidr': '192.168.0.0/16',
+        'calico_network_cidr': '172.29.0.0/16',
         'calico_ipinip_mtu': '1480',
         'calico_veth_mtu': '1500',
         'calico_vxlan_mtu': '1450',

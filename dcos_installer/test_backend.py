@@ -100,7 +100,7 @@ def test_get_config(tmpdir):
         'exhibitor_storage_backend': 'static',
         'resolvers': ['8.8.8.8', '8.8.4.4'],
         'process_timeout': 10000,
-        'bootstrap_url': 'file:///opt/dcos_install_tmp'
+        'bootstrap_url': 'file:///opt/dcos_install_tmp',
     }
 
     make_default_config_if_needed(temp_config_path)

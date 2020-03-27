@@ -491,6 +491,7 @@ def get_dcosconfig_source_target_and_templates(
         'dcos_image_commit',
         'package_ids',
         'template_filenames',
+        'enable_windows_agents',
     })
     targets = [base_target] + target_from_templates(templates)
     base_source = gen.internals.Source(is_user=False)
