@@ -262,19 +262,19 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
             set(master_nodes).symmetric_difference(set(dcos_api_session.masters))
         )
 
-        agent_nodes_response = check_json(
-            dcos_api_session.health.get('/units/dcos-mesos-slave.service/nodes', node=master))
-        agent_nodes = get_nodes_from_response(agent_nodes_response)
+        linux_agent_nodes = list()
+        if 'dcos-mesos-slave.service' in pulled_units:
+            agent_nodes_response = check_json(
+                dcos_api_session.health.get('/units/dcos-mesos-slave.service/nodes', node=master))
+            linux_agent_nodes = get_nodes_from_response(agent_nodes_response)
 
-        # Fetch Windows nodes if we have some.
+        windows_agent_nodes = list()
         if 'WinRM' in pulled_units:
-            windows_agent_nodes_response = check_json(
+            agent_nodes_response = check_json(
                 dcos_api_session.health.get('/units/mesos-agent/nodes', node=master))
-            windows_agent_nodes = get_nodes_from_response(windows_agent_nodes_response)
-        else:
-            windows_agent_nodes = list()
+            windows_agent_nodes = get_nodes_from_response(agent_nodes_response)
 
-        assert set(agent_nodes + windows_agent_nodes) == set(dcos_api_session.slaves)
+        assert set(linux_agent_nodes + windows_agent_nodes) == set(dcos_api_session.slaves)
 
 
 def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
@@ -340,7 +340,7 @@ def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_le
         use_legacy_api=use_legacy_api,
     )
 
-    app, test_uuid = test_helpers.marathon_test_app()
+    app, test_uuid = test_helpers.marathon_test_docker_app('diag-bundle', constraints=[])
     with dcos_api_session.marathon.deploy_and_cleanup(app):
         bundle = _create_bundle(diagnostics)
         _check_diagnostics_bundle_status(dcos_api_session)

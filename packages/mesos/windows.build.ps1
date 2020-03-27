@@ -79,7 +79,6 @@ Install-OpenSSL
 Patch-Mesos
 Build-Mesos
 
-Copy-Item "C:/Program Files/OpenSSL-Win64/lib*.dll" $env:PKG_PATH/bin
 Copy-Item $PKG_DIR/src/mesos/build/src/*.exe $env:PKG_PATH/bin
 
 Copy-Item $PKG_DIR/extra/mesos.nssm.j2 $env:PKG_PATH/conf

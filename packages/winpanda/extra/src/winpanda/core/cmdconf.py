@@ -242,22 +242,19 @@ class CmdConfigSetup(CommandConfig):
             return []
 
         rpl_url = posixpath.join(dstor_root_url, dstor_pkglist_path)
-        rpl_fname = Path(dstor_pkglist_path).name
-
         try:
-            cm_utl.download(rpl_url, str(self.inst_storage.tmp_dpath))
+            rpl_fpath = cm_utl.download(rpl_url, self.inst_storage.tmp_dpath)
             LOG.debug(f'{self.msg_src}: Reference package list: Download:'
-                      f' {rpl_fname}: {rpl_url}')
+                      f' {rpl_fpath}: {rpl_url}')
         except Exception as e:
             raise cr_exc.RCDownloadError(
-                f'Reference package list: Download: {rpl_fname}: {rpl_url}:'
+                f'Reference package list: Download: {rpl_fpath}: {rpl_url}:'
                 f' {type(e).__name__}: {e}'
             ) from e
 
-        rpl_fpath = self.inst_storage.tmp_dpath.joinpath(rpl_fname)
         try:
             return cr_utl.rc_load_json(
-                rpl_fpath, emheading=f'Reference package list: {rpl_fname}'
+                rpl_fpath, emheading=f'Reference package list: {rpl_fpath}'
             )
         except cr_exc.RCError as e:
             raise e
@@ -315,11 +312,10 @@ class CmdConfigSetup(CommandConfig):
         dcoscfg_pkg_url = posixpath.join(
             dstor_root_url, dstor_dcoscfg_pkg_path
         )
-        dcoscfg_pkg_fname = Path(dstor_dcoscfg_pkg_path).name
 
         # Download DC/OS aggregated configuration package ...
         try:
-            cm_utl.download(dcoscfg_pkg_url, str(self.inst_storage.tmp_dpath))
+            dcoscfg_pkg_fpath = cm_utl.download(dcoscfg_pkg_url, self.inst_storage.tmp_dpath)
             LOG.debug(f'{self.msg_src}: DC/OS aggregated config package:'
                       f' Download: {dcoscfg_pkg_url}')
         except Exception as e:
@@ -329,15 +325,11 @@ class CmdConfigSetup(CommandConfig):
             ) from e
 
         # Process DC/OS aggregated configuration package.
-        dcoscfg_pkg_fpath = self.inst_storage.tmp_dpath.joinpath(
-            dcoscfg_pkg_fname
-        )
-
         try:
             with tf.TemporaryDirectory(
                 dir=str(self.inst_storage.tmp_dpath)
             ) as tmp_dpath:
-                cm_utl.unpack(str(dcoscfg_pkg_fpath), tmp_dpath)
+                cm_utl.unpack(dcoscfg_pkg_fpath, tmp_dpath)
                 LOG.debug(f'{self.msg_src}: DC/OS aggregated config package:'
                           f' {dcoscfg_pkg_fpath}: Extract: OK')
 
@@ -398,10 +390,9 @@ class CmdConfigSetup(CommandConfig):
 
         # Linux package index direct URL
         lpi_url = posixpath.join(dstor_root_url, dstor_lpi_path)
-        lpi_fname = Path(dstor_lpi_path).name
 
         try:
-            cm_utl.download(lpi_url, str(self.inst_storage.tmp_dpath))
+            lpi_fpath = cm_utl.download(lpi_url, self.inst_storage.tmp_dpath)
             LOG.debug(f'{self.msg_src}: DC/OS Linux package index: Download:'
                       f' {lpi_url}')
         except Exception as e:
@@ -409,8 +400,6 @@ class CmdConfigSetup(CommandConfig):
                 f'DC/OS Linux package index: {lpi_url}: {type(e).__name__}:'
                 f' {e}'
             ) from e
-
-        lpi_fpath = self.inst_storage.tmp_dpath.joinpath(lpi_fname)
 
         try:
             lpi = cr_utl.rc_load_json(lpi_fpath,
@@ -648,21 +637,18 @@ def get_ref_pkg_list(cluster_conf, tmp_dpath):
         return []
 
     rpl_url = posixpath.join(dstor_root_url, dstor_pkglist_path)
-    rpl_fname = Path(dstor_pkglist_path).name
-
     try:
-        cm_utl.download(rpl_url, str(tmp_dpath))
-        LOG.debug(f'Reference package list: Download: {rpl_fname}: {rpl_url}')
+        rpl_fpath = cm_utl.download(rpl_url, tmp_dpath)
+        LOG.debug(f'Reference package list: Download: {rpl_fpath}: {rpl_url}')
     except Exception as e:
         raise cr_exc.RCDownloadError(
-            f'Reference package list: Download: {rpl_fname}: {rpl_url}:'
+            f'Reference package list: Download: {rpl_fpath}: {rpl_url}:'
             f' {type(e).__name__}: {e}'
         ) from e
 
-    rpl_fpath = tmp_dpath.joinpath(rpl_fname)
     try:
         return cr_utl.rc_load_json(
-            rpl_fpath, emheading=f'Reference package list: {rpl_fname}'
+            rpl_fpath, emheading=f'Reference package list: {rpl_fpath}'
         )
     except cr_exc.RCError as e:
         raise e
@@ -710,12 +696,10 @@ def get_dcos_conf(cluster_conf, tmp_dpath: Path):
         dstor_root_url, dstor_linux_pkg_index_path, tmp_dpath
     )
 
-    dcoscfg_pkg_url = posixpath.join(dstor_root_url, dstor_dcoscfg_pkg_path)
-    dcoscfg_pkg_fname = Path(dstor_dcoscfg_pkg_path).name
-
     # Download DC/OS aggregated configuration package ...
+    dcoscfg_pkg_url = posixpath.join(dstor_root_url, dstor_dcoscfg_pkg_path)
     try:
-        cm_utl.download(dcoscfg_pkg_url, str(tmp_dpath))
+        dcoscfg_pkg_fpath = cm_utl.download(dcoscfg_pkg_url, tmp_dpath)
         LOG.debug(f'DC/OS aggregated config package:'
                   f' Download: {dcoscfg_pkg_url}')
     except Exception as e:
@@ -725,8 +709,6 @@ def get_dcos_conf(cluster_conf, tmp_dpath: Path):
         ) from e
 
     # Process DC/OS aggregated configuration package.
-    dcoscfg_pkg_fpath = tmp_dpath.joinpath(dcoscfg_pkg_fname)
-
     try:
         with tf.TemporaryDirectory(dir=str(tmp_dpath)) as tmp_dpath_:
             cm_utl.unpack(str(dcoscfg_pkg_fpath), tmp_dpath_)
@@ -784,17 +766,13 @@ def get_dstor_dcoscfgpkg_path(dstor_root_url: str, dstor_lpi_path: str,
 
     # Linux package index direct URL
     lpi_url = posixpath.join(dstor_root_url, dstor_lpi_path)
-    lpi_fname = Path(dstor_lpi_path).name
-
     try:
-        cm_utl.download(lpi_url, str(tmp_dpath))
+        lpi_fpath = cm_utl.download(lpi_url, tmp_dpath)
         LOG.debug(f'DC/OS Linux package index: Download: {lpi_url}')
     except Exception as e:
         raise cr_exc.RCDownloadError(
             f'DC/OS Linux package index: {lpi_url}: {type(e).__name__}: {e}'
         ) from e
-
-    lpi_fpath = tmp_dpath.joinpath(lpi_fname)
 
     try:
         lpi = cr_utl.rc_load_json(lpi_fpath,
