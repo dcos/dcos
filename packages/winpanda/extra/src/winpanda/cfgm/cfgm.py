@@ -160,13 +160,9 @@ class PkgConfManager:
             context_items = {} if context is None else context.get_items(
                 json_ready=json_ready)
             rendered_str = j2_tmpl.render(**context_items)
-            LOG.debug(f'{self.msg_src}: Process configuration file:'
-                      f' {src_fpath}: Rendered content: {rendered_str}')
-
             dst_fpath = tmp_dpath.joinpath(dst_fname)
+            LOG.debug('Render file %s -> %s', src_fpath, dst_fpath)
             dst_fpath.write_text(rendered_str, encoding='utf-8')
-            LOG.debug(f'{self.msg_src}: Process configuration file:'
-                      f' {src_fpath}: Save: {dst_fpath}')
         except (FileNotFoundError, j2.TemplateNotFound) as e:
             err_msg = f'Load: {src_fpath}'
             raise cfgm_exc.PkgConfFileNotFoundError(err_msg) from e

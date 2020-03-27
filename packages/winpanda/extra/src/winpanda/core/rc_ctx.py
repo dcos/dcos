@@ -4,6 +4,7 @@ Resource rendering context calculation stuff.
 """
 import configparser as cfp
 import json
+import subprocess
 
 from common import constants as cm_const
 from common import logger
@@ -153,9 +154,15 @@ class ResourceContext:
         zk_client_port = mnode_cfg_items[0][1] if mnode_cfg_items else (
             cm_const.ZK_CLIENTPORT_DFT
         )
-        local_priv_ipaddr = cluster_conf.get(
-            'local', 'privateipaddr', fallback='127.0.0.1'
-        )
+        if self._extra_values:
+            local_priv_ipaddr = self._extra_values['privateipaddr']
+        else:
+            result = subprocess.run(
+                ('powershell', '-executionpolicy', 'Bypass', '-File', 'C:\\d2iq\\dcos\\bin\\detect_ip.ps1'),
+                stdout=subprocess.PIPE,
+                check=True
+            )
+            local_priv_ipaddr = result.stdout.decode('ascii').strip()
 
         items = {
             RCCONTEXT_ITEM.MASTER_PRIV_IPADDR: escape(master_priv_ipaddr),

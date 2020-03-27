@@ -270,8 +270,37 @@ def calculate_ip_detect_contents(ip_detect_filename):
 
 def calculate_ip_detect_public_contents(ip_detect_contents, ip_detect_public_filename):
     if ip_detect_public_filename != '':
-        return calculate_ip_detect_contents(ip_detect_public_filename)
+        return yaml.dump(open(ip_detect_public_filename, encoding='utf-8').read())
     return ip_detect_contents
+
+
+_default_windows_ip_detect = """$ErrorActionPreference = "Stop"
+
+$ip = (
+    Get-NetIPConfiguration |
+    Where-Object {
+        $_.IPv4DefaultGateway -ne $null -and
+        $_.NetAdapter.Status -ne "Disconnected"
+    }
+).IPv4Address.IPAddress
+
+Write-Output $ip
+"""
+
+
+def calculate_ip_detect_windows_contents(enable_windows_agents, ip_detect_windows):
+    # TODO - add this check and remove the default once all installers have a default
+    # if enable_windows_agents == 'true':
+    #     assert os.path.exists(ip_detect_windows), "ip-detect script `{}` must exist".format(ip_detect_windows)
+    if ip_detect_windows != '':
+        return yaml.dump(open(ip_detect_windows, encoding='utf-8').read())
+    return yaml.dump(_default_windows_ip_detect)
+
+
+def calculate_ip_detect_public_windows_contents(ip_detect_windows_contents, ip_detect_public_windows):
+    if ip_detect_public_windows != '':
+        return yaml.dump(open(ip_detect_public_windows, encoding='utf-8').read())
+    return ip_detect_windows_contents
 
 
 def calculate_ip6_detect_contents(ip6_detect_filename):
@@ -1146,6 +1175,12 @@ def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
     return ''
 
 
+def calculate_fault_domain_detect_windows_contents(fault_domain_detect_windows_filename):
+    if os.path.exists(fault_domain_detect_windows_filename):
+        return yaml.dump(open(fault_domain_detect_windows_filename, encoding='utf-8').read())
+    return ''
+
+
 __dcos_overlay_network_default_name = 'dcos'
 __dcos_overlay_network6_default_name = 'dcos6'
 
@@ -1290,6 +1325,10 @@ entry = {
         'ip_detect_contents': calculate_ip_detect_contents,
         'ip_detect_public_filename': '',
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
+        'ip_detect_windows': '',
+        'ip_detect_windows_contents': calculate_ip_detect_windows_contents,
+        'ip_detect_public_windows': '',
+        'ip_detect_public_windows_contents': calculate_ip_detect_public_windows_contents,
         'ip6_detect_contents': calculate_ip6_detect_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
@@ -1402,6 +1441,8 @@ entry = {
         'diagnostics_bundles_dir': '/var/lib/dcos/dcos-diagnostics/diag-bundles',
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
+        'fault_domain_detect_windows': 'genconf/fault-domain-detect.ps1',
+        'fault_domain_detect_windows_contents': calculate_fault_domain_detect_contents,
         'license_key_contents': '',
         'enable_mesos_ipv6_discovery': 'false',
         'log_offers': 'true',
