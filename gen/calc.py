@@ -1183,7 +1183,8 @@ def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
 
 
 _default_fault_domain_detect_windows_contents = '''
-Write-Output '{"fault_domain":{"region":{"name": "windows"},"zone":{"name": "windows"}}}'
+if (-not (Test-Path env:AWS_REGION)) { $env:AWS_REGION = "windows" }
+Write-Output '{"fault_domain":{"region":{"name": $env:AWS_REGION},"zone":{"name": "windows"}}}'
 '''
 
 
