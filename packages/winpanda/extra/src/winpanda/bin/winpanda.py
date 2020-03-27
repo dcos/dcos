@@ -2,10 +2,9 @@
 
 CLI entry point definition.
 """
-import os
-import sys
-import traceback
 from pathlib import Path
+import traceback
+import sys
 
 from docopt import docopt, DocoptExit
 
@@ -116,9 +115,6 @@ def main():
         file_size=cm_const.APP_LOG_FSIZE_MAX,
         history_size=cm_const.APP_LOG_HSIZE_MAX
     )
-    for dirpath, dirnames, filenames in os.walk('C:\\d2iq\\dcos'):
-        for filename in filenames:
-            LOG.info('- %s', os.path.join(dirpath, filename))
     try:
         DCOSInstallationManager().command_.execute()
     except Exception as e:

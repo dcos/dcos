@@ -6,7 +6,6 @@ import abc
 import os
 from pathlib import Path
 import shutil
-import subprocess
 from typing import Optional
 import yaml
 
@@ -186,17 +185,6 @@ class CmdSetup(Command):
             'distribution-storage', {}
         ).get('pkgrepopath', '')
 
-        # Deploy DC/OS aggregated configuration object
-        self._deploy_dcos_conf()
-        result = subprocess.run(
-            ('powershell', '-executionpolicy', 'Bypass', '-File', 'C:\\d2iq\\dcos\\bin\\detect_ip.ps1'),
-            stdout=subprocess.PIPE,
-            check=True
-        )
-        local_priv_ipaddr = result.stdout.decode('ascii').strip()
-
-        self.config.dcos_conf['values']['privateipaddr'] = local_priv_ipaddr
-
         # Add packages to the local package repository and initialize their
         # manager objects
         packages_bulk = {}
@@ -247,6 +235,9 @@ class CmdSetup(Command):
             #       method to avoid code duplication in command manager classes
             #       CmdSetup and CmdUpgrade
             self._handle_pkg_cfg_setup(package)
+
+        # Deploy DC/OS aggregated configuration object
+        self._deploy_dcos_conf()
 
         # Run per package extra installation helpers, setup services and
         # save manifests
@@ -432,7 +423,6 @@ class CmdSetup(Command):
             assert file_info.keys() <= {"path", "content", "permissions"}
             path = Path(file_info['path'].replace('\\', os.path.sep))
             path.parent.mkdir(parents=True, exist_ok=True)
-            LOG.debug(f'Write file %s', path)
             path.write_text(file_info['content'] or '')
             # On Windows, we don't interpret permissions yet
 
@@ -569,10 +559,11 @@ class CmdUpgrade(Command):
                 LOG.warning(f'{mheading}: After steps: Remove file: {fpath}:'
                             f' {type(e).__name__}: {e}')
 
-        # Restore objects created/populated by entities/processes outside
+        # Restoreobjects created/populated by entities/processes outside
         # of winpanda routines, but required for winpanda to do it's stuff.
 
         restore_dirs = [
+            iroot_dpath.joinpath('bin'),
             iroot_dpath.joinpath('etc'),
         ]
 
@@ -585,6 +576,12 @@ class CmdUpgrade(Command):
                             f' {type(e).__name__}: {e}')
 
         restore_files = [
+            (itmp_dpath.joinpath('bin.old', 'detect_ip.ps1'),
+             iroot_dpath.joinpath('bin')),
+            (itmp_dpath.joinpath('bin.old', 'detect_ip_public.ps1'),
+             iroot_dpath.joinpath('bin')),
+            (itmp_dpath.joinpath('bin.old', 'fault-domain-detect-win.ps1'),
+             iroot_dpath.joinpath('bin')),
             (itmp_dpath.joinpath('etc.old', 'cluster.conf'),
              iroot_dpath.joinpath('etc')),
             (itmp_dpath.joinpath('etc.old', 'paths.json'),
@@ -614,17 +611,6 @@ class CmdUpgrade(Command):
         dstor_pkgrepo_path = self.config.cluster_conf.get(
             'distribution-storage', {}
         ).get('pkgrepopath', '')
-
-        # Deploy DC/OS aggregated configuration object
-        self._deploy_dcos_conf()
-        result = subprocess.run(
-            ('powershell', '-executionpolicy', 'Bypass', '-File', 'C:\\d2iq\\dcos\\bin\\detect_ip.ps1'),
-            stdout=subprocess.PIPE,
-            check=True
-        )
-        local_priv_ipaddr = result.stdout.decode('ascii').strip()
-
-        self.config.dcos_conf['values']['privateipaddr'] = local_priv_ipaddr
 
         # Add packages to the local package repository and initialize their
         # manager objects
@@ -676,6 +662,9 @@ class CmdUpgrade(Command):
             #       method to avoid code duplication in command manager classes
             #       CmdSetup and CmdUpgrade
             self._handle_pkg_cfg_setup(package)
+
+        # Deploy DC/OS aggregated configuration object
+        self._deploy_dcos_conf()
 
         # Run per package extra installation helpers, setup services and
         # save manifests
@@ -861,7 +850,6 @@ class CmdUpgrade(Command):
             assert file_info.keys() <= {"path", "content", "permissions"}
             path = Path(file_info['path'].replace('\\', os.path.sep))
             path.parent.mkdir(parents=True, exist_ok=True)
-            LOG.debug(f'Write file %s', path)
             path.write_text(file_info['content'] or '')
             # On Windows, we don't interpret permissions yet
 
