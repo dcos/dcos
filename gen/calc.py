@@ -1185,10 +1185,15 @@ def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
     return ''
 
 
+_default_fault_domain_detect_windows_contents = '''
+Write-Output '{"fault_domain":{"region":{"name": "windows"},"zone":{"name": "windows"}}}'
+'''
+
+
 def calculate_fault_domain_detect_windows_contents(fault_domain_detect_windows_filename):
     if os.path.exists(fault_domain_detect_windows_filename):
         return yaml.dump(open(fault_domain_detect_windows_filename, encoding='utf-8').read())
-    return ''
+    return yaml.dump(_default_fault_domain_detect_windows_contents)
 
 
 __dcos_overlay_network_default_name = 'dcos'
