@@ -1,5 +1,6 @@
 {
   "variants": {
+    "openssl": "windows",
     "mesos": "windows",
     "mesos-modules": "windows",
     "winpanda" : "windows",
@@ -57,7 +58,6 @@
     "mesos-dns",
     "metronome",
     "ncurses",
-    "openssl",
     "pkgpanda-api",
     "pkgpanda-role",
     "pytest",

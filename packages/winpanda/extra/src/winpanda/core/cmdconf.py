@@ -100,7 +100,6 @@ class CmdConfigSetup(CommandConfig):
 
         # DC/OS aggregated configuration object
         self.dcos_conf = self.get_dcos_conf()
-        LOG.debug(f'{self.msg_src}: dcos_conf: {self.dcos_conf}')
 
     def get_cluster_conf(self):
         """"Get a collection of DC/OS cluster configuration options.
