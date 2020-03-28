@@ -17,7 +17,7 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 
 DEPLOY_TIMEOUT = 2 * 60
-METRICS_WAITTIME = 5 * 60 * 1000
+METRICS_WAITTIME = 3 * 60 * 1000
 METRICS_INTERVAL = 2 * 1000
 STD_WAITTIME = 15 * 60 * 1000
 STD_INTERVAL = 5 * 1000
@@ -91,6 +91,7 @@ def test_metrics_procstat(dcos_api_session):
 
 
 @pytest.mark.supportedwindows
+@pytest.mark.xfail("config.getoption('--windows-only')", reason="D2IQ-66230: Telegraf cannot authorize with Mesos")
 def test_metrics_agents_mesos(dcos_api_session):
     """Assert that mesos metrics on agents are present."""
     nodes = get_agents(dcos_api_session)
