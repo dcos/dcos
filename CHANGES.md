@@ -92,3 +92,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
       instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
 
     * Marathon was checking authorization for unrelated apps when performing a kill-and-scale operations; this has been resolved. (MARATHON-8731)
+* Update Metronome to 0.6.41
+
+    * There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
