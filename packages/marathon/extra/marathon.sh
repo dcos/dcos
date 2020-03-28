@@ -11,7 +11,7 @@ MARATHON_HOSTNAME="$LIBPROCESS_IP"
 # If DefaultAcceptedResourceRoles is not set, then we try to assign a default value to resource roles
 # default behavior
 if [ -z "${MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES+x}" ]; then
-    MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR="unreserved"
+    : ${MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR="unreserved"}
 fi
 
 if [ -z "${MARATHON_DISABLE_ZK_COMPRESSION+x}" ]; then

@@ -83,7 +83,7 @@ module "dcos" {
   admin_ips           = ["${data.http.whatismyip.body}/32"]
 
   num_masters        = "1"
-  num_private_agents = "1"
+  num_private_agents = "0"
   num_public_agents  = "1"
 
   dcos_instance_os        = "centos_7.5"
@@ -93,7 +93,7 @@ module "dcos" {
   dcos_security             = "${var.dcos_security}"
   dcos_version              = "2.1.0-beta1"
   dcos_license_key_contents = "${var.dcos_license_key_contents}"
-  ansible_bundled_container = "mesosphere/dcos-ansible-bundle:windows-beta-support"
+  ansible_bundled_container = "mesosphere/dcos-ansible-bundle:windows"
 
   custom_dcos_download_path = "${var.custom_dcos_download_path}"
 

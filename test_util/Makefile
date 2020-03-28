@@ -21,19 +21,22 @@ ifndef DCOS_LICENSE_CONTENTS
 $(error DCOS_LICENSE_CONTENTS is not set)
 endif
 
+diagnostics_bundle_file = diagnostics-$(shell date +%Y-%m-%d_%H-%M-%S).zip
+
 ################################### TARGETS ###################################
 
 .DEFAULT_GOAL := test
 
-.terraform: $(TERRAFORM) main.tf
+terraform.initialized: $(TERRAFORM) main.tf
 	@echo "##teamcity[blockOpened name='terraform-init' description='Terraform initialization']"
-	$(TERRAFORM) init -input=false --upgrade
+	$(TERRAFORM) init -input=false --upgrade | tee terraform.log
+	mv terraform.log $@
 	@echo "##teamcity[blockClosed name='terraform-init']"
 
 $(SSH_KEY):
 	ssh-keygen -t rsa -b 2048 -f $@ -q -N ""
 
-cluster.json: $(SSH_KEY) .terraform
+cluster.json: $(SSH_KEY) terraform.initialized
 	@echo "##teamcity[blockOpened name='terraform-apply' description='Terraform cluster creation']"
 	if [ -z "$$SSH_AUTH_SOCK" ]; then eval $$(ssh-agent -s); fi; \
 	ssh-add "$(SSH_KEY)"; \
@@ -57,6 +60,7 @@ test: cluster.json
 		PUBLIC_AGENTS_PRIVATE_IPS=$(shell jq '.public_agent_ips.value' $<) \
 		PUBLIC_SLAVE_HOSTS=$(shell jq '.public_agent_ips.value' $<) \
 		$(DCOS_USER_PASSWORD_ENV) \
+		timeout -k 10m --preserve-status 90m \
 		dcos-shell pytest -vv --teamcity --log-level=DEBUG --windows-only"
 
 .PHONY: ssh
@@ -64,9 +68,11 @@ ssh: cluster.json
 	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<)
 
 .PHONY: destroy
-destroy:
+destroy: $(diagnostics_bundle_file)
 	@echo "##teamcity[blockOpened name='terraform-destroy' description='Terraform cluster teardown']"
-	$(TERRAFORM) destroy -auto-approve -var ssh_public_key_file="$(SSH_KEY).pub";
+	$(TERRAFORM) destroy -auto-approve \
+		-var ssh_public_key_file="$(SSH_KEY).pub" \
+		-var dcos_license_key_contents=$(DCOS_LICENSE_CONTENTS)
 	rm cluster.json || true;
 	@echo "##teamcity[blockClosed name='terraform-destroy']"
 
@@ -79,6 +85,41 @@ clean:
 	rm -rf ./terraform_*.zip
 	rm -rf ./*.pem
 	rm -rf ./*.pub
+
+
+################################# DISGNOSTICS #################################
+
+diagnostics_api = localhost:1050/system/health/v1/diagnostics
+curl_cmd = curl
+ifneq ($(TF_VAR_variant), open)
+	diagnostics_api = --unix-socket /var/run/dcos/dcos-diagnostics.sock http:/system/health/v1/diagnostics
+	curl_cmd = sudo curl
+endif
+
+# Start diagnostics bundle creation.
+diagnostics-%.started: cluster.json
+	@echo "##teamcity[blockOpened name='diagnostics-bundle' description='Download Diagnostics bundle']"
+	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
+		"$(curl_cmd) -X PUT $(diagnostics_api)/$*"
+	touch $@
+
+# Wait until diagnostics bundle is ready.
+diagnostics-%.done: cluster.json diagnostics-%.started 
+	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
+		"$(curl_cmd) -s $(diagnostics_api)/$* -o status.json; \
+		until jq '.status' status.json | grep -q 'Done'; do cat status.json; $(curl_cmd) -s $(diagnostics_api)/$* -o status.json; sleep 5; done;"
+	rm diagnostics-$*.started || true
+	touch $@
+
+# Download diagnostics bundle.
+diagnostics-%.zip : cluster.json diagnostics-%.done
+	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
+		"$(curl_cmd) $(diagnostics_api)/$*/file -o $@"
+	scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<):/home/centos/$@ $@.work
+	rm diagnostics-$*.done || true
+	mv $@.work $@
+	@echo "##teamcity[blockClosed name='diagnostics-bundle']"
+
 
 ################################### HELPERS ###################################
 

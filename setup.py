@@ -97,6 +97,7 @@ setup(
             'ip-detect/aws.sh',
             'ip-detect/aws6.sh',
             'ip-detect/aws_public.sh',
+            'ip-detect/azure.ps1',
             'ip-detect/azure.sh',
             'ip-detect/azure6.sh',
             'ip-detect/vagrant.sh',
