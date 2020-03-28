@@ -72,18 +72,23 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
 * Allow Admin Router to accept files up to 32GB, such as for uploading large packages to Package Registry. (DCOS-61233)
-
-* Marathon launched too many tasks. (DCOS-62078)
-
-* Marathon used to omit pod status report with tasks in `TASK_UNKONW` state. (MARATHON-8710)
-
 * Update Kazoo to version 2.6.1. (DCOS-63065)
-
-* With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
-  instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
 
 * Updated dcos-config.yaml to support some Mesos Flags. (DCOS-59021)
 
 * Fix Telegraf migration when no containers present. (D2IQ-64507)
 
 * Update OpenSSL to 1.1.1d. (D2IQ-65604)
+
+* Marathon updated to 1.9.136
+
+    * /v2/tasks plaintext output in Marathon 1.5 returned container network endpoints in an unusable way (MARATHON-8721)
+
+    * Marathon launched too many tasks. (DCOS_OSS-5679)
+
+    * Marathon used to omit pod status report with tasks in `TASK_UNKOWN` state. (MARATHON-8710)
+
+    * With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
+      instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
+
+    * Marathon was checking authorization for unrelated apps when performing a kill-and-scale operations; this has been resolved. (MARATHON-8731)
