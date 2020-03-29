@@ -122,7 +122,7 @@ local function request(url, accept_404_reply, auth_token)
     local stop = ngx.now()
 
     if not res then
-        ngx.log(ngx.WARN, "< " .. url .. " " .. err)
+        ngx.log(ngx.WARN, "< " .. url .. " " .. (stop - start) ": " .. err)
         return nil, err
     end
 
