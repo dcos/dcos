@@ -122,13 +122,13 @@ local function request(url, accept_404_reply, auth_token)
     local stop = ngx.now()
 
     if not res then
-        ngx.log(ngx.WARN, "< " .. url .. " " .. (stop - start) ": " .. err)
+        ngx.log(ngx.WARN, "< " .. url .. " " .. string.format("%.3f", stop - start) ": " .. err)
         return nil, err
     end
 
     ngx.log(
         ngx.INFO, "< " .. url .. " code=" .. res.status .. 
-            " len=(" .. string.len(res.body) .. ") " .. (stop - start)
+            " len=(" .. string.len(res.body) .. ") " .. string.format("%.3f", stop - start)
     )
 
     if res.status ~= 200 then
