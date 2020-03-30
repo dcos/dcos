@@ -8,6 +8,7 @@ AppParameters = --master="zk://{{ master_priv_ipaddr }}:{{ zk_client_port }}/mes
 AppStdout = {{ pkg_log_dpath }}\mesos-agent.log
 AppStderr = {{ pkg_log_dpath }}\mesos-agent.log
 DependOnService = docker
+AppTimestampLog = 1
 AppRotateFiles = 1
 AppRotateSeconds = 86400
 AppRotateBytes = 1048576
