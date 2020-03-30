@@ -17,7 +17,7 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 
 DEPLOY_TIMEOUT = 2 * 60
-METRICS_WAITTIME = 3 * 60 * 1000
+METRICS_WAITTIME = 4 * 60 * 1000
 METRICS_INTERVAL = 2 * 1000
 STD_WAITTIME = 15 * 60 * 1000
 STD_INTERVAL = 5 * 1000
