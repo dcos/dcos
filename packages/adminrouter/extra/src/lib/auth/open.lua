@@ -42,6 +42,7 @@ local function validate_jwt_or_exit(proto)
             return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
         end
     end
+    ngx.log(ngx.INFO, "uid=" .. uid)
     return uid
 end
 

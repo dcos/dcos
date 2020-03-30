@@ -25,9 +25,9 @@ class TestCache:
         filter_regexp = {
             'Executing cache refresh triggered by timer': SearchCriteria(1, False),
             r'Cache `[\s\w]+` empty. Fetching.': SearchCriteria(3, True),
-            'Mesos state cache has been successfully updated': SearchCriteria(1, True),
-            'Marathon apps cache has been successfully updated': SearchCriteria(1, True),
-            'marathon leader cache has been successfully updated': SearchCriteria(1, True),
+            'Updated Mesos state cache': SearchCriteria(1, True),
+            'Updated Marathon apps cache': SearchCriteria(1, True),
+            'Updated marathon leader cache': SearchCriteria(1, True),
             }
         # Enable recording for marathon
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
@@ -66,9 +66,9 @@ class TestCache:
         filter_regexp = {
             'Executing cache refresh triggered by timer': SearchCriteria(3, False),
             r'Cache `[\s\w]+` expired. Refresh.': SearchCriteria(8, True),
-            'Mesos state cache has been successfully updated': SearchCriteria(3, True),
-            'Marathon apps cache has been successfully updated': SearchCriteria(3, True),
-            'marathon leader cache has been successfully updated': SearchCriteria(3, True),
+            'Updated Mesos state cache': SearchCriteria(3, True),
+            'Updated Marathon apps cache': SearchCriteria(3, True),
+            'Updated marathon leader cache': SearchCriteria(3, True),
             }
         cache_poll_period = 4
 
@@ -113,9 +113,9 @@ class TestCache:
         filter_regexp = {
             'Executing cache refresh triggered by request': SearchCriteria(1, True),
             r'Cache `[\s\w]+` empty. Fetching.': SearchCriteria(3, True),
-            'Mesos state cache has been successfully updated': SearchCriteria(1, True),
-            'Marathon apps cache has been successfully updated': SearchCriteria(1, True),
-            'marathon leader cache has been successfully updated': SearchCriteria(1, True),
+            'Updated Mesos state cache': SearchCriteria(1, True),
+            'Updated Marathon apps cache': SearchCriteria(1, True),
+            'Updated marathon leader cache': SearchCriteria(1, True),
             }
         # Enable recording for marathon
         mocker.send_command(endpoint_id='http://127.0.0.1:8080',
@@ -156,7 +156,7 @@ class TestCache:
         filter_regexp = {
             'Marathon app request failed: invalid response status: 500':
                 SearchCriteria(1, False),
-            'Mesos state cache has been successfully updated':
+            'Updated Mesos state cache':
                 SearchCriteria(2, False),
             'Cache entry `svcapps` is too old, aborting request':
                 SearchCriteria(1, True),
@@ -207,7 +207,7 @@ class TestCache:
         filter_regexp = {
             'Marathon app request failed: invalid response status: 500':
                 SearchCriteria(1, False),
-            'Mesos state cache has been successfully updated':
+            'Updated Mesos state cache':
                 SearchCriteria(2, False),
             'Cache entry `svcapps` is stale':
                 SearchCriteria(1, True),
@@ -257,7 +257,7 @@ class TestCache:
         filter_regexp = {
             'Mesos state request failed: invalid response status: 500':
                 SearchCriteria(1, False),
-            'Marathon apps cache has been successfully updated':
+            'Updated Marathon apps cache':
                 SearchCriteria(2, False),
             'Cache entry `mesosstate` is too old, aborting request':
                 SearchCriteria(1, True),
@@ -300,7 +300,7 @@ class TestCache:
         filter_regexp = {
             'Mesos state request failed: invalid response status: 500':
                 SearchCriteria(1, False),
-            'Marathon apps cache has been successfully updated':
+            'Updated Marathon apps cache':
                 SearchCriteria(2, False),
             'Cache entry `mesosstate` is stale':
                 SearchCriteria(1, True),
@@ -342,7 +342,7 @@ class TestCache:
         filter_regexp = {
             'Marathon app request failed: invalid response status: 500':
                 SearchCriteria(1, True),
-            'Mesos state cache has been successfully updated':
+            'Updated Mesos state cache':
                 SearchCriteria(1, True),
         }
 
@@ -368,7 +368,7 @@ class TestCache:
         filter_regexp = {
             'Mesos state request failed: invalid response status: 500':
                 SearchCriteria(1, True),
-            'Marathon apps cache has been successfully updated': SearchCriteria(1, True),
+            'Updated Marathon apps cache': SearchCriteria(1, True),
         }
 
         # Break marathon
@@ -738,7 +738,7 @@ class TestCacheMesosLeader:
             ('Private IP address of the host is unknown, '
                 'aborting cache-entry creation for mesos leader'):
                     SearchCriteria(1, True),
-            'mesos leader cache has been successfully updated':
+            'Updated mesos leader cache':
                 SearchCriteria(1, True),
         }
         ar = nginx_class(host_ip=None)
@@ -758,7 +758,7 @@ class TestCacheMesosLeader:
         filter_regexp = {
             'Failed to instantiate the resolver': SearchCriteria(0, True),
             'DNS server returned error code': SearchCriteria(1, True),
-            'mesos leader cache has been successfully updated':
+            'Updated mesos leader cache':
                 SearchCriteria(0, True),
         }
 
@@ -793,7 +793,7 @@ class TestCacheMesosLeader:
             ('Private IP address of the host is unknown, '
                 'aborting cache-entry creation for mesos leader'):
                     SearchCriteria(0, True),
-            'mesos leader cache has been successfully updated':
+            'Updated mesos leader cache':
                 SearchCriteria(1, True),
         }
         filter_regexp_post = {
@@ -802,7 +802,7 @@ class TestCacheMesosLeader:
             ('Private IP address of the host is unknown, '
                 'aborting cache-entry creation for mesos leader'):
                     SearchCriteria(0, True),
-            'mesos leader cache has been successfully updated':
+            'Updated mesos leader cache':
                 SearchCriteria(1, True),
         }
 
