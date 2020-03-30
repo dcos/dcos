@@ -377,5 +377,5 @@ if __name__ == '__main__':
         DCOSZooKeeperCli()
     except subprocess.CalledProcessError as exc:
         if exc.output:
-            sys.stdout.buffer.write(str.encode(exc.output))
+            sys.stdout.buffer.write(exc.output)
         sys.exit(exc.returncode)

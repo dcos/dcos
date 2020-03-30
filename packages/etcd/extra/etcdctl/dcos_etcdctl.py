@@ -367,5 +367,5 @@ if __name__ == '__main__':
         etcd_cli.execute()
     except subprocess.CalledProcessError as exc:
         if exc.output:
-            sys.stdout.buffer.write(str.encode(exc.output))
+            sys.stdout.write(exc.output)
         sys.exit(exc.returncode)
