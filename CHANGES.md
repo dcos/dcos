@@ -50,6 +50,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated DC/OS UI to [master+v2.154.16](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.16).
 
+* Calico network: When using the Universal Runtime Engine, the contents of the `DCOS_SPACE`  network label will be compressed to `<7-char hash>...<last 53 chars>` if it is longer than 63 characters. (D2IQ-62219)
 
 ### Breaking changes
 
