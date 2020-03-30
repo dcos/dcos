@@ -352,10 +352,6 @@ def test_fault_domain(dcos_api_session):
         assert 'domain' in agent, 'missing domain field for agent. {}'.format(agent)
         agent_region, agent_zone = get_region_zone(agent['domain'])
 
-        # This can be removed after https://jira.d2iq.com/browse/D2IQ-65811 is resolved
-        if agent_region.startswith('windows-'):
-            agent_region = agent_region[len('windows-'):]
-
         assert agent_region == expected_region, 'expect region {}. Got {}'.format(expected_region, agent_region)
 
         # agent_zone might be different on agents, so we just make sure it's a sane value
