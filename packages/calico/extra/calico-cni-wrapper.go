@@ -138,9 +138,7 @@ func compressMesosArgsConfig(config map[string]interface{}) map[string]interface
 												}
 											}
 
-											fmt.Printf("Found: %s\n", labelMapArray)
 											labelsMap["labels"] = compressLabels(labelMapArray)
-
 										}
 									}
 								}
