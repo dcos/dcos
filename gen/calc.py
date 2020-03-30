@@ -203,6 +203,21 @@ def calculate_mesos_dns_resolvers_str(resolvers):
         return '"externalOn": false'
 
 
+def calculate_mesos_zookeeper(master_discovery, master_list, exhibitor_address):
+    # A place where Mesos can access ZooKeeper. For Windows, this needs to be
+    # stable, even if we have a dynamic master list. Hence, we use the load
+    # balancer as a stable address for dynamic masters.
+    if master_discovery == 'static':
+        masters = json.loads(master_list)
+        assert len(masters) > 0, 'master_list must be non-empty when master_discovery is static'
+        masters.sort()
+        mesos_zookeeper = 'zk:/{}/mesos'.format(','.join('{}:2181'.format(m)) for m in masters)
+    else:
+        assert master_discovery == 'master_http_loadbalancer'
+        mesos_zookeeper = 'zk:/{}:2181/mesos'.format(exhibitor_address)
+    return mesos_zookeeper
+
+
 def validate_mesos_log_retention_mb(mesos_log_retention_mb):
     assert int(mesos_log_retention_mb) >= 1024, "Must retain at least 1024 MB of logs"
 
@@ -1494,6 +1509,7 @@ entry = {
         'mesos_agent_log_file': '/var/log/mesos/mesos-agent.log',
         'mesos_master_port': '5050',
         'mesos_master_log_file': '/var/lib/dcos/mesos/log/mesos-master.log',
+        'mesos_zookeeper': calculate_mesos_zookeeper,
         'marathon_port': '8080',
         'dcos_version': DCOS_VERSION,
         'dcos_variant': 'open',

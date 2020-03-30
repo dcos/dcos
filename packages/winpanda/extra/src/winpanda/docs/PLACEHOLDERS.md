@@ -30,10 +30,6 @@ VARIABLE PLACEHOLDER NAMES RECOGNIZED BY THE WINPANDA APPLICATION
 **{{ local_priv_ipaddr }}**  - local (agent) node's private IP-address
                                  (substitution example "172.16.3.63")
 
-**{{ zk_client_port }}**     - zookeeper client port (on which zookeeper
-                                 listens)
-                                 (substitution example "2181")
-
 
 
 # 2. DC/OS Installation Storage Layout Variable Names (Agent Node Specific)
