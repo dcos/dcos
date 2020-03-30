@@ -186,6 +186,21 @@ def test_metrics_master_cockroachdb(dcos_api_session):
 
 
 @pytest.mark.supportedwindows
+def test_metrics_master_etcd(dcos_api_session):
+    """Assert that DC/OS etcd metrics on master are present."""
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+    def _check_etcd_metrics():
+        response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                if sample[0].startswith('etcd_') and sample[1].get('dcos_component_name') == 'etcd':
+                    return
+        raise Exception('Expected DC/OS etcd etcd_* metric on master nodes not found')
+
+    _check_etcd_metrics()
+
+
+@pytest.mark.supportedwindows
 def test_metrics_master_calico(dcos_api_session):
     """Assert that DC/OS Calico metrics on master are present."""
 
