@@ -243,17 +243,6 @@ class CmdConfigSetup(CommandConfig):
                 self.root_url
             )
 
-        # Local parameters of DC/OS node
-        cli_local_priv_ipaddr = self.cmd_opts.get(CLI_CMDOPT.LOCAL_PRIVIPADDR)
-        if cli_local_priv_ipaddr:
-            cluster_conf['local'] = {
-                'privateipaddr': cli_local_priv_ipaddr
-            }
-        else:
-            raise WinpandaError(
-                f'The following arguments are required: {CLI_CMDOPT.LOCAL_PRIVIPADDR}'
-            )
-
         # Add discovery type configuration
         discovery_type = dcos_conf.get('values').get('master_discovery')
         cluster_conf['discovery'] = {'type': discovery_type}

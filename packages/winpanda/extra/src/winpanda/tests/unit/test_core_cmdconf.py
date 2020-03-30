@@ -65,19 +65,6 @@ class TestCmdConfigSetup(unittest.TestCase):
 
     @mock.patch.object(CmdConfigSetup, 'get_ref_pkg_list', return_value={})
     @mock.patch.object(CmdConfigSetup, 'get_dcos_conf')
-    def test_cluster_conf_should_require_local_priv_ipaddr(self, mock_get_dcos_conf, *args):
-        mock_get_dcos_conf.return_value = self.mock_get_dcos_conf()
-
-        opts = self.cmd_config_opts
-        opts[CLI_CMDOPT.DSTOR_URL] = 'http://172.16.2.187:8080/2.1.0-beta1/genconf/serve'
-
-        cfg = CmdConfigSetup(**opts)
-
-        with pytest.raises(WinpandaError):
-            cfg.get_cluster_conf()
-
-    @mock.patch.object(CmdConfigSetup, 'get_ref_pkg_list', return_value={})
-    @mock.patch.object(CmdConfigSetup, 'get_dcos_conf')
     def test_cluster_conf_should_contain_keys(self, mock_get_dcos_conf, *args):
         mock_get_dcos_conf.return_value = self.mock_get_dcos_conf()
 
@@ -88,7 +75,6 @@ class TestCmdConfigSetup(unittest.TestCase):
         cfg = CmdConfigSetup(**opts)
         cluster_cfg = cfg.get_cluster_conf()
 
-        assert "local" in cluster_cfg.keys()
         assert "distribution-storage" in cluster_cfg.keys()
         assert "discovery" in cluster_cfg.keys()
 
