@@ -38,6 +38,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Add etcd into DC/OS. (DCOS-59004)
 
+* Add etcd metrics into the DC/OS Telegraf Pipeline. (D2IQ-61004)
+
 * Update libpq to 9.6.15 (DCOS-59145)
 
 * Enable proxing of gRPC requests through Admin Router (DCOS-59091)
@@ -47,6 +49,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * The config option `calico_network_cidr` can be set to a valid IPv4 CIDR range for Calico networks to use (default 172.29.0.0/16) (DCOS-60734)
 
 * Updated DC/OS UI to [master+v2.154.16](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.16).
+
 
 ### Breaking changes
 
