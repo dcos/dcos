@@ -194,7 +194,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         try:
             subproc_run = subprocess.run(
                 [f'{exec_path}', 'version'], stdout=subprocess.PIPE,
-                timeout=5, check=True, universal_newlines=True
+                timeout=15, check=True, universal_newlines=True
             )
         except (subprocess.SubprocessError, OSError, ValueError) as e:
             raise svcm_exc.ServiceManagerSetupError(
