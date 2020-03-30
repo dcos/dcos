@@ -69,6 +69,12 @@ func executeAndPassthrough(stdinStr string, binary string, args []string) (int, 
 func parseStdinJSONMap() (map[string]interface{}, error) {
 	dst := make(map[string]interface{})
 
+	// Don't block on waiting for STDIN if there are no data to read from
+	stat, _ := os.Stdin.Stat()
+	if (stat.Mode() & os.ModeCharDevice) != 0 {
+		return dst, nil
+	}
+
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(os.Stdin)
 
