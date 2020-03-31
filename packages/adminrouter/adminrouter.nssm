@@ -7,7 +7,6 @@ AppParameters = -c {{ pkg_shrcfg_dpath }}\nginx.agent.windows.conf
 Start = SERVICE_AUTO_START
 AppStdout = {{ pkg_log_dpath }}\adminrouter-nssm.log
 AppStderr = {{ pkg_log_dpath }}\adminrouter-nssm.log
-AppTimestampLog = 1
 AppRotateFiles = 1
 AppRotateSeconds = 86400
 AppRotateBytes = 1048576
