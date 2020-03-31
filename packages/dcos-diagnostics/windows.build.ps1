@@ -20,6 +20,5 @@ New-Item -ItemType Directory "$env:PKG_PATH/conf"
 Copy-Item "c:/pkg/extra/dcos-diagnostics.nssm.j2" "$env:PKG_PATH/conf/"
 Copy-Item "c:/pkg/extra/servicelist.txt" "$env:PKG_PATH/bin/"
 Copy-Item "c:/pkg/extra/dcos-diagnostics.extra.j2" "$env:PKG_PATH/conf/"
-Copy-Item "c:/pkg/extra/dcos-diagnostics.ps1" "$env:PKG_PATH/conf/"
 
 Pop-Location
