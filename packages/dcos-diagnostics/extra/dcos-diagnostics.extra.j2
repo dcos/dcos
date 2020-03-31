@@ -1,3 +1,3 @@
 install:
     exec_external_commands:
-        - powershell -executionpolicy Bypass -File {{ pkg_inst_dpath }}\conf\dcos-diagnostics.ps1
+        - powershell -executionpolicy Bypass -File {{ pkg_inst_dpath }}\bin\\bootstrap.ps1 dcos-diagnostics-agent
