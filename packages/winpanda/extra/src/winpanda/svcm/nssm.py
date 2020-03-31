@@ -314,7 +314,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         """
         cmd_line = ' '.join(cl_elements)
         try:
-            ext_cmd_run = cm_utl.run_external_command(cmd_line)
+            ext_cmd_run = cm_utl.run_external_command(cmd_line, timeout=90)
             LOG.debug(f'{self.msg_src}: {svcm_op_name.capitalize()}:'
                       f' {cmd_line}: OK')
         except cm_exc.ExternalCommandError as e:
