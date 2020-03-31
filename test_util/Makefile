@@ -61,7 +61,7 @@ test: cluster.json
 		PUBLIC_SLAVE_HOSTS=$(shell jq '.public_agent_ips.value' $<) \
 		$(DCOS_USER_PASSWORD_ENV) \
 		timeout -k 10m --preserve-status 90m \
-		dcos-shell pytest -vv --teamcity --log-level=DEBUG --windows-only"
+		dcos-shell pytest -vv --teamcity -rs --log-level=DEBUG --windows-only"
 
 .PHONY: ssh
 ssh: cluster.json
