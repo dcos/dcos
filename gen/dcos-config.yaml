@@ -2609,6 +2609,20 @@ package:
         # insecure_skip_verify = true
         [inputs.zookeeper.tags]
           dcos-component-name = "ZooKeeper"
+      # Reads metrics from etcd's prometheus client
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://localhost:2379/metrics"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "10s"
+        ## Optional TLS Config
+        # tls_ca = /path/to/cafile
+        # tls_cert = /path/to/certfile
+        # tls_key = /path/to/keyfile
+        ## Use TLS but skip chain & host verification
+        # insecure_skip_verify = true
+        [inputs.prometheus.tags]
+          dcos-component-name = "etcd"
       # Reads metrics from CockroachDB's prometheus client
       [[inputs.prometheus]]
         ## An array of urls to scrape metrics from.

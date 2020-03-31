@@ -168,11 +168,11 @@ def _verify_is_response_correct(t_config):
 def _tests_configuration(path):
     common_tests_conf_file = os.path.join(path, "..", "test_generic.config.yml")
     with open(common_tests_conf_file, 'r') as fh:
-        common_tests_conf = yaml.load(fh)
+        common_tests_conf = yaml.safe_load(fh)
 
     flavoured_tests_conf_file = os.path.join(path, "test_generic.config.yml")
     with open(flavoured_tests_conf_file, 'r') as fh:
-        flavoured_tests_conf = yaml.load(fh)
+        flavoured_tests_conf = yaml.safe_load(fh)
 
     tests_conf = _merge_testconfig(common_tests_conf, flavoured_tests_conf)
     _verify_tests_conf(tests_conf)
