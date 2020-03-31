@@ -29,13 +29,13 @@ The following is a list of ports used by internal DC/OS services, and their corr
  - 80: dcos-adminrouter
  - 443: dcos-adminrouter
  - 1050: dcos-diagnostics
- - 1801: dcos-oauth
  - 2181: dcos-exhibitor
  - 2888: dcos-exhibitor
  - 3888: dcos-exhibitor
  - 5050: dcos-mesos-master
  - 7070: dcos-cosmos
  - 8080: dcos-marathon
+ - 8101: dcos-bouncer
  - 8123: dcos-mesos-dns
  - 8181: dcos-exhibitor
  - 9990: dcos-cosmos

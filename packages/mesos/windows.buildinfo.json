@@ -3,7 +3,7 @@
     "mesos": {
       "kind": "git",
       "git": "https://github.com/apache/mesos",
-      "ref": "12e5e870c38681bfc0455960f89a41127dac3daf",
+      "ref": "beaf0cd844f3658bfccb86049f7181036b0e6ae4",
       "ref_origin": "master"
     },
     "openssl": {

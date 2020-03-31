@@ -17,7 +17,7 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 
 DEPLOY_TIMEOUT = 2 * 60
-METRICS_WAITTIME = 5 * 60 * 1000
+METRICS_WAITTIME = 4 * 60 * 1000
 METRICS_INTERVAL = 2 * 1000
 STD_WAITTIME = 15 * 60 * 1000
 STD_INTERVAL = 5 * 1000
@@ -91,6 +91,7 @@ def test_metrics_procstat(dcos_api_session):
 
 
 @pytest.mark.supportedwindows
+@pytest.mark.xfail("config.getoption('--windows-only')", reason="D2IQ-66230: Telegraf cannot authorize with Mesos")
 def test_metrics_agents_mesos(dcos_api_session):
     """Assert that mesos metrics on agents are present."""
     nodes = get_agents(dcos_api_session)
@@ -182,6 +183,21 @@ def test_metrics_master_cockroachdb(dcos_api_session):
                     return
         raise Exception('Expected CockroachDB ranges_underreplicated metric not found')
     check_cockroachdb_metrics()
+
+
+@pytest.mark.supportedwindows
+def test_metrics_master_etcd(dcos_api_session):
+    """Assert that DC/OS etcd metrics on master are present."""
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+    def _check_etcd_metrics():
+        response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                if sample[0].startswith('etcd_') and sample[1].get('dcos_component_name') == 'etcd':
+                    return
+        raise Exception('Expected DC/OS etcd etcd_* metric on master nodes not found')
+
+    _check_etcd_metrics()
 
 
 @pytest.mark.supportedwindows

@@ -17,6 +17,7 @@ def mock_load_template(func):
                 return func(*args, **kwargs)
     return wrapper
 
+
 @mock.patch('core.utils.Path.is_absolute', return_value=True)
 @mock.patch('core.utils.jj2.Environment.get_template', side_effect=FileNotFoundError)
 def test_rc_load_unavailable_template_should_fail(*args):

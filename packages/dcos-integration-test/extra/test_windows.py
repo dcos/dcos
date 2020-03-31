@@ -15,8 +15,7 @@ def deploy_test_app_and_check_windows(dcos_api_session, app: dict, test_uuid: st
     """This method deploys the python test server container and then checks
     if the container is up and can accept connections.
     """
-    # Increase the timeout of the application to avoid failing while pulling the docker image
-    with dcos_api_session.marathon.deploy_and_cleanup(app, timeout=2400, ignore_failed_tasks=True):
+    with dcos_api_session.marathon.deploy_and_cleanup(app, timeout=120, ignore_failed_tasks=True):
         service_points = dcos_api_session.marathon.get_app_service_endpoints(app['id'])
         r = requests.get('http://{}:{}'.format(service_points[0].host, service_points[0].port))
         if r.status_code != 200:
