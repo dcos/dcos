@@ -4,7 +4,7 @@ DisplayName = mesos-agent
 Name = mesos-agent
 Application = {{ dcos_inst_dpath }}\bin\mesos-agent.exe
 AppDirectory = {{ dcos_inst_dpath }}\bin
-AppParameters = --master="zk://{{ master_priv_ipaddr }}:{{ zk_client_port }}/mesos" --launcher_dir="{{ dcos_inst_dpath }}\bin" --appc_store_dir="{{ pkg_rtd_dpath }}\images" --work_dir="{{ pkg_work_dpath }}" --runtime_dir="{{ pkg_rtd_dpath }}" --isolation="windows/cpu,windows/mem,filesystem/windows" --containerizers="mesos,docker" --modules_dir="{{ dcos_cfg_dpath }}\mesos\modules" --attributes="os:windows" --ip="{{ local_priv_ipaddr }}" --hostname="{{ local_priv_ipaddr }}" --resources="ports:[10000-34000]" --executor_registration_timeout="10mins" --fetcher_stall_timeout="10mins" --external_log_file="{{ pkg_log_dpath }}\\mesos-agent.log"
+AppParameters = --master="zk://{{ master_location }}/mesos" --launcher_dir="{{ dcos_inst_dpath }}\bin" --appc_store_dir="{{ pkg_rtd_dpath }}\images" --work_dir="{{ pkg_work_dpath }}" --runtime_dir="{{ pkg_rtd_dpath }}" --isolation="windows/cpu,windows/mem,filesystem/windows" --containerizers="mesos,docker" --modules_dir="{{ dcos_cfg_dpath }}\mesos\modules" --attributes="os:windows" --ip="{{ local_priv_ipaddr }}" --hostname="{{ local_priv_ipaddr }}" --resources="ports:[10000-34000]" --executor_registration_timeout="10mins" --fetcher_stall_timeout="10mins" --external_log_file="{{ pkg_log_dpath }}\\mesos-agent.log"
 AppStdout = {{ pkg_log_dpath }}\mesos-agent.log
 AppStderr = {{ pkg_log_dpath }}\mesos-agent.log
 DependOnService = docker
