@@ -369,6 +369,7 @@ function main($url, $masters) {
     LongPathsSupport
     SetupDirectories
     SetupPathJson "C:\d2iq\dcos\etc\paths.json"
+    New-Item -Path 'C:\d2iq\dcos\etc' -Name 'roles' -ItemType 'file' -Value 'slave'
 
     Write-Log -Level "Info" -LogContent "Downloading/Extracting prerequisites.zip out of Bootstrap agent ..."
     Download "$url/windows/prerequisites/prerequisites.zip" "prerequisites.zip"
