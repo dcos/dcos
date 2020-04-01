@@ -16,3 +16,4 @@ $env:GOARCH="386"
 go build .\cmd\telegraf\
 Copy-Item -Path "telegraf.exe" -Destination "$env:PKG_PATH/bin/"
 Copy-Item "c:\pkg\extra\telegraf.nssm.j2" "$env:PKG_PATH/conf/"
+Copy-Item "c:\pkg\extra\telegraf.extra.j2" "$env:PKG_PATH/conf/"
