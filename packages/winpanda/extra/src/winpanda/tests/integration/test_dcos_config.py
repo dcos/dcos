@@ -72,7 +72,7 @@ def test_dcos_config_ok(tmp_path):
         cluster_conf=cluster_conf,
         inst_storage=inst_storage,
     )
-    setup._deploy_dcos_conf()
+    command._deploy_dcos_conf(setup.config.dcos_conf)
 
     file1_path = root_path / 'file1.txt'
     file2_path = root_path / 'subdir' / 'file2.json'
@@ -145,7 +145,7 @@ def test_dcos_config_aws(tmp_path):
         cluster_conf=cluster_conf,
         inst_storage=inst_storage,
     )
-    setup._deploy_dcos_conf()
+    command._deploy_dcos_conf(setup.config.dcos_conf)
 
     file1_path = root_path / 'file1.txt'
     file2_path = root_path / 'file2.txt'
@@ -185,7 +185,7 @@ def test_dcos_config_azure(tmp_path):
         cluster_conf=cluster_conf,
         inst_storage=inst_storage,
     )
-    setup._deploy_dcos_conf()
+    command._deploy_dcos_conf(setup.config.dcos_conf)
 
     file1_path = root_path / 'file1.txt'
     file2_path = root_path / 'file2.txt'
@@ -223,4 +223,4 @@ def test_dcos_config_missing_variable(tmp_path):
         inst_storage=inst_storage,
     )
     with pytest.raises(tmpl.UnsetParameter):
-        setup._deploy_dcos_conf()
+        command._deploy_dcos_conf(setup.config.dcos_conf)
