@@ -190,21 +190,6 @@ function CreateWriteFile([String] $dir, [String] $file, [String] $content) {
     Get-Content "$($dir)\$($file)"
 }
 
-function Download([String] $url, [String] $file) {
-    $output = "$($basedir)\bootstrap\$file"
-    Write-Log -Level "Info" -LogContent "Starting Download of $($url) to $($output) ..."
-    $start_time = Get-Date
-    try{
-        Write-Log -Level "Debug" -LogContent "Downloading $($url)"
-        (New-Object System.Net.WebClient).DownloadFile($url, $output)
-    }
-    catch{
-        Write-Log -Level "Error" -LogContent ("Failed to download: {0}" -f $_)
-    }
-    Write-Log -Level "Info" -LogContent "Download complete. Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)"
-}
-
-
 function main($url, $masters) {
     SetupDirectories
     New-Item -Path 'C:\d2iq\dcos\etc\roles' -Name 'slave' -ItemType 'file' -Value '' -Force
