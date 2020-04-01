@@ -34,7 +34,7 @@ RUN_COMMAND_DEFAULT_KWARGS = {
     'check': True,
     'stderr': -1,
     'stdout': -1,
-    'timeout': 30,
+    'timeout': 90,
     'universal_newlines': True
 }
 
