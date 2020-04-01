@@ -154,6 +154,7 @@ function SetupDirectories() {
         "C:\d2iq",
         "C:\d2iq\dcos",
         "C:\d2iq\dcos\etc",
+        "C:\d2iq\dcos\etc\roles",
         "$($basedir)",
         "$($basedir)\bootstrap",
         "$($basedir)\bootstrap\prerequisites",
@@ -189,29 +190,9 @@ function CreateWriteFile([String] $dir, [String] $file, [String] $content) {
     Get-Content "$($dir)\$($file)"
 }
 
-function Download([String] $url, [String] $file) {
-    $output = "$($basedir)\bootstrap\$file"
-    Write-Log -Level "Info" -LogContent "Starting Download of $($url) to $($output) ..."
-    $start_time = Get-Date
-    try{
-        Write-Log -Level "Debug" -LogContent "Downloading $($url)"
-        (New-Object System.Net.WebClient).DownloadFile($url, $output)
-    }
-    catch{
-        Write-Log -Level "Error" -LogContent ("Failed to download: {0}" -f $_)
-    }
-    Write-Log -Level "Info" -LogContent "Download complete. Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)"
-}
-
-
 function main($url, $masters) {
     SetupDirectories
-
-    Write-Log -Level "Info" -LogContent "Downloading *.ps1 scripts from Bootstrap agent ..."
-    Download "$url/windows/ip-detect.ps1" "detect_ip.ps1"
-    Download "$url/windows/ip-detect-public.ps1" "detect_ip_public.ps1"
-    Download "$url/windows/fault-domain-detect-win.ps1" "fault-domain-detect-win.ps1"
-    Copy-Item -Path "$($basedir)\bootstrap\*.ps1" -Destination "$($basedir)\bin" -Recurse
+    New-Item -Path 'C:\d2iq\dcos\etc\roles' -Name 'slave' -ItemType 'file' -Value '' -Force
 
     # Fill up gen_out arguments to cluster.conf
     Write-Log -Level "Debug" -LogContent "MASTERS: $($masters)"
@@ -220,9 +201,7 @@ function main($url, $masters) {
     for ($i=0; $i -lt $masterarray.length; $i++) {
         $masternodecontent += "[master-node-$($i+1)]`nPrivateIPAddr=$($masterarray[$i])`nZookeeperListenerPort=2181`n"
     }
-    $local_ip = try { . "$($basedir)\bin\detect_ip.ps1" } catch { throw "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss") ERROR: Failed to execute `'$($basedir)\bin\detect_ip.ps1`' . Check script validity!" 2>&1 | Tee-Object -FilePath "$($vardir)\log\dcos_node_upgrade.log" -Append; return }
-    Write-Log -Level "Debug" -LogContent "Local IP: $($local_ip)"
-    $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($url)`nPkgRepoPath=windows/packages`nPkgListPath=windows/package_lists/latest.package_list.json`nDcosClusterPkgInfoPath=cluster-package-info.json`n`n[local]`nPrivateIPAddr=$($local_ip)"
+    $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($url)`nPkgRepoPath=windows/packages`nPkgListPath=windows/package_lists/latest.package_list.json`nDcosClusterPkgInfoPath=cluster-package-info.json`n`n[local]`nPrivateIPAddr=127.0.0.1"
     CreateWriteFile "$($basedir)\etc" "cluster.conf" $content
 
     Write-Log -Level "Info" -LogContent "Running Winpanda.py upgrade ..."
