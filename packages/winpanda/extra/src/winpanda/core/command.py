@@ -573,7 +573,8 @@ class CmdUpgrade(Command):
         # of winpanda routines, but required for winpanda to do it's stuff.
 
         restore_dirs = [
-            iroot_dpath.joinpath('etc'),
+            iroot_dpath / 'etc',
+            iroot_dpath / 'etc' / 'roles',
         ]
 
         for dpath in restore_dirs:
@@ -585,10 +586,12 @@ class CmdUpgrade(Command):
                             f' {type(e).__name__}: {e}')
 
         restore_files = [
-            (itmp_dpath.joinpath('etc.old', 'cluster.conf'),
-             iroot_dpath.joinpath('etc')),
-            (itmp_dpath.joinpath('etc.old', 'paths.json'),
-             iroot_dpath.joinpath('etc')),
+            (itmp_dpath / 'etc.old' / 'cluster.conf', iroot_dpath / 'etc'),
+            (itmp_dpath / 'etc.old' / 'paths.json', iroot_dpath / 'etc'),
+            (
+                itmp_dpath / 'etc.old' / 'roles' / 'slave',
+                iroot_dpath / 'etc' / 'roles'
+            ),
         ]
 
         for fspec in restore_files:

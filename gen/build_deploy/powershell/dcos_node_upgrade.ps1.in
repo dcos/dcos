@@ -154,6 +154,7 @@ function SetupDirectories() {
         "C:\d2iq",
         "C:\d2iq\dcos",
         "C:\d2iq\dcos\etc",
+        "C:\d2iq\dcos\etc\roles",
         "$($basedir)",
         "$($basedir)\bootstrap",
         "$($basedir)\bootstrap\prerequisites",
@@ -206,6 +207,7 @@ function Download([String] $url, [String] $file) {
 
 function main($url, $masters) {
     SetupDirectories
+    New-Item -Path 'C:\d2iq\dcos\etc\roles' -Name 'slave' -ItemType 'file' -Value '' -Force
 
     # Fill up gen_out arguments to cluster.conf
     Write-Log -Level "Debug" -LogContent "MASTERS: $($masters)"
