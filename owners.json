@@ -18,5 +18,7 @@
   "urbanserj": {"slack": "urbanserj", "jira": "sergeyurbanovich"},
   "vinodkone": {"slack": "vinodkone", "jira": "vinod"},
   "Poltergeist": {"slack": "philipph", "jira": "philipph"},
-  "pierrebeitz": {"slack": "pierre", "jira": "pierrebeitz"}
+  "pierrebeitz": {"slack": "pierre", "jira": "pierrebeitz"},
+  "janisz": {"slack": "janisz", "jira": "tomaszjaniszewski"},
+  "jeschkies": {"slack": "kjeschkies", "jira": "kjeschkies"}
 }
