@@ -127,7 +127,7 @@ class MarathonPod:
         self.id = pod_name_fmt.format(self.uuid)
         self.app = {
             'id': self.id,
-            'scheduling': {'placement': {'acceptedResourceRoles': ['*', 'slave_public']}},
+            'scheduling': {'placement': {'acceptedResourceRoles': ['*']}},
             'containers': [{
                 'name': 'app-{}'.format(self.uuid),
                 'resources': {'cpus': 0.01, 'mem': 32},
