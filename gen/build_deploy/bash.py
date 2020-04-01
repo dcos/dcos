@@ -503,7 +503,7 @@ function check_all() {
             "5050 mesos-master" \
             "7070 cosmos" \
             "8080 marathon" \
-            "8101 dcos-oauth" \
+            "8101 dcos-bouncer" \
             "8123 mesos-dns" \
             "8181 exhibitor" \
             "9000 metronome" \

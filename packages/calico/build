@@ -2,12 +2,24 @@
 set -x
 
 # calico container is missing 'envsubst'
-apt-get update && apt-get install gettext-base
+apt-get update && apt-get install -y gettext-base curl
+
+# create a go build environment
+curl https://dl.google.com/go/go1.13.3.linux-amd64.tar.gz | tar -zvx -C /usr/local
+export GOROOT=/usr/local/go
+export GOPATH=/tmp/go
+export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+mkdir -p $GOPATH
+
+# build the cni plugin wrapper
+# NOTE(icharala): This is a temporary fix for D2IQ-62219
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags -w -o $PKG_PATH/cni/calico /pkg/extra/calico-cni-wrapper.go
 
 # copy calico CNI plugin to CNI plugin directory
 mkdir -p $PKG_PATH/cni
-cp /pkg/src/calico/calico-amd64 $PKG_PATH/cni/calico
+cp /pkg/src/calico/calico-amd64 $PKG_PATH/cni/calico-impl
 chmod +x $PKG_PATH/cni/calico
+chmod +x $PKG_PATH/cni/calico-impl
 cp /pkg/src/calico-ipam/calico-ipam-amd64 $PKG_PATH/cni/calico-ipam
 chmod +x $PKG_PATH/cni/calico-ipam
 

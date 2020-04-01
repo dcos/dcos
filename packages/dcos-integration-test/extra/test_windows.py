@@ -11,7 +11,6 @@ __contact__ = 'orchestration-team@mesosphere.io'
 log = logging.getLogger(__name__)
 
 
-@pytest.mark.xfail("config.getoption('--windows-only')", reason="D2IQ-66235: Mesos is not sending offers")
 def deploy_test_app_and_check_windows(dcos_api_session, app: dict, test_uuid: str):
     """This method deploys the python test server container and then checks
     if the container is up and can accept connections.
