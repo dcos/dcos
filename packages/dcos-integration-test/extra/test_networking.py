@@ -66,7 +66,7 @@ class MarathonApp:
                 del args['host_port']
         self.app, self.uuid = test_helpers.marathon_test_app(**args)
         # allow this app to run on public slaves
-        self.app['acceptedResourceRoles'] = ['*', 'slave_public']
+        self.app['acceptedResourceRoles'] = ['*']
         self.id = self.app['id']
 
     def __str__(self):
