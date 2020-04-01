@@ -39,7 +39,7 @@ import yaml
 import gen.internals
 
 
-DCOS_VERSION = '2.1.0-beta2-dev'
+DCOS_VERSION = '2.1.0-beta2'
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
