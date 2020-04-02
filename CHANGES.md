@@ -52,6 +52,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Calico network: When using the Universal Runtime Engine, the contents of the `DCOS_SPACE`  network label will be compressed to `<7-char hash>...<last 53 chars>` if it is longer than 63 characters. (D2IQ-62219)
 
+#### Update Marathon to 1.10.5
+
+* Adds support for Mesos Resource Limits (D2IQ-61131) (D2IQ-61130)
+* Removes `revive_offers_for_new_apps` option.
+
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
