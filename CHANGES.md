@@ -73,7 +73,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * New format for Admin Router access logs. (D2IQ-43957, DCOS-59598, D2IQ-62839)
 
-* Update OpenResty to 1.15.8.2. (DCOS-61159)
+* Update OpenResty to 1.15.8.3. (DCOS-61159, D2IQ-66506)
 
 ### Fixed and improved
 
