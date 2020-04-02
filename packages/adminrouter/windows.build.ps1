@@ -17,6 +17,13 @@ function Unzip {
     [System.IO.Compression.ZipFile]::ExtractToDirectory($zipfile, $outpath)
 }
 
+$r = Invoke-WebRequest 'https://openresty.org/download/openresty-1.15.8.2-win64.zip'
+
+Write-Output "$($r.StatusCode)"
+
+Write-Output "$($r.Headers)"
+
+
 Unzip "c:\pkg\src\OpenResty\openresty-1.15.8.2-win64.zip" "c:/Temp/openresty"
 
 $exclude = @('COPYRIGHT','README.txt','restydoc*')
