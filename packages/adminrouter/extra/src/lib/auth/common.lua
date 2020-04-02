@@ -12,7 +12,7 @@ local errorpages_dir_path = os.getenv("AUTH_ERROR_PAGE_DIR_PATH")
 if errorpages_dir_path == nil then
     ngx.log(ngx.WARN, "AUTH_ERROR_PAGE_DIR_PATH not set.")
 else
-    local p = errorpages_dir_path .. "/401.html"
+    local p = util.path_join(errorpages_dir_path, "401.html")
     ngx.log(ngx.NOTICE, "Reading 401 response from `" .. p .. "`.")
     BODY_401_ERROR_RESPONSE = util.get_file_content(p)
     if (BODY_401_ERROR_RESPONSE == nil or BODY_401_ERROR_RESPONSE == '') then
@@ -20,7 +20,7 @@ else
         BODY_401_ERROR_RESPONSE = ''
         ngx.log(ngx.WARN, "401 error response is empty.")
     end
-    local p = errorpages_dir_path .. "/403.html"
+    local p = util.path_join(errorpages_dir_path, "403.html")
     ngx.log(ngx.NOTICE, "Reading 403 response from `" .. p .. "`.")
     BODY_403_ERROR_RESPONSE = util.get_file_content(p)
     if (BODY_403_ERROR_RESPONSE == nil or BODY_403_ERROR_RESPONSE == '') then
