@@ -1,8 +1,8 @@
 FROM ubuntu:16.04
 
 # Let's try to limit the number of layers to minimum:
-ENV OPENRESTY_VERSION=1.15.8.2 \
-    OPENRESTY_DOWNLOAD_SHASUM=48c111973938312a470058fdae928374eacd1c56 \
+ENV OPENRESTY_VERSION=1.15.8.3 \
+    OPENRESTY_DOWNLOAD_SHASUM=277573100c216772b45390f26f0d1c3cf50370f1 \
     OPENRESTY_DIR=/usr/local/src/openresty \
     OPENRESTY_COMPILE_SCRIPT=/usr/local/src/build-resty.sh \
     OPENRESTY_COMPILE_OPTS="" \

@@ -64,7 +64,7 @@ def test_version(monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'some-variant')
     version_data = subprocess.check_output(['dcos_installer', '--version']).decode()
     assert json.loads(version_data) == {
-        'version': '2.1.0-beta2-dev',
+        'version': '2.1.0-rc1-dev',
         'variant': 'some-variant'
     }
 
@@ -100,7 +100,7 @@ def test_get_config(tmpdir):
         'exhibitor_storage_backend': 'static',
         'resolvers': ['8.8.8.8', '8.8.4.4'],
         'process_timeout': 10000,
-        'bootstrap_url': 'file:///opt/dcos_install_tmp'
+        'bootstrap_url': 'file:///opt/dcos_install_tmp',
     }
 
     make_default_config_if_needed(temp_config_path)

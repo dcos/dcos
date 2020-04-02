@@ -111,27 +111,31 @@ local function request(url, accept_404_reply, auth_token)
     -- method takes care of parsing scheme, host, and port from the URL.
     local httpc = http.new()
     httpc:set_timeout(_CONFIG.CACHE_BACKEND_REQUEST_TIMEOUT * 1000)
+    ngx.update_time()
+    local start = ngx.now()
     local res, err = httpc:request_uri(url, {
         method="GET",
         headers=headers,
         ssl_verify=true
     })
+    ngx.update_time()
+    local stop = ngx.now()
 
     if not res then
+        ngx.log(ngx.WARN, "< " .. url .. " " .. string.format("%.3f", stop - start) ": " .. err)
         return nil, err
     end
+
+    ngx.log(
+        ngx.INFO, "< " .. url .. " code=" .. res.status .. 
+            " len=(" .. string.len(res.body) .. ") " .. string.format("%.3f", stop - start)
+    )
 
     if res.status ~= 200 then
         if accept_404_reply and res.status ~= 404 or not accept_404_reply then
             return nil, "invalid response status: " .. res.status
         end
     end
-
-    ngx.log(
-        ngx.NOTICE,
-        "Request url: " .. url .. " " ..
-        "Response Body length: " .. string.len(res.body) .. " bytes."
-        )
 
     return res, nil
 end
@@ -352,7 +356,7 @@ local function fetch_and_store_marathon_apps(auth_token)
     ngx.update_time()
     local time_now = ngx.now()
     if cache_data("svcapps_last_refresh", time_now) then
-        ngx.log(ngx.INFO, "Marathon apps cache has been successfully updated")
+        ngx.log(ngx.INFO, "Updated Marathon apps cache")
     end
 
     return
@@ -383,7 +387,7 @@ function store_leader_data(leader_name, leader_ip)
     ngx.update_time()
     local time_now = ngx.now()
     if cache_data(leader_name .. "_leader_last_refresh", time_now) then
-        ngx.log(ngx.INFO, leader_name .. " leader cache has been successfully updated")
+        ngx.log(ngx.INFO, "Updated " .. leader_name .. " leader cache")
     end
 
     return
@@ -482,7 +486,7 @@ local function fetch_and_store_state_mesos(auth_token)
     ngx.update_time()
     local time_now = ngx.now()
     if cache_data("mesosstate_last_refresh", time_now) then
-        ngx.log(ngx.INFO, "Mesos state cache has been successfully updated")
+        ngx.log(ngx.INFO, "Updated Mesos state cache")
     end
 
     return

@@ -194,7 +194,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         try:
             subproc_run = subprocess.run(
                 [f'{exec_path}', 'version'], stdout=subprocess.PIPE,
-                timeout=5, check=True, universal_newlines=True
+                timeout=15, check=True, universal_newlines=True
             )
         except (subprocess.SubprocessError, OSError, ValueError) as e:
             raise svcm_exc.ServiceManagerSetupError(
@@ -314,7 +314,7 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         """
         cmd_line = ' '.join(cl_elements)
         try:
-            ext_cmd_run = cm_utl.run_external_command(cmd_line)
+            ext_cmd_run = cm_utl.run_external_command(cmd_line, timeout=90)
             LOG.debug(f'{self.msg_src}: {svcm_op_name.capitalize()}:'
                       f' {cmd_line}: OK')
         except cm_exc.ExternalCommandError as e:
