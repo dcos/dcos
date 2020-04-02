@@ -16,6 +16,13 @@ package:
   - path: /bin/detect_ip6
     permissions: "0755"
     content: {{ ip6_detect_contents }}
+{% switch fault_domain_enabled %}
+{% case "true" %}
+  - path: /bin/detect_fault_domain
+    permissions: "0755"
+    content: {{ fault_domain_detect_contents }}
+{% case "false" %}
+{% endswitch %}
   - path: /etc/check_time.env
     content: |
         ENABLE_CHECK_TIME={{ check_time }}
@@ -110,14 +117,10 @@ package:
   - path: /etc_master/dcos-net.config.d/master.config
     content: |
       [
-        {dcos_dns,
-          [
-            {push_ops_timeout, {{ dcos_dns_push_ops_timeout }}}
-          ]
-        },
         {dcos_net,
           [
-            {is_master, true}
+            {is_master, true},
+            {push_ops_timeout, {{ dcos_net_push_ops_timeout }}}
           ]
         },
         {dcos_l4lb,
@@ -155,11 +158,6 @@ package:
         {dcos_net,
           [
             {dist_port, 62501}
-          ]
-        },
-        {dcos_dns,
-          [
-            {store_modes, {{ dcos_dns_store_modes_term }}}
           ]
         },
         {dcos_l4lb,
@@ -268,7 +266,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
+            "file": "/opt/mesosphere/active/mesos/lib/mesos/liblogsink.so",
             "modules":
               [
                 {
@@ -291,7 +289,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
+            "file": "/opt/mesosphere/active/mesos/lib/mesos/liblogsink.so",
             "modules":
               [
                 {
@@ -316,7 +314,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
@@ -349,7 +347,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
@@ -372,7 +370,7 @@ package:
     content: |
       {
         "libraries": [ {
-          "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmetrics-module.so",
+          "file": "/opt/mesosphere/active/mesos/lib/mesos/libmetrics-module.so",
           "modules": [ {
             "name": "com_mesosphere_dcos_MetricsIsolatorModule",
             "parameters": [
@@ -389,7 +387,7 @@ package:
       {
         "libraries": [
           {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libjournaldlogger.so",
+            "file": "/opt/mesosphere/active/mesos/lib/mesos/libjournaldlogger.so",
             "modules": [
               {
                 "name": "com_mesosphere_mesos_JournaldLogger",
@@ -399,19 +397,19 @@ package:
                     "value": "{{ mesos_container_log_sink }}"
                   }, {
                     "key": "companion_dir",
-                    "value": "/opt/mesosphere/active/mesos-modules/bin/"
+                    "value": "/opt/mesosphere/active/mesos/bin/"
                   }, {
                     "key": "libprocess_num_worker_threads",
                     "value": "2"
                   }, {
                     "key": "logrotate_max_stdout_size",
-                    "value": "2MB"
+                    "value": "{{ mesos_logrotate_file_size_mb }}MB"
                   }, {
                     "key": "logrotate_stdout_options",
                     "value": "rotate 9"
                   }, {
                     "key": "logrotate_max_stderr_size",
-                    "value": "2MB"
+                    "value": "{{ mesos_logrotate_file_size_mb }}MB"
                   }, {
                     "key": "logrotate_stderr_options",
                     "value": "rotate 9"
@@ -436,7 +434,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libremovedockercfg.so",
+            "file": "/opt/mesosphere/active/mesos/lib/mesos/libremovedockercfg.so",
             "modules":
               [
                 {
@@ -1326,11 +1324,8 @@ package:
       MESOS_WORK_DIR={{ mesos_master_work_dir }}
       MESOS_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/mesos
       SASL_PATH=/opt/mesosphere/lib/sasl2
-{% switch has_mesos_max_completed_tasks_per_framework %}
-{% case "true" %}
+      MESOS_MAX_COMPLETED_FRAMEWORKS={{ mesos_max_completed_frameworks }}
       MESOS_MAX_COMPLETED_TASKS_PER_FRAMEWORK={{ mesos_max_completed_tasks_per_framework }}
-{% case "false" %}
-{% endswitch %}
 {% switch log_offers %}
 {% case "true" %}
       GLOG_vmodule=master=2
@@ -1342,7 +1337,7 @@ package:
   - path: /etc/mesos-slave-common
     content: |
       GLOG_drop_log_memory=false
-      MESOS_CGROUPS_ENABLE_CFS=true
+      MESOS_CGROUPS_ENABLE_CFS={{ mesos_cgroups_enable_cfs }}
       MESOS_CGROUPS_LIMIT_SWAP=false
       # The order of containerizers affects the order of certain operations
       # on the agent.  See https://github.com/dcos/dcos/pull/4988 before
@@ -1379,7 +1374,7 @@ package:
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-slave-modules
       MESOS_NETWORK_CNI_ROOT_DIR_PERSIST={{ mesos_cni_root_dir_persist }}
       MESOS_NETWORK_CNI_CONFIG_DIR=/opt/mesosphere/etc/dcos/network/cni
-      MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/:/opt/mesosphere/active/dcos-cni/:/opt/mesosphere/active/mesos/libexec/mesos
+      MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/:/opt/mesosphere/active/dcos-cni/:/opt/mesosphere/active/mesos/libexec/mesos:/opt/mesosphere/active/calico/cni
       MESOS_RECONFIGURATION_POLICY=additive
       MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
       MESOS_SECCOMP_CONFIG_DIR=/opt/mesosphere/etc/dcos/mesos/seccomp
@@ -1393,6 +1388,17 @@ package:
 {% switch has_mesos_default_container_shm_size %}
 {% case "true" %}
       MESOS_DEFAULT_CONTAINER_SHM_SIZE={{ mesos_default_container_shm_size }}
+{% case "false" %}
+{% endswitch %}
+{% switch mesos_http_executor_domain_sockets %}
+{% case "true" %}
+      MESOS_HTTP_COMMAND_EXECUTOR=true
+      MESOS_HTTP_EXECUTOR_DOMAIN_SOCKETS=true
+      # This variable is taken from the `FileDescriptorName` field from the unit
+      # file describing socket name of the Mesos agent service. Note that with systemd
+      # versions before 227, named sockets are not supported. However, Mesos agent
+      # handles this case.
+      MESOS_DOMAIN_SOCKET_LOCATION=systemd:dcos-mesos-slave
 {% case "false" %}
 {% endswitch %}
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
@@ -1859,6 +1865,34 @@ package:
                   "Optional": true
               },
               {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "node", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "ipPool", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "profile", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "workloadEndpoint", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "node", "status"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "networkPolicy", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/calicoctl", "get", "globalNetworkPolicy", "-o", "yaml"],
+                  "Role": ["master"]
+              },
+              {
                   "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
                   "Role": ["master"]
               },
@@ -1885,6 +1919,13 @@ package:
               {
                   "Command": ["sysctl", "-a"],
                   "Role": ["master", "agent", "agent_public"]
+              },
+              {
+                  "Command": ["df"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/dcos-shell", "dcos-etcdctl", "diagnostic"],
+                  "Role": ["master"]
               }
           ]
         }
@@ -2058,7 +2099,20 @@ package:
       # For post-installation customization, edit the file /var/lib/dcos/marathon/environment
       MARATHON_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/marathon
       LIBPROCESS_PORT=15101
-      MARATHON_JAVA_ARGS={{ marathon_java_args }}
+      JAVA_OPTS={{ marathon_java_args }}
+      MARATHON_EXTRA_ARGS=
+      MARATHON_MESOS_ROLE="slave_public"
+      MARATHON_MAX_INSTANCES_PER_OFFER=100
+      MARATHON_TASK_LAUNCH_CONFIRM_TIMEOUT=1800000
+      MARATHON_TASK_LAUNCH_TIMEOUT=86400000
+      MARATHON_TASK_RESERVATION_TIMEOUT=1800000
+      MARATHON_DECLINE_OFFER_DURATION=300000
+      STATSD_UDP_HOST="localhost"
+      STATSD_UDP_PORT="61825"
+      MARATHON_ENABLE_FEATURES="vips,task_killing,external_volumes,gpu_resources"
+      MARATHON_MESOS_AUTHENTICATION_PRINCIPAL="dcos_marathon"
+      MARATHON_MESOS_USER="root"
+
 {% switch dcos_overlay_enable %}
 {% case "true" %}
       MARATHON_DEFAULT_NETWORK_NAME={{ dcos_overlay_network_default_name }}
@@ -2155,13 +2209,13 @@ package:
     content: |
       listen 80 default_server;
       listen 443 ssl default_server;
-
-      ssl_certificate includes/snakeoil.crt;
-      ssl_certificate_key includes/snakeoil.key;
   - path: /etc_master/adminrouter-ui-security.conf
     content: |
       # Browser security settings for the DC/OS UI
       add_header X-Frame-Options "{{ adminrouter_x_frame_options }}";
+  - path: /etc_master/adminrouter-grpc-proxy-port.conf
+    content: |
+      listen {{ adminrouter_grpc_proxy_port }} http2;
   - path: /etc/adminrouter-tls-master.conf
     content: |
       # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
@@ -2234,13 +2288,6 @@ package:
 {% endswitch %}
   - path: /etc/rexray.conf
     content: {{ rexray_config_contents }}
-{% switch fault_domain_enabled %}
-{% case "true" %}
-  - path: /bin/detect_fault_domain
-    permissions: "0755"
-    content: {{ fault_domain_detect_contents }}
-{% case "false" %}
-{% endswitch %}
   - path: /etc/telegraf.env
     content: |
       TELEGRAF_CONFIG_FILE=/opt/mesosphere/etc/telegraf/telegraf.conf
@@ -2418,6 +2465,13 @@ package:
         ## Apply DC/OS component name tag according to the documentation.
         [inputs.prometheus.tags]
           dcos-component-name = "DC/OS Net"
+      # Read metrics from DC/OS Calico Node Prometheus endpoint.
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://localhost:62091/metrics"]
+        ## Apply DC/OS component name tag according to the documentation.
+        [inputs.prometheus.tags]
+          dcos-component-name = "DC/OS Calico"
       # Read metrics from Fluent Bit Prometheus endpoint
       [[inputs.prometheus]]
         ## An array of urls to scrape metrics from.
@@ -2555,6 +2609,20 @@ package:
         # insecure_skip_verify = true
         [inputs.zookeeper.tags]
           dcos-component-name = "ZooKeeper"
+      # Reads metrics from etcd's prometheus client
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://localhost:2379/metrics"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "10s"
+        ## Optional TLS Config
+        # tls_ca = /path/to/cafile
+        # tls_cert = /path/to/certfile
+        # tls_key = /path/to/keyfile
+        ## Use TLS but skip chain & host verification
+        # insecure_skip_verify = true
+        [inputs.prometheus.tags]
+          dcos-component-name = "etcd"
       # Reads metrics from CockroachDB's prometheus client
       [[inputs.prometheus]]
         ## An array of urls to scrape metrics from.
@@ -3011,3 +3079,62 @@ package:
           Port 61092
           Chunk_Size 32
           Buffer_Size 64
+  - path: /etc/dcos/network/cni/calico.conf
+    content: |
+      {
+        "name": "calico",
+        "type": "mesos-cni-port-mapper",
+        "excludeDevices": [
+          "cali+"
+        ],
+        "chain": "M-CALICO",
+        "delegate": {
+          "cniVersion": "0.1.0",
+          "type": "calico",
+          "mtu": {{ calico_veth_mtu }},
+          "etcd_endpoints": "http://master.dcos.thisdcos.directory:2379",
+          "ipam": {
+            "type": "calico-ipam"
+          }
+        }
+      }
+  - path: /etc/calico/calico-node.env
+    content: |
+      NO_DEFAULT_POOLS=false
+      CALICO_IPV4POOL_CIDR={{ calico_network_cidr }}
+      CALICO_IPV4POOL_NAT_OUTGOING=true
+      FELIX_IGNORELOOSERPF=true
+      FELIX_LOGFILEPATH=none
+      FELIX_PROMETHEUSMETRICSENABLED=true
+      FELIX_PROMETHEUSMETRICSPORT=62091
+{% switch calico_vxlan_enabled %}
+{% case "false" %}
+      FELIX_IPINIPMTU={{ calico_ipinip_mtu }}
+      CALICO_IPV4POOL_IPIP=always
+      CALICO_IPV4POOL_VXLAN=never
+      CALICO_NETWORKING_BACKEND=bird
+{% case "true" %}
+      CALICO_IPV4POOL_IPIP=never
+      CALICO_IPV4POOL_VXLAN=always
+      CALICO_NETWORKING_BACKEND=vxlan
+      FELIX_VXLANMTU={{ calico_vxlan_mtu }}
+      FELIX_VXLANPORT={{ calico_vxlan_port }}
+      FELIX_VXLANVNI={{ calico_vxlan_vni }}
+{% endswitch %}
+  - path: /etc/calico/calico-node-datastore.env
+    content: |
+      ETCD_ENDPOINTS=http://master.dcos.thisdcos.directory:2379
+{% switch calico_vxlan_enabled %}
+{% case "false" %}
+  - path: /etc/calico/bird_enabled
+    content: ""
+{% case "true" %}
+{% endswitch %}
+  - path: /etc/calico/calicoctl.cfg
+    content: |
+      apiVersion: projectcalico.org/v3
+      kind: CalicoAPIConfig
+      metadata:
+      spec:
+        datastoreType: etcdv3
+        etcdEndpoints: http://master.dcos.thisdcos.directory:2379

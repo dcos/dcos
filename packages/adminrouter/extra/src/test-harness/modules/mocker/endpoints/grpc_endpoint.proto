@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package etcdserverpb;
+
+
+service MockService {
+    rpc UnaryDoSomething (StringMessage) returns (StringMessage) {}
+    rpc ClientStreamDoSomething (stream IntMessage) returns (IntCollectionMessage) {}
+    rpc ServerSteramDoSomething (IntCollectionMessage) returns (stream IntMessage) {}
+}
+
+message StringMessage {
+  string message = 1;
+}
+
+message IntMessage {
+  int32 messageID = 1;
+}
+
+message IntCollectionMessage {
+  repeated int32 messageIDs = 1;
+}

@@ -28,7 +28,6 @@ mkdir -p $(dirname "$marathon_service")
 cat <<EOF > "$marathon_service"
 [Unit]
 Description=Marathon: container orchestration engine
-
 [Service]
 User=dcos_marathon
 Restart=always
@@ -40,6 +39,8 @@ PermissionsStartOnly=True
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/marathon
 EnvironmentFile=-/opt/mesosphere/etc/marathon-extras
+EnvironmentFile=-/run/dcos/etc/marathon/tls.env
+EnvironmentFile=-/run/dcos/etc/marathon/zk.env
 # The env file in /var/lib/dcos is for post-install configuration and persists with upgrades.
 EnvironmentFile=-/var/lib/dcos/marathon/environment
 Environment=JAVA_HOME=${JAVA_HOME}

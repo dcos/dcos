@@ -23,4 +23,35 @@ management on DC/OS Linux agent nodes.
 ## Running Test Suite
 
 -------------------------------------------------------------------------------
->_>>>>> Under Construction <<<<<_
+
+Change to the `winpanda` extra directory.
+```sh
+cd packages/winpanda/extra
+```
+
+The first time, create a new Python virtualenv.
+```sh
+virtualenv venv --python=<ABSOLUTE_PATH_TO_PYTHON3_EXE>
+```
+
+Activate the new or existing virtualenv.
+
+On Linux:
+```sh
+source venv/bin/activate
+```
+On Windows:
+```bat
+venv\Scripts\activate.bat
+```
+
+In a new virtualenv, install `pytest` and the `winpanda` dependencies.
+```sh
+pip install pytest mock
+pip install -r src/winpanda/requirements.txt
+``` 
+
+Run `pytest`.
+```sh
+pytest
+```

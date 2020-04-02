@@ -1,8 +1,8 @@
 FROM ubuntu:16.04
 
 # Let's try to limit the number of layers to minimum:
-ENV OPENRESTY_VERSION=1.15.8.1 \
-    OPENRESTY_DOWNLOAD_SHASUM=cb8cb132f06c9618bdbe57f5e16f4d9d513a6fe3 \
+ENV OPENRESTY_VERSION=1.15.8.3 \
+    OPENRESTY_DOWNLOAD_SHASUM=277573100c216772b45390f26f0d1c3cf50370f1 \
     OPENRESTY_DIR=/usr/local/src/openresty \
     OPENRESTY_COMPILE_SCRIPT=/usr/local/src/build-resty.sh \
     OPENRESTY_COMPILE_OPTS="" \
@@ -72,7 +72,7 @@ RUN set -ex \
 # Refs:
 #   https://github.com/docker/docker/issues/12327#issuecomment-188921470
 #   https://github.com/docker/docker/issues/12327#issuecomment-187158265
-RUN python3 -m pip install --upgrade virtualenv
+RUN python3 -m pip install --upgrade 'virtualenv<20'
 RUN set -ex \
     && virtualenv --no-site-packages $VENV_DIR \
     && ${VENV_DIR}/bin/pip install --upgrade setuptools pip
@@ -143,6 +143,7 @@ COPY adminrouter-redirect-http-https.conf \
      adminrouter-tls-agent.conf \
      adminrouter-tls-master.conf \
      adminrouter-ui-security.conf \
+     adminrouter-grpc-proxy-port.conf \
         /opt/mesosphere/etc/
 
 # The `ca.crt` file is copied into two places due to the fact that

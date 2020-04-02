@@ -9,7 +9,7 @@ Like traditional operating systems, DC/OS is system software that manages comput
 
 Unlike traditional operating systems, DC/OS spans multiple machines within a network, aggregating their resources to maximize utilization by distributed applications.
 
-To learn more, see the [DC/OS Overview](https://dcos.io/docs/latest/overview/).
+To learn more, see the [DC/OS Overview](https://docs.d2iq.com/mesosphere/dcos/latest/overview/).
 
 
 # How Do I...?
@@ -35,8 +35,11 @@ To find the git SHA of any given release, check the latest commit in the version
 | Release Type | URL Pattern |
 |--------------|--------------------|
 | Latest Stable| `https://downloads.dcos.io/dcos/stable/dcos_generate_config.sh` |
-| Latest Master | `https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh` |
-| Specific PR, Latest Build	| `https://downloads.dcos.io/dcos/testing/pull/<github-pr-number>/dcos_generate_config.sh` |
+| Latest Master Linux| `https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh` |
+| Latest Master Windows| `https://downloads.dcos.io/dcos/testing/master/windows/dcos_generate_config_win.sh` |
+| Latest Build of Specific PR Linux| `https://downloads.dcos.io/dcos/testing/pull/<github-pr-number>/dcos_generate_config.sh` |
+| Latest Build of Specific PR Windows| `https://downloads.dcos.io/dcos/testing/pull/<github-pr-number>/windows/dcos_generate_config_win.sh` |
+
 
 
 # Development Environment
@@ -47,6 +50,7 @@ To find the git SHA of any given release, check the latest commit in the version
     - Docker doesn't have all the features needed on OS X or Windows
     - `tar` needs to be GNU tar for the set of flags used
     - `unzip` needs to be installed
+1. [pre-commit](https://pre-commit.com)
 1. [tox](https://tox.readthedocs.org/en/latest/)
 1. git 1.8.5+
 1. Docker 1.11+
@@ -288,7 +292,7 @@ Pull requests automatically trigger a new DC/OS build and run several tests. The
 
 ### Required vs Non-Required Status checks
 
-A PR status check may be marked as **Required** or **Not-Required** (Default).The required status checks are neccessary for applying a ship-it label, which makes the PR eligible for merge.
+A PR status check may be marked as **Required** or **Not-Required** (Default). The required status checks are necessary for applying a ship-it label, which makes the PR eligible for merge.
 A non-required status check is completely informational, and the success or the failure of the status check does not, in any way, impact the merge of the PR.
 
 The required status checks are encoded in the repo's megebot-config (For .e.g: https://github.com/dcos/dcos/blob/master/mergebot-config.json#L38)

@@ -47,6 +47,8 @@ echo "Migrating ${LEGACY_CONTAINERS_DIR} to ${TELEGRAF_CONTAINERS_DIR}..."
 mv "${LEGACY_CONTAINERS_DIR}" "${TELEGRAF_CONTAINERS_DIR}"
 echo "Granting dcos_telegraf user permissions on ${TELEGRAF_CONTAINERS_DIR}..."
 chmod 775 "${TELEGRAF_CONTAINERS_DIR}"
-chmod 664 "${TELEGRAF_CONTAINERS_DIR}/*"
+if dir_contains_files "${TELEGRAF_CONTAINERS_DIR}"; then
+    chmod 664 "${TELEGRAF_CONTAINERS_DIR}/*"
+fi
 chown -R root:dcos_telegraf "${TELEGRAF_CONTAINERS_DIR}"
 echo "Done."

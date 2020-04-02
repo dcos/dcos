@@ -1,0 +1,12 @@
+{
+  "sources": {
+    "openssl": {
+      "kind": "url",
+      "url": "https://downloads.mesosphere.com/Win64OpenSSL/Win64OpenSSL-1_1_1e.exe",
+      "sha1": "b0b2fa45fd4e4ab6b502495bd2d706b570196911"
+    }
+  },
+  "environment": {
+  },
+  "state_directory": true
+}

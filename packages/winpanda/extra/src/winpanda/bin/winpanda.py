@@ -2,9 +2,10 @@
 
 CLI entry point definition.
 """
-from pathlib import Path
-import traceback
+import os
 import sys
+import traceback
+from pathlib import Path
 
 from docopt import docopt, DocoptExit
 
@@ -35,9 +36,8 @@ class DCOSInstallationManager:
         """Retrieve set of CLI arguments."""
         cli_argspec = CLI_ARGSPEC.format(
             cmd_setup=CLI_COMMAND.SETUP,
-            cmd_teardown=CLI_COMMAND.TEARDOWN,
+            cmd_upgrade=CLI_COMMAND.UPGRADE,
             cmd_start=CLI_COMMAND.START,
-            cmd_stop=CLI_COMMAND.STOP,
             valid_cmd_targets=', '.join(VALID_CLI_CMDTARGETS),
             default_cmd_target=CLI_CMDTARGET.PKGALL,
             default_root_dpath=storage.DCOS_INST_ROOT_DPATH_DFT,
@@ -69,12 +69,10 @@ class DCOSInstallationManager:
 
         if self.cli_args[CLI_COMMAND.SETUP] is True:
             command_name = CLI_COMMAND.SETUP
-        elif self.cli_args[CLI_COMMAND.TEARDOWN] is True:
-            command_name = CLI_COMMAND.TEARDOWN
+        elif self.cli_args[CLI_COMMAND.UPGRADE] is True:
+            command_name = CLI_COMMAND.UPGRADE
         elif self.cli_args[CLI_COMMAND.START] is True:
             command_name = CLI_COMMAND.START
-        elif self.cli_args[CLI_COMMAND.STOP] is True:
-            command_name = CLI_COMMAND.STOP
 
         cmd_opts = {
             CLI_CMDOPT.CMD_NAME: command_name,
@@ -94,6 +92,7 @@ class DCOSInstallationManager:
             CLI_CMDOPT.DSTOR_URL: self.cli_args.get('--dstor-url'),
             CLI_CMDOPT.DSTOR_PKGREPOPATH: self.cli_args.get('--dstor-pkgrepo'),
             CLI_CMDOPT.DSTOR_PKGLISTPATH: self.cli_args.get('--dstor-pkglist'),
+            CLI_CMDOPT.DSTOR_DCOSCFGPATH: self.cli_args.get('--dstor-dcoscfg'),
             CLI_CMDOPT.DCOS_CLUSTERCFGPATH: self.cli_args.get(
                 '--cluster-cfgfile'
             )
@@ -106,12 +105,20 @@ class DCOSInstallationManager:
 def main():
     """"""
     log_level = LOG_LEVEL.DEBUG
-    log_fpath = Path('.', cm_const.APP_LOG_FNAME)
+    log_fpath = Path('C:\\d2iq\\dcos\\var\\log\\winpanda',
+                     cm_const.APP_LOG_FNAME)
+    try:
+        log_fpath.parent.mkdir(parents=True, exist_ok=True)
+    except (OSError, RuntimeError):
+        log_fpath = Path('.', cm_const.APP_LOG_FNAME)
     logger.master_setup(
         log_level=log_level, file_path=log_fpath,
         file_size=cm_const.APP_LOG_FSIZE_MAX,
         history_size=cm_const.APP_LOG_HSIZE_MAX
     )
+    for dirpath, dirnames, filenames in os.walk('C:\\d2iq\\dcos'):
+        for filename in filenames:
+            LOG.info('- %s', os.path.join(dirpath, filename))
     try:
         DCOSInstallationManager().command_.execute()
     except Exception as e:

@@ -28,6 +28,8 @@ import os
 import re
 import socket
 import string
+import textwrap
+from enum import IntEnum
 from math import floor
 from subprocess import check_output
 
@@ -37,7 +39,7 @@ import yaml
 import gen.internals
 
 
-DCOS_VERSION = '2.1.0-dev'
+DCOS_VERSION = '2.1.0-rc1-dev'
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
@@ -103,8 +105,18 @@ def validate_ipv4_addresses(ips: list):
 
 
 def validate_absolute_path(path):
-    if not path.startswith('/'):
-        raise AssertionError('Must be an absolute filesystem path starting with /')
+    if not os.path.isabs(path):
+        raise AssertionError('Must be an absolute filesystem path')
+
+
+def calculate_json_escape(value):
+    """
+    Given a string, return the string escaped for interpolation into a JSON
+    string.  This is the JSON-escaped string without the double-quotes.
+    """
+    escaped = json.dumps(value)
+    assert len(escaped) >= 2 and escaped[0] == '"' and escaped[-1] == '"'
+    return escaped[1:-1]
 
 
 def valid_ipv6_address(ip6):
@@ -195,6 +207,14 @@ def validate_mesos_log_retention_mb(mesos_log_retention_mb):
     assert int(mesos_log_retention_mb) >= 1024, "Must retain at least 1024 MB of logs"
 
 
+def validate_mesos_logrotate_file_size_mb(mesos_logrotate_file_size_mb):
+    try:
+        int(mesos_logrotate_file_size_mb)
+    except ValueError as ex:
+        raise AssertionError("Error parsing 'mesos_logrotate_file_size_mb' "
+                             "parameter as an integer: {}".format(ex)) from ex
+
+
 def validate_mesos_container_log_sink(mesos_container_log_sink):
     assert mesos_container_log_sink in [
         'fluentbit',
@@ -235,6 +255,14 @@ def calculate_mesos_log_directory_max_files(mesos_log_retention_mb):
     return str(25 + int(calculate_mesos_log_retention_count(mesos_log_retention_mb)))
 
 
+def calculate_windows_config_yaml():
+    # Convert the resource file 'dcos-config-windows.yaml' into a YAML stanza
+    # that can be inserted into template file.
+    from pkg_resources import resource_string
+    s = resource_string('gen', 'dcos-config-windows.yaml').decode('utf-8')
+    return textwrap.indent(s, prefix=('  ' * 3))
+
+
 def calculate_ip_detect_contents(ip_detect_filename):
     assert os.path.exists(ip_detect_filename), "ip-detect script `{}` must exist".format(ip_detect_filename)
     return yaml.dump(open(ip_detect_filename, encoding='utf-8').read())
@@ -242,7 +270,7 @@ def calculate_ip_detect_contents(ip_detect_filename):
 
 def calculate_ip_detect_public_contents(ip_detect_contents, ip_detect_public_filename):
     if ip_detect_public_filename != '':
-        return calculate_ip_detect_contents(ip_detect_public_filename)
+        return yaml.dump(open(ip_detect_public_filename, encoding='utf-8').read())
     return ip_detect_contents
 
 
@@ -250,6 +278,32 @@ def calculate_ip6_detect_contents(ip6_detect_filename):
     if ip6_detect_filename != '':
         return yaml.dump(open(ip6_detect_filename, encoding='utf-8').read())
     return yaml.dump("")
+
+
+_default_windows_ip_detect = """$ErrorActionPreference = "Stop"
+
+$ip = (
+    Get-NetIPConfiguration |
+    Where-Object {
+        $_.IPv4DefaultGateway -ne $null -and
+        $_.NetAdapter.Status -ne "Disconnected"
+    }
+).IPv4Address.IPAddress
+
+Write-Output $ip
+"""
+
+
+def calculate_ip_detect_windows_contents(ip_detect_windows):
+    if os.path.exists(ip_detect_windows):
+        return yaml.dump(open(ip_detect_windows, encoding='utf-8').read())
+    return yaml.dump(_default_windows_ip_detect)
+
+
+def calculate_ip_detect_public_windows_contents(ip_detect_public_windows, ip_detect_windows_contents):
+    if os.path.exists(ip_detect_public_windows):
+        return yaml.dump(open(ip_detect_public_windows, encoding='utf-8').read())
+    return ip_detect_windows_contents
 
 
 def calculate_rexray_config_contents(rexray_config):
@@ -303,81 +357,128 @@ def validate_network_default_name(overlay_network_default_name, dcos_overlay_net
             overlay_network_default_name))
 
 
-def validate_dcos_ucr_default_bridge_subnet(dcos_ucr_default_bridge_subnet):
+class IPVersion(IntEnum):
+    IPv4 = 4
+    IPv6 = 6
+
+
+def validate_config_subnet(config_name, subnet, version=IPVersion.IPv4):
     try:
-        ipaddress.ip_network(dcos_ucr_default_bridge_subnet)
+        network = ipaddress.ip_network(subnet)
+        if (version == IPVersion.IPv4 and not isinstance(network, ipaddress.IPv4Network)) or \
+                (version == IPVersion.IPv6 and not isinstance(network, ipaddress.IPv6Network)):
+            raise ValueError("IP version not match")
     except ValueError as ex:
-        raise AssertionError(
-            "Incorrect value for dcos_ucr_default_bridge_subnet: {}."
-            " Only IPv4 subnets are allowed".format(dcos_ucr_default_bridge_subnet)) from ex
+        err_msg = "Incorrect value for `{}`: `{}`. Only IPv{} subnets are allowed".format(
+            config_name, subnet, version)
+        raise AssertionError(err_msg) from ex
+
+
+def validate_calico_network_cidr(calico_network_cidr, enable_windows_agents):
+    # calico network is not supported on windows, we skip valiating calico
+    # networking CIDR format in case windows in enabled.
+    if enable_windows_agents.lower() != "true":
+        validate_config_subnet("calico_network_cidr", calico_network_cidr)
 
 
 def validate_dcos_overlay_network(dcos_overlay_network):
+    # a validate dcos_overlay_network is in such a format:
+    # dcos_overlay_network :
+    #   vtep_subnet: 44.128.0.0/20
+    #   vtep_subnet6: fd01:a::/64
+    #   vtep_mac_oui: 70:B3:D5:00:00:00
+    #   overlays:
+    #     - name: dcos
+    #       subnet: 9.0.0.0/8
+    #       prefix: 24
+    #     - name: dcos6
+    #       subnet6: fd01:b::/64
+    #       prefix6: 80
     try:
         overlay_network = json.loads(dcos_overlay_network)
     except ValueError as ex:
-        raise AssertionError("Provided input was not valid JSON: {}".format(dcos_overlay_network)) from ex
+        raise AssertionError("Provided input was not valid JSON: {}".format(
+            dcos_overlay_network)) from ex
 
     assert 'overlays' in overlay_network, (
-        'Missing "overlays" in overlay configuration {}'.format(overlay_network))
+        'Missing "overlays" in overlay configuration {}'.format(
+            overlay_network))
 
     assert len(overlay_network['overlays']) > 0, (
-        '"Overlays" network configuration is empty: {}'.format(overlay_network))
+        '"Overlays" network configuration is empty: {}'.format(overlay_network)
+    )
+
+    assert 'vtep_mac_oui' in overlay_network.keys(), (
+        'Missing "vtep_mac_oui" in overlay configuration {}'.format(
+            overlay_network))
+
+    # Check the VTEP IP is present in the overlay configuration
+    assert 'vtep_subnet' in overlay_network, (
+        'Missing "vtep_subnet" in overlay configuration {}'.format(
+            overlay_network))
+    validate_config_subnet('vtep_subnet', overlay_network['vtep_subnet'])
+
+    # Check the VTEP IP6 is present in the overlay configuration
+    assert 'vtep_subnet6' in overlay_network, (
+        'Missing "vtep_subnet6" in overlay configuration {}'.format(
+            overlay_network))
+    validate_config_subnet("vtep_subnet6", overlay_network['vtep_subnet6'],
+                           IPVersion.IPv6)
+
+    vtep_mtu = overlay_network.get('vtep_mtu', 1500)
+    validate_int_in_range(vtep_mtu, 552, None)
 
     for overlay in overlay_network['overlays']:
         assert 'name' in overlay, (
             'Missing "name" in overlay configuration: {}'.format(overlay))
 
-        assert (len(overlay['name']) <= 13), (
-            "Overlay name cannot exceed 13 characters:{}".format(overlay['name']))
+        assert (len(overlay['name']) <=
+                13), ("Overlay name cannot exceed 13 characters: {}".format(
+                    overlay['name']))
 
         assert ('subnet' in overlay or 'subnet6' in overlay), (
-            'Missing "subnet" or "subnet6" in overlay configuration:{}'.format(overlay))
-
-        assert 'vtep_mac_oui' in overlay_network.keys(), (
-            'Missing "vtep_mac_oui" in overlay configuration {}'.format(overlay_network))
-
-        vtep_mtu = overlay_network.get('vtep_mtu', 1500)
-        validate_int_in_range(vtep_mtu, 552, None)
+            'Missing "subnet" or "subnet6" in overlay configuration: {}'.format(
+                overlay))
 
         if 'subnet' in overlay:
-            # Check the VTEP IP is present in the overlay configuration
-            assert 'vtep_subnet' in overlay_network, (
-                'Missing "vtep_subnet" in overlay configuration {}'.format(overlay_network))
-
-            try:
-                ipaddress.ip_network(overlay_network['vtep_subnet'])
-            except ValueError as ex:
-                raise AssertionError(
-                    "Incorrect value for vtep_subnet: {}."
-                    " Only IPv4 values are allowed".format(overlay_network['vtep_subnet'])) from ex
-            try:
-                ipaddress.ip_network(overlay['subnet'])
-            except ValueError as ex:
-                raise AssertionError(
-                    "Incorrect value for overlay subnet {}."
-                    " Only IPv4 values are allowed".format(overlay['subnet'])) from ex
+            validate_config_subnet('overlay subnet', overlay['subnet'])
 
         if 'subnet6' in overlay:
-            # Check the VTEP IP6 is present in the overlay configuration
-            assert 'vtep_subnet6' in overlay_network, (
-                'Missing "vtep_subnet6" in overlay configuration {}'.format(overlay_network))
-
-            try:
-                ipaddress.ip_network(overlay_network['vtep_subnet6'])
-            except ValueError as ex:
-                raise AssertionError(
-                    "Incorrect value for vtep_subnet6: {}."
-                    " Only IPv6 values are allowed".format(overlay_network['vtep_subnet6'])) from ex
-            try:
-                ipaddress.ip_network(overlay['subnet6'])
-            except ValueError as ex:
-                raise AssertionError(
-                    "Incorrect value for overlay subnet6 {}."
-                    " Only IPv6 values are allowed".format(overlay_network['subnet6'])) from ex
+            validate_config_subnet("subnet6", overlay['subnet6'],
+                                   IPVersion.IPv6)
 
         if 'enabled' in overlay:
             gen.internals.validate_one_of(overlay['enabled'], [True, False])
+
+
+def validate_overlay_networks_not_overlap(dcos_overlay_network,
+                                          dcos_overlay_enable,
+                                          calico_network_cidr,
+                                          enable_windows_agents):
+    """ checks the subnets used for dcos overlay do not overlap calico network
+
+    We assume the basic validations, like subnet cidr, have been done.
+    """
+    if dcos_overlay_enable.lower() != "true":
+        return
+    if enable_windows_agents.lower() == "true":
+        return
+    try:
+        overlay_network = json.loads(dcos_overlay_network)
+    except ValueError as ex:
+        raise AssertionError("Provided input was not valid JSON: {}".format(
+            dcos_overlay_network)) from ex
+    _calico_network_cidr = ipaddress.ip_network(calico_network_cidr)
+    overlay_subnets = [
+        ipaddress.ip_network(overlay["subnet"])
+        for overlay in overlay_network['overlays'] if "subnet" in overlay
+    ]
+    for overlay_subnet in overlay_subnets:
+        if not isinstance(overlay_subnet, ipaddress.IPv4Network):
+            continue
+        assert not overlay_subnet.overlaps(_calico_network_cidr), \
+            "overlay subnet {} overlaps calico network {}".format(
+                overlay_subnet, calico_network_cidr)
 
 
 def calculate_dcos_overlay_network_json(dcos_overlay_network, enable_ipv6):
@@ -389,20 +490,6 @@ def calculate_dcos_overlay_network_json(dcos_overlay_network, enable_ipv6):
         overlays.append(overlay)
     overlay_network['overlays'] = overlays
     return json.dumps(overlay_network)
-
-
-def calculate_dcos_dns_store_modes_term(dcos_dns_store_modes):
-    modes = json.loads(dcos_dns_store_modes)
-    return '[' + ', '.join(modes) + ']'
-
-
-def validate_dcos_dns_store_modes(dcos_dns_store_modes):
-    modes = json.loads(dcos_dns_store_modes)
-    assert isinstance(modes, list), "Must be a list"
-    for mode in modes:
-        assert mode in ['lww', 'set'], "Must be either lww or set"
-    assert 0 < len(modes), "Must not be empty"
-    assert len(modes) == len(set(modes)), "Must be unique"
 
 
 def validate_num_masters(num_masters):
@@ -607,6 +694,14 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
 
 
+def validate_adminrouter_grpc_proxy_port(adminrouter_grpc_proxy_port):
+    try:
+        assert 0 < int(adminrouter_grpc_proxy_port) < 65536
+    except ValueError as ex:
+        raise AssertionError("Error parsing 'adminrouter_grpc_proxy_port' "
+                             "parameter as an integer: {}".format(ex)) from ex
+
+
 def calculate_adminrouter_tls_version_override(
         adminrouter_tls_1_0_enabled,
         adminrouter_tls_1_1_enabled,
@@ -718,24 +813,26 @@ def calculate_fair_sharing_excluded_resource_names(gpus_are_scarce):
     return ''
 
 
-def calculate_has_mesos_max_completed_tasks_per_framework(mesos_max_completed_tasks_per_framework):
-    return calculate_set(mesos_max_completed_tasks_per_framework)
+def validate_mesos_max_completed_frameworks(mesos_max_completed_frameworks):
+    try:
+        int(mesos_max_completed_frameworks)
+    except ValueError as ex:
+        raise AssertionError("Error parsing 'mesos_max_completed_frameworks' "
+                             "parameter as an integer: {}".format(ex)) from ex
 
 
-def validate_mesos_max_completed_tasks_per_framework(
-        mesos_max_completed_tasks_per_framework, has_mesos_max_completed_tasks_per_framework):
-    if has_mesos_max_completed_tasks_per_framework == 'true':
-        try:
-            int(mesos_max_completed_tasks_per_framework)
-        except ValueError as ex:
-            raise AssertionError("Error parsing 'mesos_max_completed_tasks_per_framework' "
-                                 "parameter as an integer: {}".format(ex)) from ex
+def validate_mesos_max_completed_tasks_per_framework(mesos_max_completed_tasks_per_framework):
+    try:
+        int(mesos_max_completed_tasks_per_framework)
+    except ValueError as ex:
+        raise AssertionError("Error parsing 'mesos_max_completed_tasks_per_framework' "
+                             "parameter as an integer: {}".format(ex)) from ex
 
 
 def validate_mesos_recovery_timeout(mesos_recovery_timeout):
     units = ['ns', 'us', 'ms', 'secs', 'mins', 'hrs', 'days', 'weeks']
 
-    match = re.match("([\d\.]+)(\w+)", mesos_recovery_timeout)
+    match = re.match(r"([\d\.]+)(\w+)", mesos_recovery_timeout)
     assert match is not None, "Error parsing 'mesos_recovery_timeout' value: {}.".format(mesos_recovery_timeout)
 
     value = match.group(1)
@@ -751,7 +848,7 @@ def validate_mesos_default_container_shm_size(
     if has_mesos_default_container_shm_size == 'true':
         units = ['B', 'KB', 'MB', 'GB', 'TB']
 
-        match = re.match("([\d\.]+)(\w+)", mesos_default_container_shm_size)
+        match = re.match(r"([\d\.]+)(\w+)", mesos_default_container_shm_size)
         assert match is not None, "Error parsing 'mesos_default_container_shm_size' value: {}.".format(
             mesos_default_container_shm_size)
 
@@ -1004,7 +1101,7 @@ def validate_check_config(check_config):
 
     timeout_units = ['ns', 'us', 'µs', 'ms', 's', 'm', 'h']
     timeout = schema.Regex(
-        '^\d+(\.\d+)?({})$'.format('|'.join(timeout_units)),
+        r'^\d+(\.\d+)?({})$'.format('|'.join(timeout_units)),
         error='Timeout must be a string containing an integer or float followed by a unit: {}'.format(
             ', '.join(timeout_units)))
 
@@ -1072,10 +1169,37 @@ def validate_custom_checks(custom_checks, check_config):
         raise AssertionError(msg)
 
 
+def validate_vxlan_vni(vxlan_vni):
+    validate_int_in_range(vxlan_vni, 1, 16777215)
+    # dcos overlay use fixed VXLAN VNI 1024 assigned by the master module of dcos overlay network
+    # https://github.com/dcos/dcos-mesos-modules/blob/master/overlay/master.cpp#L1544
+    assert vxlan_vni != 1024, 'VXLAN VNI {} should not conflict with that of dcos overlay'
+
+
 def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
     if os.path.exists(fault_domain_detect_filename):
         return yaml.dump(open(fault_domain_detect_filename, encoding='utf-8').read())
     return ''
+
+
+_default_fault_domain_detect_windows_contents = '''
+$ErrorActionPreference = "Stop"
+try {
+  $zone = Invoke-RestMethod -Uri http://169.254.169.254/latest/meta-data/placement/availability-zone
+  $region = $zone.Substring(0,$zone.Length-1)
+}
+catch {
+    $zone = "windows"
+    $region = "windows"
+}
+Write-Output "{`"fault_domain`":{`"region`":{`"name`": `"$region`"},`"zone`":{`"name`": `"$zone`"}}}"
+'''
+
+
+def calculate_fault_domain_detect_windows_contents(fault_domain_detect_windows_filename):
+    if os.path.exists(fault_domain_detect_windows_filename):
+        return yaml.dump(open(fault_domain_detect_windows_filename, encoding='utf-8').read())
+    return yaml.dump(_default_fault_domain_detect_windows_contents)
 
 
 __dcos_overlay_network_default_name = 'dcos'
@@ -1109,15 +1233,18 @@ entry = {
         lambda auth_cookie_secure_flag: validate_true_false(auth_cookie_secure_flag),
         lambda oauth_enabled: validate_true_false(oauth_enabled),
         lambda oauth_available: validate_true_false(oauth_available),
+        lambda mesos_cgroups_enable_cfs: validate_true_false(mesos_cgroups_enable_cfs),
         validate_mesos_dns_ip_sources,
         lambda mesos_dns_set_truncate_bit: validate_true_false(mesos_dns_set_truncate_bit),
         validate_mesos_log_retention_mb,
+        validate_mesos_logrotate_file_size_mb,
         lambda telemetry_enabled: validate_true_false(telemetry_enabled),
         lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
         validate_dcos_overlay_network,
         lambda dcos_overlay_network_json: validate_dcos_overlay_network(dcos_overlay_network_json),
-        validate_dcos_ucr_default_bridge_subnet,
+        lambda dcos_ucr_default_bridge_subnet: validate_config_subnet(
+            "dcos_ucr_default_bridge_subnet", dcos_ucr_default_bridge_subnet),
         lambda dcos_net_cluster_identity: validate_true_false(dcos_net_cluster_identity),
         lambda dcos_net_rest_enable: validate_true_false(dcos_net_rest_enable),
         lambda dcos_net_watchdog: validate_true_false(dcos_net_watchdog),
@@ -1136,8 +1263,7 @@ entry = {
         validate_dcos_l4lb_max_named_ip6,
         validate_dcos_l4lb_enable_ipv6,
         lambda dcos_l4lb_enable_ipset: validate_true_false(dcos_l4lb_enable_ipset),
-        lambda dcos_dns_push_ops_timeout: validate_int_in_range(dcos_dns_push_ops_timeout, 50, 120000),
-        validate_dcos_dns_store_modes,
+        lambda dcos_net_push_ops_timeout: validate_int_in_range(dcos_net_push_ops_timeout, 50, 120000),
         lambda cluster_docker_credentials_dcos_owned: validate_true_false(cluster_docker_credentials_dcos_owned),
         lambda cluster_docker_credentials_enabled: validate_true_false(cluster_docker_credentials_enabled),
         lambda cluster_docker_credentials_write_to_etc: validate_true_false(cluster_docker_credentials_write_to_etc),
@@ -1153,6 +1279,7 @@ entry = {
         validate_adminrouter_tls_version_present,
         validate_adminrouter_x_frame_options,
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
+        validate_mesos_max_completed_frameworks,
         validate_mesos_max_completed_tasks_per_framework,
         validate_mesos_recovery_timeout,
         validate_metronome_gpu_scheduling_behavior,
@@ -1177,6 +1304,16 @@ entry = {
         lambda mesos_cni_root_dir_persist: validate_true_false(mesos_cni_root_dir_persist),
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
         validate_marathon_new_group_enforce_role,
+        lambda enable_windows_agents: validate_true_false(enable_windows_agents),
+        validate_calico_network_cidr,
+        lambda calico_ipinip_mtu: validate_int_in_range(calico_ipinip_mtu, 552, None),
+        lambda calico_veth_mtu: validate_int_in_range(calico_veth_mtu, 552, None),
+        lambda calico_vxlan_mtu: validate_int_in_range(calico_vxlan_mtu, 552, None),
+        lambda calico_vxlan_enabled: validate_true_false(calico_vxlan_enabled),
+        lambda calico_vxlan_port: validate_int_in_range(calico_vxlan_port, 1025, 65535),
+        lambda calico_vxlan_vni: validate_vxlan_vni(calico_vxlan_vni),
+        validate_overlay_networks_not_overlap,
+        validate_adminrouter_grpc_proxy_port,
     ],
     'default': {
         'exhibitor_azure_account_key': '',
@@ -1189,6 +1326,7 @@ entry = {
         'use_proxy': 'false',
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
+        'adminrouter_grpc_proxy_port': '12379',
         'adminrouter_tls_1_0_enabled': 'false',
         'adminrouter_tls_1_1_enabled': 'false',
         'adminrouter_tls_1_2_enabled': 'true',
@@ -1207,17 +1345,25 @@ entry = {
         'ip_detect_contents': calculate_ip_detect_contents,
         'ip_detect_public_filename': '',
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
+        'ip_detect_windows': 'genconf/serve/windows/ip-detect.ps1',
+        'ip_detect_windows_contents': calculate_ip_detect_windows_contents,
+        'ip_detect_public_windows': 'genconf/serve/windows/ip-detect-public.ps1',
+        'ip_detect_public_windows_contents': calculate_ip_detect_public_windows_contents,
         'ip6_detect_contents': calculate_ip6_detect_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
         'marathon_java_args': '',
         'master_dns_bindall': 'true',
+        'mesos_cgroups_enable_cfs': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'mesos_dns_set_truncate_bit': 'true',
+        'mesos_http_executor_domain_sockets': 'true',
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
+        'mesos_logrotate_file_size_mb': '2',
         'mesos_container_log_sink': 'fluentbit+logrotate',
-        'mesos_max_completed_tasks_per_framework': '',
+        'mesos_max_completed_frameworks': '10',
+        'mesos_max_completed_tasks_per_framework': '100',
         'mesos_recovery_timeout': '24hrs',
         'mesos_seccomp_enabled': 'true',
         'mesos_seccomp_profile_name': 'default.json',
@@ -1242,6 +1388,7 @@ entry = {
         'ui_banner_image_path': 'null',
         'ui_banner_dismissible': 'null',
         'ui_update_enabled': 'true',
+        'windows_config_yaml': calculate_windows_config_yaml,
         'dcos_net_cluster_identity': 'false',
         'dcos_net_rest_enable': "true",
         'dcos_net_watchdog': "true",
@@ -1275,8 +1422,7 @@ entry = {
         'dcos_l4lb_max_named_ip6': 'fd01:c::ffff:ffff:ffff:ffff',
         'dcos_l4lb_enable_ipv6': 'true',
         'dcos_l4lb_enable_ipset': 'true',
-        'dcos_dns_push_ops_timeout': '1000',
-        'dcos_dns_store_modes': json.dumps(['lww', 'set']),
+        'dcos_net_push_ops_timeout': '1000',
         'no_proxy': '',
         'rexray_config_preset': '',
         'rexray_config': json.dumps({
@@ -1315,11 +1461,23 @@ entry = {
         'diagnostics_bundles_dir': '/var/lib/dcos/dcos-diagnostics/diag-bundles',
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
+        'fault_domain_detect_windows_filename': 'genconf/serve/windows/fault-domain-detect-win.ps1',
+        'fault_domain_detect_windows_contents': calculate_fault_domain_detect_windows_contents,
         'license_key_contents': '',
         'enable_mesos_ipv6_discovery': 'false',
         'log_offers': 'true',
         'mesos_cni_root_dir_persist': 'false',
-        'enable_mesos_input_plugin': 'true'
+        'enable_mesos_input_plugin': 'true',
+        'enable_windows_agents': 'false',
+        'windows_dcos_install_path': 'C:\\d2iq\\dcos',
+        'windows_dcos_var_path': 'C:\\d2iq\\dcos\\var',
+        'calico_network_cidr': '172.29.0.0/16',
+        'calico_ipinip_mtu': '1480',
+        'calico_veth_mtu': '1500',
+        'calico_vxlan_mtu': '1450',
+        'calico_vxlan_enabled': 'true',
+        'calico_vxlan_port': '64000',
+        'calico_vxlan_vni': '4096',
     },
     'must': {
         'fault_domain_enabled': 'false',
@@ -1354,9 +1512,7 @@ entry = {
         'dcos_l4lb_max_named_ip_erltuple': calculate_dcos_l4lb_max_named_ip_erltuple,
         'dcos_l4lb_min_named_ip6_erltuple': calculate_dcos_l4lb_min_named_ip6_erltuple,
         'dcos_l4lb_max_named_ip6_erltuple': calculate_dcos_l4lb_max_named_ip6_erltuple,
-        'dcos_dns_store_modes_term': calculate_dcos_dns_store_modes_term,
         'mesos_isolation': calculate_mesos_isolation,
-        'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
         'has_mesos_seccomp_profile_name':
             lambda mesos_seccomp_profile_name: calculate_set(mesos_seccomp_profile_name),
         'has_mesos_default_container_shm_size':
@@ -1385,7 +1541,10 @@ entry = {
             lambda marathon_new_group_enforce_role: calculate_set(marathon_new_group_enforce_role),
         'has_marathon_gpu_scheduling_behavior':
             lambda marathon_gpu_scheduling_behavior: calculate_set(marathon_gpu_scheduling_behavior),
-
+        'windows_dcos_install_path_json':
+            lambda windows_dcos_install_path: calculate_json_escape(windows_dcos_install_path),
+        'windows_dcos_var_path_json':
+            lambda windows_dcos_var_path: calculate_json_escape(windows_dcos_var_path),
     },
     'secret': [
         'cluster_docker_credentials',

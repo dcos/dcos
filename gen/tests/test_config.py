@@ -8,7 +8,8 @@ import yaml
 import gen
 import pkgpanda.util
 from gen.exceptions import ExhibitorTLSBootstrapError
-from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_error_multikey, validate_success
+from gen.tests.utils import make_arguments, true_false_msg, \
+    validate_error, validate_error_multikey, validate_success
 
 
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
@@ -869,24 +870,24 @@ def test_validate_mesos_work_dir():
     validate_error(
         {'mesos_master_work_dir': 'foo'},
         'mesos_master_work_dir',
-        'Must be an absolute filesystem path starting with /',
+        'Must be an absolute filesystem path',
     )
     validate_error(
         {'mesos_agent_work_dir': 'foo'},
         'mesos_agent_work_dir',
-        'Must be an absolute filesystem path starting with /',
+        'Must be an absolute filesystem path',
     )
 
     # Empty work dir.
     validate_error(
         {'mesos_master_work_dir': ''},
         'mesos_master_work_dir',
-        'Must be an absolute filesystem path starting with /',
+        'Must be an absolute filesystem path',
     )
     validate_error(
         {'mesos_agent_work_dir': ''},
         'mesos_agent_work_dir',
-        'Must be an absolute filesystem path starting with /',
+        'Must be an absolute filesystem path',
     )
 
 

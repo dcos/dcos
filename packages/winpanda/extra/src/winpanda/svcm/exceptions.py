@@ -43,3 +43,23 @@ class ServiceConfigError(ServiceError):
 class ServiceSetupError(ServiceError):
     """Service setup error."""
     pass
+
+
+class ServiceWipeError(ServiceError):
+    """Service wipe off error."""
+    pass
+
+
+class ServiceStopError(ServiceError):
+    """Service stop error."""
+    pass
+
+
+class ServiceTransientError(ServiceError):
+    """Service intermittent error."""
+    pass
+
+
+class ServicePersistentError(ServiceError):
+    """Service steady error."""
+    pass

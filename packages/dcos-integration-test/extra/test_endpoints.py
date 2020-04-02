@@ -38,6 +38,7 @@ def test_if_mesos_is_up(dcos_api_session):
     assert '<title>Mesos</title>' in r.text
 
 
+@pytest.mark.supportedwindows
 def test_if_all_mesos_slaves_have_registered(dcos_api_session):
     r = dcos_api_session.get('/mesos/master/slaves')
     assert r.status_code == 200

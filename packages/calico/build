@@ -1,0 +1,69 @@
+#!/bin/bash
+set -x
+
+# calico container is missing 'envsubst'
+apt-get update && apt-get install -y gettext-base curl
+
+# create a go build environment
+curl https://dl.google.com/go/go1.13.3.linux-amd64.tar.gz | tar -zvx -C /usr/local
+export GOROOT=/usr/local/go
+export GOPATH=/tmp/go
+export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+mkdir -p $GOPATH
+
+# build the cni plugin wrapper
+# NOTE(icharala): This is a temporary fix for D2IQ-62219
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags -w -o $PKG_PATH/cni/calico /pkg/extra/calico-cni-wrapper.go
+
+# copy calico CNI plugin to CNI plugin directory
+mkdir -p $PKG_PATH/cni
+cp /pkg/src/calico/calico-amd64 $PKG_PATH/cni/calico-impl
+chmod +x $PKG_PATH/cni/calico
+chmod +x $PKG_PATH/cni/calico-impl
+cp /pkg/src/calico-ipam/calico-ipam-amd64 $PKG_PATH/cni/calico-ipam
+chmod +x $PKG_PATH/cni/calico-ipam
+
+mkdir -p $PKG_PATH/bin
+cp /pkg/src/calicoctl/calicoctl-linux-amd64 $PKG_PATH/bin/calicoctl
+chmod +x $PKG_PATH/bin/calicoctl
+
+# copy the default calico profile to the package directory
+mkdir -p $PKG_PATH/etc
+cp /pkg/extra/profile.yaml $PKG_PATH/etc/profile.yaml
+
+# copy the launch scripts to the package bin directory
+cp /pkg/extra/start-calico-felix.sh $PKG_PATH/bin/start-calico-felix.sh
+chmod +x $PKG_PATH/bin/start-calico-felix.sh
+cp /pkg/extra/start-calico-libnetwork-plugin.sh $PKG_PATH/bin/start-calico-libnetwork-plugin.sh
+chmod +x $PKG_PATH/bin/start-calico-libnetwork-plugin.sh
+
+# copy binaries from calico-node docker container
+cp /bin/calico-node $PKG_PATH/bin/calico-node
+chmod +x $PKG_PATH/bin/calico-node
+cp /bin/bird $PKG_PATH/bin/bird
+# birdcl can be used for debugging routes, protocols managed by bird
+cp /bin/birdcl $PKG_PATH/bin/birdcl
+chmod +x $PKG_PATH/bin/bird
+chmod +x $PKG_PATH/bin/birdcl
+cp -r /etc/calico/confd $PKG_PATH/confd
+
+# calico components work on both masters and slaves
+for comp in bird confd felix; do
+    tmp="$PKG_PATH/dcos.target.wants/dcos-calico-${comp}.service"
+    mkdir -vp "$(dirname "$tmp")"
+    cp "/pkg/extra/dcos-calico-${comp}.service" "${tmp}"
+done
+
+# copy calico libnetwork scripts and plugins
+cp /pkg/extra/create-calico-docker-network.py $PKG_PATH/bin/create-calico-docker-network.py
+chmod +x $PKG_PATH/bin/create-calico-docker-network.py
+cp /pkg/src/calico-libnetwork-plugin/libnetwork-plugin-amd64 $PKG_PATH/bin/calico-libnetwork-plugin
+chmod +x $PKG_PATH/bin/calico-libnetwork-plugin
+
+# calico-libnetwork service works only on slaves
+for at in slave slave_public; do
+    tmp="$PKG_PATH/dcos.target.wants_${at}/dcos-calico-libnetwork-plugin.service"
+    mkdir -vp "$(dirname "$tmp")"
+    envsubst '$PKG_PATH' < "/pkg/extra/dcos-calico-libnetwork-plugin.service" > "$tmp"
+done
+

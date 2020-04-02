@@ -41,7 +41,15 @@ RUN apt-get -qq update && apt-get -y install \
   wget \
   xutils-dev \
   xz-utils \
-  zlib1g-dev
+  zlib1g-dev \
+  bison \
+  flex \
+  libnfnetlink-dev \
+  libmnl-dev \
+  libnetfilter-conntrack-dev \
+  libnetfilter-cttimeout-dev \
+  libnetfilter-cthelper0-dev \
+  libnetfilter-queue-dev
 
 RUN ln -sf /usr/bin/cpp-4.8 /usr/bin/cpp && \
   ln -sf /usr/bin/g++-4.8 /usr/bin/g++ && \
@@ -51,9 +59,9 @@ RUN ln -sf /usr/bin/cpp-4.8 /usr/bin/cpp && \
   ln -sf /usr/bin/gcc-ranlib-4.8 /usr/bin/gcc-ranlib && \
   ln -sf /usr/bin/gcov-4.8 /usr/bin/gcov
 
-ENV GOLANG_VERSION 1.13.3
+ENV GOLANG_VERSION 1.14
 ENV GOLANG_DOWNLOAD_URL https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
-ENV GOLANG_DOWNLOAD_SHA256 0804bf02020dceaa8a7d7275ee79f7a142f1996bfd0c39216ccb405f93f994c0
+ENV GOLANG_DOWNLOAD_SHA256 08df79b46b0adf498ea9f320a0f23d6ec59e9003660b4c9c1ce8e5e2c6f823ca
 
 RUN curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
   && echo "$GOLANG_DOWNLOAD_SHA256  golang.tar.gz" | sha256sum -c - \

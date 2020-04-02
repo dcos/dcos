@@ -36,6 +36,11 @@ class RCExtractError(RCError):
     """
 
 
+class RCCreateError(RCError):
+    """Resource creation error.
+    """
+
+
 class RCRemoveError(RCError):
     """Resource removal error.
     """

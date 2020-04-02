@@ -7,9 +7,10 @@ Application CLI specification.
 class CLI_COMMAND:
     """CLI command set."""
     SETUP = 'setup'
-    TEARDOWN = 'teardown'
+    TEARDOWN = 'teardown'  # Not implemented
+    UPGRADE = 'upgrade'
     START = 'start'
-    STOP = 'stop'
+    STOP = 'stop'  # Not implemented
 
 
 class CLI_CMDTARGET:
@@ -37,6 +38,7 @@ class CLI_CMDOPT:
     DSTOR_URL = 'dstor_url'
     DSTOR_PKGREPOPATH = 'dstor_pkgrepo_path'
     DSTOR_PKGLISTPATH = 'dstor_pkglist_path'
+    DSTOR_DCOSCFGPATH = 'dstor_dcoscfg_path'
     DCOS_CLUSTERCFGPATH = 'dcos_clustercfg_path'
 
 
@@ -44,9 +46,8 @@ CLI_ARGSPEC = '''Panda package management for Windows
 
 Usage:
   winpanda {cmd_setup} [options]
-  winpanda {cmd_teardown} [options]
+  winpanda {cmd_upgrade} [options]
   winpanda {cmd_start} [options]
-  winpanda {cmd_stop} [options]
 
 Options:
   --target=<target>                 target operational scope for a command
@@ -75,6 +76,9 @@ Options:
                                     [default: ]
   --dstor-pkglist=<path>            DC/OS distribution storage reference
                                     package list path
+                                    [default: ]
+  --dstor-dcoscfg=<path>            DC/OS distribution storage aggregated DC/OS
+                                    configuration object path
                                     [default: ]
   --cluster-cfgfile=<path>          DC/OS cluster configuration options local
                                     file path

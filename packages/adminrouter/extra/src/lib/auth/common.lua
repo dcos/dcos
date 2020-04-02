@@ -12,7 +12,7 @@ local errorpages_dir_path = os.getenv("AUTH_ERROR_PAGE_DIR_PATH")
 if errorpages_dir_path == nil then
     ngx.log(ngx.WARN, "AUTH_ERROR_PAGE_DIR_PATH not set.")
 else
-    local p = errorpages_dir_path .. "/401.html"
+    local p = util.path_join(errorpages_dir_path, "401.html")
     ngx.log(ngx.NOTICE, "Reading 401 response from `" .. p .. "`.")
     BODY_401_ERROR_RESPONSE = util.get_file_content(p)
     if (BODY_401_ERROR_RESPONSE == nil or BODY_401_ERROR_RESPONSE == '') then
@@ -20,7 +20,7 @@ else
         BODY_401_ERROR_RESPONSE = ''
         ngx.log(ngx.WARN, "401 error response is empty.")
     end
-    local p = errorpages_dir_path .. "/403.html"
+    local p = util.path_join(errorpages_dir_path, "403.html")
     ngx.log(ngx.NOTICE, "Reading 403 response from `" .. p .. "`.")
     BODY_403_ERROR_RESPONSE = util.get_file_content(p)
     if (BODY_403_ERROR_RESPONSE == nil or BODY_403_ERROR_RESPONSE == '') then
@@ -43,6 +43,20 @@ local function exit_403()
     ngx.header["Content-Type"] = "text/html; charset=UTF-8"
     ngx.say(BODY_403_ERROR_RESPONSE)
     return ngx.exit(ngx.HTTP_FORBIDDEN)
+end
+
+-- See the page below for more details on the codes:
+-- https://github.com/grpc/grpc/blob/2c6a7e1f19a899e88d2050a1cb5d05079598e880/doc/http-grpc-status-mapping.md
+-- https://github.com/grpc/grpc/blob/2c6a7e1f19a899e88d2050a1cb5d05079598e880/doc/statuscodes.md
+-- or a shorter version:
+-- https://gist.github.com/hamakn/708b9802ca845eb59f3975dbb3ae2a01
+local function exit_grpc(code, message)
+    ngx.status = ngx.HTTP_OK
+    ngx.header["grpc-status"] = code
+    ngx.header["Content-Length"] = 0
+    ngx.header["Content-Type"] = "application/grpc"
+    ngx.header["grpc-message"] = message
+    return ngx.exit(ngx.HTTP_OK)
 end
 
 local function validate_jwt(auth_token_verification_key)
@@ -166,7 +180,6 @@ local function validate_jwt(auth_token_verification_key)
         return nil, 401
     end
 
-    ngx.log(ngx.NOTICE, "UID from the valid DC/OS authentication token: `".. uid .. "`")
     return uid, nil
 end
 
@@ -174,6 +187,7 @@ end
 local _M = {}
 _M.exit_401 = exit_401
 _M.exit_403 = exit_403
+_M.exit_grpc = exit_grpc
 _M.validate_jwt = validate_jwt
 
 

@@ -10,11 +10,13 @@ cd $OPENRESTY_DIR
     --with-file-aio \
     --with-http_gunzip_module \
     --with-http_gzip_static_module \
+    --with-http_v2_module \
     --without-mail_pop3_module \
     --without-mail_imap_module \
     --without-mail_smtp_module \
     --with-http_ssl_module \
     --with-luajit \
+    --with-luajit-xcflags='-mno-sse4.2' \
     "$@"
 
 make -j${NUM_CORES}

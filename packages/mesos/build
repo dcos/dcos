@@ -64,9 +64,18 @@ systemd_slave="$PKG_PATH"/dcos.target.wants_slave/dcos-mesos-slave.service
 mkdir -p "$(dirname "$systemd_slave")"
 envsubst '$PKG_PATH' < /pkg/extra/dcos-mesos-slave.service > "$systemd_slave"
 
+systemd_slave_socket="$PKG_PATH"/dcos.target.wants_slave/dcos-mesos-slave.socket
+mkdir -p "$(dirname "$systemd_slave_socket")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-mesos-slave.socket > "$systemd_slave_socket"
+
 systemd_slave_public="$PKG_PATH"/dcos.target.wants_slave_public/dcos-mesos-slave-public.service
 mkdir -p "$(dirname "$systemd_slave_public")"
 envsubst '$PKG_PATH' < /pkg/extra/dcos-mesos-slave-public.service > "$systemd_slave_public"
+
+systemd_slave_public_socket="$PKG_PATH"/dcos.target.wants_slave_public/dcos-mesos-slave-public.socket
+mkdir -p "$(dirname "$systemd_slave_public_socket")"
+envsubst '$PKG_PATH' < /pkg/extra/dcos-mesos-slave-public.socket > "$systemd_slave_public_socket"
+
 
 # setup additonal volume service which discovers /dcos/volumeN mounts and creates an optional
 # EnvironmentFile that contains a MESOS_RESOURCES env variable. This MESOS_RESOURCES adds
@@ -83,3 +92,35 @@ chmod +x "$upgrade_cni_script"
 mesos_start_wrapper="$PKG_PATH/bin/start_mesos.sh"
 cp /pkg/extra/start_mesos.sh "$mesos_start_wrapper"
 chmod +x "$mesos_start_wrapper"
+
+
+# Add `protoc` to the path.
+export PATH=$PKG_PATH/bin:$PATH
+
+
+# OSS Mesos Modules
+
+pushd /pkg/src/mesos-modules/
+./bootstrap
+popd
+
+source /opt/mesosphere/environment.export
+
+# Add the 3rdparty directories.
+export CPPFLAGS='-I/opt/mesosphere/active/boost-libs/include -I/opt/mesosphere/lib/mesos/3rdparty/include'
+export CFLAGS=-I/opt/mesosphere/lib/mesos/3rdparty/include
+export LDFLAGS='-L/opt/mesosphere/active/boost-libs/lib -L/opt/mesosphere/lib/mesos/3rdparty/lib'
+
+mkdir -p build
+pushd build
+
+/pkg/src/mesos-modules/configure \
+    --with-mesos-root=/pkg/src/mesos \
+    --with-mesos-build-dir=/pkg/src/mesos/build \
+    --with-openssl=/opt/mesosphere/active/openssl \
+    --with-glog=$PKG_PATH/lib/mesos/3rdparty \
+    --prefix="$PKG_PATH"
+
+make -j$NUM_CORES
+make install
+popd

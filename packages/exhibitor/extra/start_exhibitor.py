@@ -108,7 +108,7 @@ backup-max-store-ms=21600000
 connect-port=2888
 observer-threshold=0
 election-port=3888
-zoo-cfg-extra=tickTime\=2000&initLimit\=10&syncLimit\=5&quorumListenOnAllIPs\=true&maxClientCnxns\=0&autopurge.snapRetainCount\=5&autopurge.purgeInterval\=6
+zoo-cfg-extra=tickTime\\=2000&initLimit\\=10&syncLimit\\=5&quorumListenOnAllIPs\\=true&maxClientCnxns\\=0&autopurge.snapRetainCount\\=5&autopurge.purgeInterval\=6
 auto-manage-instances-settling-period-ms=0
 auto-manage-instances=1
 auto-manage-instances-fixed-ensemble-size={zookeeper_cluster_size}

@@ -17,7 +17,7 @@ def test_error_during_calc(monkeypatch):
     logger.setLevel(logging.DEBUG)
     assert gen.validate({
         'ip_detect_filename': 'not-a-existing-file',
-        'bootstrap_variant': ''
+        'bootstrap_variant': '',
     }, extra_sources=[onprem_source]) == {
         'status': 'errors',
         'errors': {
@@ -53,3 +53,23 @@ def test_error_during_validate(monkeypatch):
         },
         'unset': set()
     }
+
+
+@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
+def test_error_during_validate_calico_network(monkeypatch):
+    monkeypatch.setenv('BOOTSTRAP_ID', 'foobar')
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    err_msg = "'' does not appear to be an IPv4 or IPv6 network"
+    with pytest.raises(ValueError, match=err_msg):
+        gen.validate({
+            'bootstrap_url': '',
+            'bootstrap_variant': '',
+            'ip_detect_contents': '',  # so that ip_detect_filename doesn't get used from onprem_source
+            'ip6_detect_contents': '',
+            'exhibitor_storage_backend': 'static',
+            'master_discovery': 'static',
+            'cluster_name': 'foobar',
+            'master_list': '["127.0.0.1"]',
+            'calico_network_cidr': '',
+        }, extra_sources=[onprem_source])

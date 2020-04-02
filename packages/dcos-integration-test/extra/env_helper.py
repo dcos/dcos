@@ -7,7 +7,7 @@ HELP_MESSAGE = """
 QUICKSTART EXAMPLE
 
   {begin_cmd}ssh-add ~/.ssh/my_aws_key{end_cmd}
-  {begin_cmd}export SSH_USER=centos{end_cmd}
+  {begin_cmd}export DCOS_SSH_USER=centos{end_cmd}
   {begin_cmd}export MASTER_PUBLIC_IP=54.186.5.36{end_cmd}
   {begin_cmd}export WAIT_FOR_HOSTS=false{end_cmd}
   {begin_cmd}pytest -s -k test_root_path_http{end_cmd}
@@ -51,9 +51,11 @@ ALL ENVIRONMENT VARIABLES:
     {begin_color}DCOS_ACS_TOKEN{end_color}
     For DC/OS Open only.
     Obtain this token by setting up your cluster with the dcos-cli like this:
-    {begin_cmd}dcos cluster setup $MASTER_PUBLIC_IP{end_cmd}
+    {begin_cmd}dcos cluster setup http://$MASTER_PUBLIC_IP{end_cmd}
     Then your web browser will open a page and you will see the token.
-    It's also stored in ~/.dcos/clusters/<cluster-uuid>/dcos.toml
+    It's also stored in ~/.dcos/clusters/<cluster-uuid>/dcos.toml and
+    can be accessed via the CLI:
+    {begin_cmd}dcos config show core.dcos_acs_token{end_cmd}
     If you run integration tests before setting this variable, you will
     no longer be able to log into your cluster.
 

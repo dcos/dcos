@@ -1,0 +1,14 @@
+[Unit]
+Description=DC/OS Calico Node (felix): Calico Core component responsible for programming routes and security policy
+
+[Service]
+EnvironmentFile=/opt/mesosphere/environment
+EnvironmentFile=/opt/mesosphere/etc/calico/calico-node.env
+EnvironmentFile=/opt/mesosphere/etc/calico/calico-node-datastore.env
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-calico-felix
+ExecStart=/opt/mesosphere/bin/start-calico-felix.sh
+
+Restart=always
+StartLimitInterval=0
+KillSignal=SIGTERM
+RestartSec=5

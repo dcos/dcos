@@ -111,27 +111,31 @@ local function request(url, accept_404_reply, auth_token)
     -- method takes care of parsing scheme, host, and port from the URL.
     local httpc = http.new()
     httpc:set_timeout(_CONFIG.CACHE_BACKEND_REQUEST_TIMEOUT * 1000)
+    ngx.update_time()
+    local start = ngx.now()
     local res, err = httpc:request_uri(url, {
         method="GET",
         headers=headers,
         ssl_verify=true
     })
+    ngx.update_time()
+    local stop = ngx.now()
 
     if not res then
+        ngx.log(ngx.WARN, "< " .. url .. " " .. string.format("%.3f", stop - start) ": " .. err)
         return nil, err
     end
+
+    ngx.log(
+        ngx.INFO, "< " .. url .. " code=" .. res.status .. 
+            " len=(" .. string.len(res.body) .. ") " .. string.format("%.3f", stop - start)
+    )
 
     if res.status ~= 200 then
         if accept_404_reply and res.status ~= 404 or not accept_404_reply then
             return nil, "invalid response status: " .. res.status
         end
     end
-
-    ngx.log(
-        ngx.NOTICE,
-        "Request url: " .. url .. " " ..
-        "Response Body length: " .. string.len(res.body) .. " bytes."
-        )
 
     return res, nil
 end
@@ -147,7 +151,7 @@ end
 local function fetch_and_store_marathon_apps(auth_token)
     -- Access Marathon through localhost.
     ngx.log(ngx.NOTICE, "Cache Marathon app state")
-    local appsRes, err = request(UPSTREAM_MARATHON .. "/v2/apps?embed=apps.tasks&label=DCOS_SERVICE_NAME",
+    local appsRes, err = request(init.UPSTREAM_MARATHON .. "/v2/apps?embed=apps.tasks&label=DCOS_SERVICE_NAME",
                                  false,
                                  auth_token)
 
@@ -352,7 +356,7 @@ local function fetch_and_store_marathon_apps(auth_token)
     ngx.update_time()
     local time_now = ngx.now()
     if cache_data("svcapps_last_refresh", time_now) then
-        ngx.log(ngx.INFO, "Marathon apps cache has been successfully updated")
+        ngx.log(ngx.INFO, "Updated Marathon apps cache")
     end
 
     return
@@ -362,12 +366,12 @@ function store_leader_data(leader_name, leader_ip)
 
     local mleader
 
-    if HOST_IP == 'unknown' or leader_ip == 'unknown' then
+    if init.HOST_IP == 'unknown' or leader_ip == 'unknown' then
         ngx.log(ngx.ERR,
         "Private IP address of the host is unknown, aborting cache-entry creation for ".. leader_name .. " leader")
         mleader = '{"is_local": "unknown", "leader_ip": null}'
-    elseif leader_ip == HOST_IP then
-        mleader = '{"is_local": "yes", "leader_ip": "'.. HOST_IP ..'"}'
+    elseif leader_ip == init.HOST_IP then
+        mleader = '{"is_local": "yes", "leader_ip": "'.. init.HOST_IP ..'"}'
         ngx.log(ngx.INFO, leader_name .. " leader is local")
     else
         mleader = '{"is_local": "no", "leader_ip": "'.. leader_ip ..'"}'
@@ -383,7 +387,7 @@ function store_leader_data(leader_name, leader_ip)
     ngx.update_time()
     local time_now = ngx.now()
     if cache_data(leader_name .. "_leader_last_refresh", time_now) then
-        ngx.log(ngx.INFO, leader_name .. " leader cache has been successfully updated")
+        ngx.log(ngx.INFO, "Updated " .. leader_name .. " leader cache")
     end
 
     return
@@ -424,7 +428,7 @@ end
 
 local function fetch_and_store_marathon_leader(auth_token)
     local leader_ip = fetch_generic_leader(
-        UPSTREAM_MARATHON .. "/v2/leader", "marathon", auth_token)
+        init.UPSTREAM_MARATHON .. "/v2/leader", "marathon", auth_token)
 
     if leader_ip ~= nil then
         store_leader_data("marathon", leader_ip)
@@ -435,7 +439,7 @@ end
 local function fetch_and_store_state_mesos(auth_token)
     -- Fetch state JSON summary from Mesos. If successful, store to SHM cache.
     -- Expected to run within lock context.
-    local response, err = request(UPSTREAM_MESOS .. "/master/state-summary",
+    local response, err = request(init.UPSTREAM_MESOS .. "/master/state-summary",
                                   false,
                                   auth_token)
 
@@ -482,7 +486,7 @@ local function fetch_and_store_state_mesos(auth_token)
     ngx.update_time()
     local time_now = ngx.now()
     if cache_data("mesosstate_last_refresh", time_now) then
-        ngx.log(ngx.INFO, "Mesos state cache has been successfully updated")
+        ngx.log(ngx.INFO, "Updated Mesos state cache")
     end
 
     return

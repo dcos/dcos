@@ -173,20 +173,15 @@ else
 fi
 
 # generate diagnostics bundle
-bundle_name=$(./dcos-cli $debug_options node diagnostics create all | grep -o bundle-.*)
-echo "diagnostics bundle name: ${bundle_name}"
+bundle_id=$(./dcos-cli $debug_options diagnostics create)
+echo "diagnostics bundle name: ${bundle_id}"
 
 # wait for the diagnostics job to complete
-status_output="$(./dcos-cli $debug_options node diagnostics --status)"
-while [[ $status_output =~ "is_running: True" ]]; do
-    echo "Diagnostics job still running. Retrying in 5 seconds."
-    sleep 5
-    status_output="$(./dcos-cli $debug_options node diagnostics --status)"
-done
+./dcos-cli $debug_options diagnostics wait
 
 # get diagnostics bundle
-./dcos-cli $debug_options node diagnostics download $bundle_name
-check_max_artifact_size "$bundle_name"
+./dcos-cli $debug_options diagnostics download
+check_max_artifact_size "$bundle_id".zip
 
 # copy the identity file to the master node so we don't need the ssh-agent when agent forwarding
 if [[ ! -z $identity_file ]]; then

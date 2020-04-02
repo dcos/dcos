@@ -269,13 +269,6 @@ def test_service_discovery_docker_bridge(dcos_api_session):
     assert_service_discovery(dcos_api_session, app_definition, [DNSPortMap])
 
 
-@pytest.mark.supportedwindows
-@pytest.mark.supportedwindowsonly
-def test_service_discovery_docker_windows(dcos_api_session):
-    app_definition, test_uuid = test_helpers.marathon_test_app_windows()
-    assert_service_discovery(dcos_api_session, app_definition, [DNSPortMap])
-
-
 def test_service_discovery_docker_overlay(dcos_api_session):
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.DOCKER,

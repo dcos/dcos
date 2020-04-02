@@ -1,0 +1,13 @@
+[Unit]
+Description=DC/OS Executors Socket: socket for communication between Mesos agent and v1 executors
+
+[Socket]
+ListenStream=/var/run/mesos/mesos-executors.sock
+Accept=no
+
+# Note that this requires systemd >= 227, which is not
+# available on CentOS 7. We still set it though, because
+# it does not hurt and this way we cannot forget to
+# set a name when systemd is finally upgraded.
+FileDescriptorName=dcos-mesos-slave
+
