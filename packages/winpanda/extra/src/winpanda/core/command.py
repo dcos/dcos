@@ -504,7 +504,7 @@ class CmdUpgrade(Command):
                            f' {active_dpath}: {type(e).__name__}: {e}')
                 raise cr_exc.RCError(err_msg) from e
 
-            LOG.debug(f'{mheading}: Preserve hared directory: {active_dpath}:'
+            LOG.debug(f'{mheading}: Preserve shared directory: {active_dpath}:'
                       f' {preserve_dpath}')
 
     def _handle_teardown_post(self):
