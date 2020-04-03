@@ -108,13 +108,13 @@ if ( $LASTEXITCODE -ne 0 ) {
 # Build tar ball for windows. 2 params: packages location and DC/OS variant:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& .\build_genconf_windows.ps1 '$local_artifacts_dir\testing'"
 
-if (-Not Get-Command Set-AWSCredential -errorAction SilentlyContinue)
+if (-Not $(Get-Command Set-AWSCredential -errorAction SilentlyContinue))
 {
   # Import AWS modules on Azure TeamCity runner
   Install-Module -Name AWS.Tools.Common -Force;
 }
 
-if (-Not Get-Command Write-S3Object -errorAction SilentlyContinue)
+if (-Not $(Get-Command Write-S3Object -errorAction SilentlyContinue))
 {
   # Import AWS modules on Azure TeamCity runner
   Install-Module -Name AWS.Tools.S3 -Force;
