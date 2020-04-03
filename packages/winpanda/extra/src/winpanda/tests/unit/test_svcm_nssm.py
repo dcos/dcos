@@ -171,3 +171,21 @@ class TestWinSvcManagerNSSM(unittest.TestCase):
         sm.status()
         cmd = 'command status the_displayname'
         mock_subprocess.assert_called_once_with(cmd, **RUN_COMMAND_DEFAULT_KWARGS)
+
+    @patch_subprocess_run
+    def test_kill_should_run_taskkill(self, mock_subprocess, *args):
+        """Kill valid package status."""
+        sm = WinSvcManagerNSSM(svc_conf=CONF_STUB)
+        sm.kill()
+        cmd = "taskkill /f /fi \"SERVICES eq the_displayname\""
+        mock_subprocess.assert_called_once_with(cmd, **RUN_COMMAND_DEFAULT_KWARGS)
+
+    @patch_subprocess_run
+    def test_stop_timeout_should_run_kill(self, mock_subprocess, *args):
+        """Kill valid package after stop issues. #D2IQ-66446"""
+        mock_subprocess.side_effect = exceptions.ServiceManagerCommandError()
+        mock_kill = mock.Mock()
+        sm = WinSvcManagerNSSM(svc_conf=CONF_STUB)
+        sm.kill = mock_kill
+        sm.stop()
+        assert mock_kill.called
