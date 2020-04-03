@@ -109,8 +109,8 @@ if ( $LASTEXITCODE -ne 0 ) {
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& .\build_genconf_windows.ps1 '$local_artifacts_dir\testing'"
 
 # Import AWS modules on Azure TeamCity runner
-Install-Module -Name AWS.Tools.S3 -Force -SkipUpdate;
-Install-Module -Name AWS.Tools.Common -Force -SkipUpdate;
+Install-Module -Name AWS.Tools.Common -Force -Verbose;
+Install-Module -Name AWS.Tools.S3 -Force -Verbose;
 
 # Set and Read AWS Credentials:
 Set-AWSCredential -AccessKey $env:AWS_ACCESS_KEY_ID -SecretKey $env:AWS_SECRET_ACCESS_KEY -StoreAs aws_s3_windows;
