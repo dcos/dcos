@@ -6,6 +6,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Update OpenResty to 1.15.8.3. (D2IQ-66506)
 
 ## DC/OS 2.0.3 (2020-03-25)
 
