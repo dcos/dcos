@@ -17,10 +17,10 @@ function Unzip {
     [System.IO.Compression.ZipFile]::ExtractToDirectory($zipfile, $outpath)
 }
 
-Unzip "c:\pkg\src\OpenResty\openresty-1.15.8.2-win64.zip" "c:/Temp/openresty"
+Unzip "c:\pkg\src\OpenResty\openresty-1.15.8.3-win64.zip" "c:/Temp/openresty"
 
 $exclude = @('COPYRIGHT','README.txt','restydoc*')
-Copy-Item -Recurse -Path "C:\Temp\openresty\openresty-1.15.8.2-win64\*" "$env:PKG_PATH\bin\" -Exclude $exclude
+Copy-Item -Recurse -Path "C:\Temp\openresty\openresty-1.15.8.3-win64\*" "$env:PKG_PATH\bin\" -Exclude $exclude
 
 Copy-Item -Recurse -Path "C:\pkg\build\extra\src\errorpages" "$env:PKG_PATH\etc\"
 Copy-Item -Recurse -Path "C:\pkg\build\extra\src\includes" "$env:PKG_PATH\conf\"
