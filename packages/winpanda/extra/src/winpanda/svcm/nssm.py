@@ -25,6 +25,8 @@ from typing import List, Tuple
 
 LOG = logger.get_logger(__name__)
 
+CMD_KILL = "taskkill /f /fi \"SERVICES eq {}\""
+
 
 class NSSMParameter(enum.Enum):
     """NSSM parameter set."""
@@ -401,7 +403,10 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
 
     def stop(self) -> None:
         """Stop a registered service (immediately)."""
-        self._primitive_command(NSSMCommand.STOP.value)
+        try:
+            self._primitive_command(NSSMCommand.STOP.value)
+        except svcm_exc.ServiceManagerCommandError:
+            self.kill()
 
     def restart(self) -> None:
         """Restart a registered service (immediately)."""
@@ -413,3 +418,10 @@ class WinSvcManagerNSSM(base.WindowsServiceManager):
         cmd_run = self._primitive_command(NSSMCommand.STATUS.value)
 
         return cmd_run.returncode, cmd_run.stdout, cmd_run.stderr
+
+    def kill(self):
+        """Kill service process.
+        """
+        LOG.debug("KILL process: '{}'".format(self.svc_name))
+        options = CMD_KILL.format(self.svc_name).split(' ')
+        return self._run_external_command(self.svc_name, options)
