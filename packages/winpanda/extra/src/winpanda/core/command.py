@@ -489,7 +489,6 @@ class CmdUpgrade(Command):
         for package in cr_utl.pkg_sort_by_deps(packages_bulk):
             package.handle_svc_wipe(mheading)
             package.handle_uninst_extras(mheading)
-            package.handle_vardata_wipe(mheading)
             package.save_manifest(mheading, pkgactive_old_dpath)
             package.delete_manifest(mheading)
 
