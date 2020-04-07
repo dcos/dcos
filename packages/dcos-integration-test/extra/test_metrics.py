@@ -927,7 +927,6 @@ def deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, ma
             assert_app_metric_value_for_task(dcos_api_session, node, task_name, metric_name, metric_value)
 
 
-@pytest.mark.supportedwindows
 def test_prom_metrics_containers_app_host(dcos_api_session):
     """Assert that prometheus app metrics appear in the v0 metrics API."""
     task_name = 'test-prom-metrics-containers-app-host'
