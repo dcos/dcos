@@ -785,7 +785,6 @@ def get_agents(dcos_api_session):
     return nodes
 
 
-@pytest.mark.supportedwindows
 def test_metrics_containers(dcos_api_session):
     """Assert that a Marathon app's container and app metrics can be retrieved."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
@@ -866,7 +865,6 @@ def test_metrics_containers(dcos_api_session):
         test_containers(endpoints)
 
 
-@pytest.mark.supportedwindows
 def test_statsd_metrics_containers_app(dcos_api_session):
     """Assert that statsd app metrics appear in the v0 metrics API."""
     task_name = 'test-statsd-metrics-containers-app'
@@ -902,7 +900,7 @@ def test_statsd_metrics_containers_app(dcos_api_session):
             'done',
         ]),
         'container': {
-            'type': 'DOCKER',
+            'type': 'MESOS',
             'docker': {'image': 'library/alpine'}
         },
         'networks': [{'mode': 'host'}],
@@ -976,7 +974,6 @@ def test_prom_metrics_containers_app_host(dcos_api_session):
     deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name)
 
 
-@pytest.mark.supportedwindows
 def test_prom_metrics_containers_app_bridge(dcos_api_session):
     """Assert that prometheus app metrics appear in the v0 metrics API."""
     task_name = 'test-prom-metrics-containers-app-bridge'
@@ -1006,7 +1003,7 @@ def test_prom_metrics_containers_app_bridge(dcos_api_session):
         ]),
         'networks': [{'mode': 'container/bridge'}],
         'container': {
-            'type': 'DOCKER',
+            'type': 'MESOS',
             'docker': {'image': 'library/python:3'},
             'portMappings': [
                 {
@@ -1030,7 +1027,6 @@ def test_prom_metrics_containers_app_bridge(dcos_api_session):
     deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name)
 
 
-@pytest.mark.supportedwindows
 def test_task_prom_metrics_not_filtered(dcos_api_session):
     """Assert that prometheus app metrics aren't filtered according to adminrouter config.
 
@@ -1069,7 +1065,7 @@ def test_task_prom_metrics_not_filtered(dcos_api_session):
         ]),
         'networks': [{'mode': 'container/bridge'}],
         'container': {
-            'type': 'DOCKER',
+            'type': 'MESOS',
             'docker': {'image': 'library/python:3'},
             'portMappings': [
                 {
@@ -1095,7 +1091,6 @@ def test_task_prom_metrics_not_filtered(dcos_api_session):
     deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name)
 
 
-@pytest.mark.supportedwindows
 def test_metrics_containers_nan(dcos_api_session):
     """Assert that the metrics API can handle app metric gauges with NaN values."""
     task_name = 'test-metrics-containers-nan'
@@ -1114,7 +1109,7 @@ def test_metrics_containers_nan(dcos_api_session):
             'done',
         ]),
         'container': {
-            'type': 'DOCKER',
+            'type': 'MESOS',
             'docker': {'image': 'library/alpine'}
         },
         'networks': [{'mode': 'host'}],

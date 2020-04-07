@@ -231,38 +231,6 @@ package:
       ## The user agent to send with requests
       user_agent = "Telegraf-mesos"
 
-      # Statsd UDP/TCP Server
-      [[inputs.statsd]]
-        ## Protocol, must be "tcp", "udp", "udp4" or "udp6" (default=udp)
-        protocol = "udp"
-        ## Address and port to host UDP listener on
-        service_address = "localhost:61825"
-        ## The following configuration options control when telegraf clears it's cache
-        ## of previous values. If set to false, then telegraf will only clear it's
-        ## cache when the daemon is restarted.
-        ## Reset gauges every interval (default=true)
-        delete_gauges = true
-        ## Reset counters every interval (default=true)
-        delete_counters = true
-        ## Reset sets every interval (default=true)
-        delete_sets = true
-        ## Reset timings & histograms every interval (default=true)
-        delete_timings = true
-        ## Percentiles to calculate for timing & histogram stats
-        percentiles = [90]
-        ## separator to use between elements of a statsd metric
-        metric_separator = "_"
-        ## Parses tags in the datadog statsd format
-        ## http://docs.datadoghq.com/guides/dogstatsd/
-        parse_data_dog_tags = false
-        ## Number of UDP messages allowed to queue up, once filled,
-        ## the statsd server will start dropping packets
-        allowed_pending_messages = 100000
-        ## Number of timing/histogram values to track per-measurement in the
-        ## calculation of percentiles. Raising this limit increases the accuracy
-        ## of percentiles but also increases the memory usage and cpu time.
-        percentile_limit = 1000
-
       [[outputs.prometheus_client]]
         ## Address to listen on
         listen = ":61091"
