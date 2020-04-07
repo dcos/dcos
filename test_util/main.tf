@@ -50,15 +50,32 @@ variable "dcos_license_key_contents" {
   description = "Defines content of license used for EE."
 }
 
+variable "instance_type" {
+    type = "string"
+    default = "t3.medium"
+    description = "Defines type of used machine."
+}
+
+variable "build_id" {
+    type = "string"
+    default = ""
+    description = "Build ID from CI."
+}
+
+variable "build_type" {
+    type = "string"
+    default = ""
+    description = "Build type from CI."
+}
+
 # Used to determine your public IP for forwarding rules
 data "http" "whatismyip" {
   url = "http://whatismyip.akamai.com/"
 }
 
 resource "random_string" "password" {
-  length = 6
-  special = true
-  override_special = "-"
+  length = 12
+  special = false
 }
 
 locals {
@@ -76,6 +93,8 @@ module "dcos" {
   tags {
     owner = "${var.owner}"
     expiration = "${var.expiration}"
+    build_id = "${var.build_id}"
+    build_type_id = "${var.build_type}"
   }
 
   cluster_name        = "${local.cluster_name}"
@@ -87,7 +106,10 @@ module "dcos" {
   num_public_agents  = "1"
 
   dcos_instance_os        = "centos_7.5"
-  bootstrap_instance_type = "m4.xlarge"
+
+  masters_instance_type        = "${var.instance_type}"
+  private_agents_instance_type = "${var.instance_type}"
+  public_agents_instance_type  = "${var.instance_type}"
 
   dcos_variant              = "${var.variant}"
   dcos_security             = "${var.dcos_security}"
@@ -120,6 +142,8 @@ module "windowsagent" {
   tags {
     owner = "${var.owner}"
     expiration = "${var.expiration}"
+    build_id = "${var.build_id}"
+    build_type_id = "${var.build_type}"
   }
 
   cluster_name           = "${local.cluster_name}"
@@ -127,6 +151,7 @@ module "windowsagent" {
   aws_subnet_ids         = ["${module.dcos.infrastructure.vpc.subnet_ids}"]
   aws_security_group_ids = ["${module.dcos.infrastructure.security_groups.internal}", "${module.dcos.infrastructure.security_groups.admin}"]
   aws_key_name           = "${module.dcos.infrastructure.aws_key_name}"
+  aws_instance_type      = "${var.instance_type}"
 
   # provide the number of windows agents that should be provisioned.
   num = "${var.windowsagent_num}"

@@ -1,7 +1,7 @@
 {
   "single_source" : {
     "kind": "url_extract",
-    "url": "https://www.openssl.org/source/openssl-1.1.1d.tar.gz",
-    "sha1": "056057782325134b76d1931c48f2c7e6595d7ef4"
+    "url": "https://downloads.mesosphere.com/openssl/openssl-1.1.1f.tar.gz",
+    "sha1": "238e001ea1fbf19ede43e36209c37c1a636bb51f"
   }
 }
