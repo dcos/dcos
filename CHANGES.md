@@ -75,6 +75,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update OpenResty to 1.15.8.3. (DCOS-61159, D2IQ-66506)
 
+### Marathon
+
+* Marathon no longer sanitizes the field `"acceptedResourceRoles"`. The field is an array of one or two values: `*` and the service role. Previously, when an invalid value was provided, Marathon would silently drop it. Now, it returns an error. If this causes a disruption, you can re-enable this feature by adding `MARATHON_DEPRECATED_FEATURES=sanitize_accepted_resource_roles` to the file `/var/lib/dcos/marathon/environment` on all masters. You must remove this line before upgrading to DC/OS 2.2.
+
 ### Fixed and improved
 
 * Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
@@ -87,7 +91,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fix Telegraf migration when no containers present. (D2IQ-64507)
 
-* Update OpenSSL to 1.1.1d. (D2IQ-65604)
+* Update OpenSSL to 1.1.1f. (D2IQ-65604, D2IQ-66526)
 
 #### Update Marathon to 1.10.6
 
