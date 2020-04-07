@@ -7,7 +7,7 @@ function Install-OpenSSL {
     # The argument options can be checked by running the installer
     # with `/help`.
     $p = Start-Process `
-        -FilePath $PKG_DIR/src/openssl/Win64OpenSSL-1_1_1e.exe `
+        -FilePath $PKG_DIR/src/openssl/Win64OpenSSL-1_1_1f.exe `
         -ArgumentList @("/VERYSILENT") `
         -NoNewWindow `
         -Wait `
