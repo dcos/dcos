@@ -7,7 +7,6 @@ AppParameters = daemon --config {{ dcos_cfg_dpath }}\dcos-diagnostics\dcos-diagn
 Start = SERVICE_AUTO_START
 AppStdout = {{ pkg_log_dpath }}\dcos-diagnostics.log
 AppStderr = {{ pkg_log_dpath }}\dcos-diagnostics.log
-AppTimestampLog = 1
 AppRotateFiles = 1
 AppRotateSeconds = 86400
 AppRotateBytes = 1048576
