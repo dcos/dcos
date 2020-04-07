@@ -317,7 +317,8 @@ class Package:
         mheading = f'{mheading}: {mhd_base}' if mheading else mhd_base
 
         try:
-            dpath.mkdir(parents=True, exist_ok=True)
+            cm_utl.rmdir(str(dpath), recursive=True)
+            dpath.mkdir(parents=True)
             self.manifest.save(dpath)
         except (OSError, RuntimeError, cr_exc.RCError) as e:
             err_msg = f'{mheading}: Register package: {self.id}: {e}'
