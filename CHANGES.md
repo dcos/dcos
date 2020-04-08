@@ -113,10 +113,5 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 #### Update Metronome to 0.6.41
 
 * There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
-    * Marathon was checking authorization for unrelated apps when performing a kill-and-scale operations; this has been resolved. (MARATHON-8731)
 
-* Update Metronome to 0.6.42
-
-    * There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
-
-    * Metronome jobs can configure networks they join (MARATHON-8727)
+* Metronome jobs networking is now configurable (MARATHON-8727)
