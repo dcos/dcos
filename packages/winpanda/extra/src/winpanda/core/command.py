@@ -497,6 +497,7 @@ class CmdUpgrade(Command):
             active_dpath = iroot_dpath.joinpath(dname)
             preserve_dpath = itmp_dpath.joinpath(f'{dname}.old')
             try:
+                cm_utl.rmdir(str(preserve_dpath), recursive=True)
                 active_dpath.rename(preserve_dpath)
             except (OSError, RuntimeError) as e:
                 err_msg = (f'{mheading}: Preserve shared directory:'
