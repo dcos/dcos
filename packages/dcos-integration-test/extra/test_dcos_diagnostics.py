@@ -322,7 +322,7 @@ def test_dcos_diagnostics_report(dcos_api_session):
 
 @pytest.mark.parametrize('use_legacy_api', [
     pytest.param(False),
-    pytest.param(True, marks=pytest.mark.xfail("config.getoption('--windows-only')"))])
+    pytest.param(True, marks=pytest.mark.skipif("config.getoption('--windows-only')"))])
 def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_legacy_api):
     """
     test bundle create, read, delete workflow

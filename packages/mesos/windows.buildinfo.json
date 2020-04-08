@@ -8,8 +8,8 @@
     },
     "openssl": {
       "kind": "url",
-      "url": "https://downloads.mesosphere.com/Win64OpenSSL/Win64OpenSSL-1_1_1e.exe",
-      "sha1": "b0b2fa45fd4e4ab6b502495bd2d706b570196911"
+      "url": "https://downloads.mesosphere.com/Win64OpenSSL/Win64OpenSSL-1_1_1f.exe",
+      "sha1": "5efbb17594216e195db6e18c4db1a57f03f620a2"
     }
   },
   "environment": {},
