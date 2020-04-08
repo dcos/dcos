@@ -1,7 +1,7 @@
 {
   "single_source" : {
     "kind": "url_extract",
-    "url": "https://www.openssl.org/source/openssl-1.0.2r.tar.gz",
-    "sha1": "b9aec1fa5cedcfa433aed37c8fe06b0ab0ce748d"
+    "url": "https://downloads.mesosphere.com/openssl/openssl-1.0.2u.tar.gz",
+    "sha1": "740916d79ab0d209d2775277b1c6c3ec2f6502b2"
   }
 }
