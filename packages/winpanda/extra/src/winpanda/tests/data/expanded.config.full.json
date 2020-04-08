@@ -90,7 +90,7 @@
   "dcos_ucr_default_bridge_network_name":"mesos-bridge",
   "dcos_ucr_default_bridge_subnet":"172.31.254.0/24",
   "dcos_variant":"enterprise",
-  "dcos_version":"2.1.0-rc1-dev",
+  "dcos_version":"2.1.0-beta3",
   "default_task_user":"root",
   "diagnostics_bundles_dir":"/var/lib/dcos/dcos-diagnostics/diag-bundles",
   "dns_bind_ip_blacklist":"[]",
