@@ -8,6 +8,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Security updates
 
+* Update to OpenSSL 1.0.2u. (D2IQ-66526)
+
 
 ## DC/OS 1.13.8 (2020-02-27)
 
