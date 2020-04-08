@@ -8,6 +8,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update OpenResty to 1.15.8.3. (D2IQ-66506)
 
+* Update OpenSSL to 1.1.1f. (D2IQ-66526)
+
 ## DC/OS 2.0.3 (2020-03-25)
 
 * Updated to Mesos [1.9.1-dev](https://github.com/apache/mesos/blob/b84b0a4bd8945b0901214b90b61e6a54fa4b3215/CHANGELOG)
@@ -198,4 +200,3 @@ The Marathon option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES` has been deprecat
 * Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
 
 * DC/OS Net: wait till agents become active before fanning out Mesos tasks. (DCOS_OSS-5463)
-* Update OpenSSL to 1.1.1d. (D2IQ-65604)
