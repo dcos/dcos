@@ -67,8 +67,11 @@ test: cluster.json
 ssh: cluster.json
 	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<)
 
+.PHONY: diagnostics
+diagnostics: $(diagnostics_bundle_file)
+
 .PHONY: destroy
-destroy: $(diagnostics_bundle_file)
+destroy:
 	@echo "##teamcity[blockOpened name='terraform-destroy' description='Terraform cluster teardown']"
 	$(TERRAFORM) destroy -auto-approve \
 		-var ssh_public_key_file="$(SSH_KEY).pub" \

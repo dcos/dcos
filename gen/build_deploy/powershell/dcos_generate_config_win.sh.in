@@ -29,7 +29,7 @@ fi
 
 # extract payload into genconf/serve/windows dirs, if not extracted
 if [ ! -f "./genconf/serve/windows)" ]; then
-    >&2 echo Extracting windows relese tar artifact from this script
+    >&2 echo Extracting windows release tar artifact from this script
     sed '1,/^#EOF#$/d' "$0" | tar xv --directory ./genconf/serve/windows
 fi
 trap - INT

@@ -1792,13 +1792,13 @@ The test can be split into a series of steps/stages:
   * for stage 3)
   ```python
   filter_regexp_pre = {
-      'Marathon leader cache has been successfully updated':
+      'Updated Marathon leader cache':
           SearchCriteria(1, True),
-      'Marathon apps cache has been successfully updated':
+      'Updated Marathon apps cache':
           SearchCriteria(1, True),
-      'Mesos state cache has been successfully updated':
+      'Updated Mesos state cache':
           SearchCriteria(1, True),
-      '`Mesos Leader` state cache has been successfully updated':
+      'Updated `Mesos Leader` state cache':
           SearchCriteria(1, True),
   }
 
@@ -1813,11 +1813,11 @@ The test can be split into a series of steps/stages:
   * for stage 5):
   ```python
   filter_regexp_post = {
-      'Marathon leader cache has been successfully updated':
+      'Updated Marathon leader cache':
           SearchCriteria(1, True),
-      'Marathon apps cache has been successfully updated':
+      'Updated Marathon apps cache':
           SearchCriteria(1, True),
-      'Mesos state cache has been successfully updated':
+      'Updated Mesos state cache':
           SearchCriteria(1, True),
       'DNS server returned error code':
           SearchCriteria(1, True),
@@ -1863,22 +1863,22 @@ The test can be split into a series of steps/stages:
       # Let's try to put all non-essential stuff outside of context managers
       # scopes:
       filter_regexp_pre = {
-          'Marathon leader cache has been successfully updated':
+          'Updated Marathon leader cache':
               SearchCriteria(1, True),
-          'Marathon apps cache has been successfully updated':
+          'Updated Marathon apps cache':
               SearchCriteria(1, True),
-          'Mesos state cache has been successfully updated':
+          'Updated Mesos state cache':
               SearchCriteria(1, True),
-          '`Mesos Leader` state cache has been successfully updated':
+          'Updated `Mesos Leader` state cache':
               SearchCriteria(1, True),
       }
 
       filter_regexp_post = {
-          'Marathon leader cache has been successfully updated':
+          'Updated Marathon leader cache':
               SearchCriteria(1, True),
-          'Marathon apps cache has been successfully updated':
+          'Updated Marathon apps cache':
               SearchCriteria(1, True),
-          'Mesos state cache has been successfully updated':
+          'Updated Mesos state cache':
               SearchCriteria(1, True),
           'DNS server returned error code':
               SearchCriteria(1, True),

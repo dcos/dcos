@@ -61,7 +61,7 @@ aws_base_source = Source(entry={
         'cloud_config': '{{ cloud_config }}',
         'rexray_config_preset': 'aws',
         'fault_domain_detect_contents': yaml.dump(
-            pkg_resources.resource_string('gen', 'fault-domain-detect/cloud.sh').decode())
+            pkg_resources.resource_string('gen', 'fault-domain-detect/cloud.sh').decode()),
     },
     'conditional': {
         'oauth_available': {
@@ -132,21 +132,21 @@ aws_region_names = [
 
 region_to_ami_map = {
     'ap-northeast-1': {
-        'coreos': 'ami-0e4257472375320d1',
+        'coreos': 'ami-061659fcdbb942671',
         'stable': 'ami-0ffd2ee15ceabef65',
         'el7': 'ami-0bfe52d6d145c674e',
         'el7prereq': 'ami-0bfe52d6d145c674e',
         'natami': 'ami-00d29e4cb217ae06b'
     },
     'ap-southeast-1': {
-        'coreos': 'ami-0145234ddc719501c',
+        'coreos': 'ami-030cef2acc6e5377f',
         'stable': 'ami-02e06ba544feb3f51',
         'el7': 'ami-024ac75903e3114f1',
         'el7prereq': 'ami-024ac75903e3114f1',
         'natami': 'ami-01514bb1776d5c018'
     },
     'ap-southeast-2': {
-        'coreos': 'ami-0e47b8ce20b478672',
+        'coreos': 'ami-08b526947c08b5842',
         'stable': 'ami-07809279cd1e43478',
         'el7': 'ami-0a81a425ed8ebf3c9',
         'el7prereq': 'ami-0a81a425ed8ebf3c9',
@@ -154,41 +154,41 @@ region_to_ami_map = {
     },
     'eu-central-1': {
         'coreos': 'ami-0d1523a303dd37067',
-        'stable': 'ami-0285f4197bb94b5b0',
+        'stable': 'ami-06c600855f8f21e97',
         'el7': 'ami-0e6000758f18fb6be',
         'el7prereq': 'ami-0e6000758f18fb6be',
         'natami': 'ami-06a5303d47fbd8c60'
     },
     'eu-west-1': {
-        'coreos': 'ami-0c6ca83c80e8bba91',
+        'coreos': 'ami-07c25af0e918ce3c1',
         'stable': 'ami-0539ccccd1e371d4b',
         'el7': 'ami-0569e7216584320c6',
         'el7prereq': 'ami-0569e7216584320c6',
         'natami': 'ami-024107e3e3217a248'
     },
     'sa-east-1': {
-        'coreos': 'ami-0a34138b2787a9dd7',
+        'coreos': 'ami-005ce0c51d9e43786',
         'stable': 'ami-0af8dc7533e9698e2',
         'el7': 'ami-0b34096d89569829a',
         'el7prereq': 'ami-0b34096d89569829a',
         'natami': 'ami-057f5d52ff7ae75ae'
     },
     'us-east-1': {
-        'coreos': 'ami-0f2d95e41c7dac6b4',
+        'coreos': 'ami-07cce92cad14cc238',
         'stable': 'ami-08511d0b9ed33a795',
         'el7': 'ami-0da3316c3c6eb42b0',
         'el7prereq': 'ami-0da3316c3c6eb42b0',
         'natami': 'ami-00a9d4a05375b2763'
     },
     'us-west-1': {
-        'coreos': 'ami-0c6ca83c80e8bba91',
+        'coreos': 'ami-04b8d2ccf0bf3a6eb',
         'stable': 'ami-08bcbb80bb680b5f2',
         'el7': 'ami-074a555b65ca3c76e',
         'el7prereq': 'ami-074a555b65ca3c76e',
         'natami': 'ami-097ad469381034fa2'
     },
     'us-west-2': {
-        'coreos': 'ami-0a2d34b930d813466',
+        'coreos': 'ami-018b1e7ac21df62b9',
         'stable': 'ami-0235ac99b19539293',
         'el7': 'ami-093949a7969be18da',
         'el7prereq': 'ami-093949a7969be18da',

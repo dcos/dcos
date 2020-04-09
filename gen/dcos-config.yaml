@@ -16,6 +16,13 @@ package:
   - path: /bin/detect_ip6
     permissions: "0755"
     content: {{ ip6_detect_contents }}
+{% switch fault_domain_enabled %}
+{% case "true" %}
+  - path: /bin/detect_fault_domain
+    permissions: "0755"
+    content: {{ fault_domain_detect_contents }}
+{% case "false" %}
+{% endswitch %}
   - path: /etc/check_time.env
     content: |
         ENABLE_CHECK_TIME={{ check_time }}
@@ -1915,6 +1922,10 @@ package:
               },
               {
                   "Command": ["df"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/dcos-shell", "dcos-etcdctl", "diagnostic"],
+                  "Role": ["master"]
               }
           ]
         }
@@ -2277,13 +2288,6 @@ package:
 {% endswitch %}
   - path: /etc/rexray.conf
     content: {{ rexray_config_contents }}
-{% switch fault_domain_enabled %}
-{% case "true" %}
-  - path: /bin/detect_fault_domain
-    permissions: "0755"
-    content: {{ fault_domain_detect_contents }}
-{% case "false" %}
-{% endswitch %}
   - path: /etc/telegraf.env
     content: |
       TELEGRAF_CONFIG_FILE=/opt/mesosphere/etc/telegraf/telegraf.conf
@@ -2605,6 +2609,20 @@ package:
         # insecure_skip_verify = true
         [inputs.zookeeper.tags]
           dcos-component-name = "ZooKeeper"
+      # Reads metrics from etcd's prometheus client
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://localhost:2379/metrics"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "10s"
+        ## Optional TLS Config
+        # tls_ca = /path/to/cafile
+        # tls_cert = /path/to/certfile
+        # tls_key = /path/to/keyfile
+        ## Use TLS but skip chain & host verification
+        # insecure_skip_verify = true
+        [inputs.prometheus.tags]
+          dcos-component-name = "etcd"
       # Reads metrics from CockroachDB's prometheus client
       [[inputs.prometheus]]
         ## An array of urls to scrape metrics from.

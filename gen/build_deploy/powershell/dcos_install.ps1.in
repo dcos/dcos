@@ -189,6 +189,7 @@ function SetupDirectories() {
         "C:\d2iq",
         "C:\d2iq\dcos",
         "C:\d2iq\dcos\etc",
+        "C:\d2iq\dcos\etc\roles",
         "$($basedir)",
         "$($basedir)\bootstrap",
         "$($basedir)\bootstrap\prerequisites",
@@ -369,6 +370,7 @@ function main($url, $masters) {
     LongPathsSupport
     SetupDirectories
     SetupPathJson "C:\d2iq\dcos\etc\paths.json"
+    New-Item -Path 'C:\d2iq\dcos\etc\roles' -Name 'slave' -ItemType 'file' -Value ''
 
     Write-Log -Level "Info" -LogContent "Downloading/Extracting prerequisites.zip out of Bootstrap agent ..."
     Download "$url/windows/prerequisites/prerequisites.zip" "prerequisites.zip"
@@ -399,12 +401,6 @@ function main($url, $masters) {
 	[Environment]::SetEnvironmentVariable("PYTHONPATH", "$($basedir)\winpanda\lib\python36\site-packages", [System.EnvironmentVariableTarget]::Machine);
 	$env:PYTHONPATH="$($basedir)\winpanda\lib\python36\site-packages";
 
-    Write-Log -Level "Info" -LogContent "Downloading *.ps1 scripts from Bootstrap agent ..."
-    Download "$url/windows/ip-detect.ps1" "detect_ip.ps1"
-    Download "$url/windows/ip-detect-public.ps1" "detect_ip_public.ps1"
-    Download "$url/windows/fault-domain-detect-win.ps1" "fault-domain-detect-win.ps1"
-    Copy-Item -Path "$($basedir)\bootstrap\*.ps1" -Destination "$($basedir)\bin" -Recurse
-
     # Fill up gen_out arguments to cluster.conf
     Write-Log -Level "Debug" -LogContent "MASTERS: $($masters)"
     [System.Array]$masterarray = $masters.replace('"', '').replace('[', '').replace(']', '').replace(' ', '').split(',')
@@ -412,13 +408,11 @@ function main($url, $masters) {
     for ($i=0; $i -lt $masterarray.length; $i++) {
         $masternodecontent += "[master-node-$($i+1)]`nPrivateIPAddr=$($masterarray[$i])`nZookeeperListenerPort=2181`n"
     }
-    $local_ip = try { . "$($basedir)\bin\detect_ip.ps1" } catch { throw "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss") ERROR: Failed to execute `'$($basedir)\bin\detect_ip.ps1`' . Check script validity!" 2>&1 | Tee-Object -FilePath "$($vardir)\log\dcos_install.log" -Append; return }
-    Write-Log -Level "Debug" -LogContent "Local IP: $($local_ip)"
-    $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($url)`nPkgRepoPath=windows/packages`nPkgListPath=windows/package_lists/latest.package_list.json`nDcosClusterPkgInfoPath=cluster-package-info.json`n`n[local]`nPrivateIPAddr=$($local_ip)"
+    $content = "$($masternodecontent)`n[distribution-storage]`nRootUrl=$($url)`nPkgRepoPath=windows/packages`nPkgListPath=windows/package_lists/latest.package_list.json`nDcosClusterPkgInfoPath=cluster-package-info.json`n`n[local]`nPrivateIPAddr=127.0.0.1"
     CreateWriteFile "$($basedir)\etc" "cluster.conf" $content
 
     Write-Log -Level "Info" -LogContent "Running Winpanda.py setup ..."
-    Invoke-NativeApplication {python.exe "$($basedir)\winpanda\bin\winpanda.py" --inst-root-dir="$($basedir)" setup}
+    Invoke-NativeApplication {python.exe "$($basedir)\winpanda\bin\winpanda.py" --inst-root-dir="$($basedir)" --dstor-url="$($url)"  setup}
     Write-Log -Level "Info" -LogContent "Running Winpanda.py start ..."
     Invoke-NativeApplication {python.exe "$($basedir)\winpanda\bin\winpanda.py" --inst-root-dir="$($basedir)" start}
     Write-Log -Level "Info" -LogContent "dcos_install.ps1 successfully finished."
