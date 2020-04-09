@@ -166,7 +166,17 @@ class CmdConfigSetup(CommandConfig):
         dcos_conf = self.dcos_conf
 
         i = 0
-        masters = dcos_conf.get('values').get('master_list').strip('][').split(', ')
+        discovery_type = dcos_conf.get('values').get('master_discovery')
+        if discovery_type == 'static':
+            masters = dcos_conf.get('values').get('master_list').strip('][').split(', ')
+        elif discovery_type == 'master_http_loadbalancer':
+            masters = [dcos_conf.get('values').get('master_external_loadbalancer')]
+        else:
+            raise WinpandaError(
+                f'The following value is unsupported: "master_discovery": '
+                f'{discovery_type}'
+            )
+
         for ipaddr in masters:
             i += 1
             cluster_conf[f'master-node-{i}'] = {
@@ -244,7 +254,6 @@ class CmdConfigSetup(CommandConfig):
             )
 
         # Add discovery type configuration
-        discovery_type = dcos_conf.get('values').get('master_discovery')
         cluster_conf['discovery'] = {'type': discovery_type}
 
         return cluster_conf

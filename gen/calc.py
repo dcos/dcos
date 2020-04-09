@@ -1202,6 +1202,10 @@ def calculate_fault_domain_detect_windows_contents(fault_domain_detect_windows_f
     return yaml.dump(_default_fault_domain_detect_windows_contents)
 
 
+def exhibitor_address_str(exhibitor_address):
+    return str(exhibitor_address)
+
+
 __dcos_overlay_network_default_name = 'dcos'
 __dcos_overlay_network6_default_name = 'dcos6'
 
@@ -1554,7 +1558,9 @@ entry = {
     ],
     'conditional': {
         'master_discovery': {
-            'master_http_loadbalancer': {},
+            'master_http_loadbalancer': {
+                'must': {'has_exhibitor_address': lambda exhibitor_address: calculate_set(exhibitor_address)}
+            },
             'static': {
                 'must': {'num_masters': calc_num_masters}
             }
