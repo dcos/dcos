@@ -300,11 +300,11 @@ def test_if_ucr_pods_can_be_deployed_with_auto_cgroups(dcos_api_session):
 
     Please note that the `cgroups/all` option has been specified in the agent
     `--isolation` flag in `calculate_mesos_isolation()` which means the agent
-    will automatically load all the local enabled cgroups subsystems. And the
-    resources read from the container specific cgroups include both the two
-    container's resources (0.2 CPU and 64MB memory) and the default executor's
-    resources (0.1 CPU and 32MB memory), so in total the resources are 0.3 CPU
-    (i.e., 0.3 * 1024 = 307 CPU shares) and 96MB memory (i.e., 100663296 bytes).
+    will automatically load all the local enabled cgroups subsystems. And by
+    default each container in a pod will have its own cgroups created where
+    its resources will be enforced, so for the `container1` launched by this
+    test, the resources read from its cgroups are 64MB memory (i.e., 67108864
+    bytes) and 0.2 CPU (i.e., 0.2 * 1024 = 204 CPU shares).
     """
     test_uuid = uuid.uuid4().hex
     pod_definition = {
@@ -314,12 +314,12 @@ def test_if_ucr_pods_can_be_deployed_with_auto_cgroups(dcos_api_session):
         'containers': [
             {
                 'name': 'container1',
-                'resources': {'cpus': 0.1, 'mem': 32},
+                'resources': {'cpus': 0.2, 'mem': 64},
                 'image': {'kind': 'DOCKER', 'id': 'library/alpine'},
                 'exec': {
                     'command': {
-                        'shell': 'test `cat /sys/fs/cgroup/memory/memory.soft_limit_in_bytes` = 100663296 && '
-                                 'test `cat /sys/fs/cgroup/cpu/cpu.shares` = 307'
+                        'shell': 'test `cat /sys/fs/cgroup/memory/memory.soft_limit_in_bytes` = 67108864 && '
+                                 'test `cat /sys/fs/cgroup/cpu/cpu.shares` = 204'
                     }
                 }
             },
