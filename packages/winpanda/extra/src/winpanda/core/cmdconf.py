@@ -170,7 +170,7 @@ class CmdConfigSetup(CommandConfig):
         if discovery_type == 'static':
             masters = dcos_conf.get('values').get('master_list').strip('][').split(', ')
         elif discovery_type == 'master_http_loadbalancer':
-            masters = [dcos_conf.get('values').get('master_external_loadbalancer')]
+            masters = [dcos_conf.get('values').get('exhibitor_address')]
         else:
             raise WinpandaError(
                 f'The following value is unsupported: "master_discovery": '

@@ -1206,6 +1206,22 @@ def exhibitor_address_str(exhibitor_address):
     return str(exhibitor_address)
 
 
+def masters_str(master_list):
+    return ",".join(json.loads(master_list))
+
+
+def zk_address_str(master_discovery, exhibitor_address, master_list, zk_client_port):
+    if master_discovery == 'static':
+        zk_address = ",".join(
+            ["{}:{}".format(v, zk_client_port) for v in json.loads(master_list)]
+        )
+    elif master_discovery == 'master_http_loadbalancer':
+        zk_address = "{}:{}".format(str(exhibitor_address), zk_client_port)
+    else:
+        zk_address = "zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181"
+    return zk_address
+
+
 __dcos_overlay_network_default_name = 'dcos'
 __dcos_overlay_network6_default_name = 'dcos6'
 
@@ -1482,6 +1498,8 @@ entry = {
         'calico_vxlan_enabled': 'true',
         'calico_vxlan_port': '64000',
         'calico_vxlan_vni': '4096',
+        'exhibitor_address': '',
+        'zk_client_port': '2181',
     },
     'must': {
         'fault_domain_enabled': 'false',
@@ -1559,10 +1577,11 @@ entry = {
     'conditional': {
         'master_discovery': {
             'master_http_loadbalancer': {
-                'must': {'has_exhibitor_address': lambda exhibitor_address: calculate_set(exhibitor_address)}
+                'must': {'zk_address': zk_address_str}
             },
             'static': {
-                'must': {'num_masters': calc_num_masters}
+                'must': {'num_masters': calc_num_masters,
+                         'zk_address': zk_address_str}
             }
         },
         'rexray_config_preset': {
