@@ -235,7 +235,7 @@ def test_exhibitor_storage_master_discovery():
          'master_discovery': 'master_http_loadbalancer'},
         ['exhibitor_storage_backend', 'master_discovery'],
         msg_master_discovery,
-        unset={'num_masters'})
+        unset={'exhibitor_address', 'num_masters'})
 
 
 def test_exhibitor_tls_enabled():
