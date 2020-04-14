@@ -158,8 +158,8 @@ class ResourceContext:
 
         cluster_conf = cfp.ConfigParser()
         cluster_conf.read_dict(self._cluster_conf)
-        zk_address = self._cluster_conf.get('zk_address',
-                               'zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181')
+        zk_address = self._cluster_conf.get('zk_config', {}).get('zk_address',
+                                                                 'zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181')
 
         mnode_cfg_items = [
             (cluster_conf.get(s, 'privateipaddr',

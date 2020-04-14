@@ -173,7 +173,7 @@ class CmdConfigSetup(CommandConfig):
                 f'{zk_address} '
                 f'{type(e).__name__}: {e}'
             )
-        cluster_conf['zk_address'] = zk_address
+        cluster_conf['zk_config'] = {'zk_address': zk_address}
 
         i = 0
         discovery_type = dcos_conf.get('values').get('master_discovery')
