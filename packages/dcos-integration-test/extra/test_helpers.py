@@ -190,16 +190,16 @@ def marathon_test_docker_app(app_name: str, constraints=None):
     test_uuid = uuid.uuid4().hex
     app = copy.deepcopy({
         'id': "integration-test-{}-{}".format(app_name, test_uuid),
-        'cpus': 1,
-        'mem': 1024,
+        'cpus': 0.5,
+        'mem': 128,
         'disk': 0,
         'instances': 1,
         'healthChecks': [
             {
-                "gracePeriodSeconds": 15,
+                "gracePeriodSeconds": 30,
                 "ignoreHttp1xx": False,
-                "intervalSeconds": 3,
-                "maxConsecutiveFailures": 2,
+                "intervalSeconds": 10,
+                "maxConsecutiveFailures": 3,
                 "portIndex": 0,
                 "timeoutSeconds": 2,
                 "delaySeconds": 15,
