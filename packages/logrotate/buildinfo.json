@@ -1,7 +1,7 @@
 {
   "single_source": {
     "kind": "url_extract",
-    "url": "https://github.com/logrotate/logrotate/archive/r3-9-1.zip",
-    "sha1": "f5388a267908abb82b4d3124575f5c56780c4c41"
+    "url": "https://github.com/logrotate/logrotate/archive/3.14.0.zip",
+    "sha1": "ab2ef205b9f717a24168ac7e15c5414133de3286"
   }
 }
