@@ -165,6 +165,16 @@ class CmdConfigSetup(CommandConfig):
         cluster_conf = {}
         dcos_conf = self.dcos_conf
 
+        try:
+            zk_address = dcos_conf.get('values').get('zk_address')
+        except Exception as e:
+            raise WinpandaError(
+                f'The following value is unsupported: "zk_address": '
+                f'{zk_address} '
+                f'{type(e).__name__}: {e}'
+            )
+        cluster_conf['zk_address'] = zk_address
+
         i = 0
         discovery_type = dcos_conf.get('values').get('master_discovery')
         if discovery_type == 'static':

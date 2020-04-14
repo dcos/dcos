@@ -23,6 +23,7 @@ class RCCONTEXT_ITEM:
     MASTER_PRIV_IPADDR = 'master_priv_ipaddr'
     LOCAL_PRIV_IPADDR = 'local_priv_ipaddr'
     ZK_CLIENT_PORT = 'zk_client_port'
+    ZK_ADDRESS = 'zk_address'
 
     DCOS_INST_DPATH = 'dcos_inst_dpath'
     DCOS_CFG_DPATH = 'dcos_cfg_dpath'
@@ -157,6 +158,8 @@ class ResourceContext:
 
         cluster_conf = cfp.ConfigParser()
         cluster_conf.read_dict(self._cluster_conf)
+        zk_address = self._cluster_conf.get('zk_address',
+                               'zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181')
 
         mnode_cfg_items = [
             (cluster_conf.get(s, 'privateipaddr',
@@ -185,7 +188,8 @@ class ResourceContext:
             RCCONTEXT_ITEM.MASTER_LOCATION: escape(master_location),
             RCCONTEXT_ITEM.MASTER_PRIV_IPADDR: escape(master_priv_ipaddr),
             RCCONTEXT_ITEM.LOCAL_PRIV_IPADDR: escape(self.local_priv_ipaddr),
-            RCCONTEXT_ITEM.ZK_CLIENT_PORT: escape(zk_client_port)
+            RCCONTEXT_ITEM.ZK_CLIENT_PORT: escape(zk_client_port),
+            RCCONTEXT_ITEM.ZK_ADDRESS: escape(zk_address)
         }
 
         return items

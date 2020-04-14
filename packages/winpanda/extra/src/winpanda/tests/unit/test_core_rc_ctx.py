@@ -61,6 +61,7 @@ class TestPackageId(unittest.TestCase):
             RCCONTEXT_ITEM.MASTER_PRIV_IPADDR: '127.0.0.1',
             RCCONTEXT_ITEM.LOCAL_PRIV_IPADDR: '192.168.1.1',
             RCCONTEXT_ITEM.ZK_CLIENT_PORT: 2181,
+            RCCONTEXT_ITEM.ZK_ADDRESS: 'zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181',
             'privateipaddr': '192.168.1.1'
         }
 
