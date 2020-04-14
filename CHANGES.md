@@ -6,6 +6,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Marathon updated to 1.8.242
+
+    * Marathon was checking authorization for unrelated apps when performing a kill-and-scale operations; this has been resolved. (MARATHON-8731)
+
 ### Security updates
 
 * Update to OpenSSL 1.0.2u. (D2IQ-66526)
