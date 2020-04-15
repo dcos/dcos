@@ -492,7 +492,6 @@ def get_dcosconfig_source_target_and_templates(
         'package_ids',
         'template_filenames',
         'enable_windows_agents',
-        'zk_address',  # TODO needs to be relocated in config yaml file as a placeholder
     })
     targets = [base_target] + target_from_templates(templates)
     base_source = gen.internals.Source(is_user=False)
