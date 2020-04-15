@@ -10,6 +10,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update OpenSSL to 1.1.1f. (D2IQ-66526)
 
+* Marathon updated to 1.9.137
+
+    * Fix a rare case where sometimes Marathon would boot and become unresponsive (MARATHON-8741)
+
+
 ## DC/OS 2.0.3 (2020-03-25)
 
 * Updated to Mesos [1.9.1-dev](https://github.com/apache/mesos/blob/b84b0a4bd8945b0901214b90b61e6a54fa4b3215/CHANGELOG)
