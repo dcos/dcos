@@ -5,7 +5,6 @@ RUN apt-get -qq update && apt-get -y install \
   autoconf \
   automake \
   autopoint \
-  cmake \
   cpp \
   curl \
   default-jdk \
@@ -50,6 +49,16 @@ RUN apt-get -qq update && apt-get -y install \
   libnetfilter-cttimeout-dev \
   libnetfilter-cthelper0-dev \
   libnetfilter-queue-dev
+
+ENV CMAKE_VERSION 3.17.0
+RUN set -ex \
+  && curl -sSL https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.sh \
+        -o cmake.sh \
+  && echo "c20a2878f5f5ca1bc00f0c987b015984360a6b32 cmake.sh" | \
+        sha1sum -c --quiet - \
+  && sh cmake.sh --prefix=/usr/local --skip-license \
+  && rm cmake.sh \
+  && cmake --version
 
 RUN ln -sf /usr/bin/cpp-4.8 /usr/bin/cpp && \
   ln -sf /usr/bin/g++-4.8 /usr/bin/g++ && \
