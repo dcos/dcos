@@ -33,9 +33,11 @@ pipeline {
 	    label 'python-dind'
 	  }
 	  steps {
-	    sh('rm -rf dcos-release.config.yaml')
-	    sh('cp config/dcos-release.config.yaml dcos-release.config.yaml')
-	    sh('pip install tox && tox')
+	    withAWS(credentials: 'eng-devprod-tox', region: 'us-west-2') {
+	      sh('rm -rf dcos-release.config.yaml')
+	      sh('cp config/dcos-release.config.yaml dcos-release.config.yaml')
+	      sh('pip install tox && tox')
+	    }
 	  }
 	  post {
             always {
