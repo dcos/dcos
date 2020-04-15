@@ -33,7 +33,7 @@ pipeline {
 	    label 'python-dind'
 	  }
 	  steps {
-	    withAWS(credentials: 'eng-devprod-tox', region: 'us-west-2') {
+	    withCredentials([usernamePassword(credentialsId: 'eng-devpord-tox', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
 	      sh('rm -rf dcos-release.config.yaml')
 	      sh('cp config/dcos-release.config.yaml dcos-release.config.yaml')
 	      sh('pip install tox && tox')
