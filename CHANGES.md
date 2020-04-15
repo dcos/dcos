@@ -52,6 +52,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Calico network: When using the Universal Runtime Engine, the contents of the `DCOS_SPACE`  network label will be compressed to `<7-char hash>...<last 53 chars>` if it is longer than 63 characters. (D2IQ-62219)
 
+* Update logrotate to 3.14.0 (DCOS_OSS-5947)
+
 #### Update Marathon to 1.10.6
 
 * Adds support for Mesos Resource Limits (D2IQ-61131) (D2IQ-61130)
