@@ -33,7 +33,8 @@ pipeline {
 	    label 'python-dind'
 	  }
       environment {
-        AWS_REGION - 'us-west-2'       
+        AWS_REGION = 'us-west-2'
+        AWS_DEFAULT_REGION = 'us-west-2'
       }
 	  steps {
 	    withCredentials([usernamePassword(credentialsId: 'eng-devprod-tox', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
