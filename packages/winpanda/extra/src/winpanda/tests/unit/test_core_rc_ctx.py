@@ -33,7 +33,7 @@ RCCONTEXT_ITEMS = [
 ]
 
 
-class TestPackageId(unittest.TestCase):
+class TestResourceContext(unittest.TestCase):
     @staticmethod
     def get_nodes():
         return type("Foo", (object,), STUB_ISTORE_NODES_CONFIG)()
@@ -57,10 +57,8 @@ class TestPackageId(unittest.TestCase):
         itms = context.get_items()
 
         assert itms == {
-            RCCONTEXT_ITEM.MASTER_LOCATION: '127.0.0.1:2181',
-            RCCONTEXT_ITEM.MASTER_PRIV_IPADDR: '127.0.0.1',
             RCCONTEXT_ITEM.LOCAL_PRIV_IPADDR: '192.168.1.1',
-            RCCONTEXT_ITEM.ZK_CLIENT_PORT: 2181,
+            RCCONTEXT_ITEM.ZK_ADDRESS: 'zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181',
             'privateipaddr': '192.168.1.1'
         }
 
@@ -75,22 +73,3 @@ class TestPackageId(unittest.TestCase):
         items = context.get_items()
 
         assert items['key'] == 'val'
-
-    def test_clusters_items_should_provide_correct_location(self):
-        context = ResourceContext(cluster_conf={
-            'master-node-1': {'privateipaddr': '192.168.1.1', 'zookeeperlistenerport': '2181'},
-            'master-node-2': {'privateipaddr': '192.168.1.2', 'zookeeperlistenerport': '2182'},
-        }, extra_values={'privateipaddr': '192.168.1.1'})
-        items = context.get_items()
-
-        assert items[RCCONTEXT_ITEM.MASTER_LOCATION] == '192.168.1.1:2181,192.168.1.2:2181'
-
-    def test_discovery_type_static_should_provide_correct_location(self):
-        context = ResourceContext(cluster_conf={
-            'master-node-1': {'privateipaddr': '192.168.1.1', 'zookeeperlistenerport': '2181'},
-            'master-node-2': {'privateipaddr': '192.168.1.2', 'zookeeperlistenerport': '2182'},
-            'discovery': {'type': 'static'}
-        }, extra_values={'privateipaddr': '192.168.1.1'})
-        items = context.get_items()
-
-        assert items[RCCONTEXT_ITEM.MASTER_LOCATION] == '192.168.1.1:2181'

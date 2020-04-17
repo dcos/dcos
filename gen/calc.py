@@ -1202,6 +1202,26 @@ def calculate_fault_domain_detect_windows_contents(fault_domain_detect_windows_f
     return yaml.dump(_default_fault_domain_detect_windows_contents)
 
 
+def generate_zk_address(master_discovery, zk_client_port, master_list=None, exhibitor_address=None):
+    if master_discovery == 'static':
+        zk_address = ",".join(
+            ["{}:{}".format(v, zk_client_port) for v in json.loads(master_list)]
+        )
+    elif master_discovery == 'master_http_loadbalancer':
+        zk_address = "{}:{}".format(str(exhibitor_address), zk_client_port)
+    else:
+        zk_address = "zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181"
+    return zk_address
+
+
+def zk_address_from_masters_str(master_discovery, zk_client_port, master_list):
+    return generate_zk_address(master_discovery, zk_client_port, master_list=master_list)
+
+
+def zk_address_from_exhibitor_str(master_discovery, zk_client_port, exhibitor_address):
+    return generate_zk_address(master_discovery, zk_client_port, exhibitor_address=exhibitor_address)
+
+
 __dcos_overlay_network_default_name = 'dcos'
 __dcos_overlay_network6_default_name = 'dcos6'
 
@@ -1478,6 +1498,7 @@ entry = {
         'calico_vxlan_enabled': 'true',
         'calico_vxlan_port': '64000',
         'calico_vxlan_vni': '4096',
+        'zk_client_port': '2181',
     },
     'must': {
         'fault_domain_enabled': 'false',
@@ -1554,9 +1575,12 @@ entry = {
     ],
     'conditional': {
         'master_discovery': {
-            'master_http_loadbalancer': {},
+            'master_http_loadbalancer': {
+                'must': {'zk_address': zk_address_from_exhibitor_str}
+            },
             'static': {
-                'must': {'num_masters': calc_num_masters}
+                'must': {'num_masters': calc_num_masters,
+                         'zk_address': zk_address_from_masters_str}
             }
         },
         'rexray_config_preset': {
