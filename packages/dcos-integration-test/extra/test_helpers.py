@@ -177,29 +177,29 @@ def marathon_test_app_linux(
     return app, test_uuid
 
 
-def marathon_test_app_windows(app_name: str):
+def marathon_test_docker_app(app_name: str, constraints=None):
     """ Creates an app definition for the python test server container
 
     Args:
         app_name: a human readable name to identify the app for debugging.
+        constraints: placement spec
 
     Return:
         (dict, str): 2-Tuple of app definition (dict) and app ID (string)
     """
-
     test_uuid = uuid.uuid4().hex
     app = copy.deepcopy({
         'id': "integration-test-{}-{}".format(app_name, test_uuid),
-        'cpus': 1,
-        'mem': 1024,
+        'cpus': 0.5,
+        'mem': 128,
         'disk': 0,
         'instances': 1,
         'healthChecks': [
             {
-                "gracePeriodSeconds": 15,
+                "gracePeriodSeconds": 30,
                 "ignoreHttp1xx": False,
-                "intervalSeconds": 3,
-                "maxConsecutiveFailures": 2,
+                "intervalSeconds": 10,
+                "maxConsecutiveFailures": 3,
                 "portIndex": 0,
                 "timeoutSeconds": 2,
                 "delaySeconds": 15,
@@ -234,7 +234,7 @@ def marathon_test_app_windows(app_name: str):
     })
 
     # Add Windows constraint
-    app['constraints'] = app.get('constraints', []) + [['os', 'LIKE', 'windows']]
+    app['constraints'] = app.get('constraints', []) + constraints
 
     return app, app['id']
 

@@ -7,11 +7,19 @@ package:
           "PROVIDER": "{{ provider }}"
         }
       }
+  - path: {{ windows_dcos_install_path }}\bin\detect_ip.ps1
+    content: {{ ip_detect_windows_contents }}
+  - path: {{ windows_dcos_install_path }}\bin\detect_ip_public.ps1
+    content: {{ ip_detect_public_windows_contents }}
+{% switch fault_domain_enabled %}
+{% case "true" %}
+  - path: {{ windows_dcos_install_path }}\bin\fault-domain-detect-win.ps1
+    content: {{ fault_domain_detect_windows_contents }}
+{% case "false" %}
+{% endswitch %}
   - path: {{ windows_dcos_install_path }}\etc\check_time.env
     content: |
         ENABLE_CHECK_TIME=true
-
-  # Config for dcos-diagnostics
   - path: {{ windows_dcos_install_path }}\etc\dcos-diagnostics\dcos-diagnostics-config.json
     content: |
       {

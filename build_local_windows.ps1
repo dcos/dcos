@@ -108,16 +108,28 @@ if ( $LASTEXITCODE -ne 0 ) {
 # Build tar ball for windows. 2 params: packages location and DC/OS variant:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& .\build_genconf_windows.ps1 '$local_artifacts_dir\testing'"
 
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 # Import AWS modules on Azure TeamCity runner
 Install-Module -Name AWS.Tools.Common -Force;
+# Import AWS modules on Azure TeamCity runner
 Install-Module -Name AWS.Tools.S3 -Force;
-
 # Set and Read AWS Credentials:
 Set-AWSCredential -AccessKey $env:AWS_ACCESS_KEY_ID -SecretKey $env:AWS_SECRET_ACCESS_KEY -StoreAs aws_s3_windows;
 Set-AWSCredential -ProfileName aws_s3_windows;
 Set-DefaultAWSRegion -Region us-west-2;
 
 # Upload Tar Ball to dcos.download.io
-Write-S3Object -BucketName "downloads.dcos.io" -Key "dcos\testing\$env:TEAMCITY_BRANCH\windows\dcos_generate_config_win.sh" -File ".\dcos_generate_config_win.sh" -CannedACLName public-read -Metadata @{"Cache-Control" = "no-cache"};
+
+# Upload dcos_generate_config_win.sh to S3 location downloads.dcos.io/dcos/testing/<branch>/windows/
+# For pull requests, the <branch> will pull/<pr-number>
+Write-Output "Upload to https://downloads.dcos.io/dcos/testing/$env:TEAMCITY_BRANCH/windows/dcos_generate_config_win.sh"
+Write-S3Object -BucketName "downloads.dcos.io" -Key "dcos\testing\$env:TEAMCITY_BRANCH\windows\dcos_generate_config_win.sh" -File ".\dcos_generate_config_win.sh" -CannedACLName public-read -HeaderCollection @{"Cache-Control" = "no-cache"};
+
+# Upload dcos_generate_config_win.sh to S3 location downloads.dcos.io/dcos/testing/<branch>/windows/
+# For pull requests, the <branch> will pull/<pr-number>
+Write-Output "Upload to https://downloads.dcos.io/dcos/testing/$env:TEAMCITY_BRANCH/commit/$env:BUILD_VCS_NUMBER/windows/dcos_generate_config_win.sh"
+Write-S3Object -BucketName "downloads.dcos.io" -Key "dcos\testing\$env:TEAMCITY_BRANCH\commit\$env:BUILD_VCS_NUMBER\windows\dcos_generate_config_win.sh" -File ".\dcos_generate_config_win.sh" -CannedACLName public-read -HeaderCollection @{"Cache-Control" = "max-age=604800"};
+
+
 # Verify that the files were uploaded
 Get-S3BucketWebsite -BucketName "downloads.dcos.io";

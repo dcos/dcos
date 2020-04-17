@@ -39,7 +39,7 @@ import yaml
 import gen.internals
 
 
-DCOS_VERSION = '2.1.0-beta2-dev'
+DCOS_VERSION = '2.1.0-rc1-dev'
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
@@ -270,7 +270,7 @@ def calculate_ip_detect_contents(ip_detect_filename):
 
 def calculate_ip_detect_public_contents(ip_detect_contents, ip_detect_public_filename):
     if ip_detect_public_filename != '':
-        return calculate_ip_detect_contents(ip_detect_public_filename)
+        return yaml.dump(open(ip_detect_public_filename, encoding='utf-8').read())
     return ip_detect_contents
 
 
@@ -278,6 +278,32 @@ def calculate_ip6_detect_contents(ip6_detect_filename):
     if ip6_detect_filename != '':
         return yaml.dump(open(ip6_detect_filename, encoding='utf-8').read())
     return yaml.dump("")
+
+
+_default_windows_ip_detect = """$ErrorActionPreference = "Stop"
+
+$ip = (
+    Get-NetIPConfiguration |
+    Where-Object {
+        $_.IPv4DefaultGateway -ne $null -and
+        $_.NetAdapter.Status -ne "Disconnected"
+    }
+).IPv4Address.IPAddress
+
+Write-Output $ip
+"""
+
+
+def calculate_ip_detect_windows_contents(ip_detect_windows):
+    if os.path.exists(ip_detect_windows):
+        return yaml.dump(open(ip_detect_windows, encoding='utf-8').read())
+    return yaml.dump(_default_windows_ip_detect)
+
+
+def calculate_ip_detect_public_windows_contents(ip_detect_public_windows, ip_detect_windows_contents):
+    if os.path.exists(ip_detect_public_windows):
+        return yaml.dump(open(ip_detect_public_windows, encoding='utf-8').read())
+    return ip_detect_windows_contents
 
 
 def calculate_rexray_config_contents(rexray_config):
@@ -343,9 +369,16 @@ def validate_config_subnet(config_name, subnet, version=IPVersion.IPv4):
                 (version == IPVersion.IPv6 and not isinstance(network, ipaddress.IPv6Network)):
             raise ValueError("IP version not match")
     except ValueError as ex:
-        err_msg = "Incorrect value for {}: {}. Only IPv{} subnets are allowed".format(
+        err_msg = "Incorrect value for `{}`: `{}`. Only IPv{} subnets are allowed".format(
             config_name, subnet, version)
         raise AssertionError(err_msg) from ex
+
+
+def validate_calico_network_cidr(calico_network_cidr, enable_windows_agents):
+    # calico network is not supported on windows, we skip valiating calico
+    # networking CIDR format in case windows in enabled.
+    if enable_windows_agents.lower() != "true":
+        validate_config_subnet("calico_network_cidr", calico_network_cidr)
 
 
 def validate_dcos_overlay_network(dcos_overlay_network):
@@ -420,12 +453,15 @@ def validate_dcos_overlay_network(dcos_overlay_network):
 
 def validate_overlay_networks_not_overlap(dcos_overlay_network,
                                           dcos_overlay_enable,
-                                          calico_network_cidr):
+                                          calico_network_cidr,
+                                          enable_windows_agents):
     """ checks the subnets used for dcos overlay do not overlap calico network
 
     We assume the basic validations, like subnet cidr, have been done.
     """
     if dcos_overlay_enable.lower() != "true":
+        return
+    if enable_windows_agents.lower() == "true":
         return
     try:
         overlay_network = json.loads(dcos_overlay_network)
@@ -1146,6 +1182,26 @@ def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
     return ''
 
 
+_default_fault_domain_detect_windows_contents = '''
+$ErrorActionPreference = "Stop"
+try {
+  $zone = Invoke-RestMethod -Uri http://169.254.169.254/latest/meta-data/placement/availability-zone
+  $region = $zone.Substring(0,$zone.Length-1)
+}
+catch {
+    $zone = "windows"
+    $region = "windows"
+}
+Write-Output "{`"fault_domain`":{`"region`":{`"name`": `"$region`"},`"zone`":{`"name`": `"$zone`"}}}"
+'''
+
+
+def calculate_fault_domain_detect_windows_contents(fault_domain_detect_windows_filename):
+    if os.path.exists(fault_domain_detect_windows_filename):
+        return yaml.dump(open(fault_domain_detect_windows_filename, encoding='utf-8').read())
+    return yaml.dump(_default_fault_domain_detect_windows_contents)
+
+
 __dcos_overlay_network_default_name = 'dcos'
 __dcos_overlay_network6_default_name = 'dcos6'
 
@@ -1249,8 +1305,7 @@ entry = {
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
         validate_marathon_new_group_enforce_role,
         lambda enable_windows_agents: validate_true_false(enable_windows_agents),
-        lambda calico_network_cidr: validate_config_subnet(
-            "calico_network_cidr", calico_network_cidr),
+        validate_calico_network_cidr,
         lambda calico_ipinip_mtu: validate_int_in_range(calico_ipinip_mtu, 552, None),
         lambda calico_veth_mtu: validate_int_in_range(calico_veth_mtu, 552, None),
         lambda calico_vxlan_mtu: validate_int_in_range(calico_vxlan_mtu, 552, None),
@@ -1290,6 +1345,10 @@ entry = {
         'ip_detect_contents': calculate_ip_detect_contents,
         'ip_detect_public_filename': '',
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
+        'ip_detect_windows': 'genconf/serve/windows/ip-detect.ps1',
+        'ip_detect_windows_contents': calculate_ip_detect_windows_contents,
+        'ip_detect_public_windows': 'genconf/serve/windows/ip-detect-public.ps1',
+        'ip_detect_public_windows_contents': calculate_ip_detect_public_windows_contents,
         'ip6_detect_contents': calculate_ip6_detect_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
@@ -1402,6 +1461,8 @@ entry = {
         'diagnostics_bundles_dir': '/var/lib/dcos/dcos-diagnostics/diag-bundles',
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
+        'fault_domain_detect_windows_filename': 'genconf/serve/windows/fault-domain-detect-win.ps1',
+        'fault_domain_detect_windows_contents': calculate_fault_domain_detect_windows_contents,
         'license_key_contents': '',
         'enable_mesos_ipv6_discovery': 'false',
         'log_offers': 'true',
@@ -1410,7 +1471,7 @@ entry = {
         'enable_windows_agents': 'false',
         'windows_dcos_install_path': 'C:\\d2iq\\dcos',
         'windows_dcos_var_path': 'C:\\d2iq\\dcos\\var',
-        'calico_network_cidr': '192.168.0.0/16',
+        'calico_network_cidr': '172.29.0.0/16',
         'calico_ipinip_mtu': '1480',
         'calico_veth_mtu': '1500',
         'calico_vxlan_mtu': '1450',

@@ -41,12 +41,12 @@ def download(url: str, location: Path) -> Path:
     fd, path = tempfile.mkstemp(dir=str(location))
     try:
         try:
-            for chunk in r.iter_content(chunk_size=32*1024):
+            for chunk in r.iter_content(chunk_size=32 * 1024):
                 os.write(fd, chunk)
         finally:
             os.close(fd)
         r.raise_for_status()
-    except:
+    except Exception:
         os.unlink(path)
         raise
     return Path(path)

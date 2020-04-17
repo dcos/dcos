@@ -7,7 +7,7 @@ function Install-OpenSSL {
     # The argument options can be checked by running the installer
     # with `/help`.
     $p = Start-Process `
-        -FilePath $PKG_DIR/src/openssl/Win64OpenSSL-1_1_1e.exe `
+        -FilePath $PKG_DIR/src/openssl/Win64OpenSSL-1_1_1f.exe `
         -ArgumentList @("/VERYSILENT") `
         -NoNewWindow `
         -Wait `
@@ -79,7 +79,6 @@ Install-OpenSSL
 Patch-Mesos
 Build-Mesos
 
-Copy-Item "C:/Program Files/OpenSSL-Win64/lib*.dll" $env:PKG_PATH/bin
 Copy-Item $PKG_DIR/src/mesos/build/src/*.exe $env:PKG_PATH/bin
 
 Copy-Item $PKG_DIR/extra/mesos.nssm.j2 $env:PKG_PATH/conf

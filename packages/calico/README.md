@@ -55,15 +55,15 @@ DC/OS Calico integrates Calico into DC/OS for managing container networking and 
 
 ## 3. DC/OS Configuration Reference (Networking)
 
-| Parameter            | Description                                                                                                                        |
-|----------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| calico_network_cidr  | Subnet allocated for calico. The subnet specified by `calico_network_cidr` should not overlap with those for VXLAN backends or virtual networks defined for [DC/OS virtual networks](https://github.com/mesosphere/dcos-docs-site/blob/staging/pages/mesosphere/dcos/1.14/installing/production/advanced-configuration/configuration-reference/index.md#dcos_overlay_enable). Default: '192.168.0.0/16']                                                                          |
-| calico_vxlan_enabled | Control, whether IP-in-IP or VXLAN mode is used for calico, by default IP-in-IP, is suggested to be used instead of VXLAN. `calico_vxlan_enabled` is supposed to set to 'true' for the environment that IP in IP is not supported, like Azure. [Default: 'false']    |
-| calico_ipinip_mtu    | The MTU to set on the Calico IPIP tunnel device. This configuration works when calico_vxlan_enabled is set to be false. Please refer to [this](https://docs.projectcalico.org/v3.8/networking/mtu) for a suitable MTU configuration. [Default: 1440]    |
-| calico_vxlan_port    | The UDP port used for calico VXLAN. This configuration works when calico_vxlan_enabled is set to be true. [Default: 4789]           |
-| calico_vxlan_vni     | The virtual network ID used for calico VXLAN. This configuration works when calico_vxlan_enabled is set to be true. [Default: 4096] |
-| calico_vxlan_mtu     | The MTU to set on the Calico VXLAN tunnel device. This configuration works when calico_vxlan_enabled is set to be true. Please refer to [this](https://docs.projectcalico.org/v3.8/networking/mtu) for a suitable MTU configuration [Default: 1410]    |
-| calico_veth_mtu     | The MTU to set on the veth pair devices, e.g. both the container interface and host-end interface. Please refer to [this](https://docs.projectcalico.org/v3.8/networking/mtu) for a suitable MTU configuration [Default: 1410]    |
+| Parameter | Description |
+|-----------|-------------|
+| calico_network_cidr | Subnet allocated for calico. When windows is not enabled, this field MUST be set by the operator as a mandatory configuration considering possible unrecoverable accidents when the subnet used by Calico conflicts with the ones for infrastructure etc. The subnet specified by `calico_network_cidr` MUST not overlap with those for VXLAN backends or virtual networks defined for [DC/OS virtual networks](https://github.com/mesosphere/dcos-docs-site/blob/staging/pages/mesosphere/dcos/1.14/installing/production/advanced-configuration/configuration-reference/index.md#dcos_overlay_enable). Default: 172.29.0.0/16 ] |
+| calico_vxlan_enabled | Control, whether IP-in-IP or VXLAN mode is used for calico, by default VXLAN, is suggested to be used instead of VXLAN. `calico_vxlan_enabled` is supposed to set to 'true' for the environment that IP in IP is not supported, like Azure. [Default: 'true'] |
+| calico_ipinip_mtu | The MTU to set on the Calico IPIP tunnel device. This configuration works when calico_vxlan_enabled is set to be false. Please refer to [this](https://docs.projectcalico.org/v3.8/networking/mtu) for a suitable MTU configuration. [Default: 1480] |
+| calico_vxlan_port | The UDP port used for calico VXLAN. This configuration works when calico_vxlan_enabled is set to be true. [Default: 4789] |
+| calico_vxlan_vni | The virtual network ID used for calico VXLAN. This configuration works when calico_vxlan_enabled is set to be true. [Default: 4096] |
+| calico_vxlan_mtu | The MTU to set on the Calico VXLAN tunnel device. This configuration works when calico_vxlan_enabled is set to be true. Please refer to [this](https://docs.projectcalico.org/v3.8/networking/mtu) for a suitable MTU configuration [Default: 1450] |
+| calico_veth_mtu | The MTU to set on the veth pair devices, e.g. both the container interface and host-end interface. Please refer to [this](https://docs.projectcalico.org/v3.8/networking/mtu) for a suitable MTU configuration [Default: 1500] |
 
 ## 4. Application Example
 
@@ -365,7 +365,7 @@ spec:
 ```
 Temporarily, we can log into a DC/OS node, and apply the network policy by executing `/opt/mesosphere/bin/calicoctl apply -f ${network_policy_yaml_file}`.
 
-TODO: We need to change the above action by applying the network policy outside of the DC/OS cluster through dcos CLI, which is tracked in https://jira.mesosphere.com/browse/DCOS-59091
+NOTE: Support for applying Calico network policy outside of the DC/OS cluster through DCOS CLI is comming soon, please refer to [DCOS-59091](https://jira.mesosphere.com/browse/DCOS-59091) for more details.
 
 Request from bookstore-frontend is successful as expected:
 ```
