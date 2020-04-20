@@ -7,9 +7,9 @@
     },
     "mesos": {
       "kind": "git",
-      "git": "https://github.com/apache/mesos",
-      "ref": "e6b15b1e968649c794d67bb97961e8f0216e2ed8",
-      "ref_origin": "master"
+      "git": "https://github.com/asekretenko/mesos",
+      "ref": "de8cbed6d5421319dac5dc7ceefe4cc5d4aab3cd",
+      "ref_origin": "flatten"
     },
     "mesos-modules": {
       "kind": "git",
