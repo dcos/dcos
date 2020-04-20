@@ -118,6 +118,9 @@ class TestCommandUpgrade:
             ),
         )
 
+        # skip mesos agent availability check
+        cmd._check_mesos_agent = lambda: None
+
         existing_state = 'RanDOm'
         cmd.state.set_state(existing_state)
 

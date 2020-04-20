@@ -39,6 +39,14 @@ STATE_INSTALLING = 'INSTALLING'
 STATE_UPGRADING = 'UPGRADING'
 STATE_NEEDS_START = 'NEEDS_START'
 
+STEP_PRE_UPGRADE = 'PRE_UPGRADE'
+STEP_UPGRADE_TEARDOWN = 'UPGRADE_TEARDOWN'
+STEP_UPGRADE = 'UPGRADING'
+STEP_START_AFTER_UPGRADE = 'START_AFTER_UPGRADE'
+
+AVAILABLE_UPGRADE_STEPS = (
+    STEP_PRE_UPGRADE, STEP_UPGRADE_TEARDOWN, STEP_UPGRADE, STEP_START_AFTER_UPGRADE)
+
 
 class CommandState:
     """
@@ -417,7 +425,6 @@ class CmdSetup(Command):
                       f' NOP')
 
 
-
 @command_type(CLI_COMMAND.UPGRADE)
 class CmdUpgrade(Command):
     """Implementation of the Upgrade command manager."""
@@ -435,35 +442,89 @@ class CmdUpgrade(Command):
         """Verify command options."""
         pass
 
-    def execute(self):
-        """Execute command."""
-        LOG.debug(f'{self.msg_src}: Execute ...')
-
-        state = self.state.get_state()
-        if state is not None:
-            raise cm_exc.InstallationError(
-                f'Cannot upgrade DC/OS: detected state {state}'
-            )
+    def _check_mesos_agent(self):
+        """Check mesos agent availability"""
         test_file = self.config.inst_storage.root_dpath / 'bin' / 'mesos-agent.exe'
         if not test_file.exists():
             raise cm_exc.InstallationError(
                 f'Cannot upgrade DC/OS: no file at {test_file}'
             )
-        self.state.set_state(STATE_UPGRADING)
-        self._handle_upgrade()
-        self.state.set_state(STATE_NEEDS_START)
 
-    def _handle_upgrade(self):
-        """"""
-        self._handle_upgrade_pre()
-        self._handle_teardown()
-        self._handle_teardown_post()
-        self._handle_clean_setup()
+    @property
+    def _current_state(self):
+        """Get current execution state"""
+        state = self.state.get_state() or STEP_PRE_UPGRADE
+        if state not in AVAILABLE_UPGRADE_STEPS:
+            raise cm_exc.InstallationError(
+                f'Cannot upgrade DC/OS: detected state {state}'
+            )
+        return state
+
+    def execute(self):
+        """Execute command."""
+        LOG.debug(f'{self.msg_src}: Execute ...')
+        self._check_mesos_agent()
+        state = self._current_state
+
+        try:
+            self._handle(state)
+        except Exception:
+            state = self.state.get_state()
+            self._rollback(state)
+
+    def _handle(self, state: str):
+        """handle upgrade execution command state"""
+        if state == STEP_PRE_UPGRADE:
+            self._handle_upgrade_pre()
+            next_state = STEP_UPGRADE_TEARDOWN
+        elif state == STEP_UPGRADE_TEARDOWN:
+            self._handle_teardown()
+            self._handle_teardown_post()
+            next_state = STEP_UPGRADE
+        elif state == STEP_UPGRADE:
+            self._handle_clean_setup()
+            next_state = STEP_START_AFTER_UPGRADE
+        elif state == STEP_START_AFTER_UPGRADE:
+            self.state.set_state(STATE_NEEDS_START)
+            return
+        else:
+            raise cm_exc.InstallationError(
+                f'Cannot upgrade DC/OS: detected state {state}'
+            )
+
+        self.state.set_state(next_state)
+        self._handle(next_state)
+
+    def _rollback(self, state: str):
+        """upgrade execution command exceptions handler"""
+        if state == STEP_UPGRADE_TEARDOWN:
+            self._rollback_upgrade_pre()
+            self.state.unset_state()
+            return
+
+        if state in (STATE_NEEDS_START, STEP_START_AFTER_UPGRADE):
+            self._rollback_clean_setup()
+            prev_state = STEP_UPGRADE
+        elif state == STEP_UPGRADE:
+            self._rollback_teardown_post()
+            self._rollback_teardown()
+            prev_state = STEP_UPGRADE_TEARDOWN
+        else:
+            raise cm_exc.InstallationError(
+                f'Cannot rollback upgrade DC/OS: detected state {state}'
+            )
+
+        self.state.set_state(prev_state)
+        self._rollback(prev_state)
 
     def _handle_upgrade_pre(self):
         # TODO: Add all the upgrade preparation steps (package download,
         # TODO: rendering configs, etc.) here. I.e. everything that can be
         # TODO: done without affecting the currently running system.
+        pass
+
+    def _rollback_upgrade_pre(self):
+        """handle method _handle_upgrade_pre execution rollback"""
         pass
 
     def _handle_teardown(self):
@@ -506,6 +567,10 @@ class CmdUpgrade(Command):
 
             LOG.debug(f'{mheading}: Preserve shared directory: {active_dpath}:'
                       f' {preserve_dpath}')
+
+    def _rollback_teardown(self):
+        """handle method _handle_teardown execution rollback"""
+        pass
 
     def _handle_teardown_post(self):
         """Perform extra steps on cleaning up unplanned (diverging from initial
@@ -583,6 +648,10 @@ class CmdUpgrade(Command):
 
         LOG.debug(f'{mheading}: After steps: OK')
 
+    def _rollback_teardown_post(self):
+        """handle method _handle_teardown_post execution rollback"""
+        pass
+
     def _handle_clean_setup(self):
         """Perform all the steps on DC/OS installation remaining after the
         preparation stage is done (the CmdUpgrade._handle_upgrade_pre()).
@@ -599,6 +668,8 @@ class CmdUpgrade(Command):
 
         # Deploy DC/OS aggregated configuration object
         _deploy_dcos_conf(self.config.dcos_conf)
+
+        # TODO check do we need this (remove)
         result = subprocess.run(
             ('powershell', '-executionpolicy', 'Bypass', '-File', 'C:\\d2iq\\dcos\\bin\\detect_ip.ps1'),
             stdout=subprocess.PIPE,
@@ -683,6 +754,10 @@ class CmdUpgrade(Command):
 
             LOG.info(f'{self.msg_src}: Setup package:'
                      f' {package.manifest.pkg_id.pkg_id}: OK')
+
+    def _rollback_clean_setup(self):
+        """handle method _handle_clean_setup execution rollback"""
+        pass
 
     def _handle_pkg_dir_setup(self, package: Package):
         """Transfer files from special directories into location.
@@ -822,6 +897,7 @@ class CmdUpgrade(Command):
         else:
             LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Setup service:'
                       f' NOP')
+
 
 def _deploy_dcos_conf(dcos_conf):
     """Deploy aggregated DC/OS configuration object."""
