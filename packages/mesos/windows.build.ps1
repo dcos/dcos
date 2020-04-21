@@ -1,3 +1,5 @@
+Set-PSDebug -Trace 1
+
 $ErrorActionPreference = "stop"
 
 $PKG_DIR = "c:\pkg"
@@ -79,9 +81,14 @@ Install-OpenSSL
 Patch-Mesos
 Build-Mesos
 
+Write-Output "Done build, copying files."
+
 Copy-Item $PKG_DIR/src/mesos/build/src/*.exe $env:PKG_PATH/bin
 
 Copy-Item $PKG_DIR/extra/mesos.nssm.j2 $env:PKG_PATH/conf
 Copy-Item $PKG_DIR/extra/mesos.nssm-ssl.j2 $env:PKG_PATH/conf
 Copy-Item $PKG_DIR/extra/mesos.extra.j2 $env:PKG_PATH/conf
 Copy-Item $PKG_DIR/extra/mesos.ps1 $env:PKG_PATH/conf
+
+Write-Output "Done copying files."
+
