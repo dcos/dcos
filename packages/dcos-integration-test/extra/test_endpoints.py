@@ -1,4 +1,5 @@
 import ipaddress
+import re
 import urllib.parse
 
 import bs4
@@ -47,6 +48,19 @@ def test_if_all_mesos_slaves_have_registered(dcos_api_session):
     slaves_ips = sorted(x['hostname'] for x in data['slaves'])
 
     assert slaves_ips == dcos_api_session.all_slaves
+
+
+@pytest.mark.supportedwindows
+def test_metadata_endpoint(dcos_api_session):
+    r = dcos_api_session.get('/metadata')
+    assert r.status_code == 200
+
+    data = r.json()
+    {"PUBLIC_IPV4": "54.162.77.101", "CLUSTER_ID": "bac8dbc5-7744-4c41-a24a-2b8c94bba802"}
+    assert 'PUBLIC_IPV4' in data
+    assert 'CLUSTER_ID' in data
+    assert re.match('[0-9.]+', data['PUBLIC_IPV4'])
+    assert re.match('[0-9a-f-]+', data['CLUSTER_ID'])
 
 
 @pytest.mark.supportedwindows
