@@ -54,7 +54,7 @@ function Build-Mesos {
         }
 
         Write-Output "starting cmake build"
-        $p = Start-Process `
+        $build = Start-Process `
             -FilePath "cmake.exe" `
             -ArgumentList @(
                 "--build", ".",
@@ -63,9 +63,12 @@ function Build-Mesos {
                 "--", "-m"
             ) `
             -NoNewWindow `
-            -Wait `
             -PassThru
-        if ($p.ExitCode -ne 0) {
+
+        # `Start-Process -Wait` seems prone to deadlock when waiting for cmake.
+        # Thus, we use Wait-Process instead.
+        Wait-Process -InputObject $build
+        if ($build.ExitCode -ne 0) {
             Throw "build failed"
         }
     } finally {
