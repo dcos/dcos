@@ -72,8 +72,13 @@ function Build-Mesos-Modules {
                 "-DBUILD_TESTING=OFF"
             ) `
             -NoNewWindow `
-            -Wait `
             -PassThru
+
+        # `Start-Process -Wait` is prone to hanging when waiting for cmake.
+	# (The particular mechanism of this is not yet known - see D2IQ-67087.)
+        # Instead, we use `Wait-Process` here and below.
+        Wait-Process -InputObject $p
+
         if ($p.ExitCode -ne 0) {
             Throw "[mesos-modules] cmake failed to generate config"
         }
@@ -87,8 +92,10 @@ function Build-Mesos-Modules {
                 "--", "-m"
             ) `
             -NoNewWindow `
-            -Wait `
             -PassThru
+
+        Wait-Process -InputObject $p
+
         if ($p.ExitCode -ne 0) {
             Throw "[mesos-modules] build failed"
         }
