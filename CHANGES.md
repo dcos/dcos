@@ -91,7 +91,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fix Telegraf migration when no containers present. (D2IQ-64507)
 
-* Update OpenSSL to 1.1.1f. (D2IQ-65604, D2IQ-66526)
+* Update to OpenSSL 1.1.1g. (D2IQ-67050)
 
 #### Update Marathon to 1.10.6
 
