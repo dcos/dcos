@@ -4,6 +4,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### What's new
 
+* Updated DC/OS UI to [v4.0.1](https://github.com/dcos/dcos-ui/releases/tag/v4.0.1).
+
 ### Fixed and improved
 
 * Update OpenResty to 1.15.8.3. (D2IQ-66506)
@@ -18,7 +20,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
-* With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the 
+* With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
   instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
 
 * Allow Admin Router to accept files up to 32GB, such as for uploading large packages to Package Registry. (DCOS-61233)
