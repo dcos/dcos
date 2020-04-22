@@ -6,6 +6,8 @@ import bs4
 import pytest
 from requests.exceptions import ConnectionError
 
+from test_helpers import get_expanded_config
+
 __maintainer__ = 'vespian'
 __contact__ = 'dcos-security@mesosphere.io'
 
@@ -54,13 +56,34 @@ def test_if_all_mesos_slaves_have_registered(dcos_api_session):
 def test_metadata_endpoint(dcos_api_session):
     r = dcos_api_session.get('/metadata')
     assert r.status_code == 200
-
     data = r.json()
-    {"PUBLIC_IPV4": "54.162.77.101", "CLUSTER_ID": "bac8dbc5-7744-4c41-a24a-2b8c94bba802"}
     assert 'PUBLIC_IPV4' in data
     assert 'CLUSTER_ID' in data
     assert re.match('[0-9.]+', data['PUBLIC_IPV4'])
     assert re.match('[0-9a-f-]+', data['CLUSTER_ID'])
+
+    if get_expanded_config().get('security') == 'strict':
+        agent_port = 61002
+    else:
+        agent_port = 61001
+
+    for agent in dcos_api_session.public_slaves:
+        r = dcos_api_session.get('/metadata', host=agent, port=agent_port)
+        assert r.status_code == 200
+        data = r.json()
+        assert 'PUBLIC_IPV4' in data
+        assert 'CLUSTER_ID' in data
+        assert re.match('[0-9.]+', data['PUBLIC_IPV4'])
+        assert re.match('[0-9a-f-]+', data['CLUSTER_ID'])
+
+    for agent in dcos_api_session.slaves:
+        r = dcos_api_session.get('/metadata', host=agent, port=agent_port)
+        assert r.status_code == 200
+        data = r.json()
+        assert 'PUBLIC_IPV4' in data
+        assert 'CLUSTER_ID' in data
+        assert re.match('[0-9.]+', data['PUBLIC_IPV4'])
+        assert re.match('[0-9a-f-]+', data['CLUSTER_ID'])
 
 
 @pytest.mark.supportedwindows
