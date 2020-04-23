@@ -29,6 +29,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update OpenSSL to 1.1.1d. (D2IQ-65604)
 
+* Adjust dcos-net (l4lb) to allow for graceful shutdown of connections by changing the VIP backend weight to `0`
+  when tasks are unhealthy or enter the `TASK_KILLING` state instead of removing them. (D2IQ-61077)
+
 * Update Metronome to 0.6.41
 
     * There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
