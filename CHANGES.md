@@ -10,7 +10,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update OpenResty to 1.15.8.3. (D2IQ-66506)
 
-* Update OpenSSL to 1.1.1f. (D2IQ-66526)
+* Update to OpenSSL 1.1.1g. (D2IQ-67050)
 
 ## DC/OS 2.0.3 (2020-03-25)
 
