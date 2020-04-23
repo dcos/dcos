@@ -76,7 +76,7 @@ class TestCmdConfigSetup(unittest.TestCase):
         cluster_cfg = cfg.get_cluster_conf()
 
         assert "distribution-storage" in cluster_cfg.keys()
-        assert "discovery" in cluster_cfg.keys()
+        assert "zk_config" in cluster_cfg.keys()
 
     @mock.patch('core.cmdconf.cm_utl.download', side_effect=Exception())
     def test_get_ref_pkg_list_should_handle_exception(self, *args):

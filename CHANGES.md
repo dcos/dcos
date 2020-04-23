@@ -14,11 +14,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Switched from Oracle Java 8 to OpenJDK 8 (DCOS-54902)
 
-* Updated DC/OS UI to [v5.0.0](https://github.com/dcos/dcos-ui/releases/tag/v5.0.0).
+* Updated DC/OS UI to [v5.0.23](https://github.com/dcos/dcos-ui/releases/tag/v5.0.23).
 
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
-* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/e6b15b1e968649c794d67bb97961e8f0216e2ed8/CHANGELOG)
+* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/00466fe6138138ead1ca676df37c3af69104956d/CHANGELOG)
 
 * Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
 
@@ -48,9 +48,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * The config option `calico_network_cidr` can be set to a valid IPv4 CIDR range for Calico networks to use (default 172.29.0.0/16) (DCOS-60734)
 
-* Updated DC/OS UI to [master+v2.154.16](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.16).
-
 * Calico network: When using the Universal Runtime Engine, the contents of the `DCOS_SPACE`  network label will be compressed to `<7-char hash>...<last 53 chars>` if it is longer than 63 characters. (D2IQ-62219)
+
+* Update logrotate to 3.14.0 (DCOS_OSS-5947)
 
 #### Update Marathon to 1.10.6
 
@@ -91,7 +91,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fix Telegraf migration when no containers present. (D2IQ-64507)
 
-* Update OpenSSL to 1.1.1f. (D2IQ-65604, D2IQ-66526)
+* Update to OpenSSL 1.1.1g. (D2IQ-67050)
+
+* Adjust dcos-net (l4lb) to allow for graceful shutdown of connections by changing the VIP backend weight to `0`
+  when tasks are unhealthy or enter the `TASK_KILLING` state instead of removing them. (D2IQ-61077)
 
 #### Update Marathon to 1.10.6
 

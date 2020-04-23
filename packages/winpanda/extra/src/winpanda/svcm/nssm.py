@@ -51,6 +51,11 @@ class NSSMParameter(enum.Enum):
     APPEVENTSPOWERCHANGE = 'appevents power/change'
     APPEVENTSPOWERRESUME = 'appevents power/resume'
     APPREDIRECTHOOK = 'appredirecthook'
+    APPROTATEFILES = 'approtatefiles'
+    APPROTATEBYTES = 'approtatebytes'
+    APPROTATEONLINE = 'approtateonline'
+    APPROTATESECONDS = 'approtateseconds'
+    APPTIMESTAMPLOG = 'apptimestamplog'
 
     @classmethod
     def names(cls):
