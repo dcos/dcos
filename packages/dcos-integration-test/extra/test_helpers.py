@@ -196,7 +196,7 @@ def marathon_test_docker_app(app_name: str, constraints=None):
         'instances': 1,
         'healthChecks': [
             {
-                "gracePeriodSeconds": 30,
+                "gracePeriodSeconds": 90,
                 "ignoreHttp1xx": False,
                 "intervalSeconds": 10,
                 "maxConsecutiveFailures": 3,
