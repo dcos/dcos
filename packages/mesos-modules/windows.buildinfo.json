@@ -18,7 +18,6 @@
       "ref_origin": "master"
     }
   },
-  "environment": {
-  },
+  "environment": {},
   "state_directory": true
 }
