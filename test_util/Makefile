@@ -62,6 +62,23 @@ test: cluster.json
 		$(DCOS_USER_PASSWORD_ENV) \
 		timeout -k 10m --preserve-status 90m \
 		dcos-shell pytest -vv --teamcity --log-level=DEBUG --windows-only"
+	$(TERRAFORM) apply -auto-approve -input=false \
+		-var dcos_security=strict \
+		-var ssh_public_key_file="$(SSH_KEY).pub" \
+		-var windowsagent_num=1 \
+		-var dcos_license_key_contents=$(DCOS_LICENSE_CONTENTS)
+	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
+		"cd /opt/mesosphere/active/dcos-integration-test && \
+		MASTER_PUBLIC_IP=$(shell jq '.masters_public_ip.value' $<) \
+		MASTERS_PRIVATE_IPS=$(shell jq '.masters_private_ip.value' $<) \
+		MASTER_HOSTS=$(shell jq '.masters_private_ip.value' $<) \
+		PRIVATE_AGENTS_PRIVATE_IPS=$(shell jq '.private_agent_ips.value' $<) \
+		SLAVE_HOSTS=$(shell jq '.private_agent_ips.value' $<) \
+		PUBLIC_AGENTS_PRIVATE_IPS=$(shell jq '.public_agent_ips.value' $<) \
+		PUBLIC_SLAVE_HOSTS=$(shell jq '.public_agent_ips.value' $<) \
+		$(DCOS_USER_PASSWORD_ENV) \
+		timeout -k 10m --preserve-status 90m \
+		dcos-shell pytest -vv --teamcity --log-level=DEBUG --windows-only"
 
 .PHONY: ssh
 ssh: cluster.json
@@ -107,7 +124,7 @@ diagnostics-%.started: cluster.json
 	touch $@
 
 # Wait until diagnostics bundle is ready.
-diagnostics-%.done: cluster.json diagnostics-%.started 
+diagnostics-%.done: cluster.json diagnostics-%.started
 	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $(SSH_KEY) centos@$(shell jq '.masters_public_ip.value' $<) -- \
 		"$(curl_cmd) -s $(diagnostics_api)/$* -o status.json; \
 		until jq '.status' status.json | grep -q 'Done'; do cat status.json; $(curl_cmd) -s $(diagnostics_api)/$* -o status.json; sleep 5; done;"
