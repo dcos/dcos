@@ -1,0 +1,52 @@
+Major releases (e.g. 1.13.0) are treated different from patch releases (e.g. 1.13.3). We would like to focus on building up complete and correct changelog content especially for patch releases. 
+
+## Patch releases
+
+**Any user-facing change** between two patch releases must be reflected in `CHANGES.md`, in one of three sections:
+* "Notable changes"
+* "Fixed and improved"
+* "Security updates"
+
+### How to choose the section 
+
+* If you update a component with externally maintained release notes then this must be reflected in the _Notable changes_ section. In particular, when updating Mesos, Marathon, or the DC/OS UI please add a line of the format `Updated to [Mesos 1.5.1-dev](public-link-to-changelog-or-release-notes)` or update the existing line. This is also the method to choose when updating third-party components such as ZooKeeper, linking to external release notes.
+* For an individual well-defined bug fix or an improvement in DC/OS add a relevant entry to the _Fixed and improved_ section. Do this when changing parts of DC/OS that do not have externally maintained release notes. 
+* For a security-relevant change (such as a package bump or bug fix) please add an entry to the _Security updates_ section instead.
+* If your patch adds a new DC/OS install-time configuration option then please explain so in the _Notable changes_ section ([example](https://github.com/dcos/dcos/blame/ba77808952a9db03cd75db0631ca42921390ca06/CHANGES.md#L18)).
+
+### Format
+
+Individual entries must be separated by two newline characters, so that the Markdown source shows an empty line between entries:
+```
+* Entry with no newline characters. (DCOS_OSS_JIRA)
+<empty-line>
+* Another entry with no newline characters. (DCOS_OSS_JIRA_2)
+```
+
+Add new entries to the top of the existing content within a section. Each entry should be a proper English sentence, reflecting the change in easily comprehensible terms using the past tense. A JIRA ticket ID, if applicable, should be provided side-by-side with the entry as shown above.
+
+If the entry describes a bug fix in response to a customer operations (COPS) ticket then please also add the corresponding COPS ticket ID.
+
+### What is (not) a user-facing change?
+
+As stated above, any user-facing change between patch releases must be accompanied with a CHANGES.md modification. But what is a user-facing change, and what is not one? In most of the cases this is very easy to determine. Let's go through two prominent special cases:
+* If your change addresses a bug that was reported by a user then your change certainly is a user-facing one and exactly the kind of change we would like to point out in the changelog. Nobrainer.
+* Another nobrainer: if you are exclusively adding or changing a test then this is not a user-facing change.
+
+Generally, it is helpful to think in terms of public and private interfaces. If your change modifies an implementation detail within DC/OS then not providing a changelog entry is the right choice (example: a pkgpanda-internal refactoring).
+
+## Major releases
+
+For major releases (e.g. development towards 1.14.0) we would like to optimize for documenting 
+* breaking changes compared to the previous major release branch
+* major additions / features / improvements
+
+That is why there are only two sections to be filled, _Breaking changes_ and _What's new_.
+
+In case of a bug fix forward port into the development version of the next major release there is no need to mention this in the changelog of the major release. Example: a bug is fixed for the upcoming 1.12.3 release while 1.13.0 is still in development. As of common sense the same bug fix gets forward-ported into 1.13.0-dev. That very forward-port does not need to be accompanied by a changelog entry. It's _expected_ behavior for this bug fix to be included in 1.13.0. If it's not, it's a bug in itself and will be fixed with with a future 1.13.x release, accompanied with a relevant changelog entry.
+
+## Markdown templates
+
+This section is meant to be consumed by DC/OS maintainers.
+
+This [gist](https://gist.github.com/jgehrcke/e8599d015c3e7956fe02ed55bca41a85) is the source of truth for the `CHANGES.md` modification which must happen upon a *minor branch switch* (where e.g. `1.13.0` is branched off of the `1.13` branch, so that the `1.13` branch now reflects `1.13.1` development). In particular, it shows the desired state of `CHANGES.md` in the source branch upon branch switch: it shows how precisely a new `in development` section is to be added, including subsections. The gist can be commented upon.
