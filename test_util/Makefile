@@ -63,6 +63,7 @@ test: cluster.json
 		timeout -k 10m --preserve-status 90m \
 		dcos-shell pytest -vv --teamcity --log-level=DEBUG --windows-only"
 	$(TERRAFORM) apply -auto-approve -input=false \
+		-var dcos_version=$(shell curl http://$(jq '.masters_public_ip.value' cluster.json)/dcos-metadata/dcos-version.json | jq --join-output .version) \
 		-var dcos_security=strict \
 		-var ssh_public_key_file="$(SSH_KEY).pub" \
 		-var windowsagent_num=1 \
