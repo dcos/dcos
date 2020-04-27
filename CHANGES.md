@@ -1,7 +1,7 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
 
-## DC/OS 2.1.0-beta2 (in development)
+## DC/OS 2.1.0-beta4 (in development)
 
 
 ### What's new
@@ -52,7 +52,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update logrotate to 3.14.0 (DCOS_OSS-5947)
 
-#### Update Marathon to 1.10.6
+#### Update Marathon to 1.10.17
 
 * Adds support for Mesos Resource Limits (D2IQ-61131) (D2IQ-61130)
 * Removes `revive_offers_for_new_apps` option.
@@ -96,26 +96,3 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Adjust dcos-net (l4lb) to allow for graceful shutdown of connections by changing the VIP backend weight to `0`
   when tasks are unhealthy or enter the `TASK_KILLING` state instead of removing them. (D2IQ-61077)
 * Set "os:linux" attribute for the Linux agents. (D2IQ-67223)
-
-#### Update Marathon to 1.10.6
-
-* Marathon updated to 1.9.136
-
-* /v2/tasks plaintext output in Marathon 1.5 returned container network endpoints in an unusable way (MARATHON-8721)
-
-* Marathon launched too many tasks. (DCOS_OSS-5679)
-
-* Marathon used to omit pod status report with tasks in `TASK_UNKOWN` state. (MARATHON-8710)
-
-* With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
-instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
-
-* Marathon was checking authorization for unrelated apps when performing a kill-and-scale operations; this has been resolved. (MARATHON-8731)
-
-* A race condition would cause Marathon to fail to start properly. (MARATHON-8741)
-
-#### Update Metronome to 0.6.41
-
-* There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
-
-* Metronome jobs networking is now configurable (MARATHON-8727)
