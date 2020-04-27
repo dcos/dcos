@@ -3,16 +3,19 @@ Major releases (e.g. 1.13.0) are treated different from patch releases (e.g. 1.1
 ## Patch releases
 
 **Any user-facing change** between two patch releases must be reflected in `CHANGES.md`, in one of three sections:
-* "Notable changes"
-* "Fixed and improved"
-* "Security updates"
+
+* _Security updates_
+* _Notable changes_
+* _Fixed and improved_
 
 ### How to choose the section 
 
-* If you update a component with externally maintained release notes then this must be reflected in the _Notable changes_ section. In particular, when updating Mesos, Marathon, or the DC/OS UI please add a line of the format `Updated to [Mesos 1.5.1-dev](public-link-to-changelog-or-release-notes)` or update the existing line. This is also the method to choose when updating third-party components such as ZooKeeper, linking to external release notes.
-* For an individual well-defined bug fix or an improvement in DC/OS add a relevant entry to the _Fixed and improved_ section. Do this when changing parts of DC/OS that do not have externally maintained release notes. 
-* For a security-relevant change (such as a package bump or bug fix) please add an entry to the _Security updates_ section instead.
-* If your patch adds a new DC/OS install-time configuration option then please explain so in the _Notable changes_ section ([example](https://github.com/dcos/dcos/blame/ba77808952a9db03cd75db0631ca42921390ca06/CHANGES.md#L18)).
+* If the change fixes a security issue, and for this reason it is strongly recommended to stop using earlier versions of this release, then the change must go in the _Security updates_ section.
+* If the change modifies the installation procedure or adds a new DC/OS install-time configuration option then the change must go in the _Notable changes_ section ([example](https://github.com/dcos/dcos/blame/ba77808952a9db03cd75db0631ca42921390ca06/CHANGES.md#L18)).
+* If the change updates a component with externally maintained release notes then the change must go in the _Notable changes_ section. In particular, when updating Mesos, Marathon, or the DC/OS UI please add a line of the format `Updated to [Mesos 1.5.1-dev](public-link-to-changelog-or-release-notes)` or update the existing line. This is also the method to choose when updating third-party components such as ZooKeeper, linking to external release notes.
+* If the change provides a new capability to DC/OS then the change must go in the _Notable changes_ section.
+* Other externally visible changes go in the _Fixed and improved_ section.
+* Changes that are not externally visible do not need to go in the `CHANGES.md` file. Examples include changes that only modify repository configuration and tests, or code changes that do not change external behavior.
 
 ### Format
 
