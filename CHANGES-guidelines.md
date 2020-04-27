@@ -52,4 +52,30 @@ In case of a bug fix forward port into the development version of the next major
 
 This section is meant to be consumed by DC/OS maintainers.
 
-This [gist](https://gist.github.com/jgehrcke/e8599d015c3e7956fe02ed55bca41a85) is the source of truth for the `CHANGES.md` modification which must happen upon a *minor branch switch* (where e.g. `1.13.0` is branched off of the `1.13` branch, so that the `1.13` branch now reflects `1.13.1` development). In particular, it shows the desired state of `CHANGES.md` in the source branch upon branch switch: it shows how precisely a new `in development` section is to be added, including subsections. The gist can be commented upon.
+This snippet is the source of truth for the `CHANGES.md` modification which must happen upon a *minor branch switch* (e.g. where `2.0.0` is branched off from the `2.0` branch, so that the `2.0` branch now reflects `2.0.1` development). In particular, it shows the desired state of `CHANGES.md` in the source branch upon branch switch: it shows how a new `in development` section is to be added, including subsections. 
+
+```
+## DC/OS 2.0.1 (in development)
+
+
+### Security updates
+
+
+### Notable changes
+
+
+### Fixed and improved
+
+
+
+## DC/OS 2.0.0 (2019-10-17)
+
+
+### What's new
+
+- A dummy entry. (D2IQ-13337)
+
+### Breaking changes
+
+- A dummy entry. (D2IQ-13338)
+```
