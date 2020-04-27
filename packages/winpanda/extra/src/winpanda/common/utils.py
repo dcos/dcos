@@ -28,7 +28,7 @@ import requests
 
 from common import logger
 from common import exceptions as cm_exc
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 LOG = logger.get_logger(__name__)
 
@@ -108,6 +108,22 @@ def rmdir(path: str, recursive: bool = False) -> None:
             LOG.debug(f'rmdir(): Remove directory: {path_}')
     else:
         LOG.debug(f'rmdir(): Path not found: {path_}')
+
+
+def mv_dir(source: Path, target: Path) -> None:
+    """Move a directory.
+    :param source:    str, source directory path. It must be a direct directory
+                      path. Symlinks won't be processed.
+    :param target:    str, target directory path. It must be a direct directory
+                      path. Symlinks won't be processed.
+    """
+    try:
+        rmdir(str(target), recursive=True)
+        source.rename(target)
+    except (OSError, RuntimeError) as e:
+        err_msg = (f'Preserve shared directory:'
+                   f' {target}: {type(e).__name__}: {e}')
+        raise RuntimeError(err_msg) from e
 
 
 def run_external_command(cl_elements: str, timeout: float = 30) -> subprocess.CompletedProcess:

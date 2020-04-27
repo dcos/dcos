@@ -105,32 +105,6 @@ class TestCommandSetup:
 
 class TestCommandUpgrade:
 
-    def test_command_detect_state(self, tmp_path: Path):
-        """
-        winpanda upgrade command fails if a state file is found,
-        indicating that a previous setup/upgrade has failed.
-        """
-        cmd = command.CmdUpgrade(
-            command_name='test',
-            command_target='pkgall',
-            inst_storage=storage.InstallationStorage(
-                root_dpath=str(tmp_path / 'root')
-            ),
-        )
-
-        # skip mesos agent availability check
-        cmd._check_mesos_agent = lambda: None
-
-        existing_state = 'RanDOm'
-        cmd.state.set_state(existing_state)
-
-        # Installation fails due to existing state
-        with pytest.raises(exceptions.InstallationError) as e:
-            cmd.execute()
-
-        # Error message mentions found state
-        assert existing_state in e.value.args[0]
-
     def test_command_detect_cluster(self, tmp_path: Path):
         """
         winpanda upgrade command fails if a valid cluster is not found.
@@ -148,7 +122,7 @@ class TestCommandUpgrade:
         mesos_exe = bindir / 'mesos-agent.exe'
 
         # Installation fails due to non-existing Mesos agent
-        with pytest.raises(exceptions.InstallationError) as e:
+        with pytest.raises(exceptions.UpgradeError) as e:
             cmd.execute()
 
         # Error message mentions Mesos agent path

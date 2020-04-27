@@ -5,6 +5,8 @@ DC/OS package ID type definition.
 
 from typing import Tuple
 
+SEPARATOR = '--'
+
 
 class PackageId:
     """DC/OS package ID type.
@@ -13,8 +15,6 @@ class PackageId:
       [1] https://github.com/dcos/dcos/blob/master/pkgpanda/docs/\
           package_concepts.md
     """
-    _separator = '--'
-
     def __init__(self, pkg_id: str = "", pkg_name: str = "",
                  pkg_version: str = ""):
         """Constructor.
@@ -25,7 +25,7 @@ class PackageId:
         """
         # TODO: Add character set validation for arguments [1]
         if pkg_id:
-            pkg_name, sep, pkg_version = str(pkg_id).partition(self._separator)
+            pkg_name, sep, pkg_version = str(pkg_id).partition(SEPARATOR)
 
             if not (sep and pkg_name and pkg_version):
                 raise ValueError(f'Invalid package ID: {pkg_id}')
@@ -36,7 +36,7 @@ class PackageId:
         elif pkg_name and pkg_version:
             self.pkg_name = str(pkg_name)
             self.pkg_version = str(pkg_version)
-            self.pkg_id = f'{self.pkg_name}{self._separator}{self.pkg_version}'
+            self.pkg_id = f'{self.pkg_name}{SEPARATOR}{self.pkg_version}'
 
     def __str__(self) -> str:
         return self.pkg_id
@@ -49,7 +49,7 @@ class PackageId:
         :return:       tuple(str, str), two tuple of package ID elements -
                        (pkg_name, pkg_version)
         """
-        pkg_name, sep, pkg_version = str(pkg_id).partition(sep=cls._separator)
+        pkg_name, sep, pkg_version = str(pkg_id).partition(SEPARATOR)
         if not (sep and pkg_name and pkg_version):
             raise ValueError(f'Invalid package ID: {pkg_id}')
 

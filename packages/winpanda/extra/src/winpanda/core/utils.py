@@ -13,15 +13,15 @@ from common import logger
 from core.rc_ctx import ResourceContext
 from core import exceptions as cr_exc
 from core.package.package import Package
-from typing import Dict, List, Any, Callable
+from typing import Dict, List, Any, Callable, Optional
 
 
 LOG = logger.get_logger(__name__)
 
 
 def exception_handler(func: Callable) -> Callable:
-    def wrapper(fpath: Path, emheading: str = None, render: bool = False,
-                context: ResourceContext = None) -> Any:
+    def wrapper(fpath: Path, emheading: Optional[str] = None, render: bool = False,
+                context: Optional[ResourceContext] = None) -> Any:
         try:
             content = func(fpath, emheading, render, context)
 
@@ -44,8 +44,8 @@ def exception_handler(func: Callable) -> Callable:
 
 
 @exception_handler
-def rc_load_json(fpath: Path, emheading: str = None, render: bool = False,
-                 context: ResourceContext = None) -> Any:
+def rc_load_json(fpath: Path, emheading: Optional[str] = None, render: bool = False,
+                 context: Optional[ResourceContext] = None) -> Any:
     """Load JSON-formatted data from a resource file. Content of a resource
     file can be pre-processed by Jinja2 rendering engine before being passed to
     JSON-parser.
@@ -73,8 +73,8 @@ def rc_load_json(fpath: Path, emheading: str = None, render: bool = False,
 
 
 @exception_handler
-def rc_load_ini(fpath: Path, emheading: str = None, render: bool = False,
-                context: ResourceContext = None) -> Any:
+def rc_load_ini(fpath: Path, emheading: Optional[str] = None, render: bool = False,
+                context: Optional[ResourceContext] = None) -> Any:
     """Load INI-formatted data from a resource file. Content of a resource
     file can be pre-processed by Jinja2 rendering engine before being passed to
     INI-parser.
@@ -106,7 +106,7 @@ def rc_load_ini(fpath: Path, emheading: str = None, render: bool = False,
 
 @exception_handler
 def rc_load_yaml(fpath: Path, emheading: str = "", render: bool = False,
-                 context: ResourceContext = None) -> Any:
+                 context: Optional[ResourceContext] = None) -> Any:
     """Load YAML-formatted data from a resource file. Content of a resource
     file can be pre-processed by Jinja2 rendering engine before being passed to
     YAML-parser.

@@ -17,6 +17,11 @@ class InstallationError(WinpandaError):
     pass
 
 
+class UpgradeError(WinpandaError):
+    """Generic DC/OS upgrade error."""
+    pass
+
+
 class ExternalCommandError(WinpandaError):
     """External command execution error."""
     pass
