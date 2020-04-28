@@ -685,7 +685,7 @@ def test_task_metrics_metadata(dcos_api_session):
             raise Exception('Expected marathon task metrics not found')
         check_metrics_metadata()
 
-        
+
 @pytest.mark.supportedwindows
 def test_executor_metrics_metadata(dcos_api_session):
     """Test that executor metrics have expected metadata/labels"""
