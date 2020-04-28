@@ -663,6 +663,7 @@ def get_task_hostname(dcos_api_session, framework_name, task_name):
     return node
 
 
+@pytest.mark.supportedwindows
 def test_task_metrics_metadata(dcos_api_session):
     """Test that task metrics have expected metadata/labels"""
     expanded_config = get_expanded_config()
@@ -684,7 +685,8 @@ def test_task_metrics_metadata(dcos_api_session):
             raise Exception('Expected marathon task metrics not found')
         check_metrics_metadata()
 
-
+        
+@pytest.mark.supportedwindows
 def test_executor_metrics_metadata(dcos_api_session):
     """Test that executor metrics have expected metadata/labels"""
     expanded_config = get_expanded_config()
@@ -785,6 +787,7 @@ def get_agents(dcos_api_session):
     return nodes
 
 
+@pytest.mark.supportedwindows
 def test_metrics_containers(dcos_api_session):
     """Assert that a Marathon app's container and app metrics can be retrieved."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
@@ -865,6 +868,7 @@ def test_metrics_containers(dcos_api_session):
         test_containers(endpoints)
 
 
+@pytest.mark.supportedwindows
 def test_statsd_metrics_containers_app(dcos_api_session):
     """Assert that statsd app metrics appear in the v0 metrics API."""
     task_name = 'test-statsd-metrics-containers-app'
@@ -925,6 +929,7 @@ def deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, ma
             assert_app_metric_value_for_task(dcos_api_session, node, task_name, metric_name, metric_value)
 
 
+@pytest.mark.supportedwindows
 def test_prom_metrics_containers_app_host(dcos_api_session):
     """Assert that prometheus app metrics appear in the v0 metrics API."""
     task_name = 'test-prom-metrics-containers-app-host'
@@ -974,6 +979,7 @@ def test_prom_metrics_containers_app_host(dcos_api_session):
     deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name)
 
 
+@pytest.mark.supportedwindows
 def test_prom_metrics_containers_app_bridge(dcos_api_session):
     """Assert that prometheus app metrics appear in the v0 metrics API."""
     task_name = 'test-prom-metrics-containers-app-bridge'
@@ -1027,6 +1033,7 @@ def test_prom_metrics_containers_app_bridge(dcos_api_session):
     deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name)
 
 
+@pytest.mark.supportedwindows
 def test_task_prom_metrics_not_filtered(dcos_api_session):
     """Assert that prometheus app metrics aren't filtered according to adminrouter config.
 
@@ -1091,6 +1098,7 @@ def test_task_prom_metrics_not_filtered(dcos_api_session):
     deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name)
 
 
+@pytest.mark.supportedwindows
 def test_metrics_containers_nan(dcos_api_session):
     """Assert that the metrics API can handle app metric gauges with NaN values."""
     task_name = 'test-metrics-containers-nan'
