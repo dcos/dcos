@@ -22,12 +22,12 @@ function Invoke-NativeApplication {
     $ErrorActionPreference = "Continue";
     try {
         if (Test-CalledFromPrompt) {
-            $lines = & $ScriptBlock
+            $lines = { & $ScriptBlock }
         }
         else {
-            $lines = & $ScriptBlock 2>&1
+            $lines = { & $ScriptBlock 2>&1 }
         }
-        $lines | ForEach-Object -Process `
+        & $lines | ForEach-Object -Process `
             {
                 $isError = $_ -is [System.Management.Automation.ErrorRecord]
                 "$_" | Add-Member -Name IsError -MemberType NoteProperty -Value $isError -PassThru

@@ -3,11 +3,11 @@ DisplayName = telegraf
 Description = Telegraf: collects and reports metrics
 Application = powershell.exe
 AppParameters =
-{#-#} -ExecutionPolicy Bypass -NoProfile -File {{ pkg_inst_dpath }}\bin\start_telegraf.ps1
-{#-#} --prescript "{{ dcos_inst_dpath }}\bin\bootstrap.ps1"
-{#-#} --precommand "dcos-telegraf-agent"
-{#-#} --application "{{ pkg_inst_dpath }}\bin\telegraf.exe"
-{#-#} --config "{{ dcos_cfg_dpath }}\telegraf\telegraf.conf"
+{#-#} -ExecutionPolicy Bypass -NoProfile -File '{{ dcos_inst_dpath }}\bin\start_service.ps1'
+{#-#} --prescript '{{ dcos_inst_dpath }}\bin\bootstrap.ps1'
+{#-#} --precommand 'dcos-telegraf-agent'
+{#-#} --application '{{ pkg_inst_dpath }}\bin\telegraf.exe'
+{#-#} --config '{{ dcos_cfg_dpath }}\telegraf\telegraf.conf'
 {#-#} --console
 AppDirectory = {{ pkg_inst_dpath }}\bin
 AppStdout = {{ pkg_log_dpath }}\telegraf.log

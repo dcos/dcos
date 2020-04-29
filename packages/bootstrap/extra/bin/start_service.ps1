@@ -34,12 +34,12 @@ function Invoke-NativeApplication {
     $ErrorActionPreference = "Continue";
     try {
         if (Test-CalledFromPrompt) {
-            $lines = & $ScriptBlock
+            $lines = { & $ScriptBlock }
         }
         else {
-            $lines = & $ScriptBlock 2>&1
+            $lines = { & $ScriptBlock 2>&1 }
         }
-        $lines | ForEach-Object -Process `
+        & $lines | ForEach-Object -Process `
             {
                 $isError = $_ -is [System.Management.Automation.ErrorRecord]
                 "$_" | Add-Member -Name IsError -MemberType NoteProperty -Value $isError -PassThru
@@ -56,10 +56,10 @@ function Invoke-NativeApplication {
 ### Main execution:
 # Execute pre command:
 Invoke-NativeApplication {
-    cmd /c $ExecStartPre
+    cmd /c $ExecStartPre '2>&1'
 }
 
 # Execute start of the service:
 Invoke-NativeApplication {
-    cmd /c $ExecStart
+    cmd /c $ExecStart '2>&1'
 }

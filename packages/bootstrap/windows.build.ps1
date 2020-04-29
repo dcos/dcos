@@ -16,3 +16,6 @@ New-Item -ItemType Directory -Path "$env:PKG_PATH\bin"
 
 Copy-Item -Path "C:\pkg\build\extra\bin\bootstrap.ps1" `
     "$env:PKG_PATH\bin\bootstrap.ps1"
+
+Copy-Item -Path "C:\pkg\build\extra\bin\start_service.ps1" `
+    "$env:PKG_PATH\bin\start_service.ps1"

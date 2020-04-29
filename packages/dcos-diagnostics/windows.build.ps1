@@ -19,6 +19,5 @@ Copy-Item -Path "$SRC_DIR/dcos-diagnostics.exe" -Destination "$env:PKG_PATH/bin/
 New-Item -ItemType Directory "$env:PKG_PATH/conf"
 Copy-Item "c:/pkg/extra/dcos-diagnostics.nssm.j2" "$env:PKG_PATH/conf/"
 Copy-Item "c:/pkg/extra/servicelist.txt" "$env:PKG_PATH/bin/"
-Copy-Item -Path "c:/pkg/extra/start_service.ps1" -Destination "$env:PKG_PATH/bin/start_service.ps1"
 
 Pop-Location
