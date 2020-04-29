@@ -8,9 +8,9 @@ module "dcos" {
 
   cluster_name        = "tf-ci-${var.teamcity.build.id}-"
   cluster_name_random_string = true
-
+  
   ssh_public_key_file = "id_rsa.pub"
-  admin_ips           = ["0.0.0.0/0"]
+  admin_ips           = ["${data.http.whatismyip.body}/32"]
 
   num_masters        = "1"
   num_private_agents = "2"
