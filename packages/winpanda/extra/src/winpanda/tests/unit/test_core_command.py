@@ -2,7 +2,7 @@ import mock
 import unittest
 
 from core.command import CmdUpgrade
-from core import command, cmdconf
+from core import command
 
 
 def mock_upgrade_handle(func):
@@ -29,6 +29,11 @@ def mock_rollback_handle(func):
 
 class TestCmdUpgradeRobustness(unittest.TestCase):
 
+    @mock.patch.object(CmdUpgrade, '__init__', mock.Mock(return_value=None))
+    def test_all_upgrade_actions_should_have_compensation(self):
+        cmd = CmdUpgrade()
+        assert command.STEPS_UPGRADE.keys() == command.STEPS_ROLLBACK_UPGRADE.keys()
+
     @mock_upgrade_handle
     @mock.patch('core.command.CmdUpgrade._current_state', new=mock.PropertyMock(
         return_value=None))
@@ -41,8 +46,8 @@ class TestCmdUpgradeRobustness(unittest.TestCase):
 
         expected_calls = [mock.call(i) for i in (
             command.STEP_UPGRADE_TEARDOWN,
+            command.STEP_UPGRADE_TEARDOWN_POST,
             command.STEP_UPGRADE,
-            command.STEP_POST_UPGRADE,
             command.STATE_NEEDS_START)]
 
         cmd.state.set_state.assert_has_calls(expected_calls, any_order=False)
@@ -59,7 +64,6 @@ class TestCmdUpgradeRobustness(unittest.TestCase):
 
         expected_calls = [mock.call(i) for i in (
             command.STEP_UPGRADE,
-            command.STEP_POST_UPGRADE,
             command.STATE_NEEDS_START)]
 
         cmd.state.set_state.assert_has_calls(expected_calls, any_order=False)
@@ -87,7 +91,13 @@ class TestCmdUpgradeRobustness(unittest.TestCase):
 
         # check rollback steps execution order
         expected_calls = [mock.call(i) for i in (
+            # upgrading flow
+            command.STEP_PRE_UPGRADE,
+            command.STEP_UPGRADE_TEARDOWN,
+            command.STEP_UPGRADE_TEARDOWN_POST,
             command.STEP_UPGRADE,
+            # rollback flow
+            command.STEP_UPGRADE_TEARDOWN_POST,
             command.STEP_UPGRADE_TEARDOWN,
             command.STEP_PRE_UPGRADE)]
 

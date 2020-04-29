@@ -34,6 +34,11 @@ LOG = logger.get_logger(__name__)
 
 CMD_TYPES: Dict = {}
 
+STEPS_UPGRADE: Dict = {}
+STEPS_ROLLBACK_UPGRADE: Dict = {}
+
+ACTION_TYPE_UPGRADE = 'upgrade'
+ACTION_TYPE_ROLLBACK_UPGRADE = 'rollback_upgrade'
 
 STATE_INSTALLING = 'INSTALLING'
 STATE_UPGRADING = 'UPGRADING'
@@ -41,14 +46,8 @@ STATE_NEEDS_START = 'NEEDS_START'
 
 STEP_PRE_UPGRADE = 'PRE_UPGRADE'
 STEP_UPGRADE_TEARDOWN = 'UPGRADE_TEARDOWN'
+STEP_UPGRADE_TEARDOWN_POST = 'UPGRADE_TEARDOWN_POST'
 STEP_UPGRADE = 'UPGRADING'
-STEP_POST_UPGRADE = 'START_AFTER_UPGRADE'
-
-AVAILABLE_UPGRADE_STEPS = (
-    STEP_PRE_UPGRADE,
-    STEP_UPGRADE_TEARDOWN,
-    STEP_UPGRADE,
-    STEP_POST_UPGRADE)
 
 
 class CommandState:
@@ -103,6 +102,28 @@ def command_type(command_name: str) -> Any:
         return cls
 
     return decorator
+
+
+def step(action: str, current: str, forward: str = None) -> Any:
+    """Register new step for execution state machine.
+
+    :param action: str name of a action (Install, Upgrade, Rollback etc)
+    :param current: str name of a current step
+    :param forward: str name of a next step after successful execution of current step
+    """
+    def wrapper(func):
+        # TODO check for replacement existing steps
+        if current == forward:
+            raise cm_exc.UpgradeError(f'Upgrade recursion infinite loop indicated {func.__name__}')
+
+        if action == ACTION_TYPE_UPGRADE:
+            STEPS_UPGRADE[current] = {'func': func.__name__, 'state': forward}
+        elif action == ACTION_TYPE_ROLLBACK_UPGRADE:
+            STEPS_ROLLBACK_UPGRADE[current] = {'func': func.__name__, 'state': forward}
+
+        return func
+
+    return wrapper
 
 
 class Command(metaclass=abc.ABCMeta):
@@ -468,7 +489,7 @@ class CmdUpgrade(Command):
     def _current_state(self) -> Optional[str]:
         """Get current upgrade command execution state"""
         state = self.state.get_state()
-        if state not in (None, *AVAILABLE_UPGRADE_STEPS, STATE_NEEDS_START):
+        if state not in (None, *STEPS_UPGRADE, STATE_NEEDS_START):
             raise cm_exc.UpgradeError(
                 f'Cannot upgrade/rollback DC/OS: detected state "{state}"'
             )
@@ -479,88 +500,41 @@ class CmdUpgrade(Command):
         LOG.debug(f'{self.msg_src}: Execute ...')
 
         try:
-            self._handle()
-            self.state.set_state(STATE_NEEDS_START)
+            self._handle_upgrade()
         except cm_exc.UpgradeError as e:
             # do not rollback UpgradeError because they are expected
             raise e
         except:
-            self._rollback()
+            self._handle_rollback()
             self.state.unset_state()
 
-    def _handle(self):
+    def _handle_state(self, state: str, data: Dict[str, str]):
+        while state in data:
+            current_step = data[state]
+            getattr(self, current_step['func'])()
+            state = current_step['state']
+            self.state.set_state(state)
+
+    def _handle_upgrade(self):
         """handle upgrade execution command"""
         state = self._current_state
 
         if state is None:
             state = STEP_PRE_UPGRADE
+            self.state.set_state(state)
         else:
             LOG.info(f'Upgrade after interruption state {state}')
 
-        while state in AVAILABLE_UPGRADE_STEPS:
-            self.state.set_state(state)
-            next_state = self._handle_state(state)
+        self._handle_state(state, STEPS_UPGRADE)
 
-            if next_state == state:
-                raise cm_exc.UpgradeError(f'Upgrade recursion infinite loop indicated {state}')
-            else:
-                state = next_state
-
-    def _handle_state(self, state: str) -> Optional[str]:
-        """handle upgrade execution command state"""
-        next_step = None
-
-        if state == STEP_PRE_UPGRADE:
-            self._handle_upgrade_pre()
-            next_step = STEP_UPGRADE_TEARDOWN
-        elif state == STEP_UPGRADE_TEARDOWN:
-            self._handle_teardown()
-            self._handle_teardown_post()
-            next_step = STEP_UPGRADE
-        elif state == STEP_UPGRADE:
-            self._handle_clean_setup()
-            next_step = STEP_POST_UPGRADE
-        elif state not in (STEP_POST_UPGRADE, STATE_NEEDS_START):
-            raise cm_exc.UpgradeError(
-                f'Cannot upgrade DC/OS: detected state {state}'
-            )
-
-        return next_step
-
-    def _rollback(self):
+    def _handle_rollback(self):
         """upgrade execution command exceptions handler"""
         state = self._current_state
         LOG.warning(f'Recovery after unsuccessful upgrade state "{state}"')
 
-        while state in AVAILABLE_UPGRADE_STEPS:
-            undo_state = self._rollback_state(state)
-            self.state.set_state(state)
+        self._handle_state(state, STEPS_ROLLBACK_UPGRADE)
 
-            if undo_state == state:
-                raise cm_exc.UpgradeError(f'Upgrade recursion infinite loop indicated {state}')
-            else:
-                state = undo_state
-
-    def _rollback_state(self, state: str) -> Optional[str]:
-        """upgrade execution command exceptions handler step"""
-        undo_step = None
-
-        if state == STEP_UPGRADE:
-            self._rollback_clean_setup()
-            undo_step = STEP_UPGRADE_TEARDOWN
-        elif state == STEP_UPGRADE_TEARDOWN:
-            self._rollback_teardown_post()
-            self._rollback_teardown()
-            undo_step = STEP_PRE_UPGRADE
-        elif state == STEP_PRE_UPGRADE:
-            self._rollback_upgrade_pre()
-        elif state != STEP_POST_UPGRADE:
-            raise cm_exc.UpgradeError(
-                f'Cannot rollback upgrade DC/OS: detected state {state}'
-            )
-
-        return undo_step
-
+    @step(ACTION_TYPE_UPGRADE, STEP_PRE_UPGRADE, STEP_UPGRADE_TEARDOWN)
     def _handle_upgrade_pre(self) -> None:
         # TODO: Add all the upgrade preparation steps (package download,
         # TODO: rendering configs, etc.) here. I.e. everything that can be
@@ -571,10 +545,12 @@ class CmdUpgrade(Command):
                 f'Cannot upgrade DC/OS: no file at {self.mesos_location}'
             )
 
+    @step(ACTION_TYPE_ROLLBACK_UPGRADE, STEP_PRE_UPGRADE, None)
     def _rollback_upgrade_pre(self) -> None:
         """handle method _handle_upgrade_pre execution rollback"""
         pass
 
+    @step(ACTION_TYPE_UPGRADE, STEP_UPGRADE_TEARDOWN, STEP_UPGRADE_TEARDOWN_POST)
     def _handle_teardown(self) -> None:
         """Teardown the currently installed DC/OS."""
         mheading = f'{self.msg_src}: Execute'
@@ -612,6 +588,7 @@ class CmdUpgrade(Command):
             LOG.debug(f'{mheading}: Preserve shared directory: {active_dpath}:'
                       f' {preserve_dpath}')
 
+    @step(ACTION_TYPE_ROLLBACK_UPGRADE, STEP_UPGRADE_TEARDOWN, STEP_PRE_UPGRADE)
     def _rollback_teardown(self) -> None:
         """handle method _handle_teardown execution rollback
 
@@ -620,6 +597,7 @@ class CmdUpgrade(Command):
         """
         pass
 
+    @step(ACTION_TYPE_UPGRADE, STEP_UPGRADE_TEARDOWN_POST, STEP_UPGRADE)
     def _handle_teardown_post(self) -> None:
         """Perform extra steps on cleaning up unplanned (diverging from initial
         winpanda design and so, not removed by normal teardown procedure) DC/OS
@@ -696,10 +674,12 @@ class CmdUpgrade(Command):
 
         LOG.debug(f'{mheading}: After steps: OK')
 
+    @step(ACTION_TYPE_ROLLBACK_UPGRADE, STEP_UPGRADE_TEARDOWN_POST, STEP_UPGRADE_TEARDOWN)
     def _rollback_teardown_post(self) -> None:
         """handle method _handle_teardown_post execution rollback"""
         pass
 
+    @step(ACTION_TYPE_UPGRADE, STEP_UPGRADE, STATE_NEEDS_START)
     def _handle_clean_setup(self) -> None:
         """Perform all the steps on DC/OS installation remaining after the
         preparation stage is done (the CmdUpgrade._handle_upgrade_pre()).
@@ -803,6 +783,7 @@ class CmdUpgrade(Command):
             LOG.info(f'{self.msg_src}: Setup package:'
                      f' {package.manifest.pkg_id.pkg_id}: OK')
 
+    @step(ACTION_TYPE_ROLLBACK_UPGRADE, STEP_UPGRADE, STEP_UPGRADE_TEARDOWN_POST)
     def _rollback_clean_setup(self) -> None:
         """handle method _handle_clean_setup execution rollback"""
         pass
