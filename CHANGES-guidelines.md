@@ -30,14 +30,6 @@ Add new entries to the top of the existing content within a section. Each entry 
 
 If the entry describes a bug fix in response to a customer operations (COPS) ticket then please also add the corresponding COPS ticket ID.
 
-### What is (not) a user-facing change?
-
-As stated above, any user-facing change between patch releases must be accompanied with a CHANGES.md modification. But what is a user-facing change, and what is not one? In most of the cases this is very easy to determine. Let's go through two prominent special cases:
-* If your change addresses a bug that was reported by a user then your change certainly is a user-facing one and exactly the kind of change we would like to point out in the changelog. Nobrainer.
-* Another nobrainer: if you are exclusively adding or changing a test then this is not a user-facing change.
-
-Generally, it is helpful to think in terms of public and private interfaces. If your change modifies an implementation detail within DC/OS then not providing a changelog entry is the right choice (example: a pkgpanda-internal refactoring).
-
 ## Major releases
 
 For major releases (e.g. development towards 1.14.0) we would like to optimize for documenting 
