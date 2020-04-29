@@ -477,6 +477,19 @@ class CmdUpgrade(Command):
     def execute(self) -> None:
         """Execute command."""
         LOG.debug(f'{self.msg_src}: Execute ...')
+
+        try:
+            self._handle()
+            self.state.set_state(STATE_NEEDS_START)
+        except cm_exc.UpgradeError as e:
+            # do not rollback UpgradeError because they are expected
+            raise e
+        except:
+            self._rollback()
+            self.state.unset_state()
+
+    def _handle(self):
+        """handle upgrade execution command"""
         state = self._current_state
 
         if state is None:
@@ -484,20 +497,16 @@ class CmdUpgrade(Command):
         else:
             LOG.info(f'Upgrade after interruption state {state}')
 
-        try:
-            self._handle(state)
-            self.state.set_state(STATE_NEEDS_START)
-        except cm_exc.UpgradeError as e:
-            # do not rollback UpgradeError because they are expected
-            raise e
-        except:
-            state = self._current_state  # reload state value after unsuccessful upgrade
-            LOG.warning(f'Recovery after unsuccessful upgrade state "{state}"')
+        while state in AVAILABLE_UPGRADE_STEPS:
+            self.state.set_state(state)
+            next_state = self._handle_state(state)
 
-            self._rollback(state)
-            self.state.unset_state()
+            if next_state == state:
+                raise cm_exc.UpgradeError(f'Upgrade recursion infinite loop indicated {state}')
+            else:
+                state = next_state
 
-    def _handle(self, state: str) -> None:
+    def _handle_state(self, state: str) -> Optional[str]:
         """handle upgrade execution command state"""
         next_step = None
 
@@ -516,12 +525,24 @@ class CmdUpgrade(Command):
                 f'Cannot upgrade DC/OS: detected state {state}'
             )
 
-        if next_step is not None:
-            self.state.set_state(next_step)
-            self._handle(next_step)
+        return next_step
 
-    def _rollback(self, state: Optional[str]) -> None:
+    def _rollback(self):
         """upgrade execution command exceptions handler"""
+        state = self._current_state
+        LOG.warning(f'Recovery after unsuccessful upgrade state "{state}"')
+
+        while state in AVAILABLE_UPGRADE_STEPS:
+            undo_state = self._rollback_state(state)
+            self.state.set_state(state)
+
+            if undo_state == state:
+                raise cm_exc.UpgradeError(f'Upgrade recursion infinite loop indicated {state}')
+            else:
+                state = undo_state
+
+    def _rollback_state(self, state: str) -> Optional[str]:
+        """upgrade execution command exceptions handler step"""
         undo_step = None
 
         if state == STEP_UPGRADE:
@@ -533,14 +554,12 @@ class CmdUpgrade(Command):
             undo_step = STEP_PRE_UPGRADE
         elif state == STEP_PRE_UPGRADE:
             self._rollback_upgrade_pre()
-        elif state not in (None, STEP_POST_UPGRADE, STATE_NEEDS_START):
+        elif state != STEP_POST_UPGRADE:
             raise cm_exc.UpgradeError(
                 f'Cannot rollback upgrade DC/OS: detected state {state}'
             )
 
-        if undo_step is not None:
-            self.state.set_state(undo_step)
-            self._rollback(undo_step)
+        return undo_step
 
     def _handle_upgrade_pre(self) -> None:
         # TODO: Add all the upgrade preparation steps (package download,
@@ -594,8 +613,12 @@ class CmdUpgrade(Command):
                       f' {preserve_dpath}')
 
     def _rollback_teardown(self) -> None:
-        """handle method _handle_teardown execution rollback"""
-        self._handle_clean_setup()
+        """handle method _handle_teardown execution rollback
+
+        Do not need to process any actions because _handle_teardown do not effect on
+        current state
+        """
+        pass
 
     def _handle_teardown_post(self) -> None:
         """Perform extra steps on cleaning up unplanned (diverging from initial
