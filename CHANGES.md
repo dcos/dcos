@@ -95,6 +95,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Adjust dcos-net (l4lb) to allow for graceful shutdown of connections by changing the VIP backend weight to `0`
   when tasks are unhealthy or enter the `TASK_KILLING` state instead of removing them. (D2IQ-61077)
+* Set "os:linux" attribute for the Linux agents. (D2IQ-67223)
 
 #### Update Marathon to 1.10.6
 
