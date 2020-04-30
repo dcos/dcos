@@ -146,5 +146,20 @@
                   "teamcity/dcos/test/terraform/aws/onprem/static/group3",
                   "teamcity/dcos/test/terraform/aws/onprem/static/group4"
         ]
-    }
+    },
+    "test-binding": {"teamcity/dcos/build/dcos": {"type": "",
+                                                   "id": ""},
+                     "teamcity/dcos/build/tox": {"type": "",
+                                                 "id": ""},
+                     "teamcity/dcos/test/test-e2e/group1": {"type": "",
+                                                            "id": ""},
+                     "teamcity/dcos/test/terraform/aws/onprem/static/group1": {"type": "",
+                                                                               "id": ""},
+                     "teamcity/dcos/test/terraform/aws/onprem/static/group2": {"type": "",
+                                                                               "id": ""},
+                     "teamcity/dcos/test/terraform/aws/onprem/static/group3": {"type": "",
+                                                                               "id": ""},
+                     "teamcity/dcos/test/terraform/aws/onprem/static/group4": {"type": "",
+                                                                               "id": ""}
+                    }
 }
