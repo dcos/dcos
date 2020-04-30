@@ -7,6 +7,10 @@ package:
           "PROVIDER": "{{ provider }}"
         }
       }
+  - path: {{ windows_dcos_install_path }}\etc\dummy.txt
+    content: |
+      # This file causes pkgpanda to add variables that are used in package templates
+      zk://{{ zk_address }}/mesos
   - path: {{ windows_dcos_install_path }}\bin\detect_ip.ps1
     content: {{ ip_detect_windows_contents }}
   - path: {{ windows_dcos_install_path }}\bin\detect_ip_public.ps1

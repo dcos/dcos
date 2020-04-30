@@ -165,58 +165,15 @@ class CmdConfigSetup(CommandConfig):
         cluster_conf = {}
         dcos_conf = self.dcos_conf
 
-        i = 0
-        masters = dcos_conf.get('values').get('master_list').strip('][').split(', ')
-        for ipaddr in masters:
-            i += 1
-            cluster_conf[f'master-node-{i}'] = {
-                'privateipaddr': ipaddr.strip('\"'),
-                'zookeeperlistenerport': cm_const.ZK_CLIENTPORT_DFT
-            }
-        # CLI options take precedence, if any.
-        # list(tuple('ipaddr', 'port'))
-        cli_master_priv_ipaddrs = [
-            ipaddr.partition(':')[::2] for ipaddr in
-            self.cmd_opts.get(CLI_CMDOPT.MASTER_PRIVIPADDR, '').split(' ') if
-            ipaddr != ''
-        ]
-        mnode_sects = [
-            sect for sect in cluster_conf if sect.startswith('master-node')
-        ]
-        # iterator(tuple('ipaddr', 'port'), str)
-        change_map = zip(cli_master_priv_ipaddrs, mnode_sects)
-        for item in change_map:
-            if item[0][0]:
-                cluster_conf[item[1]]['privateipaddr'] = item[0][0]
-                if item[0][1]:
-                    try:
-                        port = int(item[0][1])
-                    except (ValueError, TypeError):
-                        port = cm_const.ZK_CLIENTPORT_DFT
-                    port = (port if 0 < port < 65536 else
-                            cm_const.ZK_CLIENTPORT_DFT)
-                    cluster_conf[item[1]]['zookeeperclientport'] = port
-
-        # Add extra 'master-node' sections, if CLI provides extra arguments
-        extra_cli_items = cli_master_priv_ipaddrs[len(mnode_sects):]
-        for n, item in enumerate(extra_cli_items):
-            if item[0]:
-                # TODO: Implement collision tolerance for section names.
-                cluster_conf[f'master-node-extra{n}'] = {}
-                cluster_conf[f'master-node-extra{n}']['privateipaddr'] = (
-                    item[0]
-                )
-                if item[1]:
-                    try:
-                        port = int(item[1])
-                    except (ValueError, TypeError):
-                        port = cm_const.ZK_CLIENTPORT_DFT
-                    port = (port if 0 < port < 65536 else
-                            cm_const.ZK_CLIENTPORT_DFT)
-                    cluster_conf[f'master-node-extra{n}'][
-                        'zookeeperclientport'
-                    ] = port
-        # DC/OS storage distribution parameters
+        try:
+            zk_address = dcos_conf.get('values').get('zk_address')
+        except Exception as e:
+            raise WinpandaError(
+                f'The following value is unsupported: "zk_address": '
+                f'{zk_address} '
+                f'{type(e).__name__}: {e}'
+            )
+        cluster_conf['zk_config'] = {'zk_address': zk_address}
 
         cli_dstor_dcoscfg_path = self.cmd_opts.get(
             CLI_CMDOPT.DSTOR_DCOSCFGPATH
@@ -242,10 +199,6 @@ class CmdConfigSetup(CommandConfig):
             cluster_conf['distribution-storage']['rooturl'] = (
                 self.root_url
             )
-
-        # Add discovery type configuration
-        discovery_type = dcos_conf.get('values').get('master_discovery')
-        cluster_conf['discovery'] = {'type': discovery_type}
 
         return cluster_conf
 

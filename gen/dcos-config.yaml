@@ -1378,6 +1378,7 @@ package:
       MESOS_RECONFIGURATION_POLICY=additive
       MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
       MESOS_SECCOMP_CONFIG_DIR=/opt/mesosphere/etc/dcos/mesos/seccomp
+      MESOS_ATTRIBUTES=os:linux
 {% switch has_mesos_seccomp_profile_name %}
 {% case "true" %}
       MESOS_SECCOMP_PROFILE_NAME={{ mesos_seccomp_profile_name }}
@@ -1438,7 +1439,7 @@ package:
     content: |
       MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1, "end": 21},{"begin": 23, "end": 5050},{"begin": 5052, "end": 32000}]}}]
       MESOS_DEFAULT_ROLE=slave_public
-      MESOS_ATTRIBUTES=public_ip:true
+      MESOS_ATTRIBUTES=public_ip:true;os:linux
   - path: /etc/mesos-executor-environment.json
     content: |
       {
