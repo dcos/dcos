@@ -4,11 +4,11 @@ Description = DC/OS Diagnostics Windows Agent: exposes component health
 Application = powershell.exe
 AppDirectory = {{ pkg_inst_dpath }}\bin
 AppParameters =
-{#-#} -ExecutionPolicy Bypass -NoProfile -File '{{ dcos_inst_dpath }}\bin\start_service.ps1'
-{#-#} --prescript '{{ dcos_inst_dpath }}\bin\bootstrap.ps1'
-{#-#} --precommand 'dcos-diagnostics-agent'
-{#-#} --application '{{ pkg_inst_dpath }}\bin\dcos-diagnostics.exe'
-{#-#} daemon --config '{{ dcos_cfg_dpath }}\dcos-diagnostics\dcos-diagnostics-config.json'
+{#-#} -ExecutionPolicy Bypass -NoProfile -File {{ dcos_inst_dpath }}\bin\start_service.ps1
+{#-#} --prescript {{ dcos_inst_dpath }}\bin\bootstrap.ps1
+{#-#} --precommand dcos-diagnostics-agent
+{#-#} --application {{ pkg_inst_dpath }}\bin\dcos-diagnostics.exe
+{#-#} daemon --config {{ dcos_cfg_dpath }}\dcos-diagnostics\dcos-diagnostics-config.json
 {#-#} --hostname {{ local_priv_ipaddr }}
 Start = SERVICE_AUTO_START
 AppStdout = {{ pkg_log_dpath }}\dcos-diagnostics.log

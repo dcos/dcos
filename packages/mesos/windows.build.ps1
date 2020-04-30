@@ -92,5 +92,4 @@ Copy-Item $PKG_DIR/src/mesos/build/src/*.exe $env:PKG_PATH/bin
 
 Copy-Item $PKG_DIR/extra/mesos.nssm.j2 $env:PKG_PATH/conf
 Copy-Item $PKG_DIR/extra/mesos.nssm-ssl.j2 $env:PKG_PATH/conf
-Copy-Item $PKG_DIR/extra/mesos.extra.j2 $env:PKG_PATH/conf
-Copy-Item $PKG_DIR/extra/mesos.ps1 $env:PKG_PATH/conf
+Copy-Item $PKG_DIR/extra/start_mesos.ps1 $env:PKG_PATH/bin
