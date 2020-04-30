@@ -4,6 +4,7 @@ Resource rendering context calculation stuff.
 """
 import configparser as cfp
 import json
+import subprocess
 
 from common import constants as cm_const
 from common import logger
@@ -13,12 +14,14 @@ from typing import Dict
 
 LOG = logger.get_logger(__name__)
 
+CMD_GET_IP = ('powershell', '-executionpolicy', 'Bypass', '-File',
+              'C:\\d2iq\\dcos\\bin\\detect_ip.ps1')
+
 
 class RCCONTEXT_ITEM:
     """Element of resource rendering context."""
-    MASTER_PRIV_IPADDR = 'master_priv_ipaddr'
     LOCAL_PRIV_IPADDR = 'local_priv_ipaddr'
-    ZK_CLIENT_PORT = 'zk_client_port'
+    ZK_ADDRESS = 'zk_address'
 
     DCOS_INST_DPATH = 'dcos_inst_dpath'
     DCOS_CFG_DPATH = 'dcos_cfg_dpath'
@@ -66,6 +69,20 @@ class ResourceContext:
         self._cluster_conf = cluster_conf
         self._pkg_id = pkg_id
         self._extra_values = extra_values
+        self._local_priv_ipaddr = None
+
+    @property
+    def local_priv_ipaddr(self):
+        if self._local_priv_ipaddr is None:
+            if self._extra_values:
+                # TODO replace this hardcoded value 'privateipaddr' on constant
+                local_priv_ipaddr = self._extra_values['privateipaddr']
+            else:
+                result = subprocess.run(CMD_GET_IP, stdout=subprocess.PIPE, check=True)
+                local_priv_ipaddr = result.stdout.decode('ascii').strip()
+            self._local_priv_ipaddr = local_priv_ipaddr
+
+        return self._local_priv_ipaddr
 
     def get_items(self, json_ready=False) -> Dict:
         """Get resource rendering context items.
@@ -137,30 +154,15 @@ class ResourceContext:
         if self._cluster_conf is None:
             return {}
 
-        cluster_conf = cfp.ConfigParser()
-        cluster_conf.read_dict(self._cluster_conf)
-
-        mnode_cfg_items = [
-            (cluster_conf.get(s, 'privateipaddr',
-                              fallback='127.0.0.1'),
-             cluster_conf.get(s, 'zookeeperclientport',
-                              fallback=cm_const.ZK_CLIENTPORT_DFT))
-            for s in cluster_conf.sections() if s.startswith('master-node')
-        ]
-        master_priv_ipaddr = mnode_cfg_items[0][0] if mnode_cfg_items else (
-            '127.0.0.1'
-        )
-        zk_client_port = mnode_cfg_items[0][1] if mnode_cfg_items else (
-            cm_const.ZK_CLIENTPORT_DFT
-        )
-        local_priv_ipaddr = cluster_conf.get(
-            'local', 'privateipaddr', fallback='127.0.0.1'
-        )
+        # TODO check do we need this
+        # cluster_conf = cfp.ConfigParser()
+        # cluster_conf.read_dict(self._cluster_conf)
+        zk_address = self._cluster_conf.get('zk_config', {}).get(
+            'zk_address', 'zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181')
 
         items = {
-            RCCONTEXT_ITEM.MASTER_PRIV_IPADDR: escape(master_priv_ipaddr),
-            RCCONTEXT_ITEM.LOCAL_PRIV_IPADDR: escape(local_priv_ipaddr),
-            RCCONTEXT_ITEM.ZK_CLIENT_PORT: escape(zk_client_port)
+            RCCONTEXT_ITEM.LOCAL_PRIV_IPADDR: escape(self.local_priv_ipaddr),
+            RCCONTEXT_ITEM.ZK_ADDRESS: escape(zk_address)
         }
 
         return items

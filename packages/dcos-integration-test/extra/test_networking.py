@@ -66,7 +66,7 @@ class MarathonApp:
                 del args['host_port']
         self.app, self.uuid = test_helpers.marathon_test_app(**args)
         # allow this app to run on public slaves
-        self.app['acceptedResourceRoles'] = ['*', 'slave_public']
+        self.app['acceptedResourceRoles'] = ['*']
         self.id = self.app['id']
 
     def __str__(self):
@@ -127,7 +127,7 @@ class MarathonPod:
         self.id = pod_name_fmt.format(self.uuid)
         self.app = {
             'id': self.id,
-            'scheduling': {'placement': {'acceptedResourceRoles': ['*', 'slave_public']}},
+            'scheduling': {'placement': {'acceptedResourceRoles': ['*']}},
             'containers': [{
                 'name': 'app-{}'.format(self.uuid),
                 'resources': {'cpus': 0.01, 'mem': 32},
@@ -932,5 +932,21 @@ def test_calico_container_ip_in_network_cidr(container, dcos_api_session):
         app.wait(dcos_api_session)
         contain_ip_address, _ = app.hostport(dcos_api_session)
         assert IPv4Address(contain_ip_address) in IPv4Network(network_cidr)
+    finally:
+        app.purge(dcos_api_session)
+
+
+def test_calico_cni_long_label(dcos_api_session):
+    app = MarathonApp(
+        marathon.Container.DOCKER,
+        marathon.Network.USER,
+        network_name="calico",
+        app_name_fmt='/integration-test/calico-cni-long-label/app-path-longer-than-63-characters/{}')
+    log.info("application: {}".format(app.app))
+
+    try:
+        app.deploy(dcos_api_session)
+        app.wait(dcos_api_session)
+        # We just need to wait until app is healthy
     finally:
         app.purge(dcos_api_session)

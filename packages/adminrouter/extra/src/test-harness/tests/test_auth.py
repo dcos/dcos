@@ -117,7 +117,7 @@ class TestAuthnJWTValidator:
             "No auth token in request.": SearchCriteria(0, True),
             "Invalid token. Reason: invalid jwt string":
                 SearchCriteria(0, True),
-            "UID from the valid DC/OS authentication token: `test`": SearchCriteria(1, True),
+            "uid=test": SearchCriteria(1, True),
             }
 
         token = jwt_generator(uid='test')
@@ -131,8 +131,7 @@ class TestAuthnJWTValidator:
 
     def test_valid_auth_token(self, master_ar_process_perclass, valid_user_header):
         log_messages = {
-            "UID from the valid DC/OS authentication token: `bozydar`":
-                SearchCriteria(1, True),
+            "uid=bozydar": SearchCriteria(1, True),
             }
         assert_endpoint_response(
             master_ar_process_perclass,
@@ -149,10 +148,8 @@ class TestAuthnJWTValidator:
             jwt_generator,
             ):
         log_messages = {
-            "UID from the valid DC/OS authentication token: `bozydar`":
-                SearchCriteria(1, True),
-            "UID from the valid DC/OS authentication token: `test`":
-                SearchCriteria(0, True),
+            "uid=bozydar": SearchCriteria(1, True),
+            "uid=test": SearchCriteria(0, True),
             }
 
         token = jwt_generator(uid='test')

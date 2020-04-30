@@ -6,6 +6,7 @@ import abc
 import os
 from pathlib import Path
 import shutil
+import subprocess
 from typing import Optional
 import yaml
 
@@ -185,6 +186,17 @@ class CmdSetup(Command):
             'distribution-storage', {}
         ).get('pkgrepopath', '')
 
+        # Deploy DC/OS aggregated configuration object
+        _deploy_dcos_conf(self.config.dcos_conf)
+        result = subprocess.run(
+            ('powershell', '-executionpolicy', 'Bypass', '-File', 'C:\\d2iq\\dcos\\bin\\detect_ip.ps1'),
+            stdout=subprocess.PIPE,
+            check=True
+        )
+        local_priv_ipaddr = result.stdout.decode('ascii').strip()
+
+        self.config.dcos_conf['values']['privateipaddr'] = local_priv_ipaddr
+
         # Add packages to the local package repository and initialize their
         # manager objects
         packages_bulk = {}
@@ -236,9 +248,6 @@ class CmdSetup(Command):
             #       CmdSetup and CmdUpgrade
             self._handle_pkg_cfg_setup(package)
 
-        # Deploy DC/OS aggregated configuration object
-        self._deploy_dcos_conf()
-
         # Run per package extra installation helpers, setup services and
         # save manifests
         for package in packages_sorted_by_deps:
@@ -282,6 +291,10 @@ class CmdSetup(Command):
         for name in ('bin', 'etc', 'include', 'lib'):
             srcdir = pkg_path / name
             if srcdir.exists():
+                LOG.info(
+                    'Install directory %s for package %s',
+                    name, package.id.pkg_name
+                )
                 dstdir = root / name
                 dstdir.mkdir(exist_ok=True)
                 cm_utl.transfer_files(str(srcdir), str(dstdir))
@@ -295,7 +308,7 @@ class CmdSetup(Command):
         #       Package.handle_config_setup()
         pkg_id = package.manifest.pkg_id
 
-        LOG.debug(f'{self.msg_src}: Execute: {pkg_id.pkg_name}: Setup'
+        LOG.info(f'{self.msg_src}: Execute: {pkg_id.pkg_name}: Setup'
                   f' configuration: ...')
         try:
             package.cfg_manager.setup_conf()
@@ -348,8 +361,8 @@ class CmdSetup(Command):
 
         if package.svc_manager:
             svc_name = package.svc_manager.svc_name
-            LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Setup service:'
-                      f' {svc_name}: ...')
+            LOG.info(f'{msg_src}: Execute: {pkg_id.pkg_name}: Setup service:'
+                      f' {svc_name}: ...', )
             try:
                 ret_code, stdout, stderr = package.svc_manager.status()
             except svcm_exc.ServiceManagerCommandError as e:
@@ -403,30 +416,6 @@ class CmdSetup(Command):
             LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Setup service:'
                       f' NOP')
 
-    def _deploy_dcos_conf(self):
-        """Deploy aggregated DC/OS configuration object."""
-        # TODO: This should be made standalone and then reused in command
-        #       manager classes CmdSetup and CmdUpgrade to avoid code
-        #       duplication
-        LOG.debug(f'{self.msg_src}: Execute: Deploy aggregated config: ...')
-
-        template = self.config.dcos_conf.get('template')
-        values = self.config.dcos_conf.get('values')
-
-        rendered = template.render(values)
-        config = yaml.safe_load(rendered)
-
-        assert config.keys() == {"package"}
-
-        # Write out the individual files
-        for file_info in config["package"]:
-            assert file_info.keys() <= {"path", "content", "permissions"}
-            path = Path(file_info['path'].replace('\\', os.path.sep))
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(file_info['content'] or '')
-            # On Windows, we don't interpret permissions yet
-
-        LOG.debug(f'{self.msg_src}: Execute: Deploy aggregated config: OK')
 
 
 @command_type(CLI_COMMAND.UPGRADE)
@@ -500,7 +489,6 @@ class CmdUpgrade(Command):
         for package in cr_utl.pkg_sort_by_deps(packages_bulk):
             package.handle_svc_wipe(mheading)
             package.handle_uninst_extras(mheading)
-            package.handle_vardata_wipe(mheading)
             package.save_manifest(mheading, pkgactive_old_dpath)
             package.delete_manifest(mheading)
 
@@ -509,13 +497,14 @@ class CmdUpgrade(Command):
             active_dpath = iroot_dpath.joinpath(dname)
             preserve_dpath = itmp_dpath.joinpath(f'{dname}.old')
             try:
+                cm_utl.rmdir(str(preserve_dpath), recursive=True)
                 active_dpath.rename(preserve_dpath)
             except (OSError, RuntimeError) as e:
                 err_msg = (f'{mheading}: Preserve shared directory:'
                            f' {active_dpath}: {type(e).__name__}: {e}')
                 raise cr_exc.RCError(err_msg) from e
 
-            LOG.debug(f'{mheading}: Preserve hared directory: {active_dpath}:'
+            LOG.debug(f'{mheading}: Preserve shared directory: {active_dpath}:'
                       f' {preserve_dpath}')
 
     def _handle_teardown_post(self):
@@ -559,12 +548,12 @@ class CmdUpgrade(Command):
                 LOG.warning(f'{mheading}: After steps: Remove file: {fpath}:'
                             f' {type(e).__name__}: {e}')
 
-        # Restoreobjects created/populated by entities/processes outside
+        # Restore objects created/populated by entities/processes outside
         # of winpanda routines, but required for winpanda to do it's stuff.
 
         restore_dirs = [
-            iroot_dpath.joinpath('bin'),
-            iroot_dpath.joinpath('etc'),
+            iroot_dpath / 'etc',
+            iroot_dpath / 'etc' / 'roles',
         ]
 
         for dpath in restore_dirs:
@@ -576,16 +565,12 @@ class CmdUpgrade(Command):
                             f' {type(e).__name__}: {e}')
 
         restore_files = [
-            (itmp_dpath.joinpath('bin.old', 'detect_ip.ps1'),
-             iroot_dpath.joinpath('bin')),
-            (itmp_dpath.joinpath('bin.old', 'detect_ip_public.ps1'),
-             iroot_dpath.joinpath('bin')),
-            (itmp_dpath.joinpath('bin.old', 'fault-domain-detect-win.ps1'),
-             iroot_dpath.joinpath('bin')),
-            (itmp_dpath.joinpath('etc.old', 'cluster.conf'),
-             iroot_dpath.joinpath('etc')),
-            (itmp_dpath.joinpath('etc.old', 'paths.json'),
-             iroot_dpath.joinpath('etc')),
+            (itmp_dpath / 'etc.old' / 'cluster.conf', iroot_dpath / 'etc'),
+            (itmp_dpath / 'etc.old' / 'paths.json', iroot_dpath / 'etc'),
+            (
+                itmp_dpath / 'etc.old' / 'roles' / 'slave',
+                iroot_dpath / 'etc' / 'roles'
+            ),
         ]
 
         for fspec in restore_files:
@@ -611,6 +596,17 @@ class CmdUpgrade(Command):
         dstor_pkgrepo_path = self.config.cluster_conf.get(
             'distribution-storage', {}
         ).get('pkgrepopath', '')
+
+        # Deploy DC/OS aggregated configuration object
+        _deploy_dcos_conf(self.config.dcos_conf)
+        result = subprocess.run(
+            ('powershell', '-executionpolicy', 'Bypass', '-File', 'C:\\d2iq\\dcos\\bin\\detect_ip.ps1'),
+            stdout=subprocess.PIPE,
+            check=True
+        )
+        local_priv_ipaddr = result.stdout.decode('ascii').strip()
+
+        self.config.dcos_conf['values']['privateipaddr'] = local_priv_ipaddr
 
         # Add packages to the local package repository and initialize their
         # manager objects
@@ -662,9 +658,6 @@ class CmdUpgrade(Command):
             #       method to avoid code duplication in command manager classes
             #       CmdSetup and CmdUpgrade
             self._handle_pkg_cfg_setup(package)
-
-        # Deploy DC/OS aggregated configuration object
-        self._deploy_dcos_conf()
 
         # Run per package extra installation helpers, setup services and
         # save manifests
@@ -830,30 +823,28 @@ class CmdUpgrade(Command):
             LOG.debug(f'{msg_src}: Execute: {pkg_id.pkg_name}: Setup service:'
                       f' NOP')
 
-    def _deploy_dcos_conf(self):
-        """Deploy aggregated DC/OS configuration object."""
-        # TODO: This should be made standalone and then reused in command
-        #       manager classes CmdSetup and CmdUpgrade to avoid code
-        #       duplication
-        LOG.debug(f'{self.msg_src}: Execute: Deploy aggregated config: ...')
+def _deploy_dcos_conf(dcos_conf):
+    """Deploy aggregated DC/OS configuration object."""
+    LOG.info('Deploy DC/OS config...')
 
-        template = self.config.dcos_conf.get('template')
-        values = self.config.dcos_conf.get('values')
+    template = dcos_conf.get('template')
+    values = dcos_conf.get('values')
 
-        rendered = template.render(values)
-        config = yaml.safe_load(rendered)
+    rendered = template.render(values)
+    config = yaml.safe_load(rendered)
 
-        assert config.keys() == {"package"}
+    assert config.keys() == {"package"}
 
-        # Write out the individual files
-        for file_info in config["package"]:
-            assert file_info.keys() <= {"path", "content", "permissions"}
-            path = Path(file_info['path'].replace('\\', os.path.sep))
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(file_info['content'] or '')
-            # On Windows, we don't interpret permissions yet
+    # Write out the individual files
+    for file_info in config["package"]:
+        assert file_info.keys() <= {"path", "content", "permissions"}
+        path = Path(file_info['path'].replace('\\', os.path.sep))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        LOG.info('Write file %s', path)
+        path.write_text(file_info['content'] or '')
+        # On Windows, we don't interpret permissions yet
 
-        LOG.debug(f'{self.msg_src}: Execute: Deploy aggregated config: OK')
+    LOG.info('Deployed DC/OS config')
 
 
 @command_type(CLI_COMMAND.START)

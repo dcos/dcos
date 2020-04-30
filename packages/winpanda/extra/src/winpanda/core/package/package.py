@@ -46,8 +46,6 @@ class Package:
         self.manifest = manifest
 
         self.cfg_manager = PkgConfManager(pkg_manifest=self.manifest)
-        LOG.debug(f'{self.msg_src}: {self.manifest.pkg_id.pkg_id}:'
-                  f' Package configuration manager: {self.cfg_manager}')
 
         if self.manifest.pkg_extcfg:
             self.ext_manager = PkgInstExtrasManager(pkg_manifest=self.manifest)
@@ -319,7 +317,8 @@ class Package:
         mheading = f'{mheading}: {mhd_base}' if mheading else mhd_base
 
         try:
-            dpath.mkdir(parents=True, exist_ok=True)
+            cm_utl.rmdir(str(dpath), recursive=True)
+            dpath.mkdir(parents=True)
             self.manifest.save(dpath)
         except (OSError, RuntimeError, cr_exc.RCError) as e:
             err_msg = f'{mheading}: Register package: {self.id}: {e}'

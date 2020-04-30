@@ -52,6 +52,7 @@ class Bootstrapper(object):
         zkid = self._consensus('/cluster-id', zkid, ANYONE_READ)
         zkid = zkid.decode('ascii')
 
+        path.parent.mkdir(parents=True, exist_ok=True)
         if utils.write_file_on_mismatched_content((zkid + '\n').encode('ascii'), path, utils.write_public_file):
             log.info('Wrote cluster ID to {}'.format(path))
         else:

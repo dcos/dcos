@@ -491,6 +491,7 @@ def get_dcosconfig_source_target_and_templates(
         'dcos_image_commit',
         'package_ids',
         'template_filenames',
+        'enable_windows_agents',
     })
     targets = [base_target] + target_from_templates(templates)
     base_source = gen.internals.Source(is_user=False)
@@ -744,7 +745,7 @@ def generate(
         # using the values from the late config file.
         late_package_id = PackageId(late_package['name'])
         late_package_filename = make_package_filename(late_package_id, '.dcos_config')
-        os.makedirs(os.path.dirname(late_package_filename), mode=0o755)
+        os.makedirs(os.path.dirname(late_package_filename), mode=0o755, exist_ok=True)
         write_yaml(late_package_filename, {'package': late_package['package']}, default_flow_style=False)
         log.info('Package filename: {}'.format(late_package_filename))
         stable_artifacts.append(late_package_filename)

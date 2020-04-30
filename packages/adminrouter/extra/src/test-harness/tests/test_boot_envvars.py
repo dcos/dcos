@@ -162,8 +162,8 @@ class TestUpstreamsEnvVarBehaviour:
         # verify that all the requests from cache go there:
         filter_regexp = {
             'Marathon upstream: http://127.0.0.1:8080': SearchCriteria(1, True),
-            'Request url: http://127.0.0.1:8080/v2/leader': SearchCriteria(1, True),
-            (r'Request url: http://127.0.0.1:8080/v2/apps'
+            '< http://127.0.0.1:8080/v2/leader': SearchCriteria(1, True),
+            (r'< http://127.0.0.1:8080/v2/apps'
              r'\?embed=apps\.tasks\&label=DCOS_SERVICE_NAME'): SearchCriteria(1, True),
         }
 
@@ -197,8 +197,8 @@ class TestUpstreamsEnvVarBehaviour:
         # verify that all the requests go to the new upstream
         filter_regexp = {
             'Marathon upstream: http://127.0.0.2:8080': SearchCriteria(1, True),
-            'Request url: http://127.0.0.2:8080/v2/leader': SearchCriteria(1, True),
-            (r'Request url: http://127.0.0.2:8080/v2/apps'
+            '< http://127.0.0.2:8080/v2/leader': SearchCriteria(1, True),
+            (r'< http://127.0.0.2:8080/v2/apps'
              r'\?embed=apps\.tasks\&label=DCOS_SERVICE_NAME'): SearchCriteria(1, True),
         }
         ar = nginx_class(upstream_marathon="http://127.0.0.2:8080")
@@ -235,7 +235,7 @@ class TestUpstreamsEnvVarBehaviour:
         # verify that all the requests from cache go there:
         filter_regexp = {
             'Mesos upstream: http://127.0.0.2:5050': SearchCriteria(1, True),
-            'Request url: http://127.0.0.2:5050/master/state-summary': SearchCriteria(1, True),
+            '< http://127.0.0.2:5050/master/state-summary': SearchCriteria(1, True),
         }
 
         ar = nginx_class(upstream_mesos="http://127.0.0.2:5050")
@@ -269,7 +269,7 @@ class TestUpstreamsEnvVarBehaviour:
         # verify that all the requests go to the new upstream
         filter_regexp = {
             'Mesos upstream: http://127.0.0.3:5050': SearchCriteria(1, True),
-            'Request url: http://127.0.0.3:5050/master/state-summary': SearchCriteria(1, True),
+            '< http://127.0.0.3:5050/master/state-summary': SearchCriteria(1, True),
         }
         ar = nginx_class(upstream_mesos="http://127.0.0.3:5050")
 

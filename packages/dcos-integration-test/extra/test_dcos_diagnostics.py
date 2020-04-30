@@ -262,19 +262,19 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
             set(master_nodes).symmetric_difference(set(dcos_api_session.masters))
         )
 
-        agent_nodes_response = check_json(
-            dcos_api_session.health.get('/units/dcos-mesos-slave.service/nodes', node=master))
-        agent_nodes = get_nodes_from_response(agent_nodes_response)
+        linux_agent_nodes = list()
+        if 'dcos-mesos-slave.service' in pulled_units:
+            agent_nodes_response = check_json(
+                dcos_api_session.health.get('/units/dcos-mesos-slave.service/nodes', node=master))
+            linux_agent_nodes = get_nodes_from_response(agent_nodes_response)
 
-        # Fetch Windows nodes if we have some.
+        windows_agent_nodes = list()
         if 'WinRM' in pulled_units:
-            windows_agent_nodes_response = check_json(
+            agent_nodes_response = check_json(
                 dcos_api_session.health.get('/units/mesos-agent/nodes', node=master))
-            windows_agent_nodes = get_nodes_from_response(windows_agent_nodes_response)
-        else:
-            windows_agent_nodes = list()
+            windows_agent_nodes = get_nodes_from_response(agent_nodes_response)
 
-        assert set(agent_nodes + windows_agent_nodes) == set(dcos_api_session.slaves)
+        assert set(linux_agent_nodes + windows_agent_nodes) == set(dcos_api_session.slaves)
 
 
 def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
@@ -320,8 +320,9 @@ def test_dcos_diagnostics_report(dcos_api_session):
         assert len(report_response['Nodes']) > 0
 
 
-@pytest.mark.parametrize('use_legacy_api',
-                         [False, pytest.param(True, marks=pytest.mark.xfail("config.getoption('--windows-only')"))])
+@pytest.mark.parametrize('use_legacy_api', [
+    pytest.param(False),
+    pytest.param(True, marks=pytest.mark.skipif("config.getoption('--windows-only')"))])
 def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_legacy_api):
     """
     test bundle create, read, delete workflow
@@ -340,8 +341,8 @@ def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_le
         use_legacy_api=use_legacy_api,
     )
 
-    app, test_uuid = test_helpers.marathon_test_app()
-    with dcos_api_session.marathon.deploy_and_cleanup(app):
+    app, test_uuid = test_helpers.marathon_test_docker_app('diag-bundle', constraints=[])
+    with dcos_api_session.marathon.deploy_and_cleanup(app, timeout=120):
         bundle = _create_bundle(diagnostics)
         _check_diagnostics_bundle_status(dcos_api_session)
         _download_and_extract_bundle(dcos_api_session, bundle, diagnostics)
@@ -483,12 +484,12 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
         '5051-flags.json',
         '5051-metrics_snapshot.json',
         'dcos-diagnostics-health.json',
-        'C:\\d2iq\\dcos\\var\log\\adminrouter\\adminrouter-nssm.log',
-        'C:\\d2iq\\dcos\\var\log\\telegraf\\telegraf.log',
-        'C:\\d2iq\\dcos\\var\log\dcos-diagnostics\\dcos-diagnostics.log',
+        'C:\\d2iq\\dcos\\var\\log\\adminrouter\\adminrouter-nssm.log',
+        'C:\\d2iq\\dcos\\var\\log\\telegraf\\telegraf.log',
+        'C:\\d2iq\\dcos\\var\\log\\dcos-diagnostics\\dcos-diagnostics.log',
         'C:\\d2iq\\dcos\\var\\log\\winpanda\\winpanda.log',
         'C:\\d2iq\\dcos\\var\\log\\adminrouter\\adminrouter-access.log',
-        'C:\\d2iq\\dcos\\var\\log\dcos_install.log',
+        'C:\\d2iq\\dcos\\var\\log\\dcos_install.log',
         'C:\\d2iq\\dcos\\var\\log\\adminrouter\\adminrouter-error.log',
         'C:\\d2iq\\dcos\\var\\log\\mesos\\mesos-agent.log'
     ]
@@ -496,7 +497,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
     # for public agent host
     expected_public_agent_files = [
         'dcos-mesos-slave-public.service',
-        'binsh_-c_cat proc`systemctl show dcos-mesos-slave-public.service -p MainPID| cut -d\'=\' -f2`environ.output'
+        "binsh_-c_cat proc`systemctl show dcos-mesos-slave-public.service -p MainPID| cut -d'=' -f2`environ.output"
     ] + expected_agent_common_files + expected_common_files
 
     def _read_from_zip(z: zipfile.ZipFile, item: str, to_json=True):

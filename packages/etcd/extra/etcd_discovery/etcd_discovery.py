@@ -377,6 +377,10 @@ def ensure_permissions(args: argparse.Namespace) -> None:
     etcdctl.ensure_role("adminrouter_prefix", "/")
     etcdctl.grant_role("adminrouter", "adminrouter_prefix")
 
+    etcdctl.ensure_user("telegraf")
+    etcdctl.ensure_role("telegraf_prefix", "/")
+    etcdctl.grant_role("telegraf", "telegraf_prefix")
+
     etcdctl.enable_auth()
 
 

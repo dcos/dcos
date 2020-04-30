@@ -95,10 +95,12 @@ def zk_cluster_lock(zk: KazooClient, name: str, timeout: int = 30) -> Generator:
         raise e
     else:
         print("ZooKeeper lock acquired.")
-    yield
-    print("Releasing ZooKeeper lock")
-    lock.release()
-    print("ZooKeeper lock released.")
+    try:
+        yield
+    finally:
+        print("Releasing ZooKeeper lock")
+        lock.release()
+        print("ZooKeeper lock released.")
 
 
 def zk_flag_set(zk: KazooClient, name: str, value: str):

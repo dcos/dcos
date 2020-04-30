@@ -8,7 +8,8 @@ import yaml
 import gen
 import pkgpanda.util
 from gen.exceptions import ExhibitorTLSBootstrapError
-from gen.tests.utils import make_arguments, true_false_msg, validate_error, validate_error_multikey, validate_success
+from gen.tests.utils import make_arguments, true_false_msg, \
+    validate_error, validate_error_multikey, validate_success
 
 
 @pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")

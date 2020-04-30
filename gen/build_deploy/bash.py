@@ -503,7 +503,7 @@ function check_all() {
             "5050 mesos-master" \
             "7070 cosmos" \
             "8080 marathon" \
-            "8101 dcos-oauth" \
+            "8101 dcos-bouncer" \
             "8123 mesos-dns" \
             "8181 exhibitor" \
             "9000 metronome" \
@@ -517,7 +517,8 @@ function check_all() {
             "62020 fluent-bit" \
             "62080 dcos-net" \
             "62091 dcos-calico-felix" \
-            "62501 dcos-net"
+            "62501 dcos-net" \
+            "64000 dcos-net"
         do
             check_service $service
         done
@@ -532,7 +533,8 @@ function check_all() {
             "62020 fluent-bit" \
             "62080 dcos-net" \
             "62091 dcos-calico-felix" \
-            "62501 dcos-net"
+            "62501 dcos-net" \
+            "64000 dcos-net"
         do
             check_service $service
         done

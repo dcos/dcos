@@ -2,19 +2,19 @@
   "sources": {
     "openssl": {
       "kind": "url",
-      "url": "https://slproweb.com/download/Win64OpenSSL-1_1_1e.exe",
-      "sha1": "b0b2fa45fd4e4ab6b502495bd2d706b570196911"
+      "url": "https://downloads.mesosphere.com/Win64OpenSSL/Win64OpenSSL-1_1_1f.exe",
+      "sha1": "5efbb17594216e195db6e18c4db1a57f03f620a2"
     },
     "mesos": {
       "kind": "git",
       "git": "https://github.com/apache/mesos",
-      "ref": "54227a33b68d83b97ef1a7c14283351d45322317",
+      "ref": "00466fe6138138ead1ca676df37c3af69104956d",
       "ref_origin": "master"
     },
     "mesos-modules": {
       "kind": "git",
       "git": "https://github.com/dcos/dcos-mesos-modules",
-      "ref": "6231ccf068c247064d1915298070d84885678351",
+      "ref": "4ba1e573ec4a80ec1d5514d54d5cc9529e5e1d98",
       "ref_origin": "master"
     }
   },
