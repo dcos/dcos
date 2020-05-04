@@ -1,7 +1,7 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
 
-## DC/OS 2.1.0-beta2 (in development)
+## DC/OS 2.1.0-beta4 (in development)
 
 
 ### What's new
@@ -114,8 +114,10 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 
 * A race condition would cause Marathon to fail to start properly. (MARATHON-8741)
 
-#### Update Metronome to 0.6.41
+#### Update Metronome to 0.6.44
 
 * There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
 
 * Metronome jobs networking is now configurable (MARATHON-8727)
+
+* A bug was fixed in which Metronome failed to see jobs from a prior version of Metronome (MARATHON-8746)
