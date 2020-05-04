@@ -132,6 +132,7 @@ def test_replace_all_static(
             dcos_installer=artifact_path,
             dcos_config=dcos_config,
             ip_detect_path=ip_detect_path,
+            output=Output.LOG_AND_CAPTURE,
         )
         wait_for_dcos_oss(
             cluster=original_cluster,
@@ -164,6 +165,7 @@ def test_replace_all_static(
                     dcos_config=dcos_config,
                     role=Role.MASTER,
                     ip_detect_path=ip_detect_path,
+                    output=Output.LOG_AND_CAPTURE,
                 )
                 # Form a new cluster with the newly create master node.
                 new_cluster = Cluster.from_nodes(

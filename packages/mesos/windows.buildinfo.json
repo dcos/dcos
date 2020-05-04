@@ -1,13 +1,17 @@
 {
-  "single_source": {
-    "kind": "git",
-    "git": "https://github.com/apache/mesos",
-    "ref": "d46ae94b49b452ed3fbfdf99dfb501e09675a311",
-    "ref_origin": "master"
+  "sources": {
+    "mesos": {
+      "kind": "git",
+      "git": "https://github.com/apache/mesos",
+      "ref": "00466fe6138138ead1ca676df37c3af69104956d",
+      "ref_origin": "master"
+    },
+    "openssl": {
+      "kind": "url",
+      "url": "https://downloads.mesosphere.com/Win64OpenSSL/Win64OpenSSL-1_1_1f.exe",
+      "sha1": "5efbb17594216e195db6e18c4db1a57f03f620a2"
+    }
   },
-  "environment": {
-    "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
-    "MESOS_NATIVE_JAVA_LIBRARY": "/opt/mesosphere/lib/libmesos.so"
-  },
+  "environment": {},
   "state_directory": true
 }

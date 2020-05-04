@@ -32,13 +32,13 @@
         "interactive": false,
         "fix_version_map": {
             "master": "DC/OS 2.1.0",
-            "2.0":  "DC/OS 2.0.3",
-            "1.13": "DC/OS 1.13.8",
+            "2.0":  "DC/OS 2.0.4",
+            "1.13": "DC/OS 1.13.10",
             "1.12": "DC/OS 1.12.6",
             "1.11": "DC/OS 1.11.14",
             "1.10": "DC/OS 1.10.12"
         },
-        "jira_regex": "((?:DCOS|DCOS_OSS|COPS|MARATHON)-\\d+)"
+        "jira_regex": "((?:DCOS|DCOS_OSS|COPS|MARATHON|D2IQ)-\\d+)"
     },
     "required statuses": {
         "master": [
@@ -51,8 +51,6 @@
                     "mergebot/review/approved/min_1",
                     "teamcity/dcos/build/dcos",
                     "teamcity/dcos/build/tox",
-                    "teamcity/dcos/build/dcosWindows",
-                    "teamcity/dcos/build/tox/windows",
                     "continuous-integration/jenkins/pr-head",
                     "teamcity/dcos/test/test-e2e/group1",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group1",

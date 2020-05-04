@@ -1,4 +1,5 @@
-WinRM
+adminrouter
+dcos-diagnostics
 mesos-agent
-docker
 telegraf
+WinRM

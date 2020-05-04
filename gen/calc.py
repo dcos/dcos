@@ -39,7 +39,7 @@ import yaml
 import gen.internals
 
 
-DCOS_VERSION = '2.1.0-dev'
+DCOS_VERSION = '2.1.0-rc1-dev'
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
@@ -207,6 +207,14 @@ def validate_mesos_log_retention_mb(mesos_log_retention_mb):
     assert int(mesos_log_retention_mb) >= 1024, "Must retain at least 1024 MB of logs"
 
 
+def validate_mesos_logrotate_file_size_mb(mesos_logrotate_file_size_mb):
+    try:
+        int(mesos_logrotate_file_size_mb)
+    except ValueError as ex:
+        raise AssertionError("Error parsing 'mesos_logrotate_file_size_mb' "
+                             "parameter as an integer: {}".format(ex)) from ex
+
+
 def validate_mesos_container_log_sink(mesos_container_log_sink):
     assert mesos_container_log_sink in [
         'fluentbit',
@@ -262,7 +270,7 @@ def calculate_ip_detect_contents(ip_detect_filename):
 
 def calculate_ip_detect_public_contents(ip_detect_contents, ip_detect_public_filename):
     if ip_detect_public_filename != '':
-        return calculate_ip_detect_contents(ip_detect_public_filename)
+        return yaml.dump(open(ip_detect_public_filename, encoding='utf-8').read())
     return ip_detect_contents
 
 
@@ -270,6 +278,32 @@ def calculate_ip6_detect_contents(ip6_detect_filename):
     if ip6_detect_filename != '':
         return yaml.dump(open(ip6_detect_filename, encoding='utf-8').read())
     return yaml.dump("")
+
+
+_default_windows_ip_detect = """$ErrorActionPreference = "Stop"
+
+$ip = (
+    Get-NetIPConfiguration |
+    Where-Object {
+        $_.IPv4DefaultGateway -ne $null -and
+        $_.NetAdapter.Status -ne "Disconnected"
+    }
+).IPv4Address.IPAddress
+
+Write-Output $ip
+"""
+
+
+def calculate_ip_detect_windows_contents(ip_detect_windows):
+    if os.path.exists(ip_detect_windows):
+        return yaml.dump(open(ip_detect_windows, encoding='utf-8').read())
+    return yaml.dump(_default_windows_ip_detect)
+
+
+def calculate_ip_detect_public_windows_contents(ip_detect_public_windows, ip_detect_windows_contents):
+    if os.path.exists(ip_detect_public_windows):
+        return yaml.dump(open(ip_detect_public_windows, encoding='utf-8').read())
+    return ip_detect_windows_contents
 
 
 def calculate_rexray_config_contents(rexray_config):
@@ -335,9 +369,16 @@ def validate_config_subnet(config_name, subnet, version=IPVersion.IPv4):
                 (version == IPVersion.IPv6 and not isinstance(network, ipaddress.IPv6Network)):
             raise ValueError("IP version not match")
     except ValueError as ex:
-        err_msg = "Incorrect value for {}: {}. Only IPv{} subnets are allowed".format(
+        err_msg = "Incorrect value for `{}`: `{}`. Only IPv{} subnets are allowed".format(
             config_name, subnet, version)
         raise AssertionError(err_msg) from ex
+
+
+def validate_calico_network_cidr(calico_network_cidr, enable_windows_agents):
+    # calico network is not supported on windows, we skip valiating calico
+    # networking CIDR format in case windows in enabled.
+    if enable_windows_agents.lower() != "true":
+        validate_config_subnet("calico_network_cidr", calico_network_cidr)
 
 
 def validate_dcos_overlay_network(dcos_overlay_network):
@@ -412,12 +453,15 @@ def validate_dcos_overlay_network(dcos_overlay_network):
 
 def validate_overlay_networks_not_overlap(dcos_overlay_network,
                                           dcos_overlay_enable,
-                                          calico_network_cidr):
+                                          calico_network_cidr,
+                                          enable_windows_agents):
     """ checks the subnets used for dcos overlay do not overlap calico network
 
     We assume the basic validations, like subnet cidr, have been done.
     """
     if dcos_overlay_enable.lower() != "true":
+        return
+    if enable_windows_agents.lower() == "true":
         return
     try:
         overlay_network = json.loads(dcos_overlay_network)
@@ -650,6 +694,14 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
 
 
+def validate_adminrouter_grpc_proxy_port(adminrouter_grpc_proxy_port):
+    try:
+        assert 0 < int(adminrouter_grpc_proxy_port) < 65536
+    except ValueError as ex:
+        raise AssertionError("Error parsing 'adminrouter_grpc_proxy_port' "
+                             "parameter as an integer: {}".format(ex)) from ex
+
+
 def calculate_adminrouter_tls_version_override(
         adminrouter_tls_1_0_enabled,
         adminrouter_tls_1_1_enabled,
@@ -761,18 +813,20 @@ def calculate_fair_sharing_excluded_resource_names(gpus_are_scarce):
     return ''
 
 
-def calculate_has_mesos_max_completed_tasks_per_framework(mesos_max_completed_tasks_per_framework):
-    return calculate_set(mesos_max_completed_tasks_per_framework)
+def validate_mesos_max_completed_frameworks(mesos_max_completed_frameworks):
+    try:
+        int(mesos_max_completed_frameworks)
+    except ValueError as ex:
+        raise AssertionError("Error parsing 'mesos_max_completed_frameworks' "
+                             "parameter as an integer: {}".format(ex)) from ex
 
 
-def validate_mesos_max_completed_tasks_per_framework(
-        mesos_max_completed_tasks_per_framework, has_mesos_max_completed_tasks_per_framework):
-    if has_mesos_max_completed_tasks_per_framework == 'true':
-        try:
-            int(mesos_max_completed_tasks_per_framework)
-        except ValueError as ex:
-            raise AssertionError("Error parsing 'mesos_max_completed_tasks_per_framework' "
-                                 "parameter as an integer: {}".format(ex)) from ex
+def validate_mesos_max_completed_tasks_per_framework(mesos_max_completed_tasks_per_framework):
+    try:
+        int(mesos_max_completed_tasks_per_framework)
+    except ValueError as ex:
+        raise AssertionError("Error parsing 'mesos_max_completed_tasks_per_framework' "
+                             "parameter as an integer: {}".format(ex)) from ex
 
 
 def validate_mesos_recovery_timeout(mesos_recovery_timeout):
@@ -1128,6 +1182,46 @@ def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
     return ''
 
 
+_default_fault_domain_detect_windows_contents = '''
+$ErrorActionPreference = "Stop"
+try {
+  $zone = Invoke-RestMethod -Uri http://169.254.169.254/latest/meta-data/placement/availability-zone
+  $region = $zone.Substring(0,$zone.Length-1)
+}
+catch {
+    $zone = "windows"
+    $region = "windows"
+}
+Write-Output "{`"fault_domain`":{`"region`":{`"name`": `"$region`"},`"zone`":{`"name`": `"$zone`"}}}"
+'''
+
+
+def calculate_fault_domain_detect_windows_contents(fault_domain_detect_windows_filename):
+    if os.path.exists(fault_domain_detect_windows_filename):
+        return yaml.dump(open(fault_domain_detect_windows_filename, encoding='utf-8').read())
+    return yaml.dump(_default_fault_domain_detect_windows_contents)
+
+
+def generate_zk_address(master_discovery, zk_client_port, master_list=None, exhibitor_address=None):
+    if master_discovery == 'static':
+        zk_address = ",".join(
+            ["{}:{}".format(v, zk_client_port) for v in json.loads(master_list)]
+        )
+    elif master_discovery == 'master_http_loadbalancer':
+        zk_address = "{}:{}".format(str(exhibitor_address), zk_client_port)
+    else:
+        zk_address = "zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181"
+    return zk_address
+
+
+def zk_address_from_masters_str(master_discovery, zk_client_port, master_list):
+    return generate_zk_address(master_discovery, zk_client_port, master_list=master_list)
+
+
+def zk_address_from_exhibitor_str(master_discovery, zk_client_port, exhibitor_address):
+    return generate_zk_address(master_discovery, zk_client_port, exhibitor_address=exhibitor_address)
+
+
 __dcos_overlay_network_default_name = 'dcos'
 __dcos_overlay_network6_default_name = 'dcos6'
 
@@ -1159,9 +1253,11 @@ entry = {
         lambda auth_cookie_secure_flag: validate_true_false(auth_cookie_secure_flag),
         lambda oauth_enabled: validate_true_false(oauth_enabled),
         lambda oauth_available: validate_true_false(oauth_available),
+        lambda mesos_cgroups_enable_cfs: validate_true_false(mesos_cgroups_enable_cfs),
         validate_mesos_dns_ip_sources,
         lambda mesos_dns_set_truncate_bit: validate_true_false(mesos_dns_set_truncate_bit),
         validate_mesos_log_retention_mb,
+        validate_mesos_logrotate_file_size_mb,
         lambda telemetry_enabled: validate_true_false(telemetry_enabled),
         lambda master_dns_bindall: validate_true_false(master_dns_bindall),
         validate_os_type,
@@ -1203,6 +1299,7 @@ entry = {
         validate_adminrouter_tls_version_present,
         validate_adminrouter_x_frame_options,
         lambda gpus_are_scarce: validate_true_false(gpus_are_scarce),
+        validate_mesos_max_completed_frameworks,
         validate_mesos_max_completed_tasks_per_framework,
         validate_mesos_recovery_timeout,
         validate_metronome_gpu_scheduling_behavior,
@@ -1228,8 +1325,7 @@ entry = {
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
         validate_marathon_new_group_enforce_role,
         lambda enable_windows_agents: validate_true_false(enable_windows_agents),
-        lambda calico_network_cidr: validate_config_subnet(
-            "calico_network_cidr", calico_network_cidr),
+        validate_calico_network_cidr,
         lambda calico_ipinip_mtu: validate_int_in_range(calico_ipinip_mtu, 552, None),
         lambda calico_veth_mtu: validate_int_in_range(calico_veth_mtu, 552, None),
         lambda calico_vxlan_mtu: validate_int_in_range(calico_vxlan_mtu, 552, None),
@@ -1237,6 +1333,7 @@ entry = {
         lambda calico_vxlan_port: validate_int_in_range(calico_vxlan_port, 1025, 65535),
         lambda calico_vxlan_vni: validate_vxlan_vni(calico_vxlan_vni),
         validate_overlay_networks_not_overlap,
+        validate_adminrouter_grpc_proxy_port,
     ],
     'default': {
         'exhibitor_azure_account_key': '',
@@ -1249,6 +1346,7 @@ entry = {
         'use_proxy': 'false',
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
+        'adminrouter_grpc_proxy_port': '12379',
         'adminrouter_tls_1_0_enabled': 'false',
         'adminrouter_tls_1_1_enabled': 'false',
         'adminrouter_tls_1_2_enabled': 'true',
@@ -1267,18 +1365,25 @@ entry = {
         'ip_detect_contents': calculate_ip_detect_contents,
         'ip_detect_public_filename': '',
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
+        'ip_detect_windows': 'genconf/serve/windows/ip-detect.ps1',
+        'ip_detect_windows_contents': calculate_ip_detect_windows_contents,
+        'ip_detect_public_windows': 'genconf/serve/windows/ip-detect-public.ps1',
+        'ip_detect_public_windows_contents': calculate_ip_detect_public_windows_contents,
         'ip6_detect_contents': calculate_ip6_detect_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
         'marathon_java_args': '',
         'master_dns_bindall': 'true',
+        'mesos_cgroups_enable_cfs': 'true',
         'mesos_dns_ip_sources': '["host", "netinfo"]',
         'mesos_dns_set_truncate_bit': 'true',
         'mesos_http_executor_domain_sockets': 'true',
         'master_external_loadbalancer': '',
         'mesos_log_retention_mb': '4000',
+        'mesos_logrotate_file_size_mb': '2',
         'mesos_container_log_sink': 'fluentbit+logrotate',
-        'mesos_max_completed_tasks_per_framework': '',
+        'mesos_max_completed_frameworks': '10',
+        'mesos_max_completed_tasks_per_framework': '100',
         'mesos_recovery_timeout': '24hrs',
         'mesos_seccomp_enabled': 'true',
         'mesos_seccomp_profile_name': 'default.json',
@@ -1376,6 +1481,8 @@ entry = {
         'diagnostics_bundles_dir': '/var/lib/dcos/dcos-diagnostics/diag-bundles',
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
+        'fault_domain_detect_windows_filename': 'genconf/serve/windows/fault-domain-detect-win.ps1',
+        'fault_domain_detect_windows_contents': calculate_fault_domain_detect_windows_contents,
         'license_key_contents': '',
         'enable_mesos_ipv6_discovery': 'false',
         'log_offers': 'true',
@@ -1384,13 +1491,14 @@ entry = {
         'enable_windows_agents': 'false',
         'windows_dcos_install_path': 'C:\\d2iq\\dcos',
         'windows_dcos_var_path': 'C:\\d2iq\\dcos\\var',
-        'calico_network_cidr': '192.168.0.0/16',
+        'calico_network_cidr': '172.29.0.0/16',
         'calico_ipinip_mtu': '1480',
         'calico_veth_mtu': '1500',
         'calico_vxlan_mtu': '1450',
         'calico_vxlan_enabled': 'true',
         'calico_vxlan_port': '64000',
         'calico_vxlan_vni': '4096',
+        'zk_client_port': '2181',
     },
     'must': {
         'fault_domain_enabled': 'false',
@@ -1426,7 +1534,6 @@ entry = {
         'dcos_l4lb_min_named_ip6_erltuple': calculate_dcos_l4lb_min_named_ip6_erltuple,
         'dcos_l4lb_max_named_ip6_erltuple': calculate_dcos_l4lb_max_named_ip6_erltuple,
         'mesos_isolation': calculate_mesos_isolation,
-        'has_mesos_max_completed_tasks_per_framework': calculate_has_mesos_max_completed_tasks_per_framework,
         'has_mesos_seccomp_profile_name':
             lambda mesos_seccomp_profile_name: calculate_set(mesos_seccomp_profile_name),
         'has_mesos_default_container_shm_size':
@@ -1468,9 +1575,12 @@ entry = {
     ],
     'conditional': {
         'master_discovery': {
-            'master_http_loadbalancer': {},
+            'master_http_loadbalancer': {
+                'must': {'zk_address': zk_address_from_exhibitor_str}
+            },
             'static': {
-                'must': {'num_masters': calc_num_masters}
+                'must': {'num_masters': calc_num_masters,
+                         'zk_address': zk_address_from_masters_str}
             }
         },
         'rexray_config_preset': {

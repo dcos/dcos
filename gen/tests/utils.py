@@ -35,7 +35,8 @@ def make_arguments(new_arguments):
         'bootstrap_variant': '',
         'oauth_available': 'true',
         'oauth_enabled': 'true',
-        'enable_docker_gc': 'false'})
+        'enable_docker_gc': 'false',
+    })
     arguments.update(new_arguments)
     return arguments
 

@@ -8,14 +8,12 @@ import re
 import shutil
 import socketserver
 import stat
-import subprocess
 import tarfile
 import tempfile
 from contextlib import contextmanager, ExitStack
 from itertools import chain
 from multiprocessing import Process
 from shutil import rmtree
-from subprocess import check_call
 from typing import List
 
 import requests
@@ -26,8 +24,10 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from teamcity.messages import TeamcityServiceMessages
 
+from pkgpanda import subprocess
 from pkgpanda.exceptions import FetchError, IncompleteDownloadError, ValidationError
 
+log = logging.getLogger(__name__)
 is_windows = platform.system() == "Windows"
 
 
@@ -244,9 +244,9 @@ def extract_tarball(path, target):
         # Make this cross-platform via Python's tarfile module once
         # https://bugs.python.org/issue21872 is fixed.
         if is_windows:
-            check_call(['bsdtar', '-xf', path, '-C', target])
+            subprocess.check_call(['bsdtar', '-xf', path, '-C', target])
         else:
-            check_call(['tar', '-xf', path, '-C', target])
+            subprocess.check_call(['tar', '-xf', path, '-C', target])
 
     except:
         # If there are errors, we can't really cope since we are already in an error state.
@@ -312,6 +312,7 @@ def write_string(filename, data):
     try:
         permissions = os.stat(filename).st_mode
     except FileNotFoundError:
+        log.debug("File %s does not exist, creating", filename)
         permissions = 0o644
 
     try:
@@ -343,7 +344,8 @@ def json_prettyprint(data):
 def if_exists(fn, *args, **kwargs):
     try:
         return fn(*args, **kwargs)
-    except FileNotFoundError:
+    except FileNotFoundError as e:
+        log.debug(e)
         return None
 
 
@@ -396,6 +398,7 @@ def make_tar(result_filename, change_folder):
 
 
 def rewrite_symlinks(root, old_prefix, new_prefix):
+    log.info("Rewrite symlinks in %s from %s to %s", root, old_prefix, new_prefix)
     # Find the symlinks and rewrite them from old_prefix to new_prefix
     # All symlinks not beginning with old_prefix are ignored because
     # packages may contain arbitrary symlinks.
@@ -407,7 +410,6 @@ def rewrite_symlinks(root, old_prefix, new_prefix):
                 target = os.readlink(full_path)
                 if target.startswith(old_prefix):
                     new_target = os.path.join(new_prefix, target[len(old_prefix) + 1:].lstrip('/'))
-                    # Remove the old link and write a new one.
                     os.remove(full_path)
                     os.symlink(new_target, full_path)
 
@@ -490,6 +492,7 @@ class MessageLogger:
 
     TeamCity docs: https://confluence.jetbrains.com/display/TCD10/Build+Script+Interaction+with+TeamCity
     """
+
     def __init__(self):
         self.loggers = []
         if teamcity.is_running_under_teamcity():
@@ -577,7 +580,6 @@ def hash_list(l: List[str]):
 
 
 def hash_checkout(item):
-
     if isinstance(item, str) or isinstance(item, bytes):
         return hash_str(item)
     elif isinstance(item, dict):

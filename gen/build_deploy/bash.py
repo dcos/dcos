@@ -4,7 +4,6 @@ import json
 import os
 import os.path
 import shutil
-import subprocess
 import tempfile
 
 import checksumdir
@@ -22,6 +21,7 @@ from gen.calc import (
     validate_true_false,
 )
 from gen.internals import Source
+from pkgpanda import subprocess
 from pkgpanda.constants import (
     cloud_config_yaml, dcos_services_yaml, install_root
 )
@@ -108,7 +108,7 @@ chmod {mode} {filename}
 
 """
 
-bash_template = """#!/bin/bash
+bash_template = r"""#!/bin/bash
 #
 # BASH script to install DC/OS on a node
 #
@@ -503,7 +503,7 @@ function check_all() {
             "5050 mesos-master" \
             "7070 cosmos" \
             "8080 marathon" \
-            "8101 dcos-oauth" \
+            "8101 dcos-bouncer" \
             "8123 mesos-dns" \
             "8181 exhibitor" \
             "9000 metronome" \
@@ -517,7 +517,8 @@ function check_all() {
             "62020 fluent-bit" \
             "62080 dcos-net" \
             "62091 dcos-calico-felix" \
-            "62501 dcos-net"
+            "62501 dcos-net" \
+            "64000 dcos-net"
         do
             check_service $service
         done
@@ -532,7 +533,8 @@ function check_all() {
             "62020 fluent-bit" \
             "62080 dcos-net" \
             "62091 dcos-calico-felix" \
-            "62501 dcos-net"
+            "62501 dcos-net" \
+            "64000 dcos-net"
         do
             check_service $service
         done
@@ -643,21 +645,7 @@ fi
 def generate(gen_out, output_dir):
     print("Generating Bash configuration files for DC/OS")
     make_bash(gen_out)
-    make_powershell(gen_out)
     util.do_bundle_onprem(gen_out, output_dir)
-
-
-def make_powershell(gen_out) -> None:
-    """Build powershell deployment script."""
-    # Populate the powershell script to Bootstrap for further deployment of Windows agent
-    powershell_script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'powershell/dcos_install.ps1')
-    with open(powershell_script_path, 'r') as f:
-        powershell_script = f.read()
-
-    # Output the dcos install ps1 script
-    install_script_filename = 'dcos_install.ps1'
-    pkgpanda.util.write_string(install_script_filename, powershell_script)
-    f.close()
 
 
 def make_bash(gen_out) -> None:

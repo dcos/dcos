@@ -10,7 +10,6 @@ __maintainer__ = 'gpaul'
 __contact__ = 'dcos-security@mesosphere.io'
 
 
-@pytest.mark.supportedwindows
 def test_move_external_volume_to_new_agent(dcos_api_session):
     """Test that an external volume is successfully attached to a new agent.
 

@@ -7,11 +7,23 @@ package:
           "PROVIDER": "{{ provider }}"
         }
       }
+  - path: {{ windows_dcos_install_path }}\etc\dummy.txt
+    content: |
+      # This file causes pkgpanda to add variables that are used in package templates
+      zk://{{ zk_address }}/mesos
+  - path: {{ windows_dcos_install_path }}\bin\detect_ip.ps1
+    content: {{ ip_detect_windows_contents }}
+  - path: {{ windows_dcos_install_path }}\bin\detect_ip_public.ps1
+    content: {{ ip_detect_public_windows_contents }}
+{% switch fault_domain_enabled %}
+{% case "true" %}
+  - path: {{ windows_dcos_install_path }}\bin\fault-domain-detect-win.ps1
+    content: {{ fault_domain_detect_windows_contents }}
+{% case "false" %}
+{% endswitch %}
   - path: {{ windows_dcos_install_path }}\etc\check_time.env
     content: |
         ENABLE_CHECK_TIME=true
-
-  # Config for dcos-diagnostics
   - path: {{ windows_dcos_install_path }}\etc\dcos-diagnostics\dcos-diagnostics-config.json
     content: |
       {
@@ -19,17 +31,13 @@ package:
         "endpoint-config": "{{ windows_dcos_install_path_json }}\\etc\\dcos-diagnostics\\dcos-diagnostics-endpoint-config.json",
         "agent-port": 61001,
         "port": 1050,
-        "no-unix-socket": true
+        "no-unix-socket": true,
+        "ip-discovery-command-location": "{{ windows_dcos_install_path_json }}\\bin\\detect_ip.ps1"
       }
   - path: {{ windows_dcos_install_path }}\etc\dcos-diagnostics\dcos-diagnostics-endpoint-config.json
     content: |
       {
         "HTTPEndpoints": [
-            {
-                "Port": 5051,
-                "Uri": "/overlay-agent/overlay",
-                "Role": ["agent"]
-            },
             {
                 "Port": 5051,
                 "Uri": "/__processes__",
@@ -62,6 +70,34 @@ package:
             }
         ],
         "LocalFiles": [
+            {
+              "Location": "{{ windows_dcos_var_path_json }}\\log\\adminrouter\\adminrouter-access.log",
+              "Role": [ "agent" ]
+            },
+            {
+              "Location": "{{ windows_dcos_var_path_json }}\\log\\adminrouter\\adminrouter-error.log",
+              "Role": [ "agent" ]
+            },
+            {
+              "Location": "{{ windows_dcos_var_path_json }}\\log\\adminrouter\\adminrouter-nssm.log",
+              "Role": [ "agent" ]
+            },
+            {
+              "Location": "{{ windows_dcos_var_path_json }}\\log\\dcos-diagnostics\\dcos-diagnostics.log",
+               "Role": [ "agent" ]
+            },
+            {
+               "Location": "{{ windows_dcos_var_path_json }}\\log\\telegraf\\telegraf.log",
+               "Role": [ "agent" ]
+            },
+            {
+               "Location": "{{ windows_dcos_var_path_json }}\\log\\dcos_install.log",
+               "Role": [ "agent" ]
+            },
+            {
+                "Location": "{{ windows_dcos_var_path_json }}\\log\\winpanda\\winpanda.log",
+                "Role": [ "agent" ]
+            },
             {
                 "Location": "{{ windows_dcos_var_path_json }}\\log\\mesos\\mesos-agent.log",
                 "Role": [ "agent" ]
@@ -177,6 +213,13 @@ package:
       [[inputs.docker]]
          endpoint = "ENV"
 
+      # Read metrics from DC/OS Diagnostics Prometheus endpoint.
+      [[inputs.prometheus]]
+        urls = ["http://$DCOS_NODE_PRIVATE_IP:1050/metrics"]
+        insecure_skip_verify = true
+        [inputs.prometheus.tags]
+        dcos-component-name = "DC/OS Diagnostics"
+
       [[inputs.mesos]]
 
         timeout = 100
@@ -189,6 +232,8 @@ package:
            "tasks",
            "messages",
       ]
+      ## The user agent to send with requests
+      user_agent = "Telegraf-mesos"
 
       [[outputs.prometheus_client]]
         ## Address to listen on
@@ -222,3 +267,89 @@ package:
   - path: {{ windows_dcos_install_path }}\etc\adminrouter\adminrouter-listen-open.conf
     content: |
         listen 61001 default_server;
+
+  - path: {{ windows_dcos_install_path }}\etc\mesos\modules\journal.json
+    content: |
+      {
+        "libraries": [
+          {
+            "file": "libjournaldlogger.dll",
+            "modules": [
+              {
+                "name": "com_mesosphere_mesos_JournaldLogger",
+                "parameters": [
+                  {
+                    "key": "destination_type",
+                    "value": "logrotate"
+                  },
+                  {
+                    "key": "companion_dir",
+                    "value": "./"
+                  },
+                  {
+                    "key": "libprocess_num_worker_threads",
+                    "value": "2"
+                  },
+                  {
+                    "key": "logrotate_max_stdout_size",
+                    "value": "2MB"
+                  },
+                  {
+                    "key": "logrotate_stdout_options",
+                    "value": "rotate 9"
+                  },
+                  {
+                    "key": "logrotate_max_stderr_size",
+                    "value": "2MB"
+                  },
+                  {
+                    "key": "logrotate_stderr_options",
+                    "value": "rotate 9"
+                  },
+                  {
+                    "key": "fluentbit_ip",
+                    "value": "127.0.0.1"
+                  },
+                  {
+                    "key": "fluentbit_port",
+                    "value": "61092"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+
+  - path: {{ windows_dcos_install_path }}\etc\mesos\modules\metrics.json
+    content: |
+      {
+        "libraries": [
+          {
+            "file": "metrics.dll",
+            "modules": [
+              {
+                "name": "com_mesosphere_dcos_MetricsIsolatorModule",
+                "parameters": [
+                  {
+                    "key": "dcos_metrics_service_scheme",
+                    "value": "http"
+                  },
+                  {
+                    "key": "dcos_metrics_service_network",
+                    "value": "inet"
+                  },
+                  {
+                    "key": "dcos_metrics_service_address",
+                    "value": "127.0.0.1:61091"
+                  },
+                  {
+                    "key": "dcos_metrics_service_endpoint",
+                    "value": "/container"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
