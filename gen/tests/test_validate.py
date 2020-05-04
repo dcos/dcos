@@ -1,7 +1,5 @@
 import logging
 
-import pytest
-
 import gen
 from gen.build_deploy.bash import onprem_source
 
@@ -56,7 +54,6 @@ def test_error_during_validate_calico_network(monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_ID', 'foobar')
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
-    err_msg = "'' does not appear to be an IPv4 or IPv6 network"
     assert gen.validate({
         'bootstrap_url': '',
         'bootstrap_variant': '',
