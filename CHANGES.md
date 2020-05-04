@@ -6,11 +6,19 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated DC/OS UI to [v4.0.1](https://github.com/dcos/dcos-ui/releases/tag/v4.0.1).
 
+* Update Metronome to 0.6.44
+
+    * Metronome jobs can be configured to join container networks (MARATHON-8727)
+
 ### Fixed and improved
 
 * Update OpenResty to 1.15.8.3. (D2IQ-66506)
 
 * Update to OpenSSL 1.1.1g. (D2IQ-67050)
+
+* Update Metronome to 0.6.44
+
+    * A bug was introduced in Metronome for DC/OS 2.0.3 in which jobs created in previous versions of DC/OS were not seen. This has been fixed, and jobs created before 2.0.3 are visible once again. (MARATHON-8746)
 
 ## DC/OS 2.0.3 (2020-03-25)
 
