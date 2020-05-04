@@ -329,10 +329,6 @@ def validate_config_subnet(config_name, subnet, version=IPVersion.IPv4):
         raise AssertionError(err_msg) from ex
 
 
-def validate_calico_network_cidr(calico_network_cidr):
-    validate_config_subnet("calico_network_cidr", calico_network_cidr)
-
-
 def validate_dcos_overlay_network(dcos_overlay_network):
     # a validate dcos_overlay_network is in such a format:
     # dcos_overlay_network :
@@ -1233,7 +1229,7 @@ entry = {
         lambda mesos_cni_root_dir_persist: validate_true_false(mesos_cni_root_dir_persist),
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
         validate_marathon_new_group_enforce_role,
-        validate_calico_network_cidr,
+        lambda calico_network_cidr: validate_config_subnet("calico_network_cidr", calico_network_cidr),
         lambda calico_ipinip_mtu: validate_int_in_range(calico_ipinip_mtu, 552, None),
         lambda calico_veth_mtu: validate_int_in_range(calico_veth_mtu, 552, None),
         lambda calico_vxlan_mtu: validate_int_in_range(calico_vxlan_mtu, 552, None),
