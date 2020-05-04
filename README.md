@@ -35,11 +35,8 @@ To find the git SHA of any given release, check the latest commit in the version
 | Release Type | URL Pattern |
 |--------------|--------------------|
 | Latest Stable| `https://downloads.dcos.io/dcos/stable/dcos_generate_config.sh` |
-| Latest Master Linux| `https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh` |
-| Latest Master Windows| `https://downloads.dcos.io/dcos/testing/master/windows/dcos_generate_config_win.sh` |
-| Latest Build of Specific PR Linux| `https://downloads.dcos.io/dcos/testing/pull/<github-pr-number>/dcos_generate_config.sh` |
-| Latest Build of Specific PR Windows| `https://downloads.dcos.io/dcos/testing/pull/<github-pr-number>/windows/dcos_generate_config_win.sh` |
-
+| Latest Master| `https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh` |
+| Latest Build of Specific PR| `https://downloads.dcos.io/dcos/testing/pull/<github-pr-number>/dcos_generate_config.sh` |
 
 
 # Development Environment
