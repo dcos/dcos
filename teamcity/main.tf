@@ -1,12 +1,23 @@
+variable "AWS_REGION" {}
+variable "teamcity_build_id" {}
+variable "ONPREM_INSTALLER_URL" {}
+variable "ONPREM_AWS_INSTANCE_SIZE" {}
+variable "system_teamcity_buildType_id" {}
+
 provider "aws" {
   region = "${var.AWS_REGION}"
+}
+
+# Used to determine your public IP for forwarding rules
+data "http" "whatismyip" {
+  url = "http://whatismyip.akamai.com/"
 }
 
 module "dcos" {
   source  = "dcos-terraform/dcos/aws"
   version = "~> 0.2.10"
 
-  cluster_name        = "tf-ci-${var.teamcity.build.id}-"
+  cluster_name        = "tf-ci-${var.teamcity_build_id}-"
   cluster_name_random_string = true
   
   ssh_public_key_file = "id_rsa.pub"
@@ -33,8 +44,8 @@ module "dcos" {
   }
 
   tags = {
-    build_id = "${var.teamcity.build.id}"
-    build_type_id = "${var.system.teamcity.buildType.id}"
+    build_id = "${var.teamcity_build_id}"
+    build_type_id = "${var.system_teamcity_buildType_id}"
   }
 }
 
