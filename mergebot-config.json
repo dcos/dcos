@@ -145,18 +145,25 @@
         ]
     },
     "test-binding": {"teamcity/dcos/build/dcos": {"type": "teamcity",
-                                                   "id": "DcOs_Open_Build_BuildDcOs"},
+                                                  "required": "true",
+                                                  "id": "DcOs_Open_Build_BuildDcOs"},
                      "teamcity/dcos/build/tox": {"type": "teamcity",
+                                                 "required": "true",
                                                  "id": "DcOs_Open_Build_Tox"},
                      "teamcity/dcos/test/test-e2e/group1": {"type": "teamcity",
+                                                            "required": "true",
                                                             "id": "DcOs_Open_Test_DcosDocker_DcosTestE2eGroup1"},
                      "teamcity/dcos/test/terraform/aws/onprem/static/group1": {"type": "teamcity",
+                                                                               "required": "true",
                                                                                "id": "DcOs_Open_Test_IntegrationTest_AwsOnpremWStaticBackendGroup1TerraformSpotBlock"},
                      "teamcity/dcos/test/terraform/aws/onprem/static/group2": {"type": "teamcity",
+                                                                               "required": "true",
                                                                                "id": "DcOs_Open_Test_IntegrationTest_AwsOnpremWStaticBackendGroup2TerraformSpotBlock"},
                      "teamcity/dcos/test/terraform/aws/onprem/static/group3": {"type": "teamcity",
+                                                                               "required": "true",
                                                                                "id": "DcOs_Open_Test_IntegrationTest_AwsOnpremWStaticBackendGroup3TerraformSpotBlock"},
                      "teamcity/dcos/test/terraform/aws/onprem/static/group4": {"type": "teamcity",
+                                                                               "required": "true",
                                                                                "id": "DcOs_Open_Test_IntegrationTest_AwsOnpremWStaticBackendGroup4TerraformSpotBlock"}                                                          
                     }
 }
