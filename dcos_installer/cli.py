@@ -98,10 +98,6 @@ def dispatch(args):
         status = backend.generate_node_upgrade_script(args.installed_cluster_version)
         sys.exit(status)
 
-    if args.action == 'generate-node-upgrade-win-script':
-        status = backend.generate_node_upgrade_win_script(args.installed_cluster_version)
-        sys.exit(status)
-
     if args.action in dispatch_dict_simple:
         action = dispatch_dict_simple[args.action]
         if action[1] is not None:
@@ -143,15 +139,6 @@ def get_argument_parser():
         dest='installed_cluster_version',
         nargs='?',
         help='Generate a script that upgrades DC/OS nodes running installed_cluster_version'
-    )
-
-    mutual_exc.add_argument(
-        '--generate-node-upgrade-win-script',
-        action=ArgsAction,
-        metavar='installed_cluster_version',
-        dest='installed_cluster_version',
-        nargs='?',
-        help='Generate a powershell script that upgrades Windows nodes running installed_cluster_version'
     )
 
     parser.add_argument(

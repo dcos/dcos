@@ -40,7 +40,6 @@ from pkgpanda.constants import (
 from pkgpanda.util import (
     hash_checkout,
     is_absolute_path,
-    is_windows,
     json_prettyprint,
     load_string,
     split_by_token,
@@ -54,10 +53,7 @@ role_names = {"master", "slave", "slave_public"}
 
 role_template = config_dir + '/roles/{}'
 
-if is_windows:
-    CLOUDCONFIG_KEYS = {'runcmd', 'root', 'mounts', 'disk_setup', 'fs_setup', 'bootcmd'}
-else:
-    CLOUDCONFIG_KEYS = {'coreos', 'runcmd', 'apt_sources', 'root', 'mounts', 'disk_setup', 'fs_setup', 'bootcmd'}
+CLOUDCONFIG_KEYS = {'coreos', 'runcmd', 'apt_sources', 'root', 'mounts', 'disk_setup', 'fs_setup', 'bootcmd'}
 PACKAGE_KEYS = {'package', 'root'}
 
 
@@ -455,19 +451,9 @@ def get_dcosconfig_source_target_and_templates(
     log.info("Generating configuration files...")
 
     # TODO(cmaloney): Make these all just defined by the base calc.py
-    # There are separate configuration files for windows vs non-windows as a lot
-    # of configuration on windows will be different.
-    if is_windows:
-        config_package_names = ['dcos-metadata']
-    else:
-        config_package_names = ['dcos-config', 'dcos-metadata']
+    config_package_names = ['dcos-config', 'dcos-metadata']
 
     template_filenames = [dcos_config_yaml, cloud_config_yaml, 'dcos-metadata.yaml', dcos_services_yaml]
-
-    if user_arguments.get("enable_windows_agents") == 'true':
-        # Create an additional dcos-config-win setup package for Windows agents
-        config_package_names.append('dcos-config-win')
-        template_filenames.append('dcos-config-win.yaml')
 
     # TODO(cmaloney): Check there are no duplicates between templates and extra_template_files
     template_filenames += extra_templates
@@ -491,7 +477,6 @@ def get_dcosconfig_source_target_and_templates(
         'dcos_image_commit',
         'package_ids',
         'template_filenames',
-        'enable_windows_agents',
     })
     targets = [base_target] + target_from_templates(templates)
     base_source = gen.internals.Source(is_user=False)
@@ -635,14 +620,6 @@ def generate(
 
     sources, targets, templates = get_dcosconfig_source_target_and_templates(
         user_arguments, extra_templates, extra_sources)
-
-    if user_arguments.get("enable_windows_agents") == 'true':
-        # Parse the dcos-config-windows.yaml file to check that contained
-        # variables are set.  Do not add template for evaluation, as that
-        # gets done on the agent node.
-        template = gen.template.parse_resources('dcos-config-windows.yaml')
-        target = template.target_from_ast()
-        extra_targets.append(target)
 
     resolver = validate_and_raise(sources, targets + extra_targets)
     argument_dict = get_final_arguments(resolver)
