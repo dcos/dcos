@@ -1,9 +1,0 @@
-{
-  "sources": {
-        "OpenResty": {
-          "kind": "url",
-          "url": "https://downloads.mesosphere.com/openresty_mirror/openresty-1.15.8.3-win64.zip",
-          "sha1": "9ebf7bb968241a8d64a9891a6bfdd7eb47a2df03"
-        }
-  }
-}
