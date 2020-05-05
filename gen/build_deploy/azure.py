@@ -56,7 +56,6 @@ azure_base_source = Source(entry={
         'resolvers': '["168.63.129.16"]',
         'ip_detect_contents': yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/azure.sh').decode()),
         'ip6_detect_contents': yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/azure6.sh').decode()),
-        'ip_detect_windows_contents': yaml.dump(pkg_resources.resource_string('gen', 'ip-detect/azure.ps1').decode()),
         'master_discovery': 'static',
         'exhibitor_storage_backend': 'azure',
         'master_cloud_config': '{{ master_cloud_config }}',
