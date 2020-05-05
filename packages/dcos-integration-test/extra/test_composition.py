@@ -179,7 +179,6 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-logrotate-agent.service',
         'dcos-logrotate-agent.timer',
         'dcos-rexray.service']
-    }
 
     expected_units = {
         "master": set(all_node_units + master_units),

@@ -260,13 +260,13 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
             set(master_nodes).symmetric_difference(set(dcos_api_session.masters))
         )
 
-        linux_agent_nodes = list()
+        agent_nodes = list()
         if 'dcos-mesos-slave.service' in pulled_units:
             agent_nodes_response = check_json(
                 dcos_api_session.health.get('/units/dcos-mesos-slave.service/nodes', node=master))
-            linux_agent_nodes = get_nodes_from_response(agent_nodes_response)
+            agent_nodes = get_nodes_from_response(agent_nodes_response)
 
-        assert len(linux_agent_nodes) == len(dcos_api_session.slaves), '{} != {}'.format(linux_agent_nodes, dcos_api_session.slaves)
+        assert len(agent_nodes) == len(dcos_api_session.slaves), '{} != {}'.format(agent_nodes, dcos_api_session.slaves)
 
 
 def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
