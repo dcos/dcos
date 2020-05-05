@@ -8,9 +8,9 @@
   ],
   "single_source": {
     "kind": "git",
-    "git": "https://github.com/apache/mesos",
-    "ref": "00466fe6138138ead1ca676df37c3af69104956d",
-    "ref_origin": "master"
+    "git": "https://github.com/asekretenko/mesos",
+    "ref": "de8a1fd9813480e08747aa95968767fb6b673856",
+    "ref_origin": "MESOS-10125"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
