@@ -25,7 +25,7 @@ from pkgpanda import subprocess
 from pkgpanda.constants import (
     cloud_config_yaml, dcos_services_yaml, install_root
 )
-from pkgpanda.util import copy_directory, copy_file, is_windows, logger, make_directory
+from pkgpanda.util import copy_directory, copy_file, logger, make_directory
 
 
 def calculate_custom_check_bins_provided(custom_check_bins_dir):
@@ -789,8 +789,7 @@ def make_installer_docker(variant, variant_info, installer_info):
             'bootstrap_id': bootstrap_id,
             'dcos_image_commit': util.dcos_image_commit})
 
-        if not is_windows:
-            subprocess.check_call(['chmod', '+x', dest_path('installer_internal_wrapper')])
+        subprocess.check_call(['chmod', '+x', dest_path('installer_internal_wrapper')])
 
         # TODO(cmaloney) make this use make_bootstrap_artifacts / that set
         # rather than manually keeping everything in sync

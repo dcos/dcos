@@ -36,10 +36,6 @@ def test_set_arg_parser():
     assert parser.installed_cluster_version == 'fake'
     assert parser.action == 'generate-node-upgrade-script'
 
-    parser = parse_args(['--generate-node-upgrade-win-script', 'fake'])
-    assert parser.installed_cluster_version == 'fake'
-    assert parser.action == 'generate-node-upgrade-win-script'
-
     # Can't do two at once
     with pytest.raises(SystemExit):
         parse_args(['--validate', '--hash-password', 'foo'])

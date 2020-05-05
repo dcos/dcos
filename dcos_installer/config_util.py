@@ -5,7 +5,6 @@ import sys
 
 import gen
 import gen.build_deploy.bash
-import gen.build_deploy.powershell
 import pkgpanda
 from dcos_installer.constants import ARTIFACT_DIR, CLUSTER_PACKAGES_PATH, SERVE_DIR
 from pkgpanda.util import make_directory
@@ -20,7 +19,6 @@ def onprem_generate(config):
 def make_serve_dir(gen_out):
     make_directory(SERVE_DIR)
     gen.build_deploy.bash.generate(gen_out, SERVE_DIR)
-    gen.build_deploy.powershell.generate(gen_out, SERVE_DIR)
 
     # Copy cached artifacts.
     cached_packages = sorted(

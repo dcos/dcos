@@ -28,7 +28,6 @@ import os
 import re
 import socket
 import string
-import textwrap
 from enum import IntEnum
 from math import floor
 from subprocess import check_output
@@ -107,16 +106,6 @@ def validate_ipv4_addresses(ips: list):
 def validate_absolute_path(path):
     if not os.path.isabs(path):
         raise AssertionError('Must be an absolute filesystem path')
-
-
-def calculate_json_escape(value):
-    """
-    Given a string, return the string escaped for interpolation into a JSON
-    string.  This is the JSON-escaped string without the double-quotes.
-    """
-    escaped = json.dumps(value)
-    assert len(escaped) >= 2 and escaped[0] == '"' and escaped[-1] == '"'
-    return escaped[1:-1]
 
 
 def valid_ipv6_address(ip6):
@@ -255,14 +244,6 @@ def calculate_mesos_log_directory_max_files(mesos_log_retention_mb):
     return str(25 + int(calculate_mesos_log_retention_count(mesos_log_retention_mb)))
 
 
-def calculate_windows_config_yaml():
-    # Convert the resource file 'dcos-config-windows.yaml' into a YAML stanza
-    # that can be inserted into template file.
-    from pkg_resources import resource_string
-    s = resource_string('gen', 'dcos-config-windows.yaml').decode('utf-8')
-    return textwrap.indent(s, prefix=('  ' * 3))
-
-
 def calculate_ip_detect_contents(ip_detect_filename):
     assert os.path.exists(ip_detect_filename), "ip-detect script `{}` must exist".format(ip_detect_filename)
     return yaml.dump(open(ip_detect_filename, encoding='utf-8').read())
@@ -278,32 +259,6 @@ def calculate_ip6_detect_contents(ip6_detect_filename):
     if ip6_detect_filename != '':
         return yaml.dump(open(ip6_detect_filename, encoding='utf-8').read())
     return yaml.dump("")
-
-
-_default_windows_ip_detect = """$ErrorActionPreference = "Stop"
-
-$ip = (
-    Get-NetIPConfiguration |
-    Where-Object {
-        $_.IPv4DefaultGateway -ne $null -and
-        $_.NetAdapter.Status -ne "Disconnected"
-    }
-).IPv4Address.IPAddress
-
-Write-Output $ip
-"""
-
-
-def calculate_ip_detect_windows_contents(ip_detect_windows):
-    if os.path.exists(ip_detect_windows):
-        return yaml.dump(open(ip_detect_windows, encoding='utf-8').read())
-    return yaml.dump(_default_windows_ip_detect)
-
-
-def calculate_ip_detect_public_windows_contents(ip_detect_public_windows, ip_detect_windows_contents):
-    if os.path.exists(ip_detect_public_windows):
-        return yaml.dump(open(ip_detect_public_windows, encoding='utf-8').read())
-    return ip_detect_windows_contents
 
 
 def calculate_rexray_config_contents(rexray_config):
@@ -372,13 +327,6 @@ def validate_config_subnet(config_name, subnet, version=IPVersion.IPv4):
         err_msg = "Incorrect value for `{}`: `{}`. Only IPv{} subnets are allowed".format(
             config_name, subnet, version)
         raise AssertionError(err_msg) from ex
-
-
-def validate_calico_network_cidr(calico_network_cidr, enable_windows_agents):
-    # calico network is not supported on windows, we skip valiating calico
-    # networking CIDR format in case windows in enabled.
-    if enable_windows_agents.lower() != "true":
-        validate_config_subnet("calico_network_cidr", calico_network_cidr)
 
 
 def validate_dcos_overlay_network(dcos_overlay_network):
@@ -453,15 +401,12 @@ def validate_dcos_overlay_network(dcos_overlay_network):
 
 def validate_overlay_networks_not_overlap(dcos_overlay_network,
                                           dcos_overlay_enable,
-                                          calico_network_cidr,
-                                          enable_windows_agents):
+                                          calico_network_cidr):
     """ checks the subnets used for dcos overlay do not overlap calico network
 
     We assume the basic validations, like subnet cidr, have been done.
     """
     if dcos_overlay_enable.lower() != "true":
-        return
-    if enable_windows_agents.lower() == "true":
         return
     try:
         overlay_network = json.loads(dcos_overlay_network)
@@ -1182,46 +1127,6 @@ def calculate_fault_domain_detect_contents(fault_domain_detect_filename):
     return ''
 
 
-_default_fault_domain_detect_windows_contents = '''
-$ErrorActionPreference = "Stop"
-try {
-  $zone = Invoke-RestMethod -Uri http://169.254.169.254/latest/meta-data/placement/availability-zone
-  $region = $zone.Substring(0,$zone.Length-1)
-}
-catch {
-    $zone = "windows"
-    $region = "windows"
-}
-Write-Output "{`"fault_domain`":{`"region`":{`"name`": `"$region`"},`"zone`":{`"name`": `"$zone`"}}}"
-'''
-
-
-def calculate_fault_domain_detect_windows_contents(fault_domain_detect_windows_filename):
-    if os.path.exists(fault_domain_detect_windows_filename):
-        return yaml.dump(open(fault_domain_detect_windows_filename, encoding='utf-8').read())
-    return yaml.dump(_default_fault_domain_detect_windows_contents)
-
-
-def generate_zk_address(master_discovery, zk_client_port, master_list=None, exhibitor_address=None):
-    if master_discovery == 'static':
-        zk_address = ",".join(
-            ["{}:{}".format(v, zk_client_port) for v in json.loads(master_list)]
-        )
-    elif master_discovery == 'master_http_loadbalancer':
-        zk_address = "{}:{}".format(str(exhibitor_address), zk_client_port)
-    else:
-        zk_address = "zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181"
-    return zk_address
-
-
-def zk_address_from_masters_str(master_discovery, zk_client_port, master_list):
-    return generate_zk_address(master_discovery, zk_client_port, master_list=master_list)
-
-
-def zk_address_from_exhibitor_str(master_discovery, zk_client_port, exhibitor_address):
-    return generate_zk_address(master_discovery, zk_client_port, exhibitor_address=exhibitor_address)
-
-
 __dcos_overlay_network_default_name = 'dcos'
 __dcos_overlay_network6_default_name = 'dcos6'
 
@@ -1324,8 +1229,7 @@ entry = {
         lambda mesos_cni_root_dir_persist: validate_true_false(mesos_cni_root_dir_persist),
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
         validate_marathon_new_group_enforce_role,
-        lambda enable_windows_agents: validate_true_false(enable_windows_agents),
-        validate_calico_network_cidr,
+        lambda calico_network_cidr: validate_config_subnet("calico_network_cidr", calico_network_cidr),
         lambda calico_ipinip_mtu: validate_int_in_range(calico_ipinip_mtu, 552, None),
         lambda calico_veth_mtu: validate_int_in_range(calico_veth_mtu, 552, None),
         lambda calico_vxlan_mtu: validate_int_in_range(calico_vxlan_mtu, 552, None),
@@ -1365,10 +1269,6 @@ entry = {
         'ip_detect_contents': calculate_ip_detect_contents,
         'ip_detect_public_filename': '',
         'ip_detect_public_contents': calculate_ip_detect_public_contents,
-        'ip_detect_windows': 'genconf/serve/windows/ip-detect.ps1',
-        'ip_detect_windows_contents': calculate_ip_detect_windows_contents,
-        'ip_detect_public_windows': 'genconf/serve/windows/ip-detect-public.ps1',
-        'ip_detect_public_windows_contents': calculate_ip_detect_public_windows_contents,
         'ip6_detect_contents': calculate_ip6_detect_contents,
         'dns_search': '',
         'auth_cookie_secure_flag': 'false',
@@ -1408,7 +1308,6 @@ entry = {
         'ui_banner_image_path': 'null',
         'ui_banner_dismissible': 'null',
         'ui_update_enabled': 'true',
-        'windows_config_yaml': calculate_windows_config_yaml,
         'dcos_net_cluster_identity': 'false',
         'dcos_net_rest_enable': "true",
         'dcos_net_watchdog': "true",
@@ -1481,16 +1380,11 @@ entry = {
         'diagnostics_bundles_dir': '/var/lib/dcos/dcos-diagnostics/diag-bundles',
         'fault_domain_detect_filename': 'genconf/fault-domain-detect',
         'fault_domain_detect_contents': calculate_fault_domain_detect_contents,
-        'fault_domain_detect_windows_filename': 'genconf/serve/windows/fault-domain-detect-win.ps1',
-        'fault_domain_detect_windows_contents': calculate_fault_domain_detect_windows_contents,
         'license_key_contents': '',
         'enable_mesos_ipv6_discovery': 'false',
         'log_offers': 'true',
         'mesos_cni_root_dir_persist': 'false',
         'enable_mesos_input_plugin': 'true',
-        'enable_windows_agents': 'false',
-        'windows_dcos_install_path': 'C:\\d2iq\\dcos',
-        'windows_dcos_var_path': 'C:\\d2iq\\dcos\\var',
         'calico_network_cidr': '172.29.0.0/16',
         'calico_ipinip_mtu': '1480',
         'calico_veth_mtu': '1500',
@@ -1562,10 +1456,6 @@ entry = {
             lambda marathon_new_group_enforce_role: calculate_set(marathon_new_group_enforce_role),
         'has_marathon_gpu_scheduling_behavior':
             lambda marathon_gpu_scheduling_behavior: calculate_set(marathon_gpu_scheduling_behavior),
-        'windows_dcos_install_path_json':
-            lambda windows_dcos_install_path: calculate_json_escape(windows_dcos_install_path),
-        'windows_dcos_var_path_json':
-            lambda windows_dcos_var_path: calculate_json_escape(windows_dcos_var_path),
     },
     'secret': [
         'cluster_docker_credentials',
@@ -1575,12 +1465,9 @@ entry = {
     ],
     'conditional': {
         'master_discovery': {
-            'master_http_loadbalancer': {
-                'must': {'zk_address': zk_address_from_exhibitor_str}
-            },
+            'master_http_loadbalancer': {},
             'static': {
-                'must': {'num_masters': calc_num_masters,
-                         'zk_address': zk_address_from_masters_str}
+                'must': {'num_masters': calc_num_masters}
             }
         },
         'rexray_config_preset': {
