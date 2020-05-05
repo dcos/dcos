@@ -266,7 +266,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/liblogsink.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
             "modules":
               [
                 {
@@ -289,7 +289,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/liblogsink.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
             "modules":
               [
                 {
@@ -314,7 +314,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
@@ -347,7 +347,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
@@ -370,7 +370,7 @@ package:
     content: |
       {
         "libraries": [ {
-          "file": "/opt/mesosphere/active/mesos/lib/mesos/libmetrics-module.so",
+          "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmetrics-module.so",
           "modules": [ {
             "name": "com_mesosphere_dcos_MetricsIsolatorModule",
             "parameters": [
@@ -387,7 +387,7 @@ package:
       {
         "libraries": [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/libjournaldlogger.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libjournaldlogger.so",
             "modules": [
               {
                 "name": "com_mesosphere_mesos_JournaldLogger",
@@ -397,7 +397,7 @@ package:
                     "value": "{{ mesos_container_log_sink }}"
                   }, {
                     "key": "companion_dir",
-                    "value": "/opt/mesosphere/active/mesos/bin/"
+                    "value": "/opt/mesosphere/active/mesos-modules/bin/"
                   }, {
                     "key": "libprocess_num_worker_threads",
                     "value": "2"
@@ -434,7 +434,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/libremovedockercfg.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libremovedockercfg.so",
             "modules":
               [
                 {
