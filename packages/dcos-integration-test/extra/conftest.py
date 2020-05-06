@@ -79,8 +79,6 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     config.addinivalue_line('markers', 'first: run test before all not marked first')
     config.addinivalue_line('markers', 'last: run test after all not marked last')
-    config.addinivalue_line('markers', 'supportedwindows: run tests that support Windows agents.')
-    config.addinivalue_line('markers', 'supportedwindowsonly: run only Windows specific tests.')
 
 
 def pytest_collection_modifyitems(session, config, items):
