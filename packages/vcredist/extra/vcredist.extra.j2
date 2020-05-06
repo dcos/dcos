@@ -1,7 +1,0 @@
-install:
-    exec_external_commands:
-        - powershell -noprofile -executionpolicy Bypass -File {{ pkg_inst_dpath }}\conf\vcredist.ps1 {{ pkg_inst_dpath }}
-
-uninstall:
-    exec_external_commands:
-        - powershell -noprofile -executionpolicy Bypass -File {{ pkg_inst_dpath }}\conf\vcredist_uninstall.ps1
