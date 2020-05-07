@@ -10,11 +10,14 @@ import logging
 import time
 import uuid
 
+from typing import Any
+
 import cryptography.hazmat.backends
 import jwt
 import requests
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+from dcos_test_utils.dcos_api import DcosApiSession
 from jwt.utils import base64url_decode
 
 
@@ -25,7 +28,7 @@ __contact__ = 'security-team@mesosphere.io'
 log = logging.getLogger(__name__)
 
 
-def _generate_rsa_keypair():
+def _generate_rsa_keypair() -> Any:
     """
     Generate an RSA keypair. Serialize the public key in the the X.509
     SubjectPublicKeyInfo/OpenSSL PEM public key format (RFC 5280). Serialize the
@@ -56,8 +59,8 @@ def _generate_rsa_keypair():
 default_rsa_privkey, default_rsa_pubkey = _generate_rsa_keypair()
 
 
-def test_service_account_create_login_delete(
-        dcos_api_session, noauth_api_session):
+def test_service_account_create_login_delete(dcos_api_session: DcosApiSession, noauth_api_session: DcosApiSession
+                                             ) -> None:
 
     # Create service user account, share the public key with the IAM.
     serviceuid = 'testservice'
@@ -111,8 +114,7 @@ def test_service_account_create_login_delete(
     assert serviceuid not in uids
 
 
-def test_user_account_create_login_delete(
-        dcos_api_session, noauth_api_session):
+def test_user_account_create_login_delete(dcos_api_session: DcosApiSession, noauth_api_session: DcosApiSession) -> None:
 
     uid = str(uuid.uuid4())
     password = str(uuid.uuid4())

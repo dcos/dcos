@@ -5,7 +5,7 @@ import pytest
 
 class TestExhibitor:
 
-    def test_permissions(self):
+    def test_permissions(self) -> None:
         """
         ZooKeeper data files are not accessible
         """

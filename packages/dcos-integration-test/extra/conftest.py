@@ -3,12 +3,15 @@ import logging
 import os
 import sys
 
+from typing import Any, Generator
+
 import env_helper
 
 import pytest
 import requests
 from _pytest.tmpdir import TempdirFactory
 from dcos_test_utils import dcos_cli
+from dcos_test_utils.dcos_api import DcosApiSession
 from dcos_test_utils.diagnostics import Diagnostics
 from test_helpers import get_expanded_config
 
@@ -18,7 +21,7 @@ pytest_plugins = ['pytest-dcos']
 
 
 @pytest.fixture(scope='session')
-def dcos_api_session(dcos_api_session_factory):
+def dcos_api_session(dcos_api_session_factory: Any) -> Any:
     """ Overrides the dcos_api_session fixture to use
     exhibitor settings currently used in the cluster
     """
@@ -36,7 +39,7 @@ def dcos_api_session(dcos_api_session_factory):
     return api
 
 
-def pytest_cmdline_main(config):
+def pytest_cmdline_main(config: Any) -> None:
     user_outside_cluster = True
     if os.path.exists('/opt/mesosphere/bin/dcos-shell'):
         user_outside_cluster = False
@@ -69,22 +72,22 @@ def pytest_cmdline_main(config):
             config.option.rsyncdir = [os.path.dirname(os.path.abspath(__file__))]
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: Any) -> None:
     parser.addoption("--windows-only", action="store_true",
                      help="run only Windows tests")
     parser.addoption("--env-help", action="store_true",
                      help="show which environment variables must be set for DC/OS integration tests")
 
 
-def pytest_configure(config):
+def pytest_configure(config: Any) -> None:
     config.addinivalue_line('markers', 'first: run test before all not marked first')
     config.addinivalue_line('markers', 'last: run test after all not marked last')
 
 
-def pytest_collection_modifyitems(session, config, items):
+def pytest_collection_modifyitems(session: Any, config: Any, items: list) -> None:
     """Reorders test using order mark
     """
-    new_items = []
+    new_items = []  # type: ignore
     last_items = []
     for item in items:
         if config.getoption('--windows-only'):
@@ -102,7 +105,7 @@ def pytest_collection_modifyitems(session, config, items):
     items[:] = new_items + last_items
 
 
-def _purge_marathon_nofail(session):
+def _purge_marathon_nofail(session: Any) -> None:
     """
     Try to clean Marathon.
     Do not error if there is a problem.
@@ -125,7 +128,7 @@ def _purge_marathon_nofail(session):
 # The trade-off here is that tests, in particular failing tests, can leak
 # resources within a module.
 @pytest.fixture(autouse=True, scope='module')
-def clean_marathon_state(dcos_api_session):
+def clean_marathon_state(dcos_api_session: DcosApiSession) -> Generator:
     """
     Attempt to clean up Marathon state before entering the test module and when
     leaving the test module. Especially attempt to clean up when the test code
@@ -140,7 +143,7 @@ def clean_marathon_state(dcos_api_session):
 
 
 @pytest.fixture(autouse=False, scope='function')
-def clean_marathon_state_function_scoped(dcos_api_session):
+def clean_marathon_state_function_scoped(dcos_api_session: DcosApiSession) -> Generator:
     """
     See ``clean_marathon_state`` - this is function scoped as some test modules
     require cleanup after every test.
@@ -153,12 +156,12 @@ def clean_marathon_state_function_scoped(dcos_api_session):
 
 
 @pytest.fixture(scope='session')
-def noauth_api_session(dcos_api_session):
+def noauth_api_session(dcos_api_session: DcosApiSession) -> Any:
     return dcos_api_session.get_user_session(None)
 
 
 @pytest.fixture(scope='session', autouse=True)
-def _dump_diagnostics(request, dcos_api_session):
+def _dump_diagnostics(request: Any, dcos_api_session: DcosApiSession) -> Generator:
     """Download the zipped diagnostics bundle report from each master in the cluster to the home directory. This should
     be run last. The _ prefix makes sure that pytest calls this first out of the autouse session scope fixtures, which
     means that its post-yield code will be executed last.
@@ -196,7 +199,7 @@ def _dump_diagnostics(request, dcos_api_session):
         log.info('\nWait for diagnostics job to complete')
         diagnostics.wait_for_diagnostics_job(last_datapoint=last_datapoint)
 
-        duration = last_datapoint['time'] - creation_start
+        duration = last_datapoint['time'] - creation_start  # type: ignore
         log.info('\nDiagnostis bundle took {} to generate'.format(duration))
 
         log.info('\nWait for diagnostics report to become available')
@@ -210,7 +213,7 @@ def _dump_diagnostics(request, dcos_api_session):
 
 
 @pytest.fixture(scope='session')
-def install_dcos_cli(tmpdir_factory: TempdirFactory):
+def install_dcos_cli(tmpdir_factory: TempdirFactory) -> Generator:
     """
     Install the CLI.
     """

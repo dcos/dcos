@@ -5,10 +5,13 @@ import re
 import sys
 import uuid
 
+from typing import Any, Generator
+
 import pytest
 import retrying
-from prometheus_client.parser import text_string_to_metric_families
 
+from dcos_test_utils.dcos_api import DcosApiSession
+from prometheus_client.parser import text_string_to_metric_families
 from test_helpers import get_expanded_config
 
 
@@ -26,26 +29,27 @@ STD_INTERVAL = 5 * 1000
 FAULT_DOMAIN_TAGS = {'fault_domain_zone', 'fault_domain_region'}
 
 
-def check_tags(tags: dict, required_tag_names: set, optional_tag_names: set = set()):
+def check_tags(tags: dict, required_tag_names: set, optional_tag_names: set = set()) -> None:
     """Assert that tags contains only expected keys with nonempty values."""
     keys = set(tags.keys())
     assert keys & required_tag_names == required_tag_names, 'Not all required tags were set'
     assert keys - required_tag_names - optional_tag_names == set(), 'Encountered unexpected tags'
     for tag_name, tag_val in tags.items():
-        assert tag_val != '', 'Value for tag "%s" must not be empty'.format(tag_name)
+        assert tag_val != '', 'Value for tag "{}" must not be empty'.format(tag_name)
 
 
-def test_metrics_ping(dcos_api_session):
+def test_metrics_ping(dcos_api_session: DcosApiSession) -> None:
     """ Test that the dcos-metrics service is up on master and agents."""
     nodes = get_master_and_agents(dcos_api_session)
 
     for node in nodes:
         response = dcos_api_session.metrics.get('/ping', node=node)
-        assert response.status_code == 200, 'Status code: {}, Content {}'.format(response.status_code, response.content)
+        assert response.status_code == 200, 'Status code: {}, Content {}'.format(
+            response.status_code, response.content)
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
-def test_metrics_agents_prom(dcos_api_session):
+def test_metrics_agents_prom(dcos_api_session: DcosApiSession) -> None:
     """Telegraf Prometheus endpoint is reachable on master and agents."""
     nodes = get_master_and_agents(dcos_api_session)
 
@@ -55,7 +59,7 @@ def test_metrics_agents_prom(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-def get_metrics_prom(dcos_api_session, node):
+def get_metrics_prom(dcos_api_session: DcosApiSession, node: str) -> Any:
     """Gets metrics from prometheus port on node and returns the response.
 
     Retries on non-200 status for up to 300 seconds.
@@ -67,13 +71,13 @@ def get_metrics_prom(dcos_api_session, node):
     return response
 
 
-def test_metrics_procstat(dcos_api_session):
+def test_metrics_procstat(dcos_api_session: DcosApiSession) -> None:
     """Assert that procstat metrics are present on master and agent nodes."""
     nodes = get_master_and_agents(dcos_api_session)
 
     for node in nodes:
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-        def check_procstat_metrics():
+        def check_procstat_metrics() -> None:
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
                 for sample in family.samples:
@@ -83,13 +87,13 @@ def test_metrics_procstat(dcos_api_session):
         check_procstat_metrics()
 
 
-def test_metrics_agents_mesos(dcos_api_session):
+def test_metrics_agents_mesos(dcos_api_session: DcosApiSession) -> None:
     """Assert that mesos metrics on agents are present."""
     nodes = get_agents(dcos_api_session)
 
     for node in nodes:
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-        def check_mesos_metrics():
+        def check_mesos_metrics() -> None:
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
                 for sample in family.samples:
@@ -99,10 +103,10 @@ def test_metrics_agents_mesos(dcos_api_session):
         check_mesos_metrics()
 
 
-def test_metrics_master_mesos(dcos_api_session):
+def test_metrics_master_mesos(dcos_api_session: DcosApiSession) -> None:
     """Assert that mesos metrics on master are present."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-    def check_mesos_metrics():
+    def check_mesos_metrics() -> None:
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
         for family in text_string_to_metric_families(response.text):
             for sample in family.samples:
@@ -112,11 +116,11 @@ def test_metrics_master_mesos(dcos_api_session):
     check_mesos_metrics()
 
 
-def test_metrics_agents_mesos_overlay(dcos_api_session):
+def test_metrics_agents_mesos_overlay(dcos_api_session: DcosApiSession) -> None:
     """Assert that mesos agent overlay module metrics on master and agents are present."""
 
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-    def _check_mesos_overlay_metrics():
+    def _check_mesos_overlay_metrics() -> None:
         response = get_metrics_prom(dcos_api_session, node)
         for family in text_string_to_metric_families(response.text):
             for sample in family.samples:
@@ -129,11 +133,11 @@ def test_metrics_agents_mesos_overlay(dcos_api_session):
         _check_mesos_overlay_metrics()
 
 
-def test_metrics_master_mesos_overlay(dcos_api_session):
+def test_metrics_master_mesos_overlay(dcos_api_session: DcosApiSession) -> None:
     """Assert that mesos overlay module metrics on master are present."""
 
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-    def _check_mesos_overlay_metrics():
+    def _check_mesos_overlay_metrics() -> None:
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
         for family in text_string_to_metric_families(response.text):
             for sample in family.samples:
@@ -144,10 +148,10 @@ def test_metrics_master_mesos_overlay(dcos_api_session):
     _check_mesos_overlay_metrics()
 
 
-def test_metrics_master_zookeeper(dcos_api_session):
+def test_metrics_master_zookeeper(dcos_api_session: DcosApiSession) -> None:
     """Assert that ZooKeeper metrics on master are present."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-    def check_zookeeper_metrics():
+    def check_zookeeper_metrics() -> None:
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
         for family in text_string_to_metric_families(response.text):
             for sample in family.samples:
@@ -158,10 +162,10 @@ def test_metrics_master_zookeeper(dcos_api_session):
     check_zookeeper_metrics()
 
 
-def test_metrics_master_cockroachdb(dcos_api_session):
+def test_metrics_master_cockroachdb(dcos_api_session: DcosApiSession) -> None:
     """Assert that CockroachDB metrics on master are present."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-    def check_cockroachdb_metrics():
+    def check_cockroachdb_metrics() -> None:
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
         for family in text_string_to_metric_families(response.text):
             for sample in family.samples:
@@ -172,10 +176,10 @@ def test_metrics_master_cockroachdb(dcos_api_session):
     check_cockroachdb_metrics()
 
 
-def test_metrics_master_etcd(dcos_api_session):
+def test_metrics_master_etcd(dcos_api_session: DcosApiSession) -> None:
     """Assert that DC/OS etcd metrics on master are present."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-    def _check_etcd_metrics():
+    def _check_etcd_metrics() -> None:
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
         for family in text_string_to_metric_families(response.text):
             for sample in family.samples:
@@ -186,11 +190,11 @@ def test_metrics_master_etcd(dcos_api_session):
     _check_etcd_metrics()
 
 
-def test_metrics_master_calico(dcos_api_session):
+def test_metrics_master_calico(dcos_api_session: DcosApiSession) -> None:
     """Assert that DC/OS Calico metrics on master are present."""
 
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-    def _check_calico_metrics():
+    def _check_calico_metrics() -> None:
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
         for family in text_string_to_metric_families(response.text):
             for sample in family.samples:
@@ -201,11 +205,11 @@ def test_metrics_master_calico(dcos_api_session):
     _check_calico_metrics()
 
 
-def test_metrics_agents_calico(dcos_api_session):
+def test_metrics_agents_calico(dcos_api_session: DcosApiSession) -> None:
     """Assert that DC/OS Calico metrics on agents are present."""
 
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-    def _check_calico_metrics():
+    def _check_calico_metrics() -> None:
         response = get_metrics_prom(dcos_api_session, node)
         for family in text_string_to_metric_families(response.text):
             for sample in family.samples:
@@ -218,14 +222,14 @@ def test_metrics_agents_calico(dcos_api_session):
         _check_calico_metrics()
 
 
-def test_metrics_master_adminrouter_nginx_vts(dcos_api_session):
+def test_metrics_master_adminrouter_nginx_vts(dcos_api_session: DcosApiSession) -> None:
     """Assert that Admin Router Nginx VTS metrics on master are present."""
     @retrying.retry(
         wait_fixed=STD_INTERVAL,
         stop_max_delay=METRICS_WAITTIME,
         retry_on_exception=lambda e: isinstance(e, AssertionError)
     )
-    def check_adminrouter_metrics():
+    def check_adminrouter_metrics() -> None:
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
         for family in text_string_to_metric_families(response.text):
             for sample in family.samples:
@@ -235,10 +239,10 @@ def test_metrics_master_adminrouter_nginx_vts(dcos_api_session):
     check_adminrouter_metrics()
 
 
-def test_metrics_master_exhibitor_status(dcos_api_session):
+def test_metrics_master_exhibitor_status(dcos_api_session: DcosApiSession) -> None:
     """Assert that Exhibitor status metrics on master are present."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-    def check_exhibitor_metrics():
+    def check_exhibitor_metrics() -> None:
         response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
         expected_metrics = {'exhibitor_status_code', 'exhibitor_status_isleader'}
         samples = []
@@ -270,7 +274,7 @@ def _nginx_vts_measurement_basename(name: str) -> str:
     return '_'.join(name.split('_')[:3])
 
 
-def test_metrics_master_adminrouter_nginx_drop_requests_seconds(dcos_api_session):
+def test_metrics_master_adminrouter_nginx_drop_requests_seconds(dcos_api_session: DcosApiSession) -> None:
     """
     nginx_vts_*_request_seconds* metrics are not present.
     """
@@ -284,7 +288,7 @@ def test_metrics_master_adminrouter_nginx_drop_requests_seconds(dcos_api_session
         stop_max_delay=METRICS_WAITTIME,
         retry_on_exception=lambda e: isinstance(e, AssertionError)
     )
-    def check_adminrouter_metrics():
+    def check_adminrouter_metrics() -> None:
         vts_metrics_count = 0
         response = get_metrics_prom(dcos_api_session, node)
         for family in text_string_to_metric_families(response.text):
@@ -300,7 +304,7 @@ def test_metrics_master_adminrouter_nginx_drop_requests_seconds(dcos_api_session
     check_adminrouter_metrics()
 
 
-def test_metrics_agent_adminrouter_nginx_drop_requests_seconds(dcos_api_session):
+def test_metrics_agent_adminrouter_nginx_drop_requests_seconds(dcos_api_session: DcosApiSession) -> None:
     """
     nginx_vts_*_request_seconds* metrics are not present.
     """
@@ -320,7 +324,7 @@ def test_metrics_agent_adminrouter_nginx_drop_requests_seconds(dcos_api_session)
             stop_max_delay=METRICS_WAITTIME,
             retry_on_exception=lambda e: isinstance(e, AssertionError)
         )
-        def check_adminrouter_metrics():
+        def check_adminrouter_metrics() -> None:
             vts_metrics_count = 0
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
@@ -336,7 +340,7 @@ def test_metrics_agent_adminrouter_nginx_drop_requests_seconds(dcos_api_session)
         check_adminrouter_metrics()
 
 
-def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
+def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session: DcosApiSession) -> None:
     """Assert that processed Admin Router metrics on master are present."""
     node = dcos_api_session.masters[0]
     # Make request to a fine-grained metrics annotated upstream of
@@ -354,7 +358,7 @@ def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
         stop_max_delay=METRICS_WAITTIME,
         retry_on_exception=lambda e: isinstance(e, AssertionError)
     )
-    def check_adminrouter_metrics():
+    def check_adminrouter_metrics() -> None:
         measurements = set()
         expect_dropped = set([
             'nginx_vts_filter',
@@ -390,7 +394,7 @@ def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
     check_adminrouter_metrics()
 
 
-def test_metrics_agents_adminrouter_nginx_vts(dcos_api_session):
+def test_metrics_agents_adminrouter_nginx_vts(dcos_api_session: DcosApiSession) -> None:
     """Assert that Admin Router Nginx VTS metrics on agents are present."""
     nodes = get_agents(dcos_api_session)
 
@@ -400,7 +404,7 @@ def test_metrics_agents_adminrouter_nginx_vts(dcos_api_session):
             stop_max_delay=METRICS_WAITTIME,
             retry_on_exception=lambda e: isinstance(e, AssertionError)
         )
-        def check_adminrouter_metrics():
+        def check_adminrouter_metrics() -> None:
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
                 for sample in family.samples:
@@ -413,7 +417,7 @@ def test_metrics_agents_adminrouter_nginx_vts(dcos_api_session):
         check_adminrouter_metrics()
 
 
-def test_metrics_agent_adminrouter_nginx_vts_processor(dcos_api_session):
+def test_metrics_agent_adminrouter_nginx_vts_processor(dcos_api_session: DcosApiSession) -> None:
     """Assert that processed Admin Router metrics on agent are present."""
     # Make request to Admin Router on every agent to ensure metrics.
     state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
@@ -431,7 +435,7 @@ def test_metrics_agent_adminrouter_nginx_vts_processor(dcos_api_session):
             stop_max_delay=METRICS_WAITTIME,
             retry_on_exception=lambda e: isinstance(e, AssertionError)
         )
-        def check_adminrouter_metrics():
+        def check_adminrouter_metrics() -> None:
             measurements = set()
             expect_dropped = set([
                 'nginx_vts_filter',
@@ -462,13 +466,13 @@ def test_metrics_agent_adminrouter_nginx_vts_processor(dcos_api_session):
         check_adminrouter_metrics()
 
 
-def test_metrics_diagnostics(dcos_api_session):
+def test_metrics_diagnostics(dcos_api_session: DcosApiSession) -> None:
     """Assert that DC/OS Diagnostics metrics on master are present."""
     nodes = get_master_and_agents(dcos_api_session)
 
     for node in nodes:
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-        def check_diagnostics_metrics():
+        def check_diagnostics_metrics() -> None:
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
                 for sample in family.samples:
@@ -478,13 +482,13 @@ def test_metrics_diagnostics(dcos_api_session):
         check_diagnostics_metrics()
 
 
-def test_metrics_fluentbit(dcos_api_session):
+def test_metrics_fluentbit(dcos_api_session: DcosApiSession) -> None:
     """Ensure that fluent bit metrics are present on masters and agents"""
     nodes = get_master_and_agents(dcos_api_session)
 
     for node in nodes:
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-        def check_fluentbit_metrics():
+        def check_fluentbit_metrics() -> None:
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
                 for sample in family.samples:
@@ -495,13 +499,14 @@ def test_metrics_fluentbit(dcos_api_session):
         check_fluentbit_metrics()
 
 
-def check_statsd_app_metrics(dcos_api_session, marathon_app, node, expected_metrics):
+def check_statsd_app_metrics(dcos_api_session: DcosApiSession, marathon_app: Any, node: str, expected_metrics: Any
+                             ) -> None:
     with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False, timeout=DEPLOY_TIMEOUT):
         endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
         assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
 
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-        def check_statsd_metrics():
+        def check_statsd_metrics() -> None:
             expected_copy = copy.deepcopy(expected_metrics)
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
@@ -521,7 +526,7 @@ def check_statsd_app_metrics(dcos_api_session, marathon_app, node, expected_metr
         check_statsd_metrics()
 
 
-def test_metrics_agent_statsd(dcos_api_session):
+def test_metrics_agent_statsd(dcos_api_session: DcosApiSession) -> None:
     """Assert that statsd metrics on private agent are present."""
     task_name = 'test-metrics-statsd-app'
     metric_name_pfx = 'test_metrics_statsd_app'
@@ -585,7 +590,8 @@ def test_metrics_agent_statsd(dcos_api_session):
 
 
 @contextlib.contextmanager
-def deploy_and_cleanup_dcos_package(dcos_api_session, package_name, package_version, framework_name):
+def deploy_and_cleanup_dcos_package(dcos_api_session: DcosApiSession, package_name: str, package_version: str,
+                                    framework_name: str) -> Generator:
     """Deploys dcos package and waits for package teardown once the context is left"""
     app_id = dcos_api_session.cosmos.install_package(package_name, package_version=package_version).json()['appId']
     dcos_api_session.marathon.wait_for_deployments_complete()
@@ -597,7 +603,7 @@ def deploy_and_cleanup_dcos_package(dcos_api_session, package_name, package_vers
 
         # Retry for 15 minutes for teardown completion
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=STD_WAITTIME)
-        def wait_for_package_teardown():
+        def wait_for_package_teardown() -> None:
             state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
             assert state_response.status_code == 200
             state = state_response.json()
@@ -613,7 +619,7 @@ def deploy_and_cleanup_dcos_package(dcos_api_session, package_name, package_vers
 
 
 @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-def get_task_hostname(dcos_api_session, framework_name, task_name):
+def get_task_hostname(dcos_api_session: DcosApiSession, framework_name: str, task_name: str) -> Any:
     # helper func that gets a framework's task's hostname
     mesos_id = node = ''
     state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
@@ -638,7 +644,7 @@ def get_task_hostname(dcos_api_session, framework_name, task_name):
     return node
 
 
-def test_task_metrics_metadata(dcos_api_session):
+def test_task_metrics_metadata(dcos_api_session: DcosApiSession) -> None:
     """Test that task metrics have expected metadata/labels"""
     expanded_config = get_expanded_config()
     if expanded_config.get('security') == 'strict':
@@ -647,7 +653,7 @@ def test_task_metrics_metadata(dcos_api_session):
         node = get_task_hostname(dcos_api_session, 'marathon', 'marathon-user')
 
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-        def check_metrics_metadata():
+        def check_metrics_metadata() -> None:
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
                 for sample in family.samples:
@@ -660,7 +666,7 @@ def test_task_metrics_metadata(dcos_api_session):
         check_metrics_metadata()
 
 
-def test_executor_metrics_metadata(dcos_api_session):
+def test_executor_metrics_metadata(dcos_api_session: DcosApiSession) -> None:
     """Test that executor metrics have expected metadata/labels"""
     expanded_config = get_expanded_config()
     if expanded_config.get('security') == 'strict':
@@ -670,7 +676,7 @@ def test_executor_metrics_metadata(dcos_api_session):
         node = get_task_hostname(dcos_api_session, 'marathon', 'hello-world')
 
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-        def check_executor_metrics_metadata():
+        def check_executor_metrics_metadata() -> None:
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
                 for sample in family.samples:
@@ -683,11 +689,11 @@ def test_executor_metrics_metadata(dcos_api_session):
         check_executor_metrics_metadata()
 
 
-def test_metrics_node(dcos_api_session):
+def test_metrics_node(dcos_api_session: DcosApiSession) -> None:
     """Test that the '/system/v1/metrics/v0/node' endpoint returns the expected
     metrics and metric metadata.
     """
-    def expected_datapoint_response(response):
+    def expected_datapoint_response(response: dict) -> bool:
         """Enure that the "node" endpoint returns a "datapoints" dict.
         """
         assert 'datapoints' in response, '"datapoints" dictionary not found'
@@ -706,7 +712,7 @@ def test_metrics_node(dcos_api_session):
 
         return True
 
-    def expected_dimension_response(response):
+    def expected_dimension_response(response: dict) -> bool:
         """Ensure that the "node" endpoint returns a dimensions dict that
         contains a non-empty string for cluster_id.
         """
@@ -724,7 +730,7 @@ def test_metrics_node(dcos_api_session):
 
     # Retry for 5 minutes for for the node metrics content to appear.
     @retrying.retry(stop_max_delay=METRICS_WAITTIME)
-    def wait_for_node_response(node):
+    def wait_for_node_response(node: Any) -> Any:
         response = dcos_api_session.metrics.get('/node', node=node)
         assert response.status_code == 200
         return response
@@ -740,13 +746,13 @@ def test_metrics_node(dcos_api_session):
         assert expected_dimension_response(response.json())
 
 
-def get_master_and_agents(dcos_api_session):
+def get_master_and_agents(dcos_api_session: DcosApiSession) -> list:
     nodes = [dcos_api_session.masters[0]]
     nodes.extend(get_agents(dcos_api_session))
     return nodes
 
 
-def get_agents(dcos_api_session):
+def get_agents(dcos_api_session: DcosApiSession) -> list:
     nodes = []
     if dcos_api_session.slaves:
         nodes.append(dcos_api_session.slaves[0])
@@ -755,10 +761,10 @@ def get_agents(dcos_api_session):
     return nodes
 
 
-def test_metrics_containers(dcos_api_session):
+def test_metrics_containers(dcos_api_session: DcosApiSession) -> None:
     """Assert that a Marathon app's container and app metrics can be retrieved."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-    def test_containers(app_endpoints):
+    def test_containers(app_endpoints: list) -> None:
         for agent in app_endpoints:
             container_metrics, app_metrics = get_metrics_for_task(dcos_api_session, agent.host, 'statsd-emitter')
 
@@ -835,7 +841,7 @@ def test_metrics_containers(dcos_api_session):
         test_containers(endpoints)
 
 
-def test_statsd_metrics_containers_app(dcos_api_session):
+def test_statsd_metrics_containers_app(dcos_api_session: DcosApiSession) -> None:
     """Assert that statsd app metrics appear in the v0 metrics API."""
     task_name = 'test-statsd-metrics-containers-app'
     metric_name_pfx = 'test_statsd_metrics_containers_app'
@@ -886,7 +892,8 @@ def test_statsd_metrics_containers_app(dcos_api_session):
     deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name)
 
 
-def deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name):
+def deploy_marathon_app_and_check_metrics(dcos_api_session: DcosApiSession, expected_metrics: list, marathon_app: Any,
+                                          task_name: str) -> None:
     with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False, timeout=DEPLOY_TIMEOUT):
         endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
         assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
@@ -895,7 +902,7 @@ def deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, ma
             assert_app_metric_value_for_task(dcos_api_session, node, task_name, metric_name, metric_value)
 
 
-def test_prom_metrics_containers_app_host(dcos_api_session):
+def test_prom_metrics_containers_app_host(dcos_api_session: DcosApiSession) -> None:
     """Assert that prometheus app metrics appear in the v0 metrics API."""
     task_name = 'test-prom-metrics-containers-app-host'
     metric_name_pfx = 'test_prom_metrics_containers_app_host'
@@ -944,7 +951,7 @@ def test_prom_metrics_containers_app_host(dcos_api_session):
     deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name)
 
 
-def test_prom_metrics_containers_app_bridge(dcos_api_session):
+def test_prom_metrics_containers_app_bridge(dcos_api_session: DcosApiSession) -> None:
     """Assert that prometheus app metrics appear in the v0 metrics API."""
     task_name = 'test-prom-metrics-containers-app-bridge'
     metric_name_pfx = 'test_prom_metrics_containers_app_bridge'
@@ -997,7 +1004,7 @@ def test_prom_metrics_containers_app_bridge(dcos_api_session):
     deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name)
 
 
-def test_task_prom_metrics_not_filtered(dcos_api_session):
+def test_task_prom_metrics_not_filtered(dcos_api_session: DcosApiSession) -> None:
     """Assert that prometheus app metrics aren't filtered according to adminrouter config.
 
     This is a regression test protecting a fix for a bug that mistakenly applied filter criteria intended for
@@ -1061,7 +1068,7 @@ def test_task_prom_metrics_not_filtered(dcos_api_session):
     deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name)
 
 
-def test_metrics_containers_nan(dcos_api_session):
+def test_metrics_containers_nan(dcos_api_session: DcosApiSession) -> None:
     """Assert that the metrics API can handle app metric gauges with NaN values."""
     task_name = 'test-metrics-containers-nan'
     metric_name = 'test_metrics_containers_nan'
@@ -1095,7 +1102,8 @@ def test_metrics_containers_nan(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=METRICS_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-def assert_app_metric_value_for_task(dcos_api_session, node: str, task_name: str, metric_name: str, metric_value):
+def assert_app_metric_value_for_task(dcos_api_session: DcosApiSession, node: str, task_name: str, metric_name: str,
+                                     metric_value: Any) -> None:
     """Assert the value of app metric metric_name for container task_name is metric_value.
 
     Retries on error, non-200 status, missing container metrics, missing app
@@ -1106,7 +1114,7 @@ def assert_app_metric_value_for_task(dcos_api_session, node: str, task_name: str
 
 
 @retrying.retry(wait_fixed=METRICS_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-def get_app_metric_for_task(dcos_api_session, node: str, task_name: str, metric_name: str):
+def get_app_metric_for_task(dcos_api_session: DcosApiSession, node: str, task_name: str, metric_name: str) -> Any:
     """Return the app metric metric_name for container task_name.
 
     Retries on error, non-200 status, or missing container metrics, or missing
@@ -1123,7 +1131,7 @@ def get_app_metric_for_task(dcos_api_session, node: str, task_name: str, metric_
 # Retry for 5 minutes since the collector collects state
 # every 2 minutes to propogate containers to the API
 @retrying.retry(wait_fixed=METRICS_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-def get_container_ids(dcos_api_session, node: str):
+def get_container_ids(dcos_api_session: DcosApiSession, node: str) -> Any:
     """Return container IDs reported by the metrics API on node.
 
     Retries on error, non-200 status, or empty response for up to 5 minutes.
@@ -1137,7 +1145,7 @@ def get_container_ids(dcos_api_session, node: str):
 
 
 @retrying.retry(wait_fixed=METRICS_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-def get_container_metrics(dcos_api_session, node: str, container_id: str):
+def get_container_metrics(dcos_api_session: DcosApiSession, node: str, container_id: str) -> Any:
     """Return container_id's metrics from the metrics API on node.
 
     Returns None on 204.
@@ -1165,7 +1173,7 @@ def get_container_metrics(dcos_api_session, node: str, container_id: str):
 
 
 @retrying.retry(wait_fixed=METRICS_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-def get_app_metrics(dcos_api_session, node: str, container_id: str):
+def get_app_metrics(dcos_api_session: DcosApiSession, node: str, container_id: str) -> Any:
     """Return app metrics for container_id from the metrics API on node.
 
     Returns None on 204.
@@ -1188,7 +1196,7 @@ def get_app_metrics(dcos_api_session, node: str, container_id: str):
 
 
 @retrying.retry(wait_fixed=METRICS_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-def get_metrics_for_task(dcos_api_session, node: str, task_name: str):
+def get_metrics_for_task(dcos_api_session: DcosApiSession, node: str, task_name: str) -> Any:
     """Return (container_metrics, app_metrics) for task_name on node.
 
     Retries on error, non-200 responses, or missing metrics for task_name for
@@ -1216,7 +1224,7 @@ def get_metrics_for_task(dcos_api_session, node: str, task_name: str):
     )
 
 
-def test_standalone_container_metrics(dcos_api_session):
+def test_standalone_container_metrics(dcos_api_session: DcosApiSession) -> None:
     """
     An operator should be able to launch a standalone container using the
     LAUNCH_CONTAINER call of the agent operator API. Additionally, if the
@@ -1242,7 +1250,7 @@ def test_standalone_container_metrics(dcos_api_session):
     agent_id = state['slaves'][0]['id']
     logging.debug('Selected agent %s at %s', agent_id, agent_hostname)
 
-    def _post_agent(json):
+    def _post_agent(json: dict) -> Any:
         headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
@@ -1300,14 +1308,14 @@ def test_standalone_container_metrics(dcos_api_session):
     # There is a short delay between the container starting and metrics becoming
     # available via the metrics service. Because of this, we wait up to 5
     # minutes for these metrics to appear before throwing an exception.
-    def _should_retry_metrics_fetch(response):
+    def _should_retry_metrics_fetch(response: Any) -> Any:
         return response.status_code == 204
 
     @retrying.retry(wait_fixed=METRICS_INTERVAL,
                     stop_max_delay=METRICS_WAITTIME,
                     retry_on_result=_should_retry_metrics_fetch,
                     retry_on_exception=lambda x: False)
-    def _get_metrics():
+    def _get_metrics() -> Any:
         master_response = dcos_api_session.get(
             '/system/v1/agent/%s/metrics/v0/containers/%s/app' % (agent_id, container_id['value']),
             host=master_ip)
@@ -1364,18 +1372,18 @@ def test_standalone_container_metrics(dcos_api_session):
         _post_agent(kill_data)
 
 
-def test_pod_application_metrics(dcos_api_session):
+def test_pod_application_metrics(dcos_api_session: DcosApiSession) -> None:
     """Launch a pod, wait for its containers to be added to the metrics service,
     and then verify that:
     1) Container statistics metrics are provided for the executor container
     2) Application metrics are exposed for the task container
     """
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-    def test_application_metrics(agent_ip, agent_id, task_name, num_containers):
+    def test_application_metrics(agent_ip: str, agent_id: str, task_name: str, num_containers: int) -> Any:
         # Get expected 2 container ids from mesos state endpoint
         # (one container + its parent container)
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-        def get_container_ids_from_state(dcos_api_session, num_containers):
+        def get_container_ids_from_state(dcos_api_session: DcosApiSession, num_containers: int) -> set:
             state_response = dcos_api_session.get('/state', host=dcos_api_session.masters[0], port=5050)
             assert state_response.status_code == 200
             state = state_response.json()
@@ -1400,7 +1408,7 @@ def test_pod_application_metrics(dcos_api_session):
         # Retry for two and a half minutes since the collector collects
         # state every 2 minutes to propagate containers to the API
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
-        def wait_for_container_metrics_propagation(container_ids):
+        def wait_for_container_metrics_propagation(container_ids: set) -> None:
             response = dcos_api_session.metrics.get('/containers', node=agent_ip)
             assert response.status_code == 200
             assert container_ids.issubset(
@@ -1422,7 +1430,7 @@ def test_pod_application_metrics(dcos_api_session):
         mesos_agent_cids = [container['container_id']['value'] for container in mesos_agent_containers]
         assert container_ids.issubset(mesos_agent_cids), "Missing expected containers {}".format(container_ids)
 
-        def is_nested_container(container):
+        def is_nested_container(container: dict) -> Any:
             """Helper to check whether or not a container returned in the
             GET_CONTAINERS response is a nested container.
             """
@@ -1439,7 +1447,7 @@ def test_pod_application_metrics(dcos_api_session):
                 # Since nested containers do not report resource statistics, we
                 # expect the response code to be 204.
                 @retrying.retry(stop_max_delay=METRICS_WAITTIME)
-                def wait_for_container_response():
+                def wait_for_container_response() -> Any:
                     response = dcos_api_session.metrics.get(container_id_path, node=agent_ip)
                     assert response.status_code == 204
                     return response
@@ -1490,7 +1498,7 @@ def test_pod_application_metrics(dcos_api_session):
                 # Retry for 5 minutes for each parent container to present its
                 # content.
                 @retrying.retry(stop_max_delay=METRICS_WAITTIME)
-                def wait_for_container_response():
+                def wait_for_container_response() -> Any:
                     response = dcos_api_session.metrics.get(container_id_path, node=agent_ip)
                     assert response.status_code == 200
                     return response
@@ -1562,4 +1570,4 @@ def test_pod_application_metrics(dcos_api_session):
         test_application_metrics(
             data['instances'][0]['agentHostname'],
             data['instances'][0]['agentId'],
-            marathon_pod_config['containers'][0]['name'], 2)
+            marathon_pod_config['containers'][0]['name'], 2)  # type: ignore

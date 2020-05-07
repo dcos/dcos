@@ -5,14 +5,14 @@ import os
 import tempfile
 import zipfile
 
-from typing import List
+from typing import Any, List, Optional
 
 import pytest
 import retrying
 import test_helpers
+from dcos_test_utils.dcos_api import DcosApiSession
 from dcos_test_utils.diagnostics import Diagnostics
 from dcos_test_utils.helpers import check_json
-
 
 __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
@@ -23,7 +23,7 @@ LATENCY = 120
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_dcos_diagnostics_health(dcos_api_session):
+def test_dcos_diagnostics_health(dcos_api_session: DcosApiSession) -> None:
     """
     test health endpoint /system/health/v1
     """
@@ -88,7 +88,7 @@ def test_dcos_diagnostics_health(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_dcos_diagnostics_nodes(dcos_api_session):
+def test_dcos_diagnostics_nodes(dcos_api_session: DcosApiSession) -> None:
     """
     test a list of nodes with statuses endpoint /system/health/v1/nodes
     """
@@ -105,28 +105,28 @@ def test_dcos_diagnostics_nodes(dcos_api_session):
         validate_node(response['nodes'])
 
 
-def test_dcos_diagnostics_nodes_node(dcos_api_session):
+def test_dcos_diagnostics_nodes_node(dcos_api_session: DcosApiSession) -> None:
     """
     test a specific node enpoint /system/health/v1/nodes/<node>
     """
     for master in dcos_api_session.masters:
         # get a list of nodes
         response = check_json(dcos_api_session.health.get('/nodes', node=master))
-        nodes = list(map(lambda node: node['host_ip'], response['nodes']))
+        nodes = list(map(lambda node: node['host_ip'], response['nodes']))  # type: ignore
 
         for node in nodes:
             node_response = check_json(dcos_api_session.health.get('/nodes/{}'.format(node), node=master))
             validate_node([node_response])
 
 
-def test_dcos_diagnostics_nodes_node_units(dcos_api_session):
+def test_dcos_diagnostics_nodes_node_units(dcos_api_session: DcosApiSession) -> None:
     """
     test a list of units from a specific node, endpoint /system/health/v1/nodes/<node>/units
     """
     for master in dcos_api_session.masters:
         # get a list of nodes
         response = check_json(dcos_api_session.health.get('/nodes', node=master))
-        nodes = list(map(lambda node: node['host_ip'], response['nodes']))
+        nodes = list(map(lambda node: node['host_ip'], response['nodes']))  # type: ignore
 
         for node in nodes:
             units_response = check_json(dcos_api_session.health.get('/nodes/{}/units'.format(node), node=master))
@@ -136,16 +136,16 @@ def test_dcos_diagnostics_nodes_node_units(dcos_api_session):
             validate_units(units_response['units'])
 
 
-def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session):
+def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session: DcosApiSession) -> None:
     """
     test a specific unit for a specific node, endpoint /system/health/v1/nodes/<node>/units/<unit>
     """
     for master in dcos_api_session.masters:
         response = check_json(dcos_api_session.health.get('/nodes', node=master))
-        nodes = list(map(lambda node: node['host_ip'], response['nodes']))
+        nodes = list(map(lambda node: node['host_ip'], response['nodes']))  # type: ignore
         for node in nodes:
             units_response = check_json(dcos_api_session.health.get('/nodes/{}/units'.format(node), node=master))
-            unit_ids = list(map(lambda unit: unit['id'], units_response['units']))
+            unit_ids = list(map(lambda unit: unit['id'], units_response['units']))  # type: ignore
 
             for unit_id in unit_ids:
                 validate_unit(
@@ -153,7 +153,7 @@ def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_dcos_diagnostics_units(dcos_api_session):
+def test_dcos_diagnostics_units(dcos_api_session: DcosApiSession) -> None:
     """
     test a list of collected units, endpoint /system/health/v1/units
     """
@@ -174,7 +174,7 @@ def test_dcos_diagnostics_units(dcos_api_session):
         units_response = check_json(dcos_api_session.health.get('/units', node=master))
         validate_units(units_response['units'])
 
-        pulled_units = list(map(lambda unit: unit['id'], units_response['units']))
+        pulled_units = list(map(lambda unit: unit['id'], units_response['units']))  # type: ignore
         logging.info('collected units: {}'.format(pulled_units))
         diff = set(pulled_units).symmetric_difference(all_units)
         assert set(pulled_units) == all_units, ('not all units have been collected by dcos-diagnostics '
@@ -182,7 +182,7 @@ def test_dcos_diagnostics_units(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_systemd_units_health(dcos_api_session):
+def test_systemd_units_health(dcos_api_session: DcosApiSession) -> None:
     """
     test all units and make sure the units are healthy. This test will fail if any of systemd unit is unhealthy,
     meaning it focuses on making sure the dcos_api_session is healthy, rather then testing dcos-diagnostics itself.
@@ -212,38 +212,38 @@ def test_systemd_units_health(dcos_api_session):
         raise AssertionError('\n'.join(unhealthy_output))
 
 
-def test_dcos_diagnostics_units_unit(dcos_api_session):
+def test_dcos_diagnostics_units_unit(dcos_api_session: DcosApiSession) -> None:
     """
     test a unit response in a right format, endpoint: /system/health/v1/units/<unit>
     """
     for master in dcos_api_session.masters:
         units_response = check_json(dcos_api_session.health.get('/units', node=master))
-        pulled_units = list(map(lambda unit: unit['id'], units_response['units']))
+        pulled_units = list(map(lambda unit: unit['id'], units_response['units']))  # type: ignore
         for unit in pulled_units:
             unit_response = check_json(dcos_api_session.health.get('/units/{}'.format(unit), node=master))
             validate_units([unit_response])
 
 
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
-def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
+def test_dcos_diagnostics_units_unit_nodes(dcos_api_session: DcosApiSession) -> None:
     """
     test a list of nodes for a specific unit, endpoint /system/health/v1/units/<unit>/nodes
     """
 
-    def get_nodes_from_response(response) -> List[str]:
+    def get_nodes_from_response(response: Any) -> List[Optional[str]]:
         assert 'nodes' in response, 'response must have field `nodes`. Got {}'.format(response)
         nodes_ip_map = make_nodes_ip_map(dcos_api_session)
-        nodes = []
+        nodes = []  # type: List[Optional[str]]
         for node in response['nodes']:
             assert 'host_ip' in node, 'node response must have `host_ip` field. Got {}'.format(node)
-            assert node['host_ip'] in nodes_ip_map, 'nodes_ip_map must have node {}. Got {}'.format(node['host_ip'],
-                                                                                                    nodes_ip_map)
+            assert node['host_ip'] in nodes_ip_map, 'nodes_ip_map must have node {}. Got {}'.format(
+                node['host_ip'], nodes_ip_map)
             nodes.append(nodes_ip_map.get(node['host_ip']))
         return nodes
 
     for master in dcos_api_session.masters:
         units_response = check_json(dcos_api_session.health.get('/units', node=master))
-        pulled_units = list(map(lambda unit: unit['id'], units_response['units']))
+        pulled_units = list(map(lambda unit: unit['id'], units_response['units']))  # type: ignore
         for unit in pulled_units:
             nodes_response = check_json(dcos_api_session.health.get('/units/{}/nodes'.format(unit), node=master))
             validate_node(nodes_response['nodes'])
@@ -269,7 +269,7 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
         assert len(agent_nodes) == len(dcos_api_session.slaves), '{} != {}'.format(agent_nodes, dcos_api_session.slaves)
 
 
-def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
+def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session: DcosApiSession) -> None:
     """
     test a specific node for a specific unit, endpoint /system/health/v1/units/<unit>/nodes/<node>
     """
@@ -277,17 +277,16 @@ def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
 
     for master in dcos_api_session.masters:
         units_response = check_json(dcos_api_session.health.get('/units', node=master))
-        pulled_units = list(map(lambda unit: unit['id'], units_response['units']))
+        pulled_units = list(map(lambda unit: unit['id'], units_response['units']))  # type: ignore
         for unit in pulled_units:
             nodes_response = check_json(dcos_api_session.health.get('/units/{}/nodes'.format(unit), node=master))
-            pulled_nodes = list(map(lambda node: node['host_ip'], nodes_response['nodes']))
+            pulled_nodes = list(map(lambda node: node['host_ip'], nodes_response['nodes']))  # type: ignore
             logging.info('pulled nodes: {}'.format(pulled_nodes))
             for node in pulled_nodes:
                 node_response = check_json(
                     dcos_api_session.health.get('/units/{}/nodes/{}'.format(unit, node), node=master))
                 assert len(node_response) == len(required_node_fields), 'required fields: {}'.format(
-                    ', '.format(required_node_fields)
-                )
+                    ', '.join(required_node_fields))
 
                 for required_node_field in required_node_fields:
                     assert required_node_field in node_response, 'field {} must be set'.format(required_node_field)
@@ -299,7 +298,7 @@ def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
                 assert node_response['help'], 'help field cannot be empty'
 
 
-def test_dcos_diagnostics_report(dcos_api_session):
+def test_dcos_diagnostics_report(dcos_api_session: DcosApiSession) -> None:
     """
     test dcos-diagnostics report endpoint /system/health/v1/report
     """
@@ -315,7 +314,7 @@ def test_dcos_diagnostics_report(dcos_api_session):
 @pytest.mark.parametrize('use_legacy_api', [
     pytest.param(False),
     pytest.param(True)])
-def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_legacy_api):
+def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session: DcosApiSession, use_legacy_api: bool) -> None:
     """
     test bundle create, read, delete workflow
     """
@@ -342,7 +341,7 @@ def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_le
         _delete_bundle(diagnostics, bundle)
 
 
-def _check_diagnostics_bundle_status(dcos_api_session):
+def _check_diagnostics_bundle_status(dcos_api_session: DcosApiSession) -> None:
     # validate diagnostics job status response
     diagnostics_bundle_status = check_json(dcos_api_session.health.get('/report/diagnostics/status/all'))
     required_status_fields = ['is_running', 'status', 'last_bundle_dir', 'job_started',
@@ -356,7 +355,7 @@ def _check_diagnostics_bundle_status(dcos_api_session):
             assert required_status_field in properties, 'property {} not found'.format(required_status_field)
 
 
-def _create_bundle(diagnostics: Diagnostics):
+def _create_bundle(diagnostics: Diagnostics) -> Any:
     last_datapoint = {
         'time': None,
         'value': 0
@@ -376,7 +375,7 @@ def _create_bundle(diagnostics: Diagnostics):
     return bundle_name
 
 
-def _delete_bundle(diagnostics: Diagnostics, bundle):
+def _delete_bundle(diagnostics: Diagnostics, bundle: str) -> None:
     bundles = diagnostics.get_diagnostics_reports()
     assert bundle in bundles, 'not found {} in {}'.format(bundle, bundles)
 
@@ -386,16 +385,18 @@ def _delete_bundle(diagnostics: Diagnostics, bundle):
     assert bundle not in bundles, 'found {} in {}'.format(bundle, bundles)
 
 
-def _download_and_extract_bundle(dcos_api_session, bundle, diagnostics):
+def _download_and_extract_bundle(dcos_api_session: DcosApiSession, bundle: Any, diagnostics: Diagnostics) -> None:
     _download_bundle_from_master(dcos_api_session, 0, bundle, diagnostics)
 
 
-def _download_and_extract_bundle_from_another_master(dcos_api_session, bundle, diagnostics,):
+def _download_and_extract_bundle_from_another_master(dcos_api_session: DcosApiSession, bundle: Any,
+                                                     diagnostics: Diagnostics) -> None:
     if len(dcos_api_session.masters) > 1:
         _download_bundle_from_master(dcos_api_session, 1, bundle, diagnostics)
 
 
-def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnostics):
+def _download_bundle_from_master(dcos_api_session: DcosApiSession, master_index: Any, bundle: str,
+                                 diagnostics: Diagnostics) -> None:
     """ Download DC/OS diagnostics bundle from a master
 
     :param dcos_api_session: dcos_api_session fixture
@@ -473,7 +474,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
         "binsh_-c_cat proc`systemctl show dcos-mesos-slave-public.service -p MainPID| cut -d'=' -f2`environ.output"
     ] + expected_agent_common_files + expected_common_files
 
-    def _read_from_zip(z: zipfile.ZipFile, item: str, to_json=True):
+    def _read_from_zip(z: zipfile.ZipFile, item: str, to_json: bool = True) -> Any:
         # raises KeyError if item is not in zipfile.
         item_content = z.read(item).decode()
 
@@ -483,7 +484,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
 
         return item_content
 
-    def _get_dcos_diagnostics_health(z: zipfile.ZipFile, item: str):
+    def _get_dcos_diagnostics_health(z: zipfile.ZipFile, item: str) -> Any:
         # try to load dcos-diagnostics health report and validate the report is for this host
         try:
             _health_report = _read_from_zip(z, item)
@@ -574,7 +575,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
             verify_archived_items(agent_public_folder, archived_items, expected_public_agent_files)
 
 
-def get_file_content(unzipped_file, z):
+def get_file_content(unzipped_file: str, z: zipfile.ZipFile) -> bytes:
     archived_items = z.namelist()
     if unzipped_file in archived_items:
         return z.open(unzipped_file).read()
@@ -585,7 +586,7 @@ def get_file_content(unzipped_file, z):
     raise AssertionError("Not found {} nor {} in {}".format(unzipped_file, expected_gzipped_file, archived_items))
 
 
-def make_nodes_ip_map(dcos_api_session):
+def make_nodes_ip_map(dcos_api_session: DcosApiSession) -> dict:
     """
     a helper function to make a map detected_ip -> external_ip
     """
@@ -601,7 +602,7 @@ def make_nodes_ip_map(dcos_api_session):
     return node_private_public_ip_map
 
 
-def validate_node(nodes):
+def validate_node(nodes: list) -> None:
     assert isinstance(nodes, list), 'input argument must be a list'
     assert len(nodes) > 0, 'input argument cannot be empty'
     required_fields = ['host_ip', 'health', 'role']
@@ -618,7 +619,7 @@ def validate_node(nodes):
         assert node['role'], 'role cannot be empty'
 
 
-def validate_units(units):
+def validate_units(units: list) -> None:
     assert isinstance(units, list), 'input argument must be list'
     assert len(units) > 0, 'input argument cannot be empty'
     required_fields = ['id', 'name', 'health', 'description']
@@ -636,7 +637,7 @@ def validate_units(units):
         assert unit['description'], 'description field cannot be empty in {}'.format(unit)
 
 
-def validate_unit(unit):
+def validate_unit(unit: dict) -> None:
     assert isinstance(unit, dict), 'input argument must be a dict'
 
     required_fields = ['id', 'health', 'output', 'description', 'help', 'name']
@@ -653,7 +654,7 @@ def validate_unit(unit):
     assert unit['help'], 'help field cannot be empty'
 
 
-def validate_state(state_output):
+def validate_state(state_output: Any) -> None:
     state = json.loads(state_output)
     assert len(state["frameworks"]) > 1, "bundle must contain information about frameworks"
 
@@ -661,7 +662,7 @@ def validate_state(state_output):
     assert task_count > 0, "bundle must contains information about tasks"
 
 
-def verify_archived_items(folder, archived_items, expected_files):
+def verify_archived_items(folder: str, archived_items: list, expected_files: list) -> None:
     for expected_file in expected_files:
         expected_file = folder + expected_file
 
@@ -681,6 +682,6 @@ def verify_archived_items(folder, archived_items, expected_files):
         assert (unzipped_exists or gzipped_exists), message
 
 
-def verify_unit_response(unit_output, min_lines):
+def verify_unit_response(unit_output: bytes, min_lines: int) -> None:
     assert len(unit_output.decode().split('\n')) >= min_lines, 'Expect at least {} lines. Full unit output {}'.format(
-        min_lines, unit_output)
+        min_lines, unit_output.decode())

@@ -1,11 +1,14 @@
 import logging
 import uuid
 
+from typing import Any
+
 import pytest
 import requests
 
 import test_helpers
 from dcos_test_utils import marathon
+from dcos_test_utils.dcos_api import DcosApiSession
 
 __maintainer__ = 'kensipe'
 __contact__ = 'orchestration-team@mesosphere.io'
@@ -13,7 +16,7 @@ __contact__ = 'orchestration-team@mesosphere.io'
 log = logging.getLogger(__name__)
 
 
-def deploy_test_app_and_check(dcos_api_session, app: dict, test_uuid: str):
+def deploy_test_app_and_check(dcos_api_session: DcosApiSession, app: dict, test_uuid: str) -> None:
     """This method deploys the test server app and then
     pings its /operating_environment endpoint to retrieve the container
     user running the task.
@@ -59,11 +62,11 @@ def deploy_test_app_and_check(dcos_api_session, app: dict, test_uuid: str):
 
 
 @pytest.mark.first
-def test_docker_image_availablity():
+def test_docker_image_availablity() -> None:
     assert test_helpers.docker_pull_image("debian:stretch-slim"), "docker pull failed for image used in the test"
 
 
-def test_if_marathon_app_can_be_deployed(dcos_api_session):
+def test_if_marathon_app_can_be_deployed(dcos_api_session: DcosApiSession) -> None:
     """Marathon app deployment integration test
 
     This test verifies that marathon app can be deployed, and that service points
@@ -80,7 +83,7 @@ def test_if_marathon_app_can_be_deployed(dcos_api_session):
     deploy_test_app_and_check(dcos_api_session, *test_helpers.marathon_test_app())
 
 
-def test_if_docker_app_can_be_deployed(dcos_api_session):
+def test_if_docker_app_can_be_deployed(dcos_api_session: DcosApiSession) -> None:
     """Marathon app inside docker deployment integration test.
 
     Verifies that a marathon app inside of a docker daemon container can be
@@ -98,7 +101,7 @@ def test_if_docker_app_can_be_deployed(dcos_api_session):
     marathon.Healthcheck.HTTP,
     marathon.Healthcheck.MESOS_HTTP,
 ])
-def test_if_ucr_app_can_be_deployed(dcos_api_session, healthcheck):
+def test_if_ucr_app_can_be_deployed(dcos_api_session: DcosApiSession, healthcheck: Any) -> None:
     """Marathon app inside ucr deployment integration test.
 
     Verifies that a marathon docker app inside of a ucr container can be
@@ -111,7 +114,7 @@ def test_if_ucr_app_can_be_deployed(dcos_api_session, healthcheck):
             healthcheck_protocol=healthcheck))
 
 
-def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_session):
+def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_session: DcosApiSession) -> None:
     """Marathon app deployment integration test using the Mesos Containerizer
 
     This test verifies that a Marathon app using the Mesos containerizer with
@@ -130,7 +133,7 @@ def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_sessi
         *test_helpers.marathon_test_app(container_type=marathon.Container.MESOS))
 
 
-def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_session):
+def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_session: DcosApiSession) -> None:
     """Marathon pods deployment integration test using the Mesos Containerizer
 
     This test verifies that a Marathon pods can be deployed.
