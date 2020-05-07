@@ -1,7 +1,5 @@
 from subprocess import check_output, PIPE, Popen, STDOUT
 
-import pytest
-
 from pkgpanda.util import resources_test_dir
 
 list_output = """WARNING: `not_executable.py` is not executable
