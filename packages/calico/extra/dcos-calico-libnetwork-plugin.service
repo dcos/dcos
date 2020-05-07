@@ -2,6 +2,7 @@
 Description=DC/OS Calico Node: Docker libnetwork plugin for Calico in DC/OS
 
 [Service]
+Environment=CALICO_LIBNETWORK_LABEL_ENDPOINTS=true
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/calico/calico-node.env
 EnvironmentFile=/opt/mesosphere/etc/calico/calico-node-datastore.env
