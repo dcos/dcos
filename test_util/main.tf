@@ -14,12 +14,12 @@ variable "custom_dcos_download_path_win" {
 
 variable "variant" {
   type = "string"
-  default = "open"
+  default = "ee"
 }
 
 variable "dcos_security" {
   type = "string"
-  default = ""
+  default = "strict"
 }
 
 variable "owner" {
@@ -34,7 +34,7 @@ variable "expiration" {
 
 variable "windowsagent_num" {
   type = "string"
-  default = "0"
+  default = "1"
   description = "Defines the number of Windows agents for the cluster."
 }
 
@@ -52,7 +52,7 @@ variable "dcos_license_key_contents" {
 
 variable "instance_type" {
     type = "string"
-    default = "t3.medium"
+    default = "m4.xlarge"
     description = "Defines type of used machine."
 }
 
@@ -102,7 +102,7 @@ module "dcos" {
   admin_ips           = ["${data.http.whatismyip.body}/32"]
 
   num_masters        = "1"
-  num_private_agents = "0"
+  num_private_agents = "1"
   num_public_agents  = "1"
 
   dcos_instance_os        = "centos_7.5"
