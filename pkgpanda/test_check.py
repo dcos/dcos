@@ -38,5 +38,5 @@ def test_check_target_run():
         '--repository', resources_test_dir('opt/mesosphere/packages')],
         stdout=PIPE, stderr=PIPE)
     stdout, stderr = cmd.communicate()
-    assert stdout.decode() == run_output_stdout
     assert stderr.decode() == run_output_stderr
+    assert stdout.decode() == run_output_stdout
