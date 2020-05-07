@@ -92,35 +92,3 @@ chmod +x "$upgrade_cni_script"
 mesos_start_wrapper="$PKG_PATH/bin/start_mesos.sh"
 cp /pkg/extra/start_mesos.sh "$mesos_start_wrapper"
 chmod +x "$mesos_start_wrapper"
-
-
-# Add `protoc` to the path.
-export PATH=$PKG_PATH/bin:$PATH
-
-
-# OSS Mesos Modules
-
-pushd /pkg/src/mesos-modules/
-./bootstrap
-popd
-
-source /opt/mesosphere/environment.export
-
-# Add the 3rdparty directories.
-export CPPFLAGS='-I/opt/mesosphere/active/boost-libs/include -I/opt/mesosphere/lib/mesos/3rdparty/include'
-export CFLAGS=-I/opt/mesosphere/lib/mesos/3rdparty/include
-export LDFLAGS='-L/opt/mesosphere/active/boost-libs/lib -L/opt/mesosphere/lib/mesos/3rdparty/lib'
-
-mkdir -p build
-pushd build
-
-/pkg/src/mesos-modules/configure \
-    --with-mesos-root=/pkg/src/mesos \
-    --with-mesos-build-dir=/pkg/src/mesos/build \
-    --with-openssl=/opt/mesosphere/active/openssl \
-    --with-glog=$PKG_PATH/lib/mesos/3rdparty \
-    --prefix="$PKG_PATH"
-
-make -j$NUM_CORES
-make install
-popd

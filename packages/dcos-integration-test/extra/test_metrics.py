@@ -36,13 +36,7 @@ def check_tags(tags: dict, required_tag_names: set, optional_tag_names: set = se
 
 
 def test_metrics_ping(dcos_api_session):
-    """ Test that the dcos-metrics service is up on master and agents.
-
-        This test is not supported on Windows since dcos_metrics
-        plugin is not supported on Windows
-        https://github.com/dcos/telegraf/blame/d3666e/plugins/outputs/dcos_metrics/README.md#L5
-        TODO: https://jira.d2iq.com/browse/D2IQ-65777
-    """
+    """ Test that the dcos-metrics service is up on master and agents."""
     nodes = get_master_and_agents(dcos_api_session)
 
     for node in nodes:
@@ -51,7 +45,6 @@ def test_metrics_ping(dcos_api_session):
         assert response.json()['ok'], 'Status code: {}, Content {}'.format(response.status_code, response.content)
 
 
-@pytest.mark.supportedwindows
 def test_metrics_agents_prom(dcos_api_session):
     """Telegraf Prometheus endpoint is reachable on master and agents."""
     nodes = get_master_and_agents(dcos_api_session)
@@ -90,7 +83,6 @@ def test_metrics_procstat(dcos_api_session):
         check_procstat_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_agents_mesos(dcos_api_session):
     """Assert that mesos metrics on agents are present."""
     nodes = get_agents(dcos_api_session)
@@ -107,7 +99,6 @@ def test_metrics_agents_mesos(dcos_api_session):
         check_mesos_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_master_mesos(dcos_api_session):
     """Assert that mesos metrics on master are present."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
@@ -138,7 +129,6 @@ def test_metrics_agents_mesos_overlay(dcos_api_session):
         _check_mesos_overlay_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_master_mesos_overlay(dcos_api_session):
     """Assert that mesos overlay module metrics on master are present."""
 
@@ -154,7 +144,6 @@ def test_metrics_master_mesos_overlay(dcos_api_session):
     _check_mesos_overlay_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_master_zookeeper(dcos_api_session):
     """Assert that ZooKeeper metrics on master are present."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
@@ -169,7 +158,6 @@ def test_metrics_master_zookeeper(dcos_api_session):
     check_zookeeper_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_master_cockroachdb(dcos_api_session):
     """Assert that CockroachDB metrics on master are present."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
@@ -184,7 +172,6 @@ def test_metrics_master_cockroachdb(dcos_api_session):
     check_cockroachdb_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_master_etcd(dcos_api_session):
     """Assert that DC/OS etcd metrics on master are present."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
@@ -199,7 +186,6 @@ def test_metrics_master_etcd(dcos_api_session):
     _check_etcd_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_master_calico(dcos_api_session):
     """Assert that DC/OS Calico metrics on master are present."""
 
@@ -232,7 +218,6 @@ def test_metrics_agents_calico(dcos_api_session):
         _check_calico_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_master_adminrouter_nginx_vts(dcos_api_session):
     """Assert that Admin Router Nginx VTS metrics on master are present."""
     @retrying.retry(
@@ -250,7 +235,6 @@ def test_metrics_master_adminrouter_nginx_vts(dcos_api_session):
     check_adminrouter_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_master_exhibitor_status(dcos_api_session):
     """Assert that Exhibitor status metrics on master are present."""
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
@@ -286,7 +270,6 @@ def _nginx_vts_measurement_basename(name: str) -> str:
     return '_'.join(name.split('_')[:3])
 
 
-@pytest.mark.supportedwindows
 def test_metrics_master_adminrouter_nginx_drop_requests_seconds(dcos_api_session):
     """
     nginx_vts_*_request_seconds* metrics are not present.
@@ -317,8 +300,6 @@ def test_metrics_master_adminrouter_nginx_drop_requests_seconds(dcos_api_session
     check_adminrouter_metrics()
 
 
-# TODO(D2IQ-65403): Expose Adminrouter metrics on Windows
-# @pytest.mark.supportedwindows
 def test_metrics_agent_adminrouter_nginx_drop_requests_seconds(dcos_api_session):
     """
     nginx_vts_*_request_seconds* metrics are not present.
@@ -355,7 +336,6 @@ def test_metrics_agent_adminrouter_nginx_drop_requests_seconds(dcos_api_session)
         check_adminrouter_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
     """Assert that processed Admin Router metrics on master are present."""
     node = dcos_api_session.masters[0]
@@ -410,8 +390,6 @@ def test_metrics_master_adminrouter_nginx_vts_processor(dcos_api_session):
     check_adminrouter_metrics()
 
 
-# TODO(D2IQ-65403): Expose Adminrouter metrics on Windows
-# @pytest.mark.supportedwindows
 def test_metrics_agents_adminrouter_nginx_vts(dcos_api_session):
     """Assert that Admin Router Nginx VTS metrics on agents are present."""
     nodes = get_agents(dcos_api_session)
@@ -435,8 +413,6 @@ def test_metrics_agents_adminrouter_nginx_vts(dcos_api_session):
         check_adminrouter_metrics()
 
 
-# TODO(D2IQ-65403): Expose Adminrouter metrics on Windows
-# @pytest.mark.supportedwindows
 def test_metrics_agent_adminrouter_nginx_vts_processor(dcos_api_session):
     """Assert that processed Admin Router metrics on agent are present."""
     # Make request to Admin Router on every agent to ensure metrics.
@@ -486,7 +462,6 @@ def test_metrics_agent_adminrouter_nginx_vts_processor(dcos_api_session):
         check_adminrouter_metrics()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_diagnostics(dcos_api_session):
     """Assert that DC/OS Diagnostics metrics on master are present."""
     nodes = get_master_and_agents(dcos_api_session)
@@ -711,11 +686,6 @@ def test_executor_metrics_metadata(dcos_api_session):
 def test_metrics_node(dcos_api_session):
     """Test that the '/system/v1/metrics/v0/node' endpoint returns the expected
     metrics and metric metadata.
-
-    This test is not supported on Windows since dcos_metrics
-    plugin is not supported on Windows
-    https://github.com/dcos/telegraf/blame/d3666e/plugins/outputs/dcos_metrics/README.md#L5
-    TODO: https://jira.d2iq.com/browse/D2IQ-65777
     """
     def expected_datapoint_response(response):
         """Enure that the "node" endpoint returns a "datapoints" dict.
@@ -1252,12 +1222,6 @@ def test_standalone_container_metrics(dcos_api_session):
     LAUNCH_CONTAINER call of the agent operator API. Additionally, if the
     process running within the standalone container emits statsd metrics, they
     should be accessible via the DC/OS metrics API.
-
-    This test is not supported on Windows since dcos_metrics
-    plugin is not supported on Windows
-    https://github.com/dcos/telegraf/blame/d3666e/plugins/outputs/dcos_metrics/README.md#L5
-    TODO: https://jira.d2iq.com/browse/D2IQ-65777
-    TODO: https://jira.d2iq.com/browse/D2IQ-65401
     """
     expanded_config = get_expanded_config()
     if expanded_config.get('security') == 'strict':
@@ -1405,11 +1369,6 @@ def test_pod_application_metrics(dcos_api_session):
     and then verify that:
     1) Container statistics metrics are provided for the executor container
     2) Application metrics are exposed for the task container
-
-    This test is not supported on Windows since dcos_metrics
-    plugin is not supported on Windows
-    https://github.com/dcos/telegraf/blame/d3666e/plugins/outputs/dcos_metrics/README.md#L5
-    TODO: https://jira.d2iq.com/browse/D2IQ-65777
     """
     @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
     def test_application_metrics(agent_ip, agent_id, task_name, num_containers):
@@ -1565,7 +1524,6 @@ def test_pod_application_metrics(dcos_api_session):
 
                 return True
 
-    # FIXME(D2IQ-65812): Make the following app works on Windows
     marathon_pod_config = {
         "id": "/statsd-emitter-task-group",
         "containers": [{

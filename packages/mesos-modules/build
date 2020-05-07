@@ -1,0 +1,25 @@
+#!/bin/bash
+
+pushd /pkg/src/mesos-modules/
+./bootstrap
+popd
+
+source /opt/mesosphere/environment.export
+
+# Add the 3rdparty directories.
+export CPPFLAGS='-I/opt/mesosphere/active/boost-libs/include -I/opt/mesosphere/lib/mesos/3rdparty/include'
+export CFLAGS=-I/opt/mesosphere/lib/mesos/3rdparty/include
+export LDFLAGS='-L/opt/mesosphere/active/boost-libs/lib -L/opt/mesosphere/lib/mesos/3rdparty/lib'
+
+mkdir -p build
+pushd build
+
+/pkg/src/mesos-modules/configure \
+    --with-mesos=/opt/mesosphere/active/mesos \
+    --with-openssl=/opt/mesosphere/active/openssl \
+    --with-glog=/opt/mesosphere/lib/mesos/3rdparty/include/glog \
+    --prefix="$PKG_PATH"
+
+make -j$NUM_CORES
+make install
+popd

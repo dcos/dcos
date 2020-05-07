@@ -33,7 +33,7 @@
         "fix_version_map": {
             "master": "DC/OS 2.1.0",
             "2.0":  "DC/OS 2.0.4",
-            "1.13": "DC/OS 1.13.9",
+            "1.13": "DC/OS 1.13.10",
             "1.12": "DC/OS 1.12.6",
             "1.11": "DC/OS 1.11.14",
             "1.10": "DC/OS 1.10.12"
@@ -51,10 +51,7 @@
                     "mergebot/review/approved/min_1",
                     "teamcity/dcos/build/dcos",
                     "teamcity/dcos/build/tox",
-                    "teamcity/dcos/build/dcosWindows",
-                    "teamcity/dcos/build/tox/windows",
                     "continuous-integration/jenkins/pr-head",
-                    "teamcity/dcos/windows/integration-test",
                     "teamcity/dcos/test/test-e2e/group1",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group1",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group2",
@@ -146,5 +143,41 @@
                   "teamcity/dcos/test/terraform/aws/onprem/static/group3",
                   "teamcity/dcos/test/terraform/aws/onprem/static/group4"
         ]
-    }
+    },
+    "test-binding": {"teamcity/dcos/build/dcos": {
+                         "type": "teamcity",
+                         "required": "true",
+                         "id": "DcOs_Open_Build_BuildDcOs"
+                        },
+                     "teamcity/dcos/build/tox": {
+                         "type": "teamcity",
+                          "required": "true",
+                          "id": "DcOs_Open_Build_Tox"
+                        },
+                     "teamcity/dcos/test/test-e2e/group1": {
+                          "type": "teamcity",
+                          "required": "true",
+                          "id": "DcOs_Open_Test_DcosDocker_DcosTestE2eGroup1"
+                        },
+                     "teamcity/dcos/test/terraform/aws/onprem/static/group1": {
+                          "type": "teamcity",
+                          "required": "true",
+                          "id": "DcOs_Open_Test_IntegrationTest_AwsOnpremWStaticBackendGroup1TerraformSpotBlock"
+                        },
+                     "teamcity/dcos/test/terraform/aws/onprem/static/group2": {
+                          "type": "teamcity",
+                          "required": "true",
+                          "id": "DcOs_Open_Test_IntegrationTest_AwsOnpremWStaticBackendGroup2TerraformSpotBlock"
+                        },
+                     "teamcity/dcos/test/terraform/aws/onprem/static/group3": {
+                          "type": "teamcity",
+                          "required": "true",
+                          "id": "DcOs_Open_Test_IntegrationTest_AwsOnpremWStaticBackendGroup3TerraformSpotBlock"
+                        },
+                     "teamcity/dcos/test/terraform/aws/onprem/static/group4": {
+                          "type": "teamcity",
+                          "required": "true",
+                          "id": "DcOs_Open_Test_IntegrationTest_AwsOnpremWStaticBackendGroup4TerraformSpotBlock"
+                        }                                                          
+                    }
 }

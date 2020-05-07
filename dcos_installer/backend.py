@@ -14,7 +14,7 @@ import gen.calc
 import release
 import release.storage.aws
 import release.storage.local
-from dcos_installer import config_util, upgrade, upgrade_win
+from dcos_installer import config_util, upgrade
 from dcos_installer.config import (
     Config,
     normalize_config_validation,
@@ -78,33 +78,6 @@ def generate_node_upgrade_script(installed_cluster_version, config_path=CONFIG_P
 
     # generate the upgrade script
     upgrade.generate_node_upgrade_script(gen_out, installed_cluster_version)
-
-    return 0
-
-
-def generate_node_upgrade_win_script(installed_cluster_version, config_path=CONFIG_PATH):
-
-    if installed_cluster_version is None:
-        print('Must provide the version of the cluster upgrading from')
-        return 1
-
-    config = Config(config_path)
-    try:
-        gen_out = config_util.onprem_generate(config)
-    except ValidationError as e:
-        validation = normalize_config_validation_exception(e)
-        print_messages(validation)
-        return 1
-    except ExhibitorTLSBootstrapError as e:
-        log.error('Failed to bootstrap Exhibitor TLS')
-        for i, error in enumerate(e.errors):
-            return log.error("{}: {}".format(i + 1, error))
-        return 1
-
-    config_util.make_serve_dir(gen_out)
-
-    # generate the upgrade script
-    upgrade_win.generate_node_upgrade_win_script(gen_out, installed_cluster_version)
 
     return 0
 

@@ -55,7 +55,6 @@ groups:
         - test_etcd_backup.py
         - test_service_account.py
         - test_master_node_replacement.py
-        - test_windows.py
         - test_zookeeper_backup.py
         - test_calico_networking.py
         - test_adminrouter_grpc.py

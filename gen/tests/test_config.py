@@ -6,13 +6,11 @@ import pytest
 import yaml
 
 import gen
-import pkgpanda.util
 from gen.exceptions import ExhibitorTLSBootstrapError
 from gen.tests.utils import make_arguments, true_false_msg, \
     validate_error, validate_error_multikey, validate_success
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_invalid_telemetry_enabled():
     err_msg = "Must be one of 'true', 'false'. Got 'foo'."
     validate_error(
@@ -21,7 +19,6 @@ def test_invalid_telemetry_enabled():
         err_msg)
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_invalid_enable_mesos_input_plugin():
     err_msg = "Must be one of 'true', 'false'. Got 'foo'."
     validate_error(
@@ -30,8 +27,6 @@ def test_invalid_enable_mesos_input_plugin():
         err_msg)
 
 
-# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_invalid_ports():
     test_bad_range = '["52.37.192.49", "52.37.181.230:53", "52.37.163.105:65536"]'
     range_err_msg = "Must be between 1 and 65535 inclusive"
@@ -66,8 +61,6 @@ bad_dns_forward_zones_str = """
 """
 
 
-# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_dns_forward_zones():
     zones = dns_forward_zones_str
     bad_zones = bad_dns_forward_zones_str
@@ -81,8 +74,6 @@ def test_dns_forward_zones():
         err_msg)
 
 
-# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_invalid_ipv4():
     test_ips = '["52.37.192.49", "52.37.181.230", "foo", "52.37.163.105", "bar"]'
     err_msg = "Invalid IPv4 addresses in list: foo, bar"
@@ -103,7 +94,6 @@ def test_invalid_ipv4():
         err_msg)
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_invalid_zk_path():
     validate_error(
         {'exhibitor_zk_path': 'bad/path'},
@@ -111,7 +101,6 @@ def test_invalid_zk_path():
         "Must be of the form /path/to/znode")
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_invalid_zk_hosts():
     validate_error(
         {'exhibitor_zk_hosts': 'zk://10.10.10.10:8181'},
@@ -119,7 +108,6 @@ def test_invalid_zk_hosts():
         "Must be of the form `host:port,host:port', not start with zk://")
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_invalid_bootstrap_url():
     validate_error(
         {'bootstrap_url': '123abc/'},
@@ -127,8 +115,6 @@ def test_invalid_bootstrap_url():
         "Must not end in a '/'")
 
 
-# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_validate_duplicates():
     test_ips = '["10.0.0.1", "10.0.0.2", "10.0.0.1"]'
     err_msg = 'List cannot contain duplicates: 10.0.0.1 appears 2 times'
@@ -144,7 +130,6 @@ def test_validate_duplicates():
         err_msg)
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_invalid_oauth_enabled():
     validate_error(
         {'oauth_enabled': 'foo'},
@@ -152,7 +137,6 @@ def test_invalid_oauth_enabled():
         true_false_msg)
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_invalid_mesos_dns_set_truncate_bit():
     validate_error(
         {'mesos_dns_set_truncate_bit': 'foo'},
@@ -160,7 +144,6 @@ def test_invalid_mesos_dns_set_truncate_bit():
         true_false_msg)
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_validate_mesos_recovery_timeout():
     validate_success(
         {'mesos_recovery_timeout': '24hrs'})
@@ -189,7 +172,6 @@ def test_validate_mesos_recovery_timeout():
         "Unit 'hour' not in ['ns', 'us', 'ms', 'secs', 'mins', 'hrs', 'days', 'weeks'].")
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_cluster_docker_credentials():
     validate_error(
         {'cluster_docker_credentials': 'foo'},
@@ -202,8 +184,6 @@ def test_cluster_docker_credentials():
         true_false_msg)
 
 
-# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_exhibitor_storage_master_discovery():
     msg_master_discovery = "When master_discovery is not static, exhibitor_storage_backend must be " \
         "non-static. Having a variable list of master which are discovered by agents using the " \
@@ -333,7 +313,6 @@ def test_exhibitor_bootstrap_ca_url():
         'Expected `https://` as `exhibitor_bootstrap_ca_url` protocol.')
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_validate_s3_prefix():
     validate_error({
         'exhibitor_storage_backend': 'aws_s3',
@@ -347,8 +326,6 @@ def test_validate_s3_prefix():
     validate_success({'s3_prefix': 'bar/baz'})
 
 
-# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_validate_default_overlay_network_name():
     msg = "Default overlay network name does not reference a defined overlay network: foo"
     validate_error_multikey(
@@ -366,7 +343,6 @@ def test_validate_default_overlay_network_name():
         msg)
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_validate_check_config():
     # No checks.
     validate_success({'check_config': json.dumps({})})
@@ -730,7 +706,6 @@ def test_validate_check_config():
     )
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_validate_custom_checks():
     check_config = json.dumps({
         'cluster_checks': {
@@ -859,7 +834,6 @@ def test_validate_custom_checks():
     )
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason no mesos master")
 def test_validate_mesos_work_dir():
     validate_success({
         'mesos_master_work_dir': '/var/foo',
@@ -891,7 +865,6 @@ def test_validate_mesos_work_dir():
     )
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_invalid_mesos_cni_root_dir_persist():
     validate_error(
         {'mesos_cni_root_dir_persist': 'foo'},
@@ -899,8 +872,6 @@ def test_invalid_mesos_cni_root_dir_persist():
         true_false_msg)
 
 
-# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason='TODO: Needs porting on Windows')
 def test_fault_domain_disabled():
     arguments = make_arguments(new_arguments={
         'fault_domain_detect_filename': pkg_resources.resource_filename('gen', 'fault-domain-detect/aws.sh')
@@ -912,8 +883,6 @@ def test_fault_domain_disabled():
     assert 'fault_domain_detect_contents' not in generated.arguments
 
 
-# TODO: DCOS_OSS-3462 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason='TODO: Needs porting on Windows')
 def test_exhibitor_admin_password_obscured():
     var_name = 'exhibitor_admin_password'
     var_value = 'secret'
@@ -925,11 +894,10 @@ def test_exhibitor_admin_password_obscured():
     assert json.loads(generated.arguments['user_arguments'])[var_name] == '**HIDDEN**'
     assert json.loads(generated.arguments['user_arguments_full'])[var_name] == var_value
 
-    assert yaml.load(generated.arguments['config_yaml'])[var_name] == '**HIDDEN**'
-    assert yaml.load(generated.arguments['config_yaml_full'])[var_name] == var_value
+    assert yaml.safe_load(generated.arguments['config_yaml'])[var_name] == '**HIDDEN**'
+    assert yaml.safe_load(generated.arguments['config_yaml_full'])[var_name] == var_value
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason='TODO: Needs porting on Windows')
 def test_edited_ip_detect_script_yields_new_packages():
     with tempfile.NamedTemporaryFile() as f:
         arguments = make_arguments(new_arguments={'ip_detect_filename': f.name})
@@ -952,7 +920,6 @@ def test_edited_ip_detect_script_yields_new_packages():
         assert initial_cluster_packages != edited_cluster_packages
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_validate_mesos_default_container_shm_size():
     validate_success({'mesos_default_container_shm_size': '64MB'})
 

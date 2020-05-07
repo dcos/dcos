@@ -266,7 +266,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/liblogsink.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
             "modules":
               [
                 {
@@ -289,7 +289,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/liblogsink.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
             "modules":
               [
                 {
@@ -314,7 +314,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
@@ -347,7 +347,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
@@ -370,7 +370,7 @@ package:
     content: |
       {
         "libraries": [ {
-          "file": "/opt/mesosphere/active/mesos/lib/mesos/libmetrics-module.so",
+          "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmetrics-module.so",
           "modules": [ {
             "name": "com_mesosphere_dcos_MetricsIsolatorModule",
             "parameters": [
@@ -387,7 +387,7 @@ package:
       {
         "libraries": [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/libjournaldlogger.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libjournaldlogger.so",
             "modules": [
               {
                 "name": "com_mesosphere_mesos_JournaldLogger",
@@ -397,7 +397,7 @@ package:
                     "value": "{{ mesos_container_log_sink }}"
                   }, {
                     "key": "companion_dir",
-                    "value": "/opt/mesosphere/active/mesos/bin/"
+                    "value": "/opt/mesosphere/active/mesos-modules/bin/"
                   }, {
                     "key": "libprocess_num_worker_threads",
                     "value": "2"
@@ -434,7 +434,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/libremovedockercfg.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libremovedockercfg.so",
             "modules":
               [
                 {
@@ -1378,6 +1378,7 @@ package:
       MESOS_RECONFIGURATION_POLICY=additive
       MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
       MESOS_SECCOMP_CONFIG_DIR=/opt/mesosphere/etc/dcos/mesos/seccomp
+      MESOS_ATTRIBUTES=os:linux
 {% switch has_mesos_seccomp_profile_name %}
 {% case "true" %}
       MESOS_SECCOMP_PROFILE_NAME={{ mesos_seccomp_profile_name }}
@@ -1438,7 +1439,7 @@ package:
     content: |
       MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1, "end": 21},{"begin": 23, "end": 5050},{"begin": 5052, "end": 32000}]}}]
       MESOS_DEFAULT_ROLE=slave_public
-      MESOS_ATTRIBUTES=public_ip:true
+      MESOS_ATTRIBUTES=public_ip:true;os:linux
   - path: /etc/mesos-executor-environment.json
     content: |
       {

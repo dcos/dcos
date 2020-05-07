@@ -6,19 +6,11 @@
     "boost-libs",
     "libseccomp"
   ],
-  "sources": {
-    "mesos": {
-      "kind": "git",
-      "git": "https://github.com/apache/mesos",
-      "ref": "e6b15b1e968649c794d67bb97961e8f0216e2ed8",
-      "ref_origin": "master"
-    },
-    "mesos-modules": {
-      "kind": "git",
-      "git": "https://github.com/dcos/dcos-mesos-modules.git",
-      "ref": "4ba1e573ec4a80ec1d5514d54d5cc9529e5e1d98",
-      "ref_origin": "master"
-    }
+  "single_source": {
+    "kind": "git",
+    "git": "https://github.com/apache/mesos",
+    "ref": "8682b5ddf8b773beffe8bf0428c9350d6ae59412",
+    "ref_origin": "master"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
