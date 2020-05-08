@@ -38,11 +38,6 @@ pipeline {
       }
 	  steps {
 	    withCredentials([usernamePassword(credentialsId: 'eng-devprod-tox', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-	      // Debug
-	      sh('python3 --version')
-	      sh('whoami && pwd')
-	      sh('ls -Rlah pkgpanda/test_resources/opt/mesosphere/packages')
-
 	      sh('rm -rf dcos-release.config.yaml')
 	      sh('cp config/dcos-release.config.yaml dcos-release.config.yaml')
 	      sh('pip install tox && tox')
