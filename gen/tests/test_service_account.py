@@ -1,11 +1,9 @@
 import uuid
 
 import cryptography.hazmat.backends
-import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-import pkgpanda.util
 from gen.tests.utils import validate_error, validate_error_multikey, validate_success
 
 
@@ -33,8 +31,6 @@ def generate_rsa_public_key():
     ).decode('ascii')
 
 
-# TODO(tweidner): DCOS_OSS-4741 - muted Windows validate always returns {`status`: `ok`}
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Windows validate never errors out")
 class TestSuperuserServiceAccountCredentials:
     """
     Tests superuser service account credential parsing.

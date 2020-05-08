@@ -296,6 +296,12 @@
             "InstanceProtocol" : "TCP"
           },
           {
+            "LoadBalancerPort" : "12379",
+            "Protocol" : "TCP",
+            "InstancePort" : "12379",
+            "InstanceProtocol" : "TCP"
+          },
+          {
             "LoadBalancerPort" : "8080",
             "Protocol" : "HTTP",
             "InstancePort" : "8080",
@@ -326,6 +332,12 @@
             "LoadBalancerPort" : "443",
             "Protocol" : "TCP",
             "InstancePort" : "443",
+            "InstanceProtocol" : "TCP"
+          },
+          {
+            "LoadBalancerPort" : "12379",
+            "Protocol" : "TCP",
+            "InstancePort" : "12379",
             "InstanceProtocol" : "TCP"
           }],
         "HealthCheck" : {

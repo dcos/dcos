@@ -5,7 +5,6 @@ RUN apt-get -qq update && apt-get -y install \
   autoconf \
   automake \
   autopoint \
-  cmake \
   cpp \
   curl \
   default-jdk \
@@ -51,6 +50,16 @@ RUN apt-get -qq update && apt-get -y install \
   libnetfilter-cthelper0-dev \
   libnetfilter-queue-dev
 
+ENV CMAKE_VERSION 3.17.0
+RUN set -ex \
+  && curl -sSL https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.sh \
+        -o cmake.sh \
+  && echo "c20a2878f5f5ca1bc00f0c987b015984360a6b32 cmake.sh" | \
+        sha1sum -c --quiet - \
+  && sh cmake.sh --prefix=/usr/local --skip-license \
+  && rm cmake.sh \
+  && cmake --version
+
 RUN ln -sf /usr/bin/cpp-4.8 /usr/bin/cpp && \
   ln -sf /usr/bin/g++-4.8 /usr/bin/g++ && \
   ln -sf /usr/bin/gcc-4.8 /usr/bin/gcc && \
@@ -59,9 +68,9 @@ RUN ln -sf /usr/bin/cpp-4.8 /usr/bin/cpp && \
   ln -sf /usr/bin/gcc-ranlib-4.8 /usr/bin/gcc-ranlib && \
   ln -sf /usr/bin/gcov-4.8 /usr/bin/gcov
 
-ENV GOLANG_VERSION 1.13.3
+ENV GOLANG_VERSION 1.14
 ENV GOLANG_DOWNLOAD_URL https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
-ENV GOLANG_DOWNLOAD_SHA256 0804bf02020dceaa8a7d7275ee79f7a142f1996bfd0c39216ccb405f93f994c0
+ENV GOLANG_DOWNLOAD_SHA256 08df79b46b0adf498ea9f320a0f23d6ec59e9003660b4c9c1ce8e5e2c6f823ca
 
 RUN curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
   && echo "$GOLANG_DOWNLOAD_SHA256  golang.tar.gz" | sha256sum -c - \

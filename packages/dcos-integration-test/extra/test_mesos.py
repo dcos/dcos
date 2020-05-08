@@ -324,7 +324,6 @@ def get_region_zone(domain):
     return region, zone
 
 
-@pytest.mark.supportedwindows
 def test_fault_domain(dcos_api_session):
     expanded_config = test_helpers.get_expanded_config()
     if expanded_config['fault_domain_enabled'] == 'false':

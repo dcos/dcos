@@ -12,7 +12,6 @@ __maintainer__ = 'gpaul'
 __contact__ = 'dcos-security@mesosphere.io'
 
 
-@pytest.mark.supportedwindows
 def test_verify_units():
     """Test that all systemd units are valid."""
     def _check_units(path):
@@ -77,7 +76,6 @@ def test_verify_units():
     _check_units("/etc/systemd/system/dcos-*.socket")
 
 
-@pytest.mark.supportedwindows
 def test_socket_units():
     """Test that socket units configure socket files in /run/dcos
     that are owned by 'dcos_adminrouter'.
@@ -120,7 +118,6 @@ def test_socket_units():
         _check_unit(file)
 
 
-@pytest.mark.supportedwindows
 def test_socket_files():
     """Test that all socket files in /run/dcos are owned by 'dcos_adminrouter'."""
     for file in glob.glob("/run/dcos/*"):

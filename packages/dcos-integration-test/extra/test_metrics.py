@@ -16,7 +16,8 @@ __maintainer__ = 'philipnrmn'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 
-METRICS_WAITTIME = 5 * 60 * 1000
+DEPLOY_TIMEOUT = 2 * 60
+METRICS_WAITTIME = 4 * 60 * 1000
 METRICS_INTERVAL = 2 * 1000
 STD_WAITTIME = 15 * 60 * 1000
 STD_INTERVAL = 5 * 1000
@@ -34,10 +35,8 @@ def check_tags(tags: dict, required_tag_names: set, optional_tag_names: set = se
         assert tag_val != '', 'Value for tag "%s" must not be empty'.format(tag_name)
 
 
-@pytest.mark.supportedwindows
 def test_metrics_ping(dcos_api_session):
-    """ Test that the metrics service is up on master and agents.
-    """
+    """ Test that the dcos-metrics service is up on master and agents."""
     nodes = get_master_and_agents(dcos_api_session)
 
     for node in nodes:
@@ -171,6 +170,20 @@ def test_metrics_master_cockroachdb(dcos_api_session):
                     return
         raise Exception('Expected CockroachDB ranges_underreplicated metric not found')
     check_cockroachdb_metrics()
+
+
+def test_metrics_master_etcd(dcos_api_session):
+    """Assert that DC/OS etcd metrics on master are present."""
+    @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
+    def _check_etcd_metrics():
+        response = get_metrics_prom(dcos_api_session, dcos_api_session.masters[0])
+        for family in text_string_to_metric_families(response.text):
+            for sample in family.samples:
+                if sample[0].startswith('etcd_') and sample[1].get('dcos_component_name') == 'etcd':
+                    return
+        raise Exception('Expected DC/OS etcd etcd_* metric on master nodes not found')
+
+    _check_etcd_metrics()
 
 
 def test_metrics_master_calico(dcos_api_session):
@@ -459,8 +472,7 @@ def test_metrics_diagnostics(dcos_api_session):
             response = get_metrics_prom(dcos_api_session, node)
             for family in text_string_to_metric_families(response.text):
                 for sample in family.samples:
-                    if sample[0].startswith('bundle_creation_time_seconds'):
-                        assert sample[1]['dcos_component_name'] == 'DC/OS Diagnostics'
+                    if sample[1]['dcos_component_name'] == 'DC/OS Diagnostics':
                         return
             raise Exception('Expected DC/OS Diagnostics metrics not found')
         check_diagnostics_metrics()
@@ -484,7 +496,7 @@ def test_metrics_fluentbit(dcos_api_session):
 
 
 def check_statsd_app_metrics(dcos_api_session, marathon_app, node, expected_metrics):
-    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
+    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False, timeout=DEPLOY_TIMEOUT):
         endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
         assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
 
@@ -671,7 +683,6 @@ def test_executor_metrics_metadata(dcos_api_session):
         check_executor_metrics_metadata()
 
 
-@pytest.mark.supportedwindows
 def test_metrics_node(dcos_api_session):
     """Test that the '/system/v1/metrics/v0/node' endpoint returns the expected
     metrics and metric metadata.
@@ -818,7 +829,7 @@ def test_metrics_containers(dcos_api_session):
         "mem": 128.0,
         "instances": 1
     }
-    with dcos_api_session.marathon.deploy_and_cleanup(marathon_config, check_health=False):
+    with dcos_api_session.marathon.deploy_and_cleanup(marathon_config, check_health=False, timeout=DEPLOY_TIMEOUT):
         endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_config['id'])
         assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
         test_containers(endpoints)
@@ -872,7 +883,11 @@ def test_statsd_metrics_containers_app(dcos_api_session):
         ('.'.join([metric_name_pfx, 'histogram', 'count']), 4),
     ]
 
-    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
+    deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name)
+
+
+def deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name):
+    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False, timeout=DEPLOY_TIMEOUT):
         endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
         assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
         node = endpoints[0].host
@@ -908,7 +923,7 @@ def test_prom_metrics_containers_app_host(dcos_api_session):
             'python3 -m http.server $PORT0',
         ]),
         'container': {
-            'type': 'MESOS',
+            'type': 'DOCKER',
             'docker': {'image': 'library/python:3'}
         },
         'portDefinitions': [{
@@ -926,12 +941,7 @@ def test_prom_metrics_containers_app_host(dcos_api_session):
         ('_'.join([metric_name_pfx, 'histogram_seconds', 'count']), 4),
     ]
 
-    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
-        endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
-        assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
-        node = endpoints[0].host
-        for metric_name, metric_value in expected_metrics:
-            assert_app_metric_value_for_task(dcos_api_session, node, task_name, metric_name, metric_value)
+    deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name)
 
 
 def test_prom_metrics_containers_app_bridge(dcos_api_session):
@@ -984,12 +994,7 @@ def test_prom_metrics_containers_app_bridge(dcos_api_session):
         ('_'.join([metric_name_pfx, 'histogram_seconds', 'count']), 4),
     ]
 
-    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
-        endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
-        assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
-        node = endpoints[0].host
-        for metric_name, metric_value in expected_metrics:
-            assert_app_metric_value_for_task(dcos_api_session, node, task_name, metric_name, metric_value)
+    deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name)
 
 
 def test_task_prom_metrics_not_filtered(dcos_api_session):
@@ -1053,12 +1058,7 @@ def test_task_prom_metrics_not_filtered(dcos_api_session):
         ('nginx_vts_foo_request_seconds.gauge', 100),
     ]
 
-    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
-        endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
-        assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
-        node = endpoints[0].host
-        for metric_name, metric_value in expected_metrics:
-            assert_app_metric_value_for_task(dcos_api_session, node, task_name, metric_name, metric_value)
+    deploy_marathon_app_and_check_metrics(dcos_api_session, expected_metrics, marathon_app, task_name)
 
 
 def test_metrics_containers_nan(dcos_api_session):
@@ -1084,7 +1084,7 @@ def test_metrics_containers_nan(dcos_api_session):
         },
         'networks': [{'mode': 'host'}],
     }
-    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False):
+    with dcos_api_session.marathon.deploy_and_cleanup(marathon_app, check_health=False, timeout=DEPLOY_TIMEOUT):
         endpoints = dcos_api_session.marathon.get_app_service_endpoints(marathon_app['id'])
         assert len(endpoints) == 1, 'The marathon app should have been deployed exactly once.'
         node = endpoints[0].host

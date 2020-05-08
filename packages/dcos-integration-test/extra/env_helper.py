@@ -53,7 +53,9 @@ ALL ENVIRONMENT VARIABLES:
     Obtain this token by setting up your cluster with the dcos-cli like this:
     {begin_cmd}dcos cluster setup http://$MASTER_PUBLIC_IP{end_cmd}
     Then your web browser will open a page and you will see the token.
-    It's also stored in ~/.dcos/clusters/<cluster-uuid>/dcos.toml
+    It's also stored in ~/.dcos/clusters/<cluster-uuid>/dcos.toml and
+    can be accessed via the CLI:
+    {begin_cmd}dcos config show core.dcos_acs_token{end_cmd}
     If you run integration tests before setting this variable, you will
     no longer be able to log into your cluster.
 

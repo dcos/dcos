@@ -1,11 +1,12 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
 
-## DC/OS 2.1.0 (in development)
+## DC/OS 2.1.0-beta4 (in development)
 
 
 ### What's new
 
+* Upgrade coreOS AMIs (D2IQ-64271)
 * Added a new configuration option `mesos_http_executors_domain_sockets`, which will cause the mesos-agent to use
   domain sockets when communicating with executors. While this change should not have any visible impact on users
   in itself, it does enable administrators to write firewall rules blocking unauthorized access to the agent port
@@ -13,12 +14,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Switched from Oracle Java 8 to OpenJDK 8 (DCOS-54902)
 
-* Updated DC/OS UI to [master+v2.150.2](https://github.com/dcos/dcos-ui/releases/tag/master+v2.150.2).
+* Updated DC/OS UI to [v5.0.23](https://github.com/dcos/dcos-ui/releases/tag/v5.0.23).
 
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
-* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/4990d2cd6e76da340b30e200be0d700124dac2b1/CHANGELOG)
-* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/4990d2cd6e76da340b30e200be0d700124dac2b1/CHANGELOG)
+* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/d4afcd10b6535d91c5a6a544aed2f09af6201b46/CHANGELOG)
 
 * Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
 
@@ -38,13 +38,45 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Add etcd into DC/OS. (DCOS-59004)
 
+* Add etcd metrics into the DC/OS Telegraf Pipeline. (D2IQ-61004)
+
 * Update libpq to 9.6.15 (DCOS-59145)
 
 * Enable proxing of gRPC requests through Admin Router (DCOS-59091)
 
 * Calico in DC/OS: introduced Calico networking into DC/OS, and provided network policy support (DCOS-58413)
 
-* Updated DC/OS UI to [master+v2.154.16](https://github.com/dcos/dcos-ui/releases/tag/master+v2.154.16).
+* The config option `calico_network_cidr` can be set to a valid IPv4 CIDR range for Calico networks to use (default 172.29.0.0/16) (DCOS-60734)
+
+* Calico network: When using the Universal Runtime Engine, the contents of the `DCOS_SPACE`  network label will be compressed to `<7-char hash>...<last 53 chars>` if it is longer than 63 characters. (D2IQ-62219)
+
+* Update logrotate to 3.14.0 (DCOS_OSS-5947)
+
+#### Update Marathon to [1.10.17](https://github.com/mesosphere/marathon/blob/v1.10.17/changelog.md)
+
+* Adds support for Mesos Resource Limits (D2IQ-61131) (D2IQ-61130)
+
+* Removes `revive_offers_for_new_apps` option.
+
+* /v2/tasks plaintext output in Marathon 1.5 returned container network endpoints in an unusable way (MARATHON-8721)
+
+* Marathon launched too many tasks. (DCOS_OSS-5679)
+
+* Marathon used to omit pod status report with tasks in `TASK_UNKOWN` state. (MARATHON-8710)
+
+* With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
+instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
+
+* Marathon was checking authorization for unrelated apps when performing a kill-and-scale operations; this has been resolved. (MARATHON-8731)
+
+* A race condition would cause Marathon to fail to start properly. (MARATHON-8741)
+
+#### Update Metronome to [0.6.42](https://github.com/dcos/metronome/blob/4e1eac1c4d6c97296332f9664ba4269a15336ed8/changelog.md)
+
+* There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
+
+* Metronome jobs networking is now configurable (MARATHON-8727)
+
 ### Breaking changes
 
 * Remove the octarine package from DC/OS. It was originally used as a proxy for the CLI but is not used for this purpose, anymore.
@@ -59,9 +91,13 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Remove the dcos-history-service from DC/OS. (DCOS-58529)
 
-* New format for Admin Router access logs. (DCOS-59598)
+* New format for Admin Router access logs. (D2IQ-43957, DCOS-59598, D2IQ-62839)
 
-* Update OpenResty to 1.15.8.2. (DCOS-61159)
+* Update OpenResty to 1.15.8.3. (DCOS-61159, D2IQ-66506)
+
+### Marathon
+
+* Marathon no longer sanitizes the field `"acceptedResourceRoles"`. The field is an array of one or two values: `*` and the service role. Previously, when an invalid value was provided, Marathon would silently drop it. Now, it returns an error. If this causes a disruption, you can re-enable this feature by adding `MARATHON_DEPRECATED_FEATURES=sanitize_accepted_resource_roles` to the file `/var/lib/dcos/marathon/environment` on all masters. You must remove this line before upgrading to DC/OS 2.2.
 
 ### Fixed and improved
 
@@ -69,13 +105,39 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
 * Allow Admin Router to accept files up to 32GB, such as for uploading large packages to Package Registry. (DCOS-61233)
-
-* Marathon launched too many tasks. (DCOS-62078)
-
-* Marathon used to omit pod status report with tasks in `TASK_UNKONW` state. (MARATHON-8710)
-
 * Update Kazoo to version 2.6.1. (DCOS-63065)
 
-* With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
-  instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
 * Updated dcos-config.yaml to support some Mesos Flags. (DCOS-59021)
+
+* Fix Telegraf migration when no containers present. (D2IQ-64507)
+
+* Update to OpenSSL 1.1.1g. (D2IQ-67050)
+
+* Adjust dcos-net (l4lb) to allow for graceful shutdown of connections by changing the VIP backend weight to `0`
+  when tasks are unhealthy or enter the `TASK_KILLING` state instead of removing them. (D2IQ-61077)
+* Set "os:linux" attribute for the Linux agents. (D2IQ-67223)
+
+#### Update Marathon to 1.10.6
+
+* Marathon updated to 1.9.136
+
+* /v2/tasks plaintext output in Marathon 1.5 returned container network endpoints in an unusable way (MARATHON-8721)
+
+* Marathon launched too many tasks. (DCOS_OSS-5679)
+
+* Marathon used to omit pod status report with tasks in `TASK_UNKOWN` state. (MARATHON-8710)
+
+* With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
+instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
+
+* Marathon was checking authorization for unrelated apps when performing a kill-and-scale operations; this has been resolved. (MARATHON-8731)
+
+* A race condition would cause Marathon to fail to start properly. (MARATHON-8741)
+
+#### Update Metronome to 0.6.44
+
+* There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
+
+* Metronome jobs networking is now configurable (MARATHON-8727)
+
+* A bug was fixed in which Metronome failed to see jobs from a prior version of Metronome (MARATHON-8746)

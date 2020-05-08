@@ -1,9 +1,0 @@
-{
-  "sources": {
-    "vcredist": {
-      "kind": "url",
-      "url": "https://download.visualstudio.microsoft.com/download/pr/cc0046d4-e7b4-45a1-bd46-b1c079191224/9c4042a4c2e6d1f661f4c58cf4d129e9/vc_redist.x64.exe",
-      "sha1": "be4f7ad520349d9d0683ab9dd171b3a1e4db426b"
-    }
-  }
-}

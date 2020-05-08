@@ -5,6 +5,8 @@ import os
 import tempfile
 import zipfile
 
+from typing import List
+
 import pytest
 import retrying
 import test_helpers
@@ -20,7 +22,6 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 LATENCY = 120
 
 
-@pytest.mark.supportedwindows
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_dcos_diagnostics_health(dcos_api_session):
     """
@@ -86,7 +87,6 @@ def test_dcos_diagnostics_health(dcos_api_session):
             assert response[required_field], '{} cannot be empty'.format(required_field)
 
 
-@pytest.mark.supportedwindows
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_dcos_diagnostics_nodes(dcos_api_session):
     """
@@ -105,7 +105,6 @@ def test_dcos_diagnostics_nodes(dcos_api_session):
         validate_node(response['nodes'])
 
 
-@pytest.mark.supportedwindows
 def test_dcos_diagnostics_nodes_node(dcos_api_session):
     """
     test a specific node enpoint /system/health/v1/nodes/<node>
@@ -120,7 +119,6 @@ def test_dcos_diagnostics_nodes_node(dcos_api_session):
             validate_node([node_response])
 
 
-@pytest.mark.supportedwindows
 def test_dcos_diagnostics_nodes_node_units(dcos_api_session):
     """
     test a list of units from a specific node, endpoint /system/health/v1/nodes/<node>/units
@@ -138,7 +136,6 @@ def test_dcos_diagnostics_nodes_node_units(dcos_api_session):
             validate_units(units_response['units'])
 
 
-@pytest.mark.supportedwindows
 def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session):
     """
     test a specific unit for a specific node, endpoint /system/health/v1/nodes/<node>/units/<unit>
@@ -155,7 +152,6 @@ def test_dcos_diagnostics_nodes_node_units_unit(dcos_api_session):
                     check_json(dcos_api_session.health.get('/nodes/{}/units/{}'.format(node, unit_id), node=master)))
 
 
-@pytest.mark.supportedwindows
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_dcos_diagnostics_units(dcos_api_session):
     """
@@ -185,7 +181,6 @@ def test_dcos_diagnostics_units(dcos_api_session):
                                                 'puller, missing: {}'.format(diff))
 
 
-@pytest.mark.supportedwindows
 @retrying.retry(wait_fixed=2000, stop_max_delay=LATENCY * 1000)
 def test_systemd_units_health(dcos_api_session):
     """
@@ -217,7 +212,6 @@ def test_systemd_units_health(dcos_api_session):
         raise AssertionError('\n'.join(unhealthy_output))
 
 
-@pytest.mark.supportedwindows
 def test_dcos_diagnostics_units_unit(dcos_api_session):
     """
     test a unit response in a right format, endpoint: /system/health/v1/units/<unit>
@@ -236,14 +230,14 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
     test a list of nodes for a specific unit, endpoint /system/health/v1/units/<unit>/nodes
     """
 
-    def get_nodes_from_response(response):
+    def get_nodes_from_response(response) -> List[str]:
         assert 'nodes' in response, 'response must have field `nodes`. Got {}'.format(response)
         nodes_ip_map = make_nodes_ip_map(dcos_api_session)
         nodes = []
         for node in response['nodes']:
             assert 'host_ip' in node, 'node response must have `host_ip` field. Got {}'.format(node)
-            assert node['host_ip'] in nodes_ip_map, 'nodes_ip_map must have node {}.Got {}'.format(node['host_ip'],
-                                                                                                   nodes_ip_map)
+            assert node['host_ip'] in nodes_ip_map, 'nodes_ip_map must have node {}. Got {}'.format(node['host_ip'],
+                                                                                                    nodes_ip_map)
             nodes.append(nodes_ip_map.get(node['host_ip']))
         return nodes
 
@@ -266,15 +260,15 @@ def test_dcos_diagnostics_units_unit_nodes(dcos_api_session):
             set(master_nodes).symmetric_difference(set(dcos_api_session.masters))
         )
 
-        agent_nodes_response = check_json(
-            dcos_api_session.health.get('/units/dcos-mesos-slave.service/nodes', node=master))
-
-        agent_nodes = get_nodes_from_response(agent_nodes_response)
+        agent_nodes = list()
+        if 'dcos-mesos-slave.service' in pulled_units:
+            agent_nodes_response = check_json(
+                dcos_api_session.health.get('/units/dcos-mesos-slave.service/nodes', node=master))
+            agent_nodes = get_nodes_from_response(agent_nodes_response)
 
         assert len(agent_nodes) == len(dcos_api_session.slaves), '{} != {}'.format(agent_nodes, dcos_api_session.slaves)
 
 
-@pytest.mark.supportedwindows
 def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
     """
     test a specific node for a specific unit, endpoint /system/health/v1/units/<unit>/nodes/<node>
@@ -305,7 +299,6 @@ def test_dcos_diagnostics_units_unit_nodes_node(dcos_api_session):
                 assert node_response['help'], 'help field cannot be empty'
 
 
-@pytest.mark.supportedwindows
 def test_dcos_diagnostics_report(dcos_api_session):
     """
     test dcos-diagnostics report endpoint /system/health/v1/report
@@ -319,7 +312,9 @@ def test_dcos_diagnostics_report(dcos_api_session):
         assert len(report_response['Nodes']) > 0
 
 
-@pytest.mark.parametrize('use_legacy_api', [False, True])
+@pytest.mark.parametrize('use_legacy_api', [
+    pytest.param(False),
+    pytest.param(True)])
 def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_legacy_api):
     """
     test bundle create, read, delete workflow
@@ -338,8 +333,8 @@ def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session, use_le
         use_legacy_api=use_legacy_api,
     )
 
-    app, test_uuid = test_helpers.marathon_test_app()
-    with dcos_api_session.marathon.deploy_and_cleanup(app):
+    app, test_uuid = test_helpers.marathon_test_docker_app('diag-bundle', constraints=[])
+    with dcos_api_session.marathon.deploy_and_cleanup(app, timeout=120):
         bundle = _create_bundle(diagnostics)
         _check_diagnostics_bundle_status(dcos_api_session)
         _download_and_extract_bundle(dcos_api_session, bundle, diagnostics)
@@ -475,7 +470,7 @@ def _download_bundle_from_master(dcos_api_session, master_index, bundle, diagnos
     # for public agent host
     expected_public_agent_files = [
         'dcos-mesos-slave-public.service',
-        'binsh_-c_cat proc`systemctl show dcos-mesos-slave-public.service -p MainPID| cut -d\'=\' -f2`environ.output'
+        "binsh_-c_cat proc`systemctl show dcos-mesos-slave-public.service -p MainPID| cut -d'=' -f2`environ.output"
     ] + expected_agent_common_files + expected_common_files
 
     def _read_from_zip(z: zipfile.ZipFile, item: str, to_json=True):
@@ -636,9 +631,9 @@ def validate_units(units):
 
         # a unit must have all 3 fields not empty
         assert unit['id'], 'id field cannot be empty'
-        assert unit['name'], 'name field cannot be empty'
+        assert unit['name'], 'name field cannot be empty in {}'.format(unit)
         assert unit['health'] in [0, 1], 'health must be 0 or 1'
-        assert unit['description'], 'description field cannot be empty'
+        assert unit['description'], 'description field cannot be empty in {}'.format(unit)
 
 
 def validate_unit(unit):
@@ -652,7 +647,7 @@ def validate_unit(unit):
 
     # id, name, health, description, help should not be empty
     assert unit['id'], 'id field cannot be empty'
-    assert unit['name'], 'name field cannot be empty'
+    assert unit['name'], 'name field cannot be empty in {}'.format(unit)
     assert unit['health'] in [0, 1], 'health must be 0 or 1'
     assert unit['description'], 'description field cannot be empty'
     assert unit['help'], 'help field cannot be empty'

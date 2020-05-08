@@ -9,7 +9,6 @@ import boto3
 import passlib.hash
 import pytest
 
-import pkgpanda.util
 from dcos_installer import backend
 from dcos_installer.config import Config, make_default_config_if_needed, to_config
 
@@ -27,8 +26,6 @@ def test_password_hash():
     assert passlib.hash.sha512_crypt.verify(password, hash_pw), 'Hash does not match password'
 
 
-# TODO: DCOS_OSS-3473 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_generate_node_upgrade_script(tmpdir, monkeypatch):
     upgrade_config = """
 ---
@@ -64,12 +61,11 @@ def test_version(monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'some-variant')
     version_data = subprocess.check_output(['dcos_installer', '--version']).decode()
     assert json.loads(version_data) == {
-        'version': '2.1.0-dev',
+        'version': '2.1.0-rc1-dev',
         'variant': 'some-variant'
     }
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="Code tests linux configuration")
 def test_do_validate_config(tmpdir, monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
 
@@ -100,7 +96,7 @@ def test_get_config(tmpdir):
         'exhibitor_storage_backend': 'static',
         'resolvers': ['8.8.8.8', '8.8.4.4'],
         'process_timeout': 10000,
-        'bootstrap_url': 'file:///opt/dcos_install_tmp'
+        'bootstrap_url': 'file:///opt/dcos_install_tmp',
     }
 
     make_default_config_if_needed(temp_config_path)
@@ -156,8 +152,6 @@ bootstrap_url: http://example.com
 """
 
 
-# TODO: DCOS_OSS-3473 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_do_configure(tmpdir, monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'test_variant')
     create_config(simple_full_config, tmpdir)
@@ -229,8 +223,6 @@ def aws_cf_configure(config, tmpdir, monkeypatch):
         return backend.do_aws_cf_configure()
 
 
-# TODO: DCOS_OSS-3473 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_do_configure_valid_config_no_duplicate_logging(tmpdir, monkeypatch, caplog):
     """
     Log messages are logged exactly once.
@@ -247,8 +239,6 @@ def test_do_configure_valid_config_no_duplicate_logging(tmpdir, monkeypatch, cap
     assert [expected_message] == filtered_messages
 
 
-# TODO: DCOS_OSS-3473 - muted Windows tests requiring investigation
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason unknown")
 def test_do_configure_logs_validation_errors(tmpdir, monkeypatch, caplog):
     """
     Configuration validation errors are logged as `error` messages.

@@ -6,7 +6,7 @@ flake8-isort==2.2.2
 flake8==3.7.9
 ipdb==0.10.3
 isort==4.2.15
-psutil==5.2.0
+psutil==5.6.6 
 pyaml==16.12.2
 pylint==1.6.5
 pyroute2==0.4.21

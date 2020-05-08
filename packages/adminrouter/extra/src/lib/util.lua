@@ -80,6 +80,12 @@ function util.get_stripped_first_line_from_file(path)
 end
 
 
+function util.path_join(d, p)
+    -- package.config:sub(1,1) is \ on Windows and / elsewhere
+    return d .. package.config:sub(1,1) .. p
+end
+
+
 function util.get_file_content(path)
     local f, err = io.open(path, "rb")
     if f then

@@ -1,23 +1,19 @@
 import logging
 
-import pytest
-
 import gen
-import pkgpanda.util
 from gen.build_deploy.bash import onprem_source
 
 
 # TODO(cmaloney): Should be able to pass an exact tree to gen so that we can test
 # one little piece at a time rather than having to rework this every time that
 # DC/OS parameters change.
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="test fails on Windows reason no mesos master")
 def test_error_during_calc(monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_ID', 'foobar')
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
     assert gen.validate({
         'ip_detect_filename': 'not-a-existing-file',
-        'bootstrap_variant': ''
+        'bootstrap_variant': '',
     }, extra_sources=[onprem_source]) == {
         'status': 'errors',
         'errors': {
@@ -32,7 +28,6 @@ def test_error_during_calc(monkeypatch):
     }
 
 
-@pytest.mark.skipif(pkgpanda.util.is_windows, reason="configuration not present on windows")
 def test_error_during_validate(monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_ID', 'foobar')
     logger = logging.getLogger()
@@ -50,6 +45,34 @@ def test_error_during_validate(monkeypatch):
         'status': 'errors',
         'errors': {
             'bootstrap_url': {'message': 'Should be a url (http://example.com/bar or file:///path/to/local/cache)'},
+        },
+        'unset': set()
+    }
+
+
+def test_error_during_validate_calico_network(monkeypatch):
+    monkeypatch.setenv('BOOTSTRAP_ID', 'foobar')
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    assert gen.validate({
+        'bootstrap_url': '',
+        'bootstrap_variant': '',
+        'ip_detect_contents': '',  # so that ip_detect_filename doesn't get used from onprem_source
+        'ip6_detect_contents': '',
+        'exhibitor_storage_backend': 'static',
+        'master_discovery': 'static',
+        'cluster_name': 'foobar',
+        'master_list': '["127.0.0.1"]',
+        'calico_network_cidr': '',
+    }, extra_sources=[onprem_source]) == {
+        'status': 'errors',
+        'errors': {
+            'calico_network_cidr': {
+                'message': 'Incorrect value for `calico_network_cidr`: ``. Only IPv4 subnets are allowed'
+            },
+            'bootstrap_url': {
+                'message': 'Should be a url (http://example.com/bar or file:///path/to/local/cache)'
+            }
         },
         'unset': set()
     }

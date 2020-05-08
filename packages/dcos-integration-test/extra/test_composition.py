@@ -17,8 +17,7 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 
 @pytest.mark.first
-@pytest.mark.supportedwindows
-def test_dcos_cluster_is_up(dcos_api_session):
+def test_dcos_cluster_is_up():
     def _docker_info(component):
         # sudo is required for non-coreOS installs
         return (subprocess.check_output(['sudo', 'docker', 'version', '-f', component], timeout=60)
@@ -47,7 +46,6 @@ def test_dcos_cluster_is_up(dcos_api_session):
     logging.info(json.dumps(cluster_environment, sort_keys=True, indent=4))
 
 
-@pytest.mark.supportedwindows
 def test_leader_election(dcos_api_session):
     mesos_resolver = dns.resolver.Resolver()
     mesos_resolver.nameservers = dcos_api_session.masters
@@ -58,7 +56,6 @@ def test_leader_election(dcos_api_session):
         assert False, "Cannot resolve leader.mesos"
 
 
-@pytest.mark.supportedwindows
 def test_if_all_mesos_masters_have_registered(dcos_api_session):
     # Currently it is not possible to extract this information through Mesos'es
     # API, let's query zookeeper directly.
@@ -77,7 +74,6 @@ def test_if_all_mesos_masters_have_registered(dcos_api_session):
     assert sorted(master_ips) == dcos_api_session.masters
 
 
-@pytest.mark.supportedwindows
 def test_if_all_exhibitors_are_in_sync(dcos_api_session):
     r = dcos_api_session.get('/exhibitor/exhibitor/v1/cluster/status')
     assert r.status_code == 200
@@ -95,7 +91,7 @@ def test_if_all_exhibitors_are_in_sync(dcos_api_session):
 
 
 def test_mesos_agent_role_assignment(dcos_api_session):
-    state_endpoint = '/state.json'
+    state_endpoint = '/state'
     for agent in dcos_api_session.public_slaves:
         r = dcos_api_session.get(state_endpoint, host=agent, port=5051)
         assert r.json()['flags']['default_role'] == 'slave_public'
@@ -174,9 +170,10 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
         'dcos-mesos-slave-public.service',
         'dcos-mesos-slave-public.socket']
     all_slave_units = [
+        'dcos-adminrouter-agent.service',
+        'dcos-calico-libnetwork-plugin.service',
         'dcos-docker-gc.service',
         'dcos-docker-gc.timer',
-        'dcos-adminrouter-agent.service',
         'dcos-log-agent.service',
         'dcos-log-agent.socket',
         'dcos-logrotate-agent.service',

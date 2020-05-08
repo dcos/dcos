@@ -1,9 +1,0 @@
-{
-  "sources": {
-    "nssm": {
-      "kind": "url",
-      "url": "https://s3.amazonaws.com/downloads.mesosphere.io/nssm/nssm-2.24-101-g897c7ad.zip",
-      "sha1": "ca2f6782a05af85facf9b620e047b01271edd11d"
-    }
-  }
-}

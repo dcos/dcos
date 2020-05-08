@@ -16,6 +16,13 @@ package:
   - path: /bin/detect_ip6
     permissions: "0755"
     content: {{ ip6_detect_contents }}
+{% switch fault_domain_enabled %}
+{% case "true" %}
+  - path: /bin/detect_fault_domain
+    permissions: "0755"
+    content: {{ fault_domain_detect_contents }}
+{% case "false" %}
+{% endswitch %}
   - path: /etc/check_time.env
     content: |
         ENABLE_CHECK_TIME={{ check_time }}
@@ -259,7 +266,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/liblogsink.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
             "modules":
               [
                 {
@@ -282,7 +289,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/liblogsink.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liblogsink.so",
             "modules":
               [
                 {
@@ -307,7 +314,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
@@ -340,7 +347,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
             "modules":
               [
                 {
@@ -363,7 +370,7 @@ package:
     content: |
       {
         "libraries": [ {
-          "file": "/opt/mesosphere/active/mesos/lib/mesos/libmetrics-module.so",
+          "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmetrics-module.so",
           "modules": [ {
             "name": "com_mesosphere_dcos_MetricsIsolatorModule",
             "parameters": [
@@ -380,7 +387,7 @@ package:
       {
         "libraries": [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/libjournaldlogger.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libjournaldlogger.so",
             "modules": [
               {
                 "name": "com_mesosphere_mesos_JournaldLogger",
@@ -390,7 +397,7 @@ package:
                     "value": "{{ mesos_container_log_sink }}"
                   }, {
                     "key": "companion_dir",
-                    "value": "/opt/mesosphere/active/mesos/bin/"
+                    "value": "/opt/mesosphere/active/mesos-modules/bin/"
                   }, {
                     "key": "libprocess_num_worker_threads",
                     "value": "2"
@@ -427,7 +434,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos/lib/mesos/libremovedockercfg.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libremovedockercfg.so",
             "modules":
               [
                 {
@@ -1371,6 +1378,7 @@ package:
       MESOS_RECONFIGURATION_POLICY=additive
       MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
       MESOS_SECCOMP_CONFIG_DIR=/opt/mesosphere/etc/dcos/mesos/seccomp
+      MESOS_ATTRIBUTES=os:linux
 {% switch has_mesos_seccomp_profile_name %}
 {% case "true" %}
       MESOS_SECCOMP_PROFILE_NAME={{ mesos_seccomp_profile_name }}
@@ -1387,10 +1395,11 @@ package:
 {% case "true" %}
       MESOS_HTTP_COMMAND_EXECUTOR=true
       MESOS_HTTP_EXECUTOR_DOMAIN_SOCKETS=true
-      # TODO(bevers): With systemd versions before 227, named sockets are not supported and
-      # all socket names are rendered as "unknown". Change this to a named socket (i.e.
-      # `systemd:mesos-agent.socket`) once we switch to  more modern platforms.
-      MESOS_DOMAIN_SOCKET_LOCATION=systemd:unknown
+      # This variable is taken from the `FileDescriptorName` field from the unit
+      # file describing socket name of the Mesos agent service. Note that with systemd
+      # versions before 227, named sockets are not supported. However, Mesos agent
+      # handles this case.
+      MESOS_DOMAIN_SOCKET_LOCATION=systemd:dcos-mesos-slave
 {% case "false" %}
 {% endswitch %}
       MESOS_SLAVE_SUBSYSTEMS=cpu,memory
@@ -1430,7 +1439,7 @@ package:
     content: |
       MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1, "end": 21},{"begin": 23, "end": 5050},{"begin": 5052, "end": 32000}]}}]
       MESOS_DEFAULT_ROLE=slave_public
-      MESOS_ATTRIBUTES=public_ip:true
+      MESOS_ATTRIBUTES=public_ip:true;os:linux
   - path: /etc/mesos-executor-environment.json
     content: |
       {
@@ -1914,6 +1923,10 @@ package:
               },
               {
                   "Command": ["df"]
+              },
+              {
+                  "Command": ["/opt/mesosphere/bin/dcos-shell", "dcos-etcdctl", "diagnostic"],
+                  "Role": ["master"]
               }
           ]
         }
@@ -2087,7 +2100,20 @@ package:
       # For post-installation customization, edit the file /var/lib/dcos/marathon/environment
       MARATHON_ZK=zk://zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181/marathon
       LIBPROCESS_PORT=15101
-      MARATHON_JAVA_ARGS={{ marathon_java_args }}
+      JAVA_OPTS={{ marathon_java_args }}
+      MARATHON_EXTRA_ARGS=
+      MARATHON_MESOS_ROLE="slave_public"
+      MARATHON_MAX_INSTANCES_PER_OFFER=100
+      MARATHON_TASK_LAUNCH_CONFIRM_TIMEOUT=1800000
+      MARATHON_TASK_LAUNCH_TIMEOUT=86400000
+      MARATHON_TASK_RESERVATION_TIMEOUT=1800000
+      MARATHON_DECLINE_OFFER_DURATION=300000
+      STATSD_UDP_HOST="localhost"
+      STATSD_UDP_PORT="61825"
+      MARATHON_ENABLE_FEATURES="vips,task_killing,external_volumes,gpu_resources"
+      MARATHON_MESOS_AUTHENTICATION_PRINCIPAL="dcos_marathon"
+      MARATHON_MESOS_USER="root"
+
 {% switch dcos_overlay_enable %}
 {% case "true" %}
       MARATHON_DEFAULT_NETWORK_NAME={{ dcos_overlay_network_default_name }}
@@ -2188,6 +2214,9 @@ package:
     content: |
       # Browser security settings for the DC/OS UI
       add_header X-Frame-Options "{{ adminrouter_x_frame_options }}";
+  - path: /etc_master/adminrouter-grpc-proxy-port.conf
+    content: |
+      listen {{ adminrouter_grpc_proxy_port }} http2;
   - path: /etc/adminrouter-tls-master.conf
     content: |
       # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
@@ -2260,13 +2289,6 @@ package:
 {% endswitch %}
   - path: /etc/rexray.conf
     content: {{ rexray_config_contents }}
-{% switch fault_domain_enabled %}
-{% case "true" %}
-  - path: /bin/detect_fault_domain
-    permissions: "0755"
-    content: {{ fault_domain_detect_contents }}
-{% case "false" %}
-{% endswitch %}
   - path: /etc/telegraf.env
     content: |
       TELEGRAF_CONFIG_FILE=/opt/mesosphere/etc/telegraf/telegraf.conf
@@ -2588,6 +2610,20 @@ package:
         # insecure_skip_verify = true
         [inputs.zookeeper.tags]
           dcos-component-name = "ZooKeeper"
+      # Reads metrics from etcd's prometheus client
+      [[inputs.prometheus]]
+        ## An array of urls to scrape metrics from.
+        urls = ["http://localhost:2379/metrics"]
+        ## Specify timeout duration for slower prometheus clients (default is 3s)
+        response_timeout = "10s"
+        ## Optional TLS Config
+        # tls_ca = /path/to/cafile
+        # tls_cert = /path/to/certfile
+        # tls_key = /path/to/keyfile
+        ## Use TLS but skip chain & host verification
+        # insecure_skip_verify = true
+        [inputs.prometheus.tags]
+          dcos-component-name = "etcd"
       # Reads metrics from CockroachDB's prometheus client
       [[inputs.prometheus]]
         ## An array of urls to scrape metrics from.

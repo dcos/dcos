@@ -28,7 +28,6 @@ import os
 import re
 import socket
 import string
-import textwrap
 from enum import IntEnum
 from math import floor
 from subprocess import check_output
@@ -39,7 +38,7 @@ import yaml
 import gen.internals
 
 
-DCOS_VERSION = '2.1.0-dev'
+DCOS_VERSION = '2.1.0-rc1-dev'
 
 CHECK_SEARCH_PATH = '/opt/mesosphere/bin:/usr/bin:/bin:/sbin'
 
@@ -107,16 +106,6 @@ def validate_ipv4_addresses(ips: list):
 def validate_absolute_path(path):
     if not os.path.isabs(path):
         raise AssertionError('Must be an absolute filesystem path')
-
-
-def calculate_json_escape(value):
-    """
-    Given a string, return the string escaped for interpolation into a JSON
-    string.  This is the JSON-escaped string without the double-quotes.
-    """
-    escaped = json.dumps(value)
-    assert len(escaped) >= 2 and escaped[0] == '"' and escaped[-1] == '"'
-    return escaped[1:-1]
 
 
 def valid_ipv6_address(ip6):
@@ -255,14 +244,6 @@ def calculate_mesos_log_directory_max_files(mesos_log_retention_mb):
     return str(25 + int(calculate_mesos_log_retention_count(mesos_log_retention_mb)))
 
 
-def calculate_windows_config_yaml():
-    # Convert the resource file 'dcos-config-windows.yaml' into a YAML stanza
-    # that can be inserted into template file.
-    from pkg_resources import resource_string
-    s = resource_string('gen', 'dcos-config-windows.yaml').decode('utf-8')
-    return textwrap.indent(s, prefix=('  ' * 3))
-
-
 def calculate_ip_detect_contents(ip_detect_filename):
     assert os.path.exists(ip_detect_filename), "ip-detect script `{}` must exist".format(ip_detect_filename)
     return yaml.dump(open(ip_detect_filename, encoding='utf-8').read())
@@ -270,7 +251,7 @@ def calculate_ip_detect_contents(ip_detect_filename):
 
 def calculate_ip_detect_public_contents(ip_detect_contents, ip_detect_public_filename):
     if ip_detect_public_filename != '':
-        return calculate_ip_detect_contents(ip_detect_public_filename)
+        return yaml.dump(open(ip_detect_public_filename, encoding='utf-8').read())
     return ip_detect_contents
 
 
@@ -343,7 +324,7 @@ def validate_config_subnet(config_name, subnet, version=IPVersion.IPv4):
                 (version == IPVersion.IPv6 and not isinstance(network, ipaddress.IPv6Network)):
             raise ValueError("IP version not match")
     except ValueError as ex:
-        err_msg = "Incorrect value for {}: {}. Only IPv{} subnets are allowed".format(
+        err_msg = "Incorrect value for `{}`: `{}`. Only IPv{} subnets are allowed".format(
             config_name, subnet, version)
         raise AssertionError(err_msg) from ex
 
@@ -654,6 +635,14 @@ def validate_exhibitor_storage_master_discovery(master_discovery, exhibitor_stor
             "are discovered by agents using the master_discovery method but also having a fixed " \
             "known at install time static list of master ips doesn't " \
             "`master_http_load_balancer` then exhibitor_storage_backend must not be static."
+
+
+def validate_adminrouter_grpc_proxy_port(adminrouter_grpc_proxy_port):
+    try:
+        assert 0 < int(adminrouter_grpc_proxy_port) < 65536
+    except ValueError as ex:
+        raise AssertionError("Error parsing 'adminrouter_grpc_proxy_port' "
+                             "parameter as an integer: {}".format(ex)) from ex
 
 
 def calculate_adminrouter_tls_version_override(
@@ -1238,9 +1227,7 @@ entry = {
         lambda mesos_cni_root_dir_persist: validate_true_false(mesos_cni_root_dir_persist),
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
         validate_marathon_new_group_enforce_role,
-        lambda enable_windows_agents: validate_true_false(enable_windows_agents),
-        lambda calico_network_cidr: validate_config_subnet(
-            "calico_network_cidr", calico_network_cidr),
+        lambda calico_network_cidr: validate_config_subnet("calico_network_cidr", calico_network_cidr),
         lambda calico_ipinip_mtu: validate_int_in_range(calico_ipinip_mtu, 552, None),
         lambda calico_veth_mtu: validate_int_in_range(calico_veth_mtu, 552, None),
         lambda calico_vxlan_mtu: validate_int_in_range(calico_vxlan_mtu, 552, None),
@@ -1248,6 +1235,7 @@ entry = {
         lambda calico_vxlan_port: validate_int_in_range(calico_vxlan_port, 1025, 65535),
         lambda calico_vxlan_vni: validate_vxlan_vni(calico_vxlan_vni),
         validate_overlay_networks_not_overlap,
+        validate_adminrouter_grpc_proxy_port,
     ],
     'default': {
         'exhibitor_azure_account_key': '',
@@ -1260,6 +1248,7 @@ entry = {
         'use_proxy': 'false',
         'weights': '',
         'adminrouter_auth_enabled': calculate_adminrouter_auth_enabled,
+        'adminrouter_grpc_proxy_port': '12379',
         'adminrouter_tls_1_0_enabled': 'false',
         'adminrouter_tls_1_1_enabled': 'false',
         'adminrouter_tls_1_2_enabled': 'true',
@@ -1317,7 +1306,6 @@ entry = {
         'ui_banner_image_path': 'null',
         'ui_banner_dismissible': 'null',
         'ui_update_enabled': 'true',
-        'windows_config_yaml': calculate_windows_config_yaml,
         'dcos_net_cluster_identity': 'false',
         'dcos_net_rest_enable': "true",
         'dcos_net_watchdog': "true",
@@ -1395,16 +1383,14 @@ entry = {
         'log_offers': 'true',
         'mesos_cni_root_dir_persist': 'false',
         'enable_mesos_input_plugin': 'true',
-        'enable_windows_agents': 'false',
-        'windows_dcos_install_path': 'C:\\d2iq\\dcos',
-        'windows_dcos_var_path': 'C:\\d2iq\\dcos\\var',
-        'calico_network_cidr': '192.168.0.0/16',
+        'calico_network_cidr': '172.29.0.0/16',
         'calico_ipinip_mtu': '1480',
         'calico_veth_mtu': '1500',
         'calico_vxlan_mtu': '1450',
         'calico_vxlan_enabled': 'true',
         'calico_vxlan_port': '64000',
         'calico_vxlan_vni': '4096',
+        'zk_client_port': '2181',
     },
     'must': {
         'fault_domain_enabled': 'false',
@@ -1468,10 +1454,6 @@ entry = {
             lambda marathon_new_group_enforce_role: calculate_set(marathon_new_group_enforce_role),
         'has_marathon_gpu_scheduling_behavior':
             lambda marathon_gpu_scheduling_behavior: calculate_set(marathon_gpu_scheduling_behavior),
-        'windows_dcos_install_path_json':
-            lambda windows_dcos_install_path: calculate_json_escape(windows_dcos_install_path),
-        'windows_dcos_var_path_json':
-            lambda windows_dcos_var_path: calculate_json_escape(windows_dcos_var_path),
     },
     'secret': [
         'cluster_docker_credentials',
