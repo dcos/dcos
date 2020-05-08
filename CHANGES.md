@@ -1,7 +1,7 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
 
-## DC/OS 2.1.0-beta2 (in development)
+## DC/OS 2.1.0-beta4 (in development)
 
 
 ### What's new
@@ -18,7 +18,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
-* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/8682b5ddf8b773beffe8bf0428c9350d6ae59412/CHANGELOG)
+* Updated to Mesos [1.10.0-dev](https://github.com/apache/mesos/blob/d4afcd10b6535d91c5a6a544aed2f09af6201b46/CHANGELOG)
 
 * Mesos overlay networking: support dropping agents from the state. (DCOS_OSS-5536)
 
@@ -52,10 +52,30 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update logrotate to 3.14.0 (DCOS_OSS-5947)
 
-#### Update Marathon to 1.10.6
+#### Update Marathon to [1.10.17](https://github.com/mesosphere/marathon/blob/v1.10.17/changelog.md)
 
 * Adds support for Mesos Resource Limits (D2IQ-61131) (D2IQ-61130)
+
 * Removes `revive_offers_for_new_apps` option.
+
+* /v2/tasks plaintext output in Marathon 1.5 returned container network endpoints in an unusable way (MARATHON-8721)
+
+* Marathon launched too many tasks. (DCOS_OSS-5679)
+
+* Marathon used to omit pod status report with tasks in `TASK_UNKOWN` state. (MARATHON-8710)
+
+* With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
+instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
+
+* Marathon was checking authorization for unrelated apps when performing a kill-and-scale operations; this has been resolved. (MARATHON-8731)
+
+* A race condition would cause Marathon to fail to start properly. (MARATHON-8741)
+
+#### Update Metronome to [0.6.42](https://github.com/dcos/metronome/blob/4e1eac1c4d6c97296332f9664ba4269a15336ed8/changelog.md)
+
+* There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
+
+* Metronome jobs networking is now configurable (MARATHON-8727)
 
 ### Breaking changes
 
@@ -114,8 +134,10 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 
 * A race condition would cause Marathon to fail to start properly. (MARATHON-8741)
 
-#### Update Metronome to 0.6.41
+#### Update Metronome to 0.6.44
 
 * There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
 
 * Metronome jobs networking is now configurable (MARATHON-8727)
+
+* A bug was fixed in which Metronome failed to see jobs from a prior version of Metronome (MARATHON-8746)
