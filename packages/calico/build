@@ -2,7 +2,7 @@
 set -x
 
 # calico container is missing 'envsubst'
-apt-get update && apt-get install -y gettext-base curl
+microdnf install -y gettext tar
 
 # create a go build environment
 curl https://dl.google.com/go/go1.13.3.linux-amd64.tar.gz | tar -zvx -C /usr/local
