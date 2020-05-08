@@ -52,10 +52,30 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update logrotate to 3.14.0 (DCOS_OSS-5947)
 
-#### Update Marathon to 1.10.6
+#### Update Marathon to [1.10.17](https://github.com/mesosphere/marathon/blob/v1.10.17/changelog.md)
 
 * Adds support for Mesos Resource Limits (D2IQ-61131) (D2IQ-61130)
+
 * Removes `revive_offers_for_new_apps` option.
+
+* /v2/tasks plaintext output in Marathon 1.5 returned container network endpoints in an unusable way (MARATHON-8721)
+
+* Marathon launched too many tasks. (DCOS_OSS-5679)
+
+* Marathon used to omit pod status report with tasks in `TASK_UNKOWN` state. (MARATHON-8710)
+
+* With UnreachableStrategy, setting `expungeAfterSeconds` and `inactiveAfterSeconds` to the same value will cause the
+instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` constraints. (MARATHON-8719)
+
+* Marathon was checking authorization for unrelated apps when performing a kill-and-scale operations; this has been resolved. (MARATHON-8731)
+
+* A race condition would cause Marathon to fail to start properly. (MARATHON-8741)
+
+#### Update Metronome to [0.6.42](https://github.com/dcos/metronome/blob/4e1eac1c4d6c97296332f9664ba4269a15336ed8/changelog.md)
+
+* There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
+
+* Metronome jobs networking is now configurable (MARATHON-8727)
 
 ### Breaking changes
 
