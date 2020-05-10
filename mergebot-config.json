@@ -1,7 +1,7 @@
 {
    "integrate": false,
    "ship-it": false,
-   "test": false,
+   "test": true,
    "bump-ee": true,
    "backport": true,
    "changelog-not-required": true,
