@@ -3,6 +3,13 @@ variable "teamcity_build_id" {}
 variable "ONPREM_INSTALLER_URL" {}
 variable "ONPREM_AWS_INSTANCE_SIZE" {}
 variable "system_teamcity_buildType_id" {}
+variable "dcos_security" {}
+variable "dcos_license_key_contents" {}
+
+variable "variant" {
+  type = "string"
+  default = "open"
+}
 
 provider "aws" {
   region = "${var.AWS_REGION}"
@@ -37,7 +44,9 @@ module "dcos" {
   #AVAILABILITYZONES
 
   dcos_calico_network_cidr = "172.17.0.0/16"
-  dcos_variant = "open"
+  dcos_variant              = "${var.variant}"
+  dcos_security             = "${var.dcos_security}"
+  dcos_license_key_contents = "${var.dcos_license_key_contents}"
 
   providers = {
     aws = "aws"
