@@ -5,6 +5,7 @@ variable "ONPREM_AWS_INSTANCE_SIZE" {}
 variable "system_teamcity_buildType_id" {}
 variable "dcos_security" {}
 variable "dcos_license_key_contents" {}
+variable "password_hash" {}
 
 variable "variant" {
   type = "string"
@@ -47,7 +48,8 @@ module "dcos" {
   dcos_variant              = "${var.variant}"
   dcos_security             = "${var.dcos_security}"
   dcos_license_key_contents = "${var.dcos_license_key_contents}"
-
+  dcos_superuser_username = "testadmin"
+  dcos_superuser_password_hash = "${var.password_hash}"
   providers = {
     aws = "aws"
   }
