@@ -44,7 +44,7 @@ pipeline {
 	    withCredentials([usernamePassword(credentialsId: 'eng-devprod-tox', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
 	      sh('curl -O https://bootstrap.pypa.io/get-pip.py && /usr/bin/python3 get-pip.py')
 	      sh('pip3 install -U tox pip')
-	      sh('make tox')
+	      sh('wrapper.sh make tox')
 	    }
 	  }
 	  post {
