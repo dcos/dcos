@@ -355,7 +355,7 @@ def _check_diagnostics_bundle_status(dcos_api_session: DcosApiSession) -> None:
             assert required_status_field in properties, 'property {} not found'.format(required_status_field)
 
 
-def _create_bundle(diagnostics: Diagnostics) -> Any:
+def _create_bundle(diagnostics: Diagnostics) -> str:
     last_datapoint = {
         'time': None,
         'value': 0
@@ -367,7 +367,7 @@ def _create_bundle(diagnostics: Diagnostics) -> Any:
     bundles = diagnostics.get_diagnostics_reports()
     assert len(bundles) > 0, 'bundle file not found'
 
-    bundle_name = create_response.get('id')
+    bundle_name = create_response.get('id')  # type: str
     if not bundle_name:
         bundle_name = create_response['extra']['bundle_name']
     assert bundle_name in bundles
@@ -385,11 +385,11 @@ def _delete_bundle(diagnostics: Diagnostics, bundle: str) -> None:
     assert bundle not in bundles, 'found {} in {}'.format(bundle, bundles)
 
 
-def _download_and_extract_bundle(dcos_api_session: DcosApiSession, bundle: Any, diagnostics: Diagnostics) -> None:
+def _download_and_extract_bundle(dcos_api_session: DcosApiSession, bundle: str, diagnostics: Diagnostics) -> None:
     _download_bundle_from_master(dcos_api_session, 0, bundle, diagnostics)
 
 
-def _download_and_extract_bundle_from_another_master(dcos_api_session: DcosApiSession, bundle: Any,
+def _download_and_extract_bundle_from_another_master(dcos_api_session: DcosApiSession, bundle: str,
                                                      diagnostics: Diagnostics) -> None:
     if len(dcos_api_session.masters) > 1:
         _download_bundle_from_master(dcos_api_session, 1, bundle, diagnostics)

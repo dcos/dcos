@@ -11,7 +11,7 @@ import pytest
 import requests
 from _pytest.tmpdir import TempdirFactory
 from dcos_test_utils import dcos_cli
-from dcos_test_utils.dcos_api import DcosApiSession
+from dcos_test_utils.dcos_api import DcosApiSession, DcosUser
 from dcos_test_utils.diagnostics import Diagnostics
 from test_helpers import get_expanded_config
 
@@ -84,7 +84,7 @@ def pytest_configure(config: Any) -> None:
     config.addinivalue_line('markers', 'last: run test after all not marked last')
 
 
-def pytest_collection_modifyitems(session: Any, config: Any, items: list) -> None:
+def pytest_collection_modifyitems(session: pytest.Session, config: Any, items: list) -> None:
     """Reorders test using order mark
     """
     new_items = []  # type: ignore
@@ -156,12 +156,12 @@ def clean_marathon_state_function_scoped(dcos_api_session: DcosApiSession) -> Ge
 
 
 @pytest.fixture(scope='session')
-def noauth_api_session(dcos_api_session: DcosApiSession) -> Any:
+def noauth_api_session(dcos_api_session: DcosApiSession) -> DcosUser:
     return dcos_api_session.get_user_session(None)
 
 
 @pytest.fixture(scope='session', autouse=True)
-def _dump_diagnostics(request: Any, dcos_api_session: DcosApiSession) -> Generator:
+def _dump_diagnostics(request: requests.Request, dcos_api_session: DcosApiSession) -> Generator:
     """Download the zipped diagnostics bundle report from each master in the cluster to the home directory. This should
     be run last. The _ prefix makes sure that pytest calls this first out of the autouse session scope fixtures, which
     means that its post-yield code will be executed last.
