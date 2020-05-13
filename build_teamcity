@@ -60,4 +60,4 @@ _scope_closed "setup"
 
 docker run -u root --privileged -v $(pwd):/workdir -w /workdir \
 	--env TAG --env CHANNEL_NAME --env tree_variants --env BRANCH_SOURCE \
-	mesosphere/jenkins-dind:0.7.0-ubuntu wrapper.sh make dcos
+	mesosphere/jenkins-dind:0.7.0-ubuntu wrapper.sh "make dcos"
