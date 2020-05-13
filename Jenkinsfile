@@ -31,6 +31,7 @@ pipeline {
         stage('Tox') {
 	  agent {
 	    docker {
+	      // Provide Python 3.6 and Docker
 	      image 'mesosphere/jenkins-dind:0.7.0-ubuntu'
               label 'python-dind'
 	      args '-u root --privileged'
@@ -44,6 +45,7 @@ pipeline {
 	    withCredentials([usernamePassword(credentialsId: 'eng-devprod-tox', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
 	      sh('curl -O https://bootstrap.pypa.io/get-pip.py && /usr/bin/python3 get-pip.py && rm get-pip.py')
 	      sh('pip3 install -U tox pip')
+	      // The wrapper starts the Docker daemon in the background.
 	      sh('wrapper.sh make tox')
 	    }
 	  }
