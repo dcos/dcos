@@ -30,9 +30,11 @@ pipeline {
       parallel {
         stage('Tox') {
 	  agent {
-	    image 'mesosphere/jenkins-dind:0.7.0-ubuntu'
-            label 'python-dind'
-	    args '-u root'
+	    docker {
+	      image 'mesosphere/jenkins-dind:0.7.0-ubuntu'
+              label 'python-dind'
+	      args '-u root'
+	    }
 	  }
           environment {
             AWS_REGION = 'us-west-2'
