@@ -425,7 +425,6 @@ def make_channel_artifacts(metadata: dict, provider_names: List[str]) -> List[Di
     # TODO(cmaloney): Remove this and make the core bits of gen, code log at
     # the proper info / warning / etc. level.
     log = logging.getLogger()
-    original_log_level = log.getEffectiveLevel()
     log.setLevel(logging.DEBUG)
 
     provider_data: Dict[str, list] = {}  # TODO(kjeschkies): provider data is not really used.

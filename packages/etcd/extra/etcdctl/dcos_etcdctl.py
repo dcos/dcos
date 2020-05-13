@@ -22,7 +22,7 @@ CLUSTER_STATE_PATH = "/run/dcos/etcd/initial-state"
 
 def run_command(cmd: str,
                 verbose: bool = False,
-                env: dict={}) -> subprocess.CompletedProcess:
+                env: dict = {}) -> subprocess.CompletedProcess:
     """ Run a command in a subprocess.
 
     Args:
@@ -111,7 +111,7 @@ class EtcdExecutorSecure(EtcdExecutorCommon):
     def execute(
             self,
             args: str,
-            user_master_endpoint: bool=True,
+            user_master_endpoint: bool = True,
             use_v3: bool = False,
     ) -> subprocess.CompletedProcess:
         cmd = self.etcdctl_path
@@ -136,7 +136,7 @@ class EtcdExecutorInsecure(EtcdExecutorCommon):
     def execute(
             self,
             args: str,
-            user_master_endpoint: bool=True,
+            user_master_endpoint: bool = True,
             use_v3: bool = False,
     ) -> subprocess.CompletedProcess:
         cmd = self.etcdctl_path
@@ -170,7 +170,7 @@ class EtcdCmdBase():
     def execute_etcdctl(
             self,
             args: str,
-            user_master_endpoint: bool=True,
+            user_master_endpoint: bool = True,
             use_v3: bool = False,
     ) -> subprocess.CompletedProcess:
         return self.executor.execute(args, user_master_endpoint, use_v3)

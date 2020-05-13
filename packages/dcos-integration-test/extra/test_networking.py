@@ -433,7 +433,7 @@ def test_vip_cross_usernetwork(dcos_api_session,
                                container: marathon.Container,
                                vip_network_name: InternalUserNetwork,
                                proxy_network_name: InternalUserNetwork,
-                               ipv6: bool=False):
+                               ipv6: bool = False):
     '''Test the vip connectivity between different user networks
 
     Origin app will be deployed to the cluster with a VIP. Proxy app will be
