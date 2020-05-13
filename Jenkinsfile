@@ -30,7 +30,9 @@ pipeline {
       parallel {
         stage('Tox') {
 	  agent {
+	    image 'mesosphere/jenkins-dind:0.7.0-ubuntu'
             label 'python-dind'
+	    args '-u root'
 	  }
           environment {
             AWS_REGION = 'us-west-2'
@@ -38,7 +40,8 @@ pipeline {
           }
 	  steps {
 	    withCredentials([usernamePassword(credentialsId: 'eng-devprod-tox', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-	      sh('apt-get update && apt-get install -y python3.6 python3.6-pip build-essential')
+	      sh('curl -O https://bootstrap.pypa.io/get-pip.py && /usr/bin/python3 get-pip.py')
+	      sh('pip3 install -U tox pip')
 	      sh('make tox')
 	    }
 	  }
