@@ -30,11 +30,7 @@ pipeline {
       parallel {
         stage('Tox') {
 	  agent {
-	    docker {
-	      image 'python:3.6-alpine'
-              label 'python-dind'
-	      args '-u root'
-            }
+            label 'python-dind'
 	  }
           environment {
             AWS_REGION = 'us-west-2'
@@ -42,6 +38,7 @@ pipeline {
           }
 	  steps {
 	    withCredentials([usernamePassword(credentialsId: 'eng-devprod-tox', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+	      sh('apt-get update && apt-get install -y python3.6 python3.6-pip build-essential')
 	      sh('make tox')
 	    }
 	  }
