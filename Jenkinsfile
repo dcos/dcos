@@ -33,7 +33,7 @@ pipeline {
 	    docker {
 	      image 'mesosphere/jenkins-dind:0.7.0-ubuntu'
               label 'python-dind'
-	      args '-u root'
+	      args '-u root --privileged'
 	    }
 	  }
           environment {
