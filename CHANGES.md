@@ -14,7 +14,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Switched from Oracle Java 8 to OpenJDK 8 (DCOS-54902)
 
-* Updated DC/OS UI to [v5.0.23](https://github.com/dcos/dcos-ui/releases/tag/v5.0.23).
+* Updated DC/OS UI to [v5.0.41](https://github.com/dcos/dcos-ui/releases/tag/v5.0.41).
 
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
@@ -141,4 +141,3 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Metronome jobs networking is now configurable (MARATHON-8727)
 
 * A bug was fixed in which Metronome failed to see jobs from a prior version of Metronome (MARATHON-8746)
-* * Updated DC/OS UI to [v5.0.41](https://github.com/dcos/dcos-ui/releases/tag/v5.0.41).
