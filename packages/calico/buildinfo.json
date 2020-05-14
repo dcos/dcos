@@ -1,25 +1,25 @@
 {
-  "docker": "calico/node:v3.8.2",
+  "docker": "calico/node:v3.14.0",
   "sources": {
     "calico": {
       "kind": "url",
-      "url": "https://github.com/projectcalico/cni-plugin/releases/download/v3.8.2/calico-amd64",
-      "sha1": "80de69b9cc68f0193b0d18e45fcdfa19c7a71fa9"
+      "url": "https://github.com/projectcalico/cni-plugin/releases/download/v3.14.0/calico-amd64",
+      "sha1": "1579ebf178f72292a1bc8fab0d74a88ab0921084"
     },
     "calico-ipam": {
       "kind": "url",
-      "url": "https://github.com/projectcalico/cni-plugin/releases/download/v3.8.2/calico-ipam-amd64",
-      "sha1": "544d9414d1f8ed6d1c5dd2526d27275cf63ec5f7"
+      "url": "https://github.com/projectcalico/cni-plugin/releases/download/v3.14.0/calico-ipam-amd64",
+      "sha1": "7eeaf366c30c279c4688a220083cb5f123616042"
     },
     "calicoctl": {
       "kind": "url",
-      "url": "https://github.com/projectcalico/calicoctl/releases/download/v3.8.2/calicoctl-linux-amd64",
-      "sha1": "a14d747d270eecc53b8a877f7869ae3c52104de5"
+      "url": "https://github.com/projectcalico/calicoctl/releases/download/v3.14.0/calicoctl-linux-amd64",
+      "sha1": "8734244e7549354d19617975413f143e36bf48bb"
     },
     "calico-libnetwork-plugin": {
       "kind": "url",
-      "url": "https://github.com/mesosphere/libnetwork-plugin/releases/download/v1.1.3-1-d2iq/libnetwork-plugin-amd64",
-      "sha1": "f363d1d1fdacefac8d91fb4336495e5b5020920f"
+      "url": "https://github.com/mesosphere/libnetwork-plugin/releases/download/v1.1.3-2-d2iq/libnetwork-plugin-amd64",
+      "sha1": "2db71bf79ac47e7eba2a59ed81440b47defb29ce"
     }
   }
 }
