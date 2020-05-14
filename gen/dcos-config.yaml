@@ -1378,7 +1378,6 @@ package:
       MESOS_RECONFIGURATION_POLICY=additive
       MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
       MESOS_SECCOMP_CONFIG_DIR=/opt/mesosphere/etc/dcos/mesos/seccomp
-      MESOS_ATTRIBUTES=os:linux
 {% switch has_mesos_seccomp_profile_name %}
 {% case "true" %}
       MESOS_SECCOMP_PROFILE_NAME={{ mesos_seccomp_profile_name }}
