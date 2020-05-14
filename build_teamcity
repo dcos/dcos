@@ -32,10 +32,32 @@ tree_variants=${@:-default installer}
 systemctl status docker
 
 _scope_opened "cleanup"
-make clean
+# cleanup from previous builds
+# *active.json and *.bootstrap.tar.xz must be cleaned up, otherwise
+# Teamcity starts picking up artifacts from previous builds.
+#
+# We manually clean rather than having TeamCity always clean so that
+# builds are quicker.
+rm -rf dcos-release.config.yaml
+rm -rf artifacts/
+rm -f packages/*.active.json
+rm -f packages/bootstrap.latest
+rm -f packages/*.bootstrap.tar.xz
+rm -f CHANNEL_NAME
+rm -rf build/env
+rm -f dcos_generate_config*.sh
+rm -rf wheelhouse/
 _scope_closed "cleanup"
 
 _scope_opened "setup"
+
+# Force Python stdout/err to be unbuffered to
+# have immediate feedback in TeamCity build logs.
+export PYTHONUNBUFFERED="notemtpy"
+
+# enable pkgpanda virtualenv *ALWAYS COPY* otherwise the TC cleanup will traverse and corrupt system python
+python3.5 -m venv --clear --copies build/env
+. build/env/bin/activate
 
 : ${TEAMCITY_BRANCH?"TEAMCITY_BRANCH must be set (determines the tag and testing/ channel)"}
 
@@ -55,9 +77,17 @@ set +x
 echo "##teamcity[setParameter name='env.CHANNEL_NAME' value='$CHANNEL_NAME']"
 echo "##teamcity[setParameter name='env.TAG' value='$TAG']"
 set -x
+
+cp config/dcos-release.config.yaml dcos-release.config.yaml
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+"$DIR"/prep_teamcity
 _scope_closed "setup"
 
+release create $TAG $TAG $tree_variants
 
-docker run -u root --privileged -v $(pwd):/workdir -w /workdir \
-	--env TAG --env CHANNEL_NAME --env tree_variants --env BRANCH_SOURCE \
-	mesosphere/jenkins-dind:0.7.0-ubuntu wrapper.sh "make dcos"
+mkdir -p artifacts
+cp -r wheelhouse artifacts/
+
+rm -rf artifacts/dcos_generate_config.*
