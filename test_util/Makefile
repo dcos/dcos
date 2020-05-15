@@ -7,8 +7,8 @@ OS ?= $(shell uname|tr A-Z a-z)
 TERRAFORM ?= ./terraform
 
 export AWS_REGION ?= us-west-2
-export TF_VAR_custom_dcos_download_path ?= https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh
-export TF_VAR_custom_dcos_download_path_win ?= https://downloads.dcos.io/dcos/testing/master/windows/dcos_generate_config_win.sh
+#export TF_VAR_custom_dcos_download_path ?= https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh
+#export TF_VAR_custom_dcos_download_path_win ?= https://downloads.dcos.io/dcos/testing/master/windows/dcos_generate_config_win.sh
 export TF_VAR_variant ?= open
 
 ifneq ($(TF_VAR_variant), open)
@@ -42,7 +42,6 @@ cluster.json: $(SSH_KEY) terraform.initialized
 	ssh-add "$(SSH_KEY)"; \
 	$(TERRAFORM) apply -auto-approve -input=false \
 		-var ssh_public_key_file="$(SSH_KEY).pub" \
-		-var windowsagent_num=1 \
 		-var dcos_license_key_contents=$(DCOS_LICENSE_CONTENTS)
 	$(TERRAFORM) output -json > $@.work
 	@echo "##teamcity[blockClosed name='terraform-apply']"

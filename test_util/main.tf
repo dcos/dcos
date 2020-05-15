@@ -14,12 +14,12 @@ variable "custom_dcos_download_path_win" {
 
 variable "variant" {
   type = "string"
-  default = "open"
+  default = "ee"
 }
 
 variable "dcos_security" {
   type = "string"
-  default = ""
+  default = "strict"
 }
 
 variable "owner" {
@@ -30,12 +30,6 @@ variable "owner" {
 variable "expiration" {
     type = "string"
     default = "3h"
-}
-
-variable "windowsagent_num" {
-  type = "string"
-  default = "0"
-  description = "Defines the number of Windows agents for the cluster."
 }
 
 variable "ssh_public_key_file" {
@@ -102,7 +96,7 @@ module "dcos" {
   admin_ips           = ["${data.http.whatismyip.body}/32"]
 
   num_masters        = "1"
-  num_private_agents = "0"
+  num_private_agents = "1"
   num_public_agents  = "1"
 
   dcos_instance_os        = "centos_7.5"
@@ -124,37 +118,6 @@ module "dcos" {
   dcos_superuser_username      = "demo-super"
   additional_windows_private_agent_ips       = ["${concat(module.windowsagent.private_ips)}"]
   additional_windows_private_agent_passwords = ["${concat(module.windowsagent.windows_passwords)}"]
-
-  dcos_config = <<-EOF
-enable_windows_agents: true
--EOF
-
-ansible_additional_config = <<-EOF
-dcos:
- download_win: "${var.custom_dcos_download_path_win}"
--EOF
-}
-
-module "windowsagent" {
-  source  = "dcos-terraform/windows-instance/aws"
-  version = "~> 0.2.0"
-
-  tags {
-    owner = "${var.owner}"
-    expiration = "${var.expiration}"
-    build_id = "${var.build_id}"
-    build_type_id = "${var.build_type}"
-  }
-
-  cluster_name           = "${local.cluster_name}"
-  hostname_format        = "%[3]s-winagent%[1]d-%[2]s"
-  aws_subnet_ids         = ["${module.dcos.infrastructure.vpc.subnet_ids}"]
-  aws_security_group_ids = ["${module.dcos.infrastructure.security_groups.internal}", "${module.dcos.infrastructure.security_groups.admin}"]
-  aws_key_name           = "${module.dcos.infrastructure.aws_key_name}"
-  aws_instance_type      = "${var.instance_type}"
-
-  # provide the number of windows agents that should be provisioned.
-  num = "${var.windowsagent_num}"
 }
 
 resource "local_file" "ansible_inventory" {

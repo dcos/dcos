@@ -36,13 +36,3 @@ options:
   cloudformation_s3_url: https://s3-us-west-2.amazonaws.com/downloads.dcos.io/dcos
 EOF
 fi
-
-# Create a Python virtual environment to install the DC/OS tools to.
-python3.5 -m venv /tmp/dcos_build_venv
-. /tmp/dcos_build_venv/bin/activate
-
-# Install the DC/OS tools
-./prep_local
-
-# Build a release of DC/OS
-release --noop --local create `whoami` local_build $tree_variants
