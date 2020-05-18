@@ -1,8 +1,10 @@
+from dcos_test_utils.dcos_api import DcosApiSession
+
 __maintainer__ = 'alenkacz'
 __contact__ = 'orchestration-team@mesosphere.io'
 
 
-def test_metronome(dcos_api_session):
+def test_metronome(dcos_api_session: DcosApiSession) -> None:
     job = {
         'description': 'Test Metronome API regressions',
         'id': 'test.metronome',

@@ -1,11 +1,13 @@
 import subprocess
 import uuid
 
+from dcos_test_utils.dcos_api import DcosApiSession
+
 __maintainer__ = 'orsenthil'
 __contact__ = 'tools-infra-team@mesosphere.io'
 
 
-def test_if_default_systctls_are_set(dcos_api_session):
+def test_if_default_systctls_are_set(dcos_api_session: DcosApiSession) -> None:
     """This test verifies that default sysctls are set for tasks.
 
     We use a `mesos-execute` to check for the values to make sure any task from
@@ -25,7 +27,7 @@ def test_if_default_systctls_are_set(dcos_api_session):
         '--shell=true',
         '--env={"LC_ALL":"C"}']
 
-    def run_and_check(argv):
+    def run_and_check(argv: list) -> None:
         name = 'test-sysctl-{}'.format(uuid.uuid4().hex)
         output = subprocess.check_output(
             argv + ['--name={}'.format(name)],

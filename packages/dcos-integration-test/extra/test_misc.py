@@ -12,7 +12,7 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 # Test that user config is loadable
 # TODO(cmaloney): Validate it contains some settings we expact.
-def test_load_user_config():
+def test_load_user_config() -> None:
     with open('/opt/mesosphere/etc/user.config.yaml', 'r') as f:
         user_config = yaml.load(f)
 
@@ -23,7 +23,7 @@ def test_load_user_config():
     # platforms have different sets...
 
 
-def test_expanded_config():
+def test_expanded_config() -> None:
     expanded_config = get_expanded_config()
     # Caluclated parameters should be present
     assert 'master_quorum' in expanded_config
@@ -39,7 +39,7 @@ def test_expanded_config():
     # platforms have different sets...
 
 
-def test_profile_symlink():
+def test_profile_symlink() -> None:
     """Assert the DC/OS profile script is symlinked from the correct source."""
     expanded_config = get_expanded_config()
     symlink_target = expanded_config['profile_symlink_target']

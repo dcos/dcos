@@ -2,12 +2,14 @@ import collections
 import logging
 
 import socket
+from typing import Any, Optional
 
 import pytest
 import requests
 import retrying
 import test_helpers
 from dcos_test_utils import marathon
+from dcos_test_utils.dcos_api import DcosApiSession
 
 __maintainer__ = 'urbanserj'
 __contact__ = 'dcos-networking@mesosphere.io'
@@ -15,7 +17,7 @@ __contact__ = 'dcos-networking@mesosphere.io'
 DNS_ENTRY_UPDATE_TIMEOUT = 60  # in seconds
 
 
-def _service_discovery_test(dcos_api_session, docker_network_bridge):
+def _service_discovery_test(dcos_api_session: DcosApiSession, docker_network_bridge: bool) -> None:
     """Service discovery integration test
 
     This test verifies if service discovery works, by comparing marathon data
@@ -85,12 +87,12 @@ def _service_discovery_test(dcos_api_session, docker_network_bridge):
                         stop_max_delay=DNS_ENTRY_UPDATE_TIMEOUT * 1000,
                         retry_on_result=lambda ret: ret is None,
                         retry_on_exception=lambda x: False)
-        def _pool_for_mesos_dns():
+        def _pool_for_mesos_dns() -> Optional[dict]:
             r = dcos_api_session.get('/mesos_dns/v1/services/_{}._tcp.marathon.mesos'.format(
                 app_definition['id'].lstrip('/')))
             assert r.status_code == 200
 
-            r_data = r.json()
+            r_data = r.json()  # type: dict
             if r_data == [{'host': '', 'port': '', 'service': '', 'ip': ''}] or len(r_data) < len(service_points):
                 logging.info("Waiting for Mesos-DNS to update entries")
                 return None
@@ -155,12 +157,12 @@ DNSAddresses = collections.namedtuple("DNSAddresses", ["container", "agent", "au
 MarathonAddresses = collections.namedtuple("MarathonAddresses", ["host", "container"])
 
 
-def get_ipv4_addresses(hostname):
+def get_ipv4_addresses(hostname: Any) -> frozenset:
     res = socket.getaddrinfo(hostname, 0, family=socket.AF_INET, type=socket.SOCK_STREAM)
     return frozenset([sockaddr[0] for (family, type, proto, canonname, sockaddr) in res])
 
 
-def get_dns_addresses_by_app_name(app_name):
+def get_dns_addresses_by_app_name(app_name: str) -> DNSAddresses:
     container_ip_name = '{}.marathon.containerip.dcos.thisdcos.directory'.format(app_name)
     agent_ip_name = '{}.marathon.agentip.dcos.thisdcos.directory'.format(app_name)
     auto_ip_name = '{}.marathon.autoip.dcos.thisdcos.directory'.format(app_name)
@@ -170,20 +172,21 @@ def get_dns_addresses_by_app_name(app_name):
     return DNSAddresses(container_ips, agent_ips, auto_ips)
 
 
-def get_marathon_addresses_by_service_points(service_points):
+def get_marathon_addresses_by_service_points(service_points: list) -> MarathonAddresses:
     marathon_host_addrs = frozenset([point.host for point in service_points])
     marathon_ip_addrs = frozenset([point.ip for point in service_points])
     return MarathonAddresses(marathon_host_addrs, marathon_ip_addrs)
 
 
-def get_dcos_dns_records():
+def get_dcos_dns_records() -> Optional[dict]:
     response = requests.get('http://127.0.0.1:62080/v1/records')
     if response.status_code != 200:
         return None
-    return response.json()
+    data = response.json()  # type: Optional[dict]
+    return data
 
 
-def assert_service_discovery(dcos_api_session, app_definition, net_types):
+def assert_service_discovery(dcos_api_session: DcosApiSession, app_definition: Any, net_types: list) -> None:
     """
     net_types: List of network types: DNSHost, DNSPortMap, or DNSOverlay
     """
@@ -200,7 +203,7 @@ def assert_service_discovery(dcos_api_session, app_definition, net_types):
         @retrying.retry(wait_fixed=1000,
                         stop_max_delay=DNS_ENTRY_UPDATE_TIMEOUT * 1000,
                         retry_on_exception=lambda x: True)
-        def _ensure_dns_converged():
+        def _ensure_dns_converged() -> None:
             app_name = app_definition['id']
             try:
                 dns_addrs = get_dns_addresses_by_app_name(app_name)
@@ -237,14 +240,14 @@ def assert_service_discovery(dcos_api_session, app_definition, net_types):
         _ensure_dns_converged()
 
 
-def test_service_discovery_mesos_host(dcos_api_session):
+def test_service_discovery_mesos_host(dcos_api_session: DcosApiSession) -> None:
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.MESOS, healthcheck_protocol=marathon.Healthcheck.HTTP)
 
     assert_service_discovery(dcos_api_session, app_definition, [DNSHost])
 
 
-def test_service_discovery_mesos_overlay(dcos_api_session):
+def test_service_discovery_mesos_overlay(dcos_api_session: DcosApiSession) -> None:
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.MESOS,
         healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
@@ -253,14 +256,14 @@ def test_service_discovery_mesos_overlay(dcos_api_session):
     assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay])
 
 
-def test_service_discovery_docker_host(dcos_api_session):
+def test_service_discovery_docker_host(dcos_api_session: DcosApiSession) -> None:
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.DOCKER,
         network=marathon.Network.HOST)
     assert_service_discovery(dcos_api_session, app_definition, [DNSHost])
 
 
-def test_service_discovery_docker_bridge(dcos_api_session):
+def test_service_discovery_docker_bridge(dcos_api_session: DcosApiSession) -> None:
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.DOCKER,
         network=marathon.Network.BRIDGE,
@@ -269,14 +272,14 @@ def test_service_discovery_docker_bridge(dcos_api_session):
     assert_service_discovery(dcos_api_session, app_definition, [DNSPortMap])
 
 
-def test_service_discovery_docker_overlay(dcos_api_session):
+def test_service_discovery_docker_overlay(dcos_api_session: DcosApiSession) -> None:
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.DOCKER,
         network=marathon.Network.USER)
     assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay])
 
 
-def test_service_discovery_docker_overlay_port_mapping(dcos_api_session):
+def test_service_discovery_docker_overlay_port_mapping(dcos_api_session: DcosApiSession) -> None:
     app_definition, test_uuid = test_helpers.marathon_test_app(
         container_type=marathon.Container.DOCKER,
         healthcheck_protocol=marathon.Healthcheck.MESOS_HTTP,
@@ -285,15 +288,15 @@ def test_service_discovery_docker_overlay_port_mapping(dcos_api_session):
     assert_service_discovery(dcos_api_session, app_definition, [DNSOverlay, DNSPortMap])
 
 
-def test_service_discovery_docker_bridged_network(dcos_api_session):
+def test_service_discovery_docker_bridged_network(dcos_api_session: DcosApiSession) -> None:
     return _service_discovery_test(dcos_api_session, docker_network_bridge=True)
 
 
-def test_service_discovery_docker_host_network(dcos_api_session):
+def test_service_discovery_docker_host_network(dcos_api_session: DcosApiSession) -> None:
     return _service_discovery_test(dcos_api_session, docker_network_bridge=False)
 
 
-def test_if_search_is_working(dcos_api_session):
+def test_if_search_is_working(dcos_api_session: DcosApiSession) -> None:
     """Test if custom set search is working.
 
     Verifies that a marathon app running on the dcos_api_session can resolve names using

@@ -9,6 +9,7 @@ import os
 import subprocess
 from pathlib import Path
 
+from dcos_test_utils.dcos_api import DcosApiSession
 from test_helpers import get_expanded_config
 
 __maintainer__ = 'mnaboka'
@@ -18,7 +19,7 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 log = logging.getLogger(__name__)
 
 
-def test_signal_service(dcos_api_session):
+def test_signal_service(dcos_api_session: DcosApiSession) -> None:
     """
     signal-service runs on an hourly timer, this test runs it as a one-off
     and pushes the results to the test_server app for easy retrieval
@@ -48,7 +49,7 @@ def test_signal_service(dcos_api_session):
     signal_cmd = ["sudo", "-E", "/opt/mesosphere/bin/dcos-signal", "-test"]
     # universal_newlines means utf-8
     with subprocess.Popen(signal_cmd, stdout=subprocess.PIPE, universal_newlines=True, env=env) as p:
-        signal_results = p.stdout.read()
+        signal_results = p.stdout.read()  # type: ignore
 
     r_data = json.loads(signal_results)
 
@@ -115,9 +116,9 @@ def test_signal_service(dcos_api_session):
     }
 
     # Insert the generic property data which is the same between all signal tracks
-    exp_data['diagnostics']['properties'].update(generic_properties)
-    exp_data['cosmos']['properties'].update(generic_properties)
-    exp_data['mesos']['properties'].update(generic_properties)
+    exp_data['diagnostics']['properties'].update(generic_properties)   # type: ignore
+    exp_data['cosmos']['properties'].update(generic_properties)  # type: ignore
+    exp_data['mesos']['properties'].update(generic_properties)  # type: ignore
 
     # Check the entire hash of diagnostics data
     if r_data['diagnostics'] != exp_data['diagnostics']:
