@@ -3,7 +3,11 @@ variable "teamcity_build_id" {}
 variable "ONPREM_INSTALLER_URL" {}
 variable "ONPREM_AWS_INSTANCE_SIZE" {}
 variable "system_teamcity_buildType_id" {}
-variable "password_hash" {}
+
+variable "password_hash" {
+  type = "string"
+  default = ""
+}
 
 variable "dcos_security" {
   type = "string"
