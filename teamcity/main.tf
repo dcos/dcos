@@ -4,8 +4,13 @@ variable "ONPREM_INSTALLER_URL" {}
 variable "ONPREM_AWS_INSTANCE_SIZE" {}
 variable "system_teamcity_buildType_id" {}
 variable "dcos_security" {}
-variable "dcos_license_key_contents" {}
 variable "password_hash" {}
+
+variable "dcos_license_key_contents" {
+  type = "string"
+  default = ""
+  description = "Defines content of license used for EE."
+}
 
 variable "variant" {
   type = "string"
