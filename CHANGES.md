@@ -1,8 +1,20 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
-## DC/OS 2.0.4 (In development)
+## DC/OS 2.0.5 (in development)
+
+
+### Security updates
+
+
+### Notable changes
 
 * Updated to Mesos [1.9.1-dev](https://github.com/apache/mesos/blob/b3b6dbb27a93a9ace4e4d2d1e83b16ea92f1a8e1/CHANGELOG)
+
+
+### Fixed and improved
+
+
+## DC/OS 2.0.4 (2020-05-14)
 
 ### What's new
 
@@ -10,7 +22,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update Metronome to 0.6.44
 
-    * Metronome jobs can be configured to join container networks (MARATHON-8727)
+* Metronome jobs can be configured to join container networks (MARATHON-8727)
 
 ### Fixed and improved
 
@@ -20,7 +32,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update Metronome to 0.6.44
 
-    * A bug was introduced in Metronome for DC/OS 2.0.3 in which jobs created in previous versions of DC/OS were not seen. This has been fixed, and jobs created before 2.0.3 are visible once again. (MARATHON-8746)
+* A bug was introduced in Metronome for DC/OS 2.0.3 in which jobs created in previous versions of DC/OS were not seen. This has been fixed, and jobs created before 2.0.3 are visible once again. (MARATHON-8746)
 
 ## DC/OS 2.0.3 (2020-03-25)
 
