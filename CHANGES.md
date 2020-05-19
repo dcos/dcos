@@ -14,7 +14,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ### Fixed and improved
 
 
-## DC/OS 2.0.4 (2020-05-14)
+## DC/OS 2.0.4 (2020-05-12)
 
 ### What's new
 
