@@ -6,6 +6,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Removed trailing newline from ZooKeeper log messages. (D2IQ-68394)
+
 ### Security updates
 
 
