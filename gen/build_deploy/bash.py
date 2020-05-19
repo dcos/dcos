@@ -298,7 +298,7 @@ function check() {
 function check_docker_running() {
     check_command_exists "docker" "docker"
     echo -e -n "Checking if Docker is running: "
-    docker info >/dev/null 2>&1
+    docker info
     RC=$?
     print_status $RC
     (( OVERALL_RC += $RC ))
