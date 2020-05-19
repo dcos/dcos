@@ -10,8 +10,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to Mesos [1.9.1-dev](https://github.com/apache/mesos/blob/b3b6dbb27a93a9ace4e4d2d1e83b16ea92f1a8e1/CHANGELOG)
 
-
 ### Fixed and improved
+
+* Removed trailing newline from ZooKeeper log messages. (D2IQ-68394)
 
 
 ## DC/OS 2.0.4 (2020-05-12)
