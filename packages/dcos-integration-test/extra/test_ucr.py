@@ -1,12 +1,13 @@
 import uuid
 
 import pytest
+from dcos_test_utils.dcos_api import DcosApiSession
 
 __maintainer__ = 'Gilbert88'
 __contact__ = 'core-team@mesosphere.io'
 
 
-def test_if_ucr_app_can_be_deployed_with_image_whiteout(dcos_api_session):
+def test_if_ucr_app_can_be_deployed_with_image_whiteout(dcos_api_session: DcosApiSession) -> None:
     """Marathon app deployment integration test using the Mesos Containerizer.
 
     This test verifies that a marathon ucr app can execute a docker image
@@ -42,7 +43,7 @@ def test_if_ucr_app_can_be_deployed_with_image_whiteout(dcos_api_session):
         pass
 
 
-def test_if_ucr_app_can_be_deployed_with_image_digest(dcos_api_session):
+def test_if_ucr_app_can_be_deployed_with_image_digest(dcos_api_session: DcosApiSession) -> None:
     """Marathon app deployment integration test using the Mesos Containerizer.
 
     This test verifies that a marathon ucr app can execute a docker image
@@ -74,7 +75,7 @@ def test_if_ucr_app_can_be_deployed_with_image_digest(dcos_api_session):
         pass
 
 
-def test_if_ucr_app_can_be_deployed_with_auto_cgroups(dcos_api_session):
+def test_if_ucr_app_can_be_deployed_with_auto_cgroups(dcos_api_session: DcosApiSession) -> None:
     """Marathon app deployment integration test using the Mesos Containerizer.
 
     This test launches a marathon ucr app to verify the CPU and memory
@@ -118,7 +119,7 @@ def test_if_ucr_app_can_be_deployed_with_auto_cgroups(dcos_api_session):
         pass
 
 
-def test_if_ucr_app_can_be_deployed_with_shm_in_specified_size(dcos_api_session):
+def test_if_ucr_app_can_be_deployed_with_shm_in_specified_size(dcos_api_session: DcosApiSession) -> None:
     """Marathon app deployment integration test using the Mesos Containerizer.
 
     This test verifies that a marathon ucr app can be launched with a specified
@@ -151,7 +152,7 @@ def test_if_ucr_app_can_be_deployed_with_shm_in_specified_size(dcos_api_session)
         pass
 
 
-def test_if_ucr_pods_can_be_deployed_with_image_entrypoint(dcos_api_session):
+def test_if_ucr_pods_can_be_deployed_with_image_entrypoint(dcos_api_session: DcosApiSession) -> None:
     """Marathon pods inside ucr deployment integration test.
 
     This test verifies that a marathon ucr pod can execute a docker image
@@ -182,7 +183,7 @@ def test_if_ucr_pods_can_be_deployed_with_image_entrypoint(dcos_api_session):
         pass
 
 
-def test_if_ucr_pods_can_be_deployed_with_scratch_image(dcos_api_session):
+def test_if_ucr_pods_can_be_deployed_with_scratch_image(dcos_api_session: DcosApiSession) -> None:
     """Marathon pods inside ucr deployment integration test.
 
     This test verifies that a marathon ucr pod can execute a docker scratch
@@ -214,7 +215,7 @@ def test_if_ucr_pods_can_be_deployed_with_scratch_image(dcos_api_session):
         pass
 
 
-def test_if_ucr_pods_can_be_deployed_with_image_whiteout(dcos_api_session):
+def test_if_ucr_pods_can_be_deployed_with_image_whiteout(dcos_api_session: DcosApiSession) -> None:
     """Marathon pods inside ucr deployment integration test.
 
     This test verifies that a marathon ucr pod can execute a docker image
@@ -256,7 +257,7 @@ def test_if_ucr_pods_can_be_deployed_with_image_whiteout(dcos_api_session):
         pass
 
 
-def test_if_ucr_pods_can_be_deployed_with_image_digest(dcos_api_session):
+def test_if_ucr_pods_can_be_deployed_with_image_digest(dcos_api_session: DcosApiSession) -> None:
     """Marathon pods inside ucr deployment integration test.
 
     This test verifies that a marathon ucr pod can execute a docker image
@@ -291,7 +292,7 @@ def test_if_ucr_pods_can_be_deployed_with_image_digest(dcos_api_session):
         pass
 
 
-def test_if_ucr_pods_can_be_deployed_with_auto_cgroups(dcos_api_session):
+def test_if_ucr_pods_can_be_deployed_with_auto_cgroups(dcos_api_session: DcosApiSession) -> None:
     """Marathon pods inside ucr deployment integration test.
 
     This test launches a marathon ucr pod to verify the CPU and memory
@@ -339,7 +340,7 @@ def test_if_ucr_pods_can_be_deployed_with_auto_cgroups(dcos_api_session):
 
 # TODO: Unmute this test once volume gid manager is enabled.
 @pytest.mark.skip(reason="cannot test this without volume gid manager enabled")
-def test_if_ucr_pods_can_be_deployed_with_non_root_user_ephemeral_volume(dcos_api_session):
+def test_if_ucr_pods_can_be_deployed_with_non_root_user_ephemeral_volume(dcos_api_session: DcosApiSession) -> None:
     """Marathon pods inside ucr deployment integration test.
 
     This test launches a marathon ucr pod with a non-root user (nobody)
@@ -383,7 +384,7 @@ def test_if_ucr_pods_can_be_deployed_with_non_root_user_ephemeral_volume(dcos_ap
         pass
 
 
-def test_if_ucr_pods_can_share_shm_with_childs(dcos_api_session):
+def test_if_ucr_pods_can_share_shm_with_childs(dcos_api_session: DcosApiSession) -> None:
     """Marathon pods inside ucr deployment integration test.
 
     This test launches a marathon ucr pod with a specified size (1234MB)

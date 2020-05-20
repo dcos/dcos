@@ -1,12 +1,13 @@
 import subprocess
 
 import pytest
+from dcos_test_utils.dcos_api import DcosApiSession
 
 __maintainer__ = 'vespian'
 __contact__ = 'dcos-security@mesosphere.io'
 
 
-def auth_enabled():
+def auth_enabled() -> bool:
     out = subprocess.check_output([
         '/bin/bash', '-c',
         'source /opt/mesosphere/etc/adminrouter.env && echo $ADMINROUTER_ACTIVATE_AUTH_MODULE']).\
@@ -15,7 +16,8 @@ def auth_enabled():
     return out == 'true'
 
 
-def test_adminrouter_access_control_enforcement(dcos_api_session, noauth_api_session):
+def test_adminrouter_access_control_enforcement(dcos_api_session: DcosApiSession,
+                                                noauth_api_session: DcosApiSession) -> None:
     reason = 'Can only test adminrouter enforcement if auth is enabled'
     if not auth_enabled():
         pytest.skip(reason)
@@ -44,7 +46,7 @@ def test_adminrouter_access_control_enforcement(dcos_api_session, noauth_api_ses
     assert r.status_code == 200
 
 
-def test_logout(dcos_api_session):
+def test_logout(dcos_api_session: DcosApiSession) -> None:
     """Test logout endpoint. It's a soft logout, instructing
     the user agent to delete the authentication cookie, i.e. this test
     does not have side effects on other tests.

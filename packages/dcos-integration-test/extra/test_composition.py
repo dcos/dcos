@@ -10,15 +10,17 @@ import kazoo.client
 import pytest
 import requests
 
+from dcos_test_utils.dcos_api import DcosApiSession
 from test_helpers import get_expanded_config
+
 
 __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 
 @pytest.mark.first
-def test_dcos_cluster_is_up():
-    def _docker_info(component):
+def test_dcos_cluster_is_up() -> None:
+    def _docker_info(component: str) -> str:
         # sudo is required for non-coreOS installs
         return (subprocess.check_output(['sudo', 'docker', 'version', '-f', component], timeout=60)
                 .decode('utf-8')
@@ -46,7 +48,7 @@ def test_dcos_cluster_is_up():
     logging.info(json.dumps(cluster_environment, sort_keys=True, indent=4))
 
 
-def test_leader_election(dcos_api_session):
+def test_leader_election(dcos_api_session: DcosApiSession) -> None:
     mesos_resolver = dns.resolver.Resolver()
     mesos_resolver.nameservers = dcos_api_session.masters
     mesos_resolver.port = 61053
@@ -56,7 +58,7 @@ def test_leader_election(dcos_api_session):
         assert False, "Cannot resolve leader.mesos"
 
 
-def test_if_all_mesos_masters_have_registered(dcos_api_session):
+def test_if_all_mesos_masters_have_registered(dcos_api_session: DcosApiSession) -> None:
     # Currently it is not possible to extract this information through Mesos'es
     # API, let's query zookeeper directly.
     zk_hostports = 'zk-1.zk:2181,zk-2.zk:2181,zk-3.zk:2181,zk-4.zk:2181,zk-5.zk:2181'
@@ -74,7 +76,7 @@ def test_if_all_mesos_masters_have_registered(dcos_api_session):
     assert sorted(master_ips) == dcos_api_session.masters
 
 
-def test_if_all_exhibitors_are_in_sync(dcos_api_session):
+def test_if_all_exhibitors_are_in_sync(dcos_api_session: DcosApiSession) -> None:
     r = dcos_api_session.get('/exhibitor/exhibitor/v1/cluster/status')
     assert r.status_code == 200
 
@@ -90,7 +92,7 @@ def test_if_all_exhibitors_are_in_sync(dcos_api_session):
         assert correct_data == tested_data
 
 
-def test_mesos_agent_role_assignment(dcos_api_session):
+def test_mesos_agent_role_assignment(dcos_api_session: DcosApiSession) -> None:
     state_endpoint = '/state'
     for agent in dcos_api_session.public_slaves:
         r = dcos_api_session.get(state_endpoint, host=agent, port=5051)
@@ -100,7 +102,7 @@ def test_mesos_agent_role_assignment(dcos_api_session):
         assert r.json()['flags']['default_role'] == '*'
 
 
-def test_systemd_units_are_healthy(dcos_api_session) -> None:
+def test_systemd_units_are_healthy(dcos_api_session: DcosApiSession) -> None:
     """
     Test that the system is healthy at the arbitrary point in time
     that this test runs. This test has caught several issues in the past
@@ -236,7 +238,7 @@ def test_systemd_units_are_healthy(dcos_api_session) -> None:
     assert unhealthy_nodes == 0
 
 
-def test_signal_service(dcos_api_session):
+def test_signal_service(dcos_api_session: DcosApiSession) -> None:
     """
     signal-service runs on an hourly timer, this test runs it as a one-off
     and pushes the results to the test_server app for easy retrieval
@@ -322,9 +324,9 @@ def test_signal_service(dcos_api_session):
     }
 
     # Insert the generic property data which is the same between all signal tracks
-    exp_data['diagnostics']['properties'].update(generic_properties)
-    exp_data['cosmos']['properties'].update(generic_properties)
-    exp_data['mesos']['properties'].update(generic_properties)
+    exp_data['diagnostics']['properties'].update(generic_properties)  # type: ignore
+    exp_data['cosmos']['properties'].update(generic_properties)  # type: ignore
+    exp_data['mesos']['properties'].update(generic_properties)  # type: ignore
 
     # Check the entire hash of diagnostics data
     if r_data['diagnostics'] != exp_data['diagnostics']:

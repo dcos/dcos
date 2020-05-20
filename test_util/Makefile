@@ -7,8 +7,7 @@ OS ?= $(shell uname|tr A-Z a-z)
 TERRAFORM ?= ./terraform
 
 export AWS_REGION ?= us-west-2
-#export TF_VAR_custom_dcos_download_path ?= https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh
-#export TF_VAR_custom_dcos_download_path_win ?= https://downloads.dcos.io/dcos/testing/master/windows/dcos_generate_config_win.sh
+export TF_VAR_custom_dcos_download_path ?= https://downloads.dcos.io/dcos/testing/master/dcos_generate_config.sh
 export TF_VAR_variant ?= open
 
 ifneq ($(TF_VAR_variant), open)
@@ -60,7 +59,7 @@ test: cluster.json
 		PUBLIC_SLAVE_HOSTS=$(shell jq '.public_agent_ips.value' $<) \
 		$(DCOS_USER_PASSWORD_ENV) \
 		timeout -k 10m --preserve-status 90m \
-		dcos-shell pytest -vv --teamcity --log-level=DEBUG --windows-only"
+		dcos-shell pytest -vv --teamcity --log-level=DEBUG"
 
 .PHONY: ssh
 ssh: cluster.json
