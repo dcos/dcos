@@ -181,3 +181,15 @@ output "public_agent_ips" {
     description = "These are the IP addresses of all public agents"
     value       = "${join(",", module.dcos.infrastructure.public_agents.private_ips)}"
 }
+
+output "masters-ips" {
+  value = "${module.dcos.masters-ips}"
+}
+
+output "cluster-address" {
+  value = "${module.dcos.masters-loadbalancer}"
+}
+
+output "public-agents-loadbalancer" {
+  value = "${module.dcos.public-agents-loadbalancer}"
+}
