@@ -1,11 +1,13 @@
 import subprocess
 import uuid
 
+from dcos_test_utils.dcos_api import DcosApiSession
+
 __maintainer__ = 'bbannier'
 __contact__ = 'core-team@mesosphere.io'
 
 
-def test_if_rlimits_can_be_used(dcos_api_session):
+def test_if_rlimits_can_be_used(dcos_api_session: DcosApiSession) -> None:
     """This test verifies that rlimits can be used.
 
     Since marathon does not support rlimits yet we use `mesos-execute` as

@@ -1,7 +1,10 @@
 
 import logging
 
+from typing import Any
+
 import pytest
+from dcos_test_utils.dcos_api import DcosApiSession
 from test_helpers import get_expanded_config
 
 __maintainer__ = 'branden'
@@ -10,7 +13,7 @@ __contact__ = 'orchestration-team@mesosphere.io'
 log = logging.getLogger(__name__)
 
 
-def test_pkgpanda_api(dcos_api_session):
+def test_pkgpanda_api(dcos_api_session: DcosApiSession) -> None:
 
     expanded_config = get_expanded_config()
     if 'advanced' in expanded_config['template_filenames']:
@@ -20,7 +23,7 @@ def test_pkgpanda_api(dcos_api_session):
         )
         pytest.skip(reason)
 
-    def get_and_validate_package_ids(path, node):
+    def get_and_validate_package_ids(path: str, node: str) -> list:
         r = dcos_api_session.get(path, node=node)
         assert r.status_code == 200
         package_ids = r.json()
@@ -39,7 +42,7 @@ def test_pkgpanda_api(dcos_api_session):
         for package_name, info in active_buildinfo.items()
     )
 
-    def assert_packages_match_active_buildinfo(package_ids):
+    def assert_packages_match_active_buildinfo(package_ids: list) -> None:
         packages = sorted(map(lambda id_: tuple(id_.split('--')), package_ids))
         assert len(packages) == len(active_buildinfo_packages)
         for package, buildinfo_package in zip(packages, active_buildinfo_packages):
@@ -70,14 +73,14 @@ NGINX_PACKAGE_REQUIREMENTS = {
 }
 
 
-def _get_cluster_resources(dcos_api_session):
+def _get_cluster_resources(dcos_api_session: DcosApiSession) -> Any:
     """Return the mesos state summary
     """
     r = dcos_api_session.get('/mesos/state-summary')
     return r.json()
 
 
-def _agent_has_resources(agent, node_requirements):
+def _agent_has_resources(agent: dict, node_requirements: dict) -> bool:
     """Check that an agent has at least as much resources as requried for one node
 
     Args:
@@ -97,7 +100,7 @@ def _agent_has_resources(agent, node_requirements):
     return True
 
 
-def _enough_resources_for_package(state_summary, package_requirements):
+def _enough_resources_for_package(state_summary: dict, package_requirements: dict) -> bool:
     """Sanity check that there are enough unreserved_resources in a state to run a package.
 
     Args:
@@ -130,14 +133,14 @@ def _enough_resources_for_package(state_summary, package_requirements):
     return False
 
 
-def _skipif_insufficient_resources(dcos_api_session, requirements):
+def _skipif_insufficient_resources(dcos_api_session: DcosApiSession, requirements: dict) -> None:
     """Can't access dcos_api_session from through the pytest.mark.skipif decorator, so call this in each test instead
     """
     if not _enough_resources_for_package(_get_cluster_resources(dcos_api_session), requirements):
         pytest.skip(msg='Package installation would fail on this cluster due to insufficient resources')
 
 
-def test_packaging_api(dcos_api_session):
+def test_packaging_api(dcos_api_session: DcosApiSession) -> None:
     """
     Test the Cosmos API (/package) wrapper by installing nginx from
     https://github.com/mesosphere/universe/blob/version-3.x/repo/packages/N/nginx/6
@@ -161,7 +164,7 @@ def test_packaging_api(dcos_api_session):
     assert len(packages) == 0
 
 
-def test_mom_installation(dcos_api_session):
+def test_mom_installation(dcos_api_session: DcosApiSession) -> None:
     """Test the Cosmos installation of marathon on marathon (MoM)
     """
     expanded_config = get_expanded_config()

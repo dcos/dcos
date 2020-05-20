@@ -4,6 +4,7 @@ import uuid
 
 import pytest
 
+from dcos_test_utils.dcos_api import DcosApiSession
 from retrying import retry
 
 
@@ -29,12 +30,7 @@ class TestRedirectSecurity:
             ('/system/v1/metrics', 301),
         )
     )
-    def test_redirect_host(
-        self,
-        dcos_api_session,
-        path,
-        expected,
-    ) -> None:
+    def test_redirect_host(self, dcos_api_session: DcosApiSession, path: str, expected: str) -> None:
         """
         Redirection does not propagate a bad Host header
         """
@@ -55,7 +51,7 @@ class TestEncodingGzip:
     # This pattern should provide `index.css` and `index.js` files.
     pat = re.compile(r'/assets/index\.[^"]+')
 
-    def test_accept_gzip(self, dcos_api_session):
+    def test_accept_gzip(self, dcos_api_session: DcosApiSession) -> None:
         """
         Clients that send "Accept-Encoding: gzip" get gzipped responses
         for some assets.
@@ -71,7 +67,7 @@ class TestEncodingGzip:
             log.info('Response headers: %s', repr(r.headers))
             assert r.headers.get('content-encoding') == 'gzip'
 
-    def test_not_accept_gzip(self, dcos_api_session):
+    def test_not_accept_gzip(self, dcos_api_session: DcosApiSession) -> None:
         """
         Clients that do not send "Accept-Encoding: gzip" do not get gzipped
         responses.
@@ -95,7 +91,7 @@ class TestStateCacheUpdate:
     Tests for Admin Router correctly updating its Mesos/Marathon state cache.
     """
 
-    def test_invalid_dcos_service_port_index(self, dcos_api_session):
+    def test_invalid_dcos_service_port_index(self, dcos_api_session: DcosApiSession) -> None:
         """
         An invalid `DCOS_SERVICE_PORT_INDEX` will not impact the cache refresh.
         """
@@ -115,12 +111,12 @@ class TestStateCacheUpdate:
     wait_fixed=2000,
     retry_on_exception=lambda e: isinstance(e, AssertionError),
 )
-def _wait_for_state_cache_refresh(dcos_api_session, service):
+def _wait_for_state_cache_refresh(dcos_api_session: DcosApiSession, service: str) -> None:
     result = dcos_api_session.get('/service{}'.format(service), timeout=2)
     assert result.status_code == 200
 
 
-def _marathon_container_network_nginx_app(port_index=0):
+def _marathon_container_network_nginx_app(port_index: int = 0) -> dict:
     app_id = str(uuid.uuid4())
     app_definition = {
         'id': '/nginx-{}'.format(app_id),

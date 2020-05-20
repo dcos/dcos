@@ -47,7 +47,7 @@ def _tests_from_pattern(ci_pattern: str, cwd: str) -> Set[str]:
                 '{output}'
             ).format(
                 ci_pattern=ci_pattern,
-                output=output,
+                output=output.decode(),
             )
             raise Exception(message)
         # Whitespace is important to avoid confusing pytest warning messages
@@ -91,7 +91,7 @@ def test_test_groups() -> None:
         test_patterns += patterns_from_group(group_name=group, test_groups_path=test_groups_path)
 
     # Turn this into  a list otherwise we can't cannonically state whether every test was collected _exactly_ once :-)
-    tests_to_patterns = defaultdict(list)  # type: Mapping[str, List]
+    tests_to_patterns = defaultdict(list)
     for pattern in test_patterns:
         tests = _tests_from_pattern(ci_pattern=pattern, cwd=os.path.dirname(test_groups_path))
         for test in tests:

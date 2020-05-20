@@ -14,7 +14,7 @@ __contact__ = 'security-team@mesosphere.io'
 LOG = logging.getLogger(__name__)
 
 
-def test_config_change_applied():
+def test_config_change_applied() -> None:
     config_change_unit = 'dcos-cockroachdb-config-change'
     subprocess.check_call(
         ['sudo', 'systemctl', 'restart', config_change_unit],
@@ -31,7 +31,7 @@ def test_config_change_applied():
     wait_fixed=1000,
     retry_on_result=lambda x: not x,
 )
-def _wait_for_expected_journal_output(expected_output, unit):
+def _wait_for_expected_journal_output(expected_output: str, unit: str) -> bool:
     result = subprocess.check_output(
         ['sudo', 'journalctl', '-u', unit, '--no-pager'],
         universal_newlines=True,

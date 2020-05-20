@@ -12,9 +12,9 @@ __maintainer__ = 'gpaul'
 __contact__ = 'dcos-security@mesosphere.io'
 
 
-def test_verify_units():
+def test_verify_units() -> None:
     """Test that all systemd units are valid."""
-    def _check_units(path):
+    def _check_units(path: str) -> None:
         """Verify all the units given by `path'"""
         for file in glob.glob(path):
             cmd = subprocess.run(
@@ -29,7 +29,7 @@ def test_verify_units():
                 # versions but will cause older systemd versions to complain.
                 # The "old" systemd version we are using as a baseline is
                 # systemd 219, which ships with CentOS 7.2.1511.
-                def _check_line(line):
+                def _check_line(line: str) -> bool:
                     # `systemd-analyze verify` checks for errors in the given
                     # unit files, as well as other files that are loaded
                     # transitively. We do not want our tests to fail when
@@ -76,11 +76,11 @@ def test_verify_units():
     _check_units("/etc/systemd/system/dcos-*.socket")
 
 
-def test_socket_units():
+def test_socket_units() -> None:
     """Test that socket units configure socket files in /run/dcos
     that are owned by 'dcos_adminrouter'.
     """
-    def _check_unit(file):
+    def _check_unit(file: str) -> None:
         logging.info("Checking socket unit {}".format(file))
         out = subprocess.check_output(
             ["/usr/bin/systemctl", "show", "--no-pager", os.path.basename(file)],
@@ -118,7 +118,7 @@ def test_socket_units():
         _check_unit(file)
 
 
-def test_socket_files():
+def test_socket_files() -> None:
     """Test that all socket files in /run/dcos are owned by 'dcos_adminrouter'."""
     for file in glob.glob("/run/dcos/*"):
         path = pathlib.Path(file)

@@ -108,7 +108,7 @@ backup-max-store-ms=21600000
 connect-port=2888
 observer-threshold=0
 election-port=3888
-zoo-cfg-extra=tickTime\\=2000&initLimit\\=10&syncLimit\\=5&quorumListenOnAllIPs\\=true&maxClientCnxns\\=0&autopurge.snapRetainCount\\=5&autopurge.purgeInterval\=6
+zoo-cfg-extra=tickTime\\=2000&initLimit\\=10&syncLimit\\=5&quorumListenOnAllIPs\\=true&maxClientCnxns\\=0&autopurge.snapRetainCount\\=5&autopurge.purgeInterval\\=6
 auto-manage-instances-settling-period-ms=0
 auto-manage-instances=1
 auto-manage-instances-fixed-ensemble-size={zookeeper_cluster_size}
@@ -127,7 +127,7 @@ log4j.appender.journal.logStacktrace=true
 log4j.appender.journal.logThreadName=true
 log4j.appender.journal.logLoggerName=true
 log4j.appender.journal.layout=org.apache.log4j.EnhancedPatternLayout
-log4j.appender.journal.layout.ConversionPattern=[myid:%X{myid}] %-5p [%t:%C{1}@%L] - %m%n%throwable
+log4j.appender.journal.layout.ConversionPattern=[myid:%X{myid}] %-5p [%t:%C{1}@%L] - %m %throwable
 """)
 
 # Add backend specific arguments
@@ -166,8 +166,7 @@ elif exhibitor_backend == 'AWS_S3':
     print("Exhibitor configured for AWS S3")
     exhibitor_cmdline += [
         '--configtype=s3',
-        '--s3config', get_var_assert_set("AWS_S3_BUCKET") +
-        ':' + get_var_assert_set("AWS_S3_PREFIX"),
+        '--s3config', '{}:{}'.format(get_var_assert_set("AWS_S3_BUCKET"), get_var_assert_set("AWS_S3_PREFIX")),
         '--s3region', get_var_assert_set("AWS_REGION"),
         '--s3backup', 'false',
     ]
@@ -179,16 +178,14 @@ elif exhibitor_backend == 'AZURE':
     print("Exhibitor configured for Azure")
     exhibitor_cmdline += [
         '--configtype=azure',
-        '--azureconfig', get_var_assert_set(
-            'AZURE_CONTAINER') + ':' + get_var_assert_set('AZURE_PREFIX'),
+        '--azureconfig', '{}:{}'.format(get_var_assert_set('AZURE_CONTAINER'), get_var_assert_set('AZURE_PREFIX')),
         '--azurecredentials', '/opt/mesosphere/etc/exhibitor.properties',
     ]
 elif exhibitor_backend == 'GCE':
     print("Exhibitor configured for GCE")
     exhibitor_cmdline += [
         '--configtype=gcs',
-        '--gcsconfig={}:{}'.format(
-            get_var_assert_set('GCS_BUCKET_NAME', 'GCE_BUCKET_NAME'))
+        '--gcsconfig={}:{}'.format(get_var_assert_set('GCS_BUCKET_NAME'), get_var_assert_set('GCS_OBJECT_NAME'))
     ]
 elif exhibitor_backend == 'ZK':
     print("Exhibitor configured for Zookeeper")

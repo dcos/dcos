@@ -1,8 +1,6 @@
 from subprocess import check_output, PIPE, Popen, STDOUT
 
-import pytest
-
-from pkgpanda.util import is_windows, resources_test_dir
+from pkgpanda.util import resources_test_dir
 
 list_output = """WARNING: `not_executable.py` is not executable
 pkg1--12345
@@ -22,8 +20,6 @@ run_output_stderr = """WARNING: `not_executable.py` is not executable
 """
 
 
-# TODO: DCOS_OSS-3469 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_check_target_list():
     output = check_output([
         'pkgpanda',
@@ -34,8 +30,6 @@ def test_check_target_list():
     assert output.decode() == list_output
 
 
-# TODO: DCOS_OSS-3469 - muted Windows tests requiring investigation
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason unknown")
 def test_check_target_run():
     cmd = Popen([
         'pkgpanda',
@@ -44,5 +38,5 @@ def test_check_target_run():
         '--repository', resources_test_dir('opt/mesosphere/packages')],
         stdout=PIPE, stderr=PIPE)
     stdout, stderr = cmd.communicate()
-    assert stdout.decode() == run_output_stdout
     assert stderr.decode() == run_output_stderr
+    assert stdout.decode() == run_output_stdout
