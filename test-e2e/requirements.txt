@@ -1,4 +1,4 @@
-git+https://github.com/dcos/dcos-e2e.git@2019.10.11.0
+git+https://github.com/dcos/dcos-e2e.git@94c930d77df0843fb7580bb2e0c2f34637a59f26
 attrs==19.1.0
 cryptography==2.5
 docker==3.7.0
