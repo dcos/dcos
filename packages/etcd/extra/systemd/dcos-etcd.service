@@ -23,7 +23,7 @@ ExecStartPre=/bin/chown -R dcos_etcd /run/dcos/etcd/
 ExecStartPre=/opt/mesosphere/active/etcd/bin/etcd_discovery.py \
     --zk-addr 127.0.0.1:2181 \
     join-cluster \
-        --cluster-nodes-file /run/dcos/etcd/initial-nodes \
-        --cluster-state-file /run/dcos/etcd/initial-state \
+        --cluster-nodes-file /var/lib/dcos/etcd/initial-nodes \
+        --cluster-state-file /var/lib/dcos/etcd/initial-state \
         --etcd-data-dir /var/lib/dcos/etcd/default.etcd/
 ExecStart=/opt/mesosphere/active/etcd/bin/etcd.sh
