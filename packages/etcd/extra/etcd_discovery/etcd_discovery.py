@@ -316,12 +316,12 @@ def parse_cmdline() -> argparse.Namespace:
     parser_joincluster.add_argument(
         '--cluster-nodes-file',
         action='store',
-        default='/run/dcos/etcd/initial-nodes',
+        default='/var/lib/dcos/etcd/dcos/etcd/initial-nodes',
         help='file where initial cluster nodes should be saved')
     parser_joincluster.add_argument(
         '--cluster-state-file',
         action='store',
-        default='/run/dcos/etcd/initial-state',
+        default='/var/lib/dcos/etcd/dcos/etcd/initial-state',
         help='file where initial cluster state should be saved')
     parser_joincluster.add_argument('--etcd-data-dir',
                                     action='store',
