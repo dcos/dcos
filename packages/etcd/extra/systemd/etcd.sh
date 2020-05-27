@@ -3,8 +3,8 @@
 set -xe
 
 IP_PRIVATE=`/opt/mesosphere/bin/detect_ip`
-CLUSTER_NODES=`cat /run/dcos/etcd/initial-nodes`
-CLUSTER_STATE=`cat /run/dcos/etcd/initial-state`
+CLUSTER_NODES=`cat /var/lib/dcos/etcd/initial-nodes`
+CLUSTER_STATE=`cat /var/lib/dcos/etcd/initial-state`
 
 GOMAXPROCS=$(nproc)
 

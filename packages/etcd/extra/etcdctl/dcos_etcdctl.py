@@ -16,8 +16,8 @@ import requests
 
 
 ETCD_DATA_DIR = "/var/lib/dcos/etcd/default.etcd"
-CLUSTER_NODES_PATH = "/run/dcos/etcd/initial-nodes"
-CLUSTER_STATE_PATH = "/run/dcos/etcd/initial-state"
+CLUSTER_NODES_PATH = "/var/lib/dcos/etcd/initial-nodes"
+CLUSTER_STATE_PATH = "/var/lib/dcos/etcd/initial-state"
 
 
 def run_command(cmd: str,
