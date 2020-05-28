@@ -99,7 +99,10 @@ zookeeper-log-directory={zookeeper_log_dir}
 zookeeper-config-directory=/var/lib/dcos/exhibitor/conf
 zookeeper-pid-path=/var/lib/dcos/exhibitor/zk.pid
 log-index-directory={zookeeper_log_dir}
-cleanup-period-ms=300000
+# Exhibitor runs PurgeTxnLog every `cleanup-period-ms` ms.  With ZK 3.4+ this
+# is no longer required if `autopurge` is configured for ZK.  Setting
+# `cleanup-period-ms` to 0 prevents Exhibitor from running the purge.
+cleanup-period-ms=0
 check-ms={check_ms}
 backup-period-ms=600000
 client-port=2181
@@ -108,7 +111,7 @@ backup-max-store-ms=21600000
 connect-port=2888
 observer-threshold=0
 election-port=3888
-zoo-cfg-extra=tickTime\\=2000&initLimit\\=10&syncLimit\\=5&quorumListenOnAllIPs\\=true&maxClientCnxns\\=0&autopurge.snapRetainCount\\=5&autopurge.purgeInterval\\=6
+zoo-cfg-extra=tickTime\\=2000&initLimit\\=10&syncLimit\\=5&quorumListenOnAllIPs\\=true&maxClientCnxns\\=0&autopurge.purgeInterval\\=1
 auto-manage-instances-settling-period-ms=0
 auto-manage-instances=1
 auto-manage-instances-fixed-ensemble-size={zookeeper_cluster_size}
