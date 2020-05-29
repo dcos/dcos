@@ -27,6 +27,7 @@ cmake .. \
   -DENABLE_JAVA=ON \
   -DBUILD_TESTING=OFF \
   -DENABLE_INSTALL_MODULE_DEPENDENCIES=ON \
+  -DCMAKE_INSTALL_RPATH=/opt/mesosphere/lib \
   -DMESOS_FINAL_PREFIX=/opt/mesosphere/active/mesos \
   -DCMAKE_BUILD_TYPE=Release
 
