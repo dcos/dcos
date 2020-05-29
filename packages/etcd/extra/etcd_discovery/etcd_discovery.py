@@ -316,12 +316,12 @@ def parse_cmdline() -> argparse.Namespace:
     parser_joincluster.add_argument(
         '--cluster-nodes-file',
         action='store',
-        default='/run/dcos/etcd/initial-nodes',
+        default='/var/lib/dcos/etcd/initial-nodes',
         help='file where initial cluster nodes should be saved')
     parser_joincluster.add_argument(
         '--cluster-state-file',
         action='store',
-        default='/run/dcos/etcd/initial-state',
+        default='/var/lib/dcos/etcd/initial-state',
         help='file where initial cluster state should be saved')
     parser_joincluster.add_argument('--etcd-data-dir',
                                     action='store',
@@ -390,10 +390,10 @@ def join_cluster(args: argparse.Namespace) -> None:
     # Check if etcd is up and running already. If so - we can skip quering ZK,
     # as etcd is able to get the list of peers directly from the shared
     # storage.
-    if os.path.isdir(args.etcd_data_dir):
+    if os.path.isdir(args.etcd_data_dir) and os.path.exists(args.cluster_nodes_file):
         log.info(
-            "directory `%s` already exists, etcd seems to be already initialized",
-            args.etcd_data_dir)
+            "directory `%s` and initial nodes file `%s` already exists, etcd seems to be already initialized",
+            args.etcd_data_dir, args.cluster_nodes_file)
         return
 
     # Determine our internal IP.
