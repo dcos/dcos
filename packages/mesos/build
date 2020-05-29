@@ -27,7 +27,7 @@ cmake .. \
   -DENABLE_JAVA=ON \
   -DBUILD_TESTING=OFF \
   -DENABLE_INSTALL_MODULE_DEPENDENCIES=ON \
-  -DMESOS_FINAL_PREFIX=/opt/mesosphere \
+  -DMESOS_FINAL_PREFIX=/opt/mesosphere/active/mesos \
   -DCMAKE_BUILD_TYPE=Release
 
 cmake --build . --config Release -- -j$NUM_CORES
