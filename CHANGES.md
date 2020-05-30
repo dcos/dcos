@@ -117,6 +117,8 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
   when tasks are unhealthy or enter the `TASK_KILLING` state instead of removing them. (D2IQ-61077)
 * Set "os:linux" attribute for the Linux agents. (D2IQ-67223)
 
+* Storing etcd initial state on `/var/lib/dcos` instead of `/run/dcos` [COPS-6183](https://jira.d2iq.com/browse/COPS-6183)
+
 #### Update Marathon to 1.10.6
 
 * Marathon updated to 1.9.136
