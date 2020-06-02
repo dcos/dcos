@@ -515,7 +515,9 @@ def join_cluster(args: argparse.Namespace) -> None:
             contender_id=LOCK_CONTENDER_ID,
             timeout=ZK_LOCK_TIMEOUT,
     ):
-        nodes = get_registered_nodes(zk=zk, zk_path=ZK_NODES_PATH)
+        nodes = get_registered_nodes(zk=zk,
+                                     zk_path=ZK_NODES_PATH,
+                                     reconcile_timeout=ZK_NODE_RECONCILIATION_TIMEOUT)
 
         # The order of nodes is important - the first node to register
         # becomes the `designated node` that will initialize cluster, all
@@ -852,7 +854,9 @@ def leave_cluster(args: argparse.Namespace) -> None:
                                   zk_path=ZK_NODES_PATH,
                                   ip=args.node_ip)
 
-        nodes = get_registered_nodes(zk=zk, zk_path=ZK_NODES_PATH)
+        nodes = get_registered_nodes(zk=zk,
+                                 zk_path=ZK_NODES_PATH,
+                                 reconcile_timeout=ZK_NODE_RECONCILIATION_TIMEOUT)
 
         if nodes:
             # There is already at least one etcd node which we should join
