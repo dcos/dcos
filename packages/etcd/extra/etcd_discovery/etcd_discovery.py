@@ -9,6 +9,7 @@ import random
 import socket
 import subprocess
 import sys
+import time
 from contextlib import contextmanager
 from typing import Dict, Generator, List, Optional, Union
 
@@ -25,8 +26,6 @@ JsonTypeMembers = List[Dict[str, Union[str, int, List[str]]]]
 ZK_LOCK_PATH = "/etcd/locking"
 # The path of the ZNode containing the list of cluster members.
 ZK_NODES_PATH = "/etcd/nodes"
-# The path of the ZNode containing the current package version
-ZK_VERSION_PATH = "/etcd/version"
 # The id to use when contending for the ZK lock.
 LOCK_CONTENDER_ID = "{}:{}".format(socket.gethostname(), os.getpid())
 # The time in seconds to wait when attempting to acquire a lock.  Lock
@@ -59,15 +58,6 @@ def detect_ip() -> str:
     ipaddress.ip_address(machine_ip)
     log.info("private IP is `%s`", machine_ip)
     return machine_ip
-
-
-def get_etcd_pkg_version() -> str:
-    """
-    Gets the current package version from our build info
-    """
-    with open("/opt/mesosphere/active/etcd/pkginfo.json", "r") as f:
-        info = json.loads(f.read())
-        return info['package_version']
 
 
 def zk_connect(zk_addr: str,
@@ -225,8 +215,39 @@ def reset_zk_on_migration(zk: KazooClient, zk_ver_path: str, zk_delete_paths: Li
         log.info("Package version persisted on ZK (%s) matches current version.", version)
 
 
+def ping_etcd(node_ip: str, etcd_port: int = 2379) -> bool:
+    """
+    Checks if ETCD is running on the given host by trying to connect
+    on the well-known etcd port.
+    """
+    is_open = False
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = sock.connect_ex((node_ip, etcd_port))
+    if result == 0:
+        is_open = True
+    sock.close()
 
-def get_registered_nodes(zk: KazooClient, zk_path: str) -> List[str]:
+    return is_open
+
+
+def reconcile_etc_node_list(nodes_ips: List[str]) -> List[str]:
+    """
+    Checks if the ETCD nodes in the given list is responding
+    """
+    log.info("Performing quorum reconciliation for: %s", ", ".join(nodes_ips))
+    alive_ips = []
+    for ip in nodes_ips:
+        if ping_etcd(ip):
+            log.info("Node %s is alive", ip)
+            alive_ips.append(ip)
+        else:
+            log.info("Node %s is dead", ip)
+    return alive_ips
+
+
+def get_registered_nodes(zk: KazooClient,
+                         zk_path: str,
+                         reconcile_timeout: int = 3600) -> List[str]:
     """
     Return the IPs of nodes that have registered in ZooKeeper.
 
@@ -251,8 +272,20 @@ def get_registered_nodes(zk: KazooClient, zk_path: str) -> List[str]:
     log.info("Loading data from ZNode `%s`", zk_path)
     data, _ = zk.get(zk_path)
     if data:
-        nodes = json.loads(data.decode('ascii'))['nodes']  # type: List[str]
+        state = json.loads(data.decode('ascii'))
+        nodes = state['nodes']  # type: List[str]
         log.info("Found registered nodes: %s", nodes)
+
+        # Check if the information stored in the node is stale
+        if 'ts' not in state or time.time() > (state['ts'] + reconcile_timeout):
+            nodes = reconcile_etc_node_list(nodes)
+            log.info("Updating list of nodes to `%s`", nodes)
+            zk.set(zk_path,
+                   json.dumps({
+                       "nodes": nodes,
+                       "ts": time.time()
+                   }).encode("ascii"))
+
         return nodes
     log.info("Found no registered nodes.")
     return []
@@ -284,7 +317,11 @@ def register_cluster_membership(zk: KazooClient, zk_path: str,
         return nodes
     log.info("Adding `%s` to list of nodes `%s`", ip, nodes)
     nodes.append(ip)
-    zk.set(zk_path, json.dumps({"nodes": nodes}).encode("ascii"))
+    zk.set(zk_path,
+           json.dumps({
+               "nodes": nodes,
+               "ts": time.time()
+           }).encode("ascii"))
     zk.sync(zk_path)
     log.info("Successfully registered cluster membership for `%s`", ip)
     return nodes
@@ -316,7 +353,11 @@ def remove_cluster_membership(zk: KazooClient, zk_path: str,
         return nodes
     log.info("Removing `%s` to list of nodes `%s`", ip, nodes)
     nodes.remove(ip)
-    zk.set(zk_path, json.dumps({"nodes": nodes}).encode("ascii"))
+    zk.set(zk_path,
+           json.dumps({
+               "nodes": nodes,
+               "ts": time.time()
+           }).encode("ascii"))
     zk.sync(zk_path)
     log.info("Successfully removed %s from the cluster", ip)
     return nodes
@@ -468,17 +509,6 @@ def join_cluster(args: argparse.Namespace) -> None:
             contender_id=LOCK_CONTENDER_ID,
             timeout=ZK_LOCK_TIMEOUT,
     ):
-
-        # Before we start checking the current nodes we must first ensure that
-        # the ZK state is reset after an upgrade. This way we can ensure that
-        # etcd masters will be started in sequence, ensuring a steadily expanding
-        # quorum. Check the comment later in this block for more details.
-        pkg_version = get_etcd_pkg_version()
-        reset_zk_on_migration(zk=zk, 
-                              zk_ver_path=ZK_VERSION_PATH,
-                              zk_delete_paths=[ZK_NODES_PATH], 
-                              pkg_version=pkg_version)
-
         nodes = get_registered_nodes(zk=zk, zk_path=ZK_NODES_PATH)
 
         # The order of nodes is important - the first node to register
