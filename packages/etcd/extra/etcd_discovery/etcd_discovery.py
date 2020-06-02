@@ -26,6 +26,8 @@ JsonTypeMembers = List[Dict[str, Union[str, int, List[str]]]]
 ZK_LOCK_PATH = "/etcd/locking"
 # The path of the ZNode containing the list of cluster members.
 ZK_NODES_PATH = "/etcd/nodes"
+# How long after considering the information on ZK_NODES_PATH stale
+ZK_NODE_RECONCILIATION_TIMEOUT = 3600
 # The id to use when contending for the ZK lock.
 LOCK_CONTENDER_ID = "{}:{}".format(socket.gethostname(), os.getpid())
 # The time in seconds to wait when attempting to acquire a lock.  Lock
@@ -247,7 +249,7 @@ def reconcile_etc_node_list(nodes_ips: List[str]) -> List[str]:
 
 def get_registered_nodes(zk: KazooClient,
                          zk_path: str,
-                         reconcile_timeout: int = 3600) -> List[str]:
+                         reconcile_timeout: int) -> List[str]:
     """
     Return the IPs of nodes that have registered in ZooKeeper.
 
@@ -308,7 +310,9 @@ def register_cluster_membership(zk: KazooClient, zk_path: str,
     """
     log.info("Registering cluster membership for `%s`", ip)
     # Get the latest list of cluster members.
-    nodes = get_registered_nodes(zk=zk, zk_path=zk_path)
+    nodes = get_registered_nodes(zk=zk,
+                                 zk_path=zk_path,
+                                 reconcile_timeout=ZK_NODE_RECONCILIATION_TIMEOUT)
     if ip in nodes:
         # We're already registered with ZK.
         log.info(
@@ -344,7 +348,9 @@ def remove_cluster_membership(zk: KazooClient, zk_path: str,
     """
     log.info("Removing cluster membership for `%s`", ip)
     # Get the latest list of cluster members.
-    nodes = get_registered_nodes(zk=zk, zk_path=zk_path)
+    nodes = get_registered_nodes(zk=zk,
+                                 zk_path=zk_path,
+                                 reconcile_timeout=ZK_NODE_RECONCILIATION_TIMEOUT)
     if ip not in nodes:
         # We're already registered with ZK.
         log.info(
