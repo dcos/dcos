@@ -165,10 +165,13 @@ def zk_lock(zk: KazooClient, lock_path: str, contender_id: str,
         raise e
     else:
         log.info("ZooKeeper lock acquired.")
-    yield
-    log.info("Releasing ZooKeeper lock")
-    lock.release()
-    log.info("ZooKeeper lock released.")
+    try:
+        yield
+    finally:
+        # Always unlock, even if we hit an exception
+        log.info("Releasing ZooKeeper lock")
+        lock.release()
+        log.info("ZooKeeper lock released.")
 
 
 def get_registered_nodes(zk: KazooClient, zk_path: str) -> List[str]:
