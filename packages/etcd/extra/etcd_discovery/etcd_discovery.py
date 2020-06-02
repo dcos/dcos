@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from typing import Dict, Generator, List, Optional, Union
 
 from kazoo.client import KazooClient
-from kazoo.exceptions import ConnectionLoss, LockTimeout, SessionExpiredError
+from kazoo.exceptions import ConnectionLoss, LockTimeout, SessionExpiredError,  NoNodeError
 from kazoo.retry import KazooRetry
 from kazoo.security import make_digest_acl
 
@@ -25,6 +25,8 @@ JsonTypeMembers = List[Dict[str, Union[str, int, List[str]]]]
 ZK_LOCK_PATH = "/etcd/locking"
 # The path of the ZNode containing the list of cluster members.
 ZK_NODES_PATH = "/etcd/nodes"
+# The path of the ZNode containing the current package version
+ZK_VERSION_PATH = "/etcd/version"
 # The id to use when contending for the ZK lock.
 LOCK_CONTENDER_ID = "{}:{}".format(socket.gethostname(), os.getpid())
 # The time in seconds to wait when attempting to acquire a lock.  Lock
@@ -57,6 +59,15 @@ def detect_ip() -> str:
     ipaddress.ip_address(machine_ip)
     log.info("private IP is `%s`", machine_ip)
     return machine_ip
+
+
+def get_etcd_pkg_version() -> str:
+    """
+    Gets the current package version from our build info
+    """
+    with open("/opt/mesosphere/active/etcd/pkginfo.json", "r") as f:
+        info = json.loads(f.read())
+        return info['package_version']
 
 
 def zk_connect(zk_addr: str,
@@ -172,6 +183,47 @@ def zk_lock(zk: KazooClient, lock_path: str, contender_id: str,
         log.info("Releasing ZooKeeper lock")
         lock.release()
         log.info("ZooKeeper lock released.")
+
+
+def reset_zk_on_migration(zk: KazooClient, zk_ver_path: str, zk_delete_paths: List[str], pkg_version: str):
+    """
+    Checks if the `pkg_version` given matches the version stored in the `zk_ver_path` node on ZooKeeper
+
+    If it does not match, the given list of `zk_delete_paths` is deleted and the `zk_ver_path` is reflected
+    to match the new package configuraiton.
+
+    Args:
+        zk:
+            The client to use to communicate with ZooKeeper.
+        zk_ver_path:
+            The path of the ZNode where to keep/update the package information.
+        zk_delete_paths:
+            The list of ZNode paths to erase on version mismatch.
+        pkg_version:
+            The current package version.
+    """
+    # We call `sync()` before reading the value in order to read the latest
+    # data written to ZooKeeper.
+    # See https://zookeeper.apache.org/doc/r3.1.2/zookeeperProgrammers.html#ch_zkGuarantees
+    log.info("Calling sync() on ZNode `%s`", zk_ver_path)
+    zk.sync(zk_ver_path)
+    log.info("Loading data from ZNode `%s`", zk_ver_path)
+    try:
+        version, _ = zk.get(zk_ver_path)
+    except NoNodeError:
+        version = ""
+    if version != pkg_version:
+        log.info("Package version persisted on ZK (%s) does not match current (%s)", version, pkg_version)
+        for path in zk_delete_paths:
+            log.info("Deleting ZNode `%s`", path)
+            try:
+                zk.delete(path)
+            except NoNodeError:
+                pass                
+        log.info("Prepared for fresh cluster sequencing.")
+    else:
+        log.info("Package version persisted on ZK (%s) matches current version.", version)
+
 
 
 def get_registered_nodes(zk: KazooClient, zk_path: str) -> List[str]:
@@ -416,6 +468,16 @@ def join_cluster(args: argparse.Namespace) -> None:
             contender_id=LOCK_CONTENDER_ID,
             timeout=ZK_LOCK_TIMEOUT,
     ):
+
+        # Before we start checking the current nodes we must first ensure that
+        # the ZK state is reset after an upgrade. This way we can ensure that
+        # etcd masters will be started in sequence, ensuring a steadily expanding
+        # quorum. Check the comment later in this block for more details.
+        pkg_version = get_etcd_pkg_version()
+        reset_zk_on_migration(zk=zk, 
+                              zk_ver_path=ZK_VERSION_PATH,
+                              zk_delete_paths=[ZK_NODES_PATH], 
+                              pkg_version=pkg_version)
 
         nodes = get_registered_nodes(zk=zk, zk_path=ZK_NODES_PATH)
 
