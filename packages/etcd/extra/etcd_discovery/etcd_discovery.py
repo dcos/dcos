@@ -505,13 +505,21 @@ class EtcdctlHelper:
         self._etcdctl_path = etcdctl_path
         self._etcd_client_tls_cert = etcd_client_tls_cert
         self._etcd_client_tls_key = etcd_client_tls_key
+        self._designated_node = None
+        self._nodes = nodes
 
-        # Choose one node from the list
-        healthy_nodes = list(filter(self._is_node_healthy, nodes))
-        # In order to not to always hit the same node, we randomize the choice:
-        if len(healthy_nodes) == 0:
-            raise Exception("there are no healthy nodes")
-        self._designated_node = random.choice(healthy_nodes)
+    def get_designated_node(self) -> str:
+        """
+        Lazily finds out the designated node to use
+        """
+        if self._designated_node is None:
+            # Choose one node from the list
+            healthy_nodes = list(filter(self._is_node_healthy, self._nodes))
+            # In order to not to always hit the same node, we randomize the choice:
+            if len(healthy_nodes) == 0:
+                raise Exception("there are no healthy nodes")
+            self._designated_node = random.choice(healthy_nodes)
+        return self._designated_node
 
     def get_members(self) -> JsonTypeMembers:
         """ gets etcd cluster members
@@ -532,7 +540,7 @@ class EtcdctlHelper:
         ]
         """
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             ["member", "list", "-w", "json"],
         )
         result.check_returncode()
@@ -568,7 +576,7 @@ class EtcdctlHelper:
 
     def add_member(self, node_ip: str) -> None:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "member",
                 "add",
@@ -587,7 +595,7 @@ class EtcdctlHelper:
 
     def list_roles(self) -> List[str]:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "role",
                 "list",
@@ -600,7 +608,7 @@ class EtcdctlHelper:
 
     def grant_role(self, user_name: str, role_name: str) -> None:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "user",
                 "grant-role",
@@ -613,7 +621,7 @@ class EtcdctlHelper:
 
     def enable_auth(self) -> None:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "auth",
                 "enable",
@@ -624,7 +632,7 @@ class EtcdctlHelper:
 
     def add_role(self, role_name: str) -> None:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "role",
                 "add",
@@ -636,7 +644,7 @@ class EtcdctlHelper:
 
     def add_permission(self, role_name: str, prefix: str) -> None:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "role",
                 "grant",
@@ -657,7 +665,7 @@ class EtcdctlHelper:
 
     def add_user(self, user_name: str) -> None:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "user",
                 "add",
@@ -670,7 +678,7 @@ class EtcdctlHelper:
 
     def list_users(self) -> List[str]:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "user",
                 "list",
@@ -689,7 +697,7 @@ class EtcdctlHelper:
             return
 
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             ["member", "remove", node_id],
         )
         result.check_returncode()
