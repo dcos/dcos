@@ -395,7 +395,7 @@ def join_cluster(args: argparse.Namespace) -> None:
     if os.path.isdir(args.etcd_data_dir) and os.path.exists(
             args.cluster_nodes_file) and os.path.exists(args.cluster_state_file):
         log.info(
-            "directory `%s`, initial nodes file `%s` and state file `%s` already exists, etcd seems to be already initialized",
+            "directory `%s`, initial nodes file `%s` and state file `%s` already exists, etcd seems initialized",
             args.etcd_data_dir, args.cluster_nodes_file, args.cluster_state_file)
         return
 
