@@ -1,7 +1,7 @@
-From 9e371dbee2e1721bba7ec1f0a4d2c798b166c61d Mon Sep 17 00:00:00 2001
+From 2f18b4f1581ec1f6d986f693546fa1cf82eb27d6 Mon Sep 17 00:00:00 2001
 From: Gilbert Song <songzihao1990@gmail.com>
 Date: Fri, 23 Nov 2018 10:54:58 +0800
-Subject: [PATCH 5/7] Changed sandbox mode to 0755 in docker containerizer
+Subject: [PATCH 5/9] Changed sandbox mode to 0755 in docker containerizer
  container launch.
 
 Starting from Mesos 1.6.0, sandbox permission was changed from 0755
@@ -20,10 +20,10 @@ Signed-off-by: Gilbert Song <songzihao1990@gmail.com>
  1 file changed, 12 insertions(+)
 
 diff --git a/src/slave/containerizer/docker.cpp b/src/slave/containerizer/docker.cpp
-index 492ac273f..be716bab7 100644
+index 431f7c600..aefa1c06a 100644
 --- a/src/slave/containerizer/docker.cpp
 +++ b/src/slave/containerizer/docker.cpp
-@@ -1154,6 +1154,18 @@ Future<Containerizer::LaunchResult> DockerContainerizerProcess::launch(
+@@ -1155,6 +1155,18 @@ Future<Containerizer::LaunchResult> DockerContainerizerProcess::launch(
      return Containerizer::LaunchResult::NOT_SUPPORTED;
    }
  
@@ -43,5 +43,5 @@ index 492ac273f..be716bab7 100644
        containerId,
        containerConfig,
 -- 
-2.21.0
+2.25.1
 

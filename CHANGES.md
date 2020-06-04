@@ -119,6 +119,8 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 
 * Storing etcd initial state on `/var/lib/dcos` instead of `/run/dcos` [COPS-6183](https://jira.d2iq.com/browse/COPS-6183)
 
+* Ensured that marathon and SDK labeled reservations are not offered to other schedulers (D2IQ-68800)
+
 #### Update Marathon to 1.10.6
 
 * Marathon updated to 1.9.136
