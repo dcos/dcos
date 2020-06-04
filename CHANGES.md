@@ -118,6 +118,11 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Set "os:linux" attribute for the Linux agents. (D2IQ-67223)
 
 * Storing etcd initial state on `/var/lib/dcos` instead of `/run/dcos` [COPS-6183](https://jira.d2iq.com/browse/COPS-6183)
+* Fixing a few mroe corner-cases that coudl render `etcd` unable to start [D2IQ-69069](https://jira.d2iq.com/browse/D2IQ-69069)
+
+* Storing etcd initial state on `/var/lib/dcos` instead of `/run/dcos` [COPS-6183](https://jira.d2iq.com/browse/COPS-6183)
+
+* Updated DC/OS UI to [v5.0.41](https://github.com/dcos/dcos-ui/releases/tag/v5.0.41).
 
 
 #### Update Marathon to 1.10.6
