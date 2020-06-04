@@ -119,6 +119,7 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 
 * Storing etcd initial state on `/var/lib/dcos` instead of `/run/dcos` [COPS-6183](https://jira.d2iq.com/browse/COPS-6183)
 * Fixing a few mroe corner-cases that coudl render `etcd` unable to start [D2IQ-69069](https://jira.d2iq.com/browse/D2IQ-69069)
+* Fixing some corner-cases that could render `etcd` unable to start [D2IQ-69069](https://jira.d2iq.com/browse/D2IQ-69069)
 
 * Storing etcd initial state on `/var/lib/dcos` instead of `/run/dcos` [COPS-6183](https://jira.d2iq.com/browse/COPS-6183)
 
