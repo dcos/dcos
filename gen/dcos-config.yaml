@@ -1802,6 +1802,16 @@ package:
                   "Location": "/var/log/mesos-state.tar.gz",
                   "Role": ["master"],
                   "Optional": true
+              },
+              {
+                  "Location": "/var/lib/dcos/etcd/initial-state",
+                  "Role": ["master"],
+                  "Optional": true
+              },
+              {
+                  "Location": "/var/lib/dcos/etcd/initial-nodes",
+                  "Role": ["master"],
+                  "Optional": true
               }
           ],
           "LocalCommands": [

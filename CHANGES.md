@@ -124,6 +124,7 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Storing etcd initial state on `/var/lib/dcos` instead of `/run/dcos` [COPS-6183](https://jira.d2iq.com/browse/COPS-6183)
 
 * Updated DC/OS UI to [v5.0.41](https://github.com/dcos/dcos-ui/releases/tag/v5.0.41).
+* Updated DC/OS UI to [v5.0.52](https://github.com/dcos/dcos-ui/releases/tag/v5.0.52).
 
 
 #### Update Marathon to 1.10.6
