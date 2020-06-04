@@ -14,7 +14,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Switched from Oracle Java 8 to OpenJDK 8 (DCOS-54902)
 
-* Updated DC/OS UI to [v5.0.41](https://github.com/dcos/dcos-ui/releases/tag/v5.0.41).
+* Updated DC/OS UI to [v5.0.52](https://github.com/dcos/dcos-ui/releases/tag/v5.0.52).
 
 * The configuration option `MARATHON_ACCEPTED_RESOURCE_ROLES_DEFAULT_BEHAVIOR` replaces the config option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES`. Please see the Marathon [command-line flag documentation](https://github.com/mesosphere/marathon/blob/master/docs/docs/command-line-flags.md) for a description of the flag.
 
@@ -118,7 +118,7 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Set "os:linux" attribute for the Linux agents. (D2IQ-67223)
 
 * Storing etcd initial state on `/var/lib/dcos` instead of `/run/dcos` [COPS-6183](https://jira.d2iq.com/browse/COPS-6183)
-* Updated DC/OS UI to [v5.0.52](https://github.com/dcos/dcos-ui/releases/tag/v5.0.52).
+
 
 #### Update Marathon to 1.10.6
 
