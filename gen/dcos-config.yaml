@@ -1926,6 +1926,14 @@ package:
               {
                   "Command": ["/opt/mesosphere/bin/dcos-shell", "dcos-etcdctl", "diagnostic"],
                   "Role": ["master"]
+              },
+              {
+                  "Command": ["/bin/sh", "-c", "source /run/dcos/etc/etcd/zk-creds; echo -e \"addauth digest ${DATASTORE_ZK_USER}:${DATASTORE_ZK_SECRET}\\nget /etcd/nodes\" | /opt/mesosphere/bin/dcos-shell zkCli.sh 2>&1"],
+                  "Role": ["master"]
+              },
+              {
+                  "Command": ["/bin/sh", "-c", "source /run/dcos/etc/etcd/zk-creds; echo -e \"addauth digest ${DATASTORE_ZK_USER}:${DATASTORE_ZK_SECRET}\\nls /etcd/locking\" | /opt/mesosphere/bin/dcos-shell zkCli.sh 2>&1"],
+                  "Role": ["master"]
               }
           ]
         }

@@ -99,7 +99,7 @@ Note that all shell commands must be issued as a priviledged user.
   systemctl restart dcos-etcd
   ```
 
-8. Restore the contents of the `initia-state` flag file to avoid re-creating your etcd custer at every reboot:
+8. Restore the contents of the `initial-state` flag file to avoid re-creating your etcd custer at every reboot:
   ```sh
   echo -e "new" > /var/lib/dcos/etcd/initial-state
   ```
