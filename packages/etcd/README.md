@@ -106,6 +106,6 @@ Note that all shell commands must be issued as a priviledged user.
 
 9. You can now force every other master to reset and re-join the quorum by running the following commands on every other master (as a privileged user):
   ```sh
-  rm -rf /var/lib/dcos/etcd
+  rm -rf /var/lib/dcos/etcd/*
   systemctl start dcos-etcd
   ```
