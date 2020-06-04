@@ -1,4 +1,4 @@
-From 893b6a40e1112cfafd47d13c057c7cffac1cae5b Mon Sep 17 00:00:00 2001
+From 20510751173e2049a659a76fbd2b29c7d9f520f5 Mon Sep 17 00:00:00 2001
 From: Armand Grillet <armand.grillet@outlook.com>
 Date: Wed, 28 Feb 2018 21:00:24 +0100
 Subject: [PATCH] Mesos UI: updated the URL generation to make it work with
@@ -15,7 +15,7 @@ Signed-off-by: Gilbert Song <songzihao1990@gmail.com>
  1 file changed, 11 insertions(+), 10 deletions(-)
 
 diff --git a/src/webui/app/controllers.js b/src/webui/app/controllers.js
-index 66cd32e..80bd35a 100644
+index 58cc76dcd..48dc43738 100644
 --- a/src/webui/app/controllers.js
 +++ b/src/webui/app/controllers.js
 @@ -51,10 +51,10 @@
@@ -49,7 +49,7 @@ index 66cd32e..80bd35a 100644
    }
  
    // Invokes the pailer, building the endpoint URL with the specified urlPrefix
-@@ -382,6 +377,12 @@
+@@ -393,6 +388,12 @@
    mesosApp.controller('MainCtrl', [
        '$scope', '$http', '$location', '$timeout', '$modal',
        function($scope, $http, $location, $timeout, $modal) {
@@ -63,5 +63,5 @@ index 66cd32e..80bd35a 100644
  
      // Adding bindings into scope so that they can be used from within
 -- 
-2.5.1
+2.25.1
 

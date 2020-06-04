@@ -1,4 +1,4 @@
-From 6deaa039c220862f6a57db92149ae08476d82d41 Mon Sep 17 00:00:00 2001
+From 64e6cc80061aca30c8f419607e22d39006115ed4 Mon Sep 17 00:00:00 2001
 From: Gilbert Song <songzihao1990@gmail.com>
 Date: Fri, 23 Nov 2018 10:54:58 +0800
 Subject: [PATCH] Changed sandbox mode to 0755 in docker containerizer
@@ -20,7 +20,7 @@ Signed-off-by: Gilbert Song <songzihao1990@gmail.com>
  1 file changed, 12 insertions(+)
 
 diff --git a/src/slave/containerizer/docker.cpp b/src/slave/containerizer/docker.cpp
-index e4ad945..30d39c6 100644
+index 2a9b2ffcb..ba04cc338 100644
 --- a/src/slave/containerizer/docker.cpp
 +++ b/src/slave/containerizer/docker.cpp
 @@ -1152,6 +1152,18 @@ Future<Containerizer::LaunchResult> DockerContainerizerProcess::launch(
@@ -43,5 +43,5 @@ index e4ad945..30d39c6 100644
        containerId,
        containerConfig,
 -- 
-2.5.1
+2.25.1
 

@@ -1,4 +1,4 @@
-From 9b8d1bd6c76302fae637ad93fa6b703966fcdcda Mon Sep 17 00:00:00 2001
+From 846f1e2b8a1499341cd0af29e3a3ad1dcd31e9de Mon Sep 17 00:00:00 2001
 From: Michael Park <mpark@apache.org>
 Date: Thu, 15 Oct 2015 19:54:02 -0700
 Subject: [PATCH] Set LIBPROCESS_IP into docker container.
@@ -9,7 +9,7 @@ Signed-off-by: Gilbert Song <songzihao1990@gmail.com>
  1 file changed, 5 insertions(+)
 
 diff --git a/src/docker/docker.cpp b/src/docker/docker.cpp
-index d13869d..d24f506 100644
+index d13869db7..d24f506e6 100644
 --- a/src/docker/docker.cpp
 +++ b/src/docker/docker.cpp
 @@ -681,6 +681,11 @@ Try<Docker::RunOptions> Docker::RunOptions::create(
@@ -25,5 +25,5 @@ index d13869d..d24f506 100644
      // Set the `MESOS_ALLOCATION_ROLE` environment variable. Please note
      // that tasks and executors are not allowed to mix resources allocated
 -- 
-2.5.1
+2.25.1
 

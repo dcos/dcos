@@ -1,8 +1,8 @@
-From ff2c6cafc0ca9b582360309269a496906beee644 Mon Sep 17 00:00:00 2001
+From 4cd33212c6e899a4631b2bb9caa9abca44db32f1 Mon Sep 17 00:00:00 2001
 From: Kevin Klues <klueska@gmail.com>
 Date: Thu, 9 Feb 2017 19:39:42 -0800
-Subject: [PATCH] Updated mesos containerizer to ignore GPU isolator creation
- failure.
+Subject: [PATCH] Updated mesos containerizer to ignore GPU isolator
+ creation failure.
 
 This cherry-pick will be maintained in DC/OS to avoid the problem of
 requiring NVML to be installed on *every* node in the cluster, even if
@@ -21,14 +21,14 @@ by https://reviews.apache.org/r/62472/
 
 Signed-off-by: Gilbert Song <songzihao1990@gmail.com>
 ---
- src/slave/containerizer/mesos/containerizer.cpp | 20 ++++++++++++--------
+ .../containerizer/mesos/containerizer.cpp     | 20 +++++++++++--------
  1 file changed, 12 insertions(+), 8 deletions(-)
 
 diff --git a/src/slave/containerizer/mesos/containerizer.cpp b/src/slave/containerizer/mesos/containerizer.cpp
-index 6f76527..be9a785 100644
+index dd940162b..011dfcbd7 100644
 --- a/src/slave/containerizer/mesos/containerizer.cpp
 +++ b/src/slave/containerizer/mesos/containerizer.cpp
-@@ -491,8 +491,10 @@ Try<MesosContainerizer*> MesosContainerizer::create(
+@@ -493,8 +493,10 @@ Try<MesosContainerizer*> MesosContainerizer::create(
      {"gpu/nvidia",
        [&nvidia] (const Flags& flags) -> Try<Isolator*> {
          if (!nvml::isAvailable()) {
@@ -41,7 +41,7 @@ index 6f76527..be9a785 100644
          }
  
          CHECK_SOME(nvidia)
-@@ -552,14 +554,16 @@ Try<MesosContainerizer*> MesosContainerizer::create(
+@@ -554,14 +556,16 @@ Try<MesosContainerizer*> MesosContainerizer::create(
                     _isolator.error());
      }
  
@@ -65,5 +65,5 @@ index 6f76527..be9a785 100644
  
    // Next, apply any custom isolators in the order given by the flags.
 -- 
-2.5.1
+2.25.1
 

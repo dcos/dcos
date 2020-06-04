@@ -14,9 +14,12 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Removed trailing newline from ZooKeeper log messages. (D2IQ-68394)
 
+* Ensured that marathon and SDK labeled reservations are not offered to other schedulers. (D2IQ-68800)
+
 #### Update Metronome to 0.6.48
 
 * Fix an issue in Metronome where it became unresponsive when lots of pending jobs existed during boot. (DCOS_OSS-5965)
+
 
 ## DC/OS 2.0.4 (2020-05-12)
 
