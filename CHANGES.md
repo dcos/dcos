@@ -20,3 +20,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Updated DC/OS UI to [v5.0.41](https://github.com/dcos/dcos-ui/releases/tag/v5.0.41).
 
 * Removed Exhibitor snapshot cleanup and now rely on ZooKeeper autopurge. (D2IQ-68109)
+
+* Ensured that marathon and SDK labeled reservations are not offered to other schedulers (D2IQ-68800)

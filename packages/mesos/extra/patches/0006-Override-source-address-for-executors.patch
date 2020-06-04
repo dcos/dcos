@@ -1,7 +1,7 @@
-From 59a1cc7c1eb5cfad14058ef502cdaba2ed88821b Mon Sep 17 00:00:00 2001
+From 16d0bd85502962952ef727db79b57d9f11b7b85c Mon Sep 17 00:00:00 2001
 From: Benno Evers <bevers@mesosphere.com>
 Date: Mon, 17 Jun 2019 13:27:46 +0200
-Subject: [PATCH 6/7] Override source address for executors.
+Subject: [PATCH 6/9] Override source address for executors.
 
 Ignore an executor's reported IP address and enforce the hostname
 "localhost" instead.
@@ -22,10 +22,10 @@ Signed-off-by: Gilbert Song <songzihao1990@gmail.com>
  1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
-index 0e686b61e..5f0565687 100644
+index 2699f0408..ed2c6633f 100644
 --- a/src/slave/slave.cpp
 +++ b/src/slave/slave.cpp
-@@ -5411,13 +5411,16 @@ void Slave::subscribe(
+@@ -5483,13 +5483,16 @@ void Slave::subscribe(
  
  
  void Slave::registerExecutor(
@@ -45,5 +45,5 @@ index 0e686b61e..5f0565687 100644
    CHECK(state == RECOVERING || state == DISCONNECTED ||
          state == RUNNING || state == TERMINATING)
 -- 
-2.21.0
+2.25.1
 

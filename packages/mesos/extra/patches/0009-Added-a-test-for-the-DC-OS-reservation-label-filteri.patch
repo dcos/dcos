@@ -1,0 +1,136 @@
+From a8487af07cd1f130d382755fd21b17e8edac6363 Mon Sep 17 00:00:00 2001
+From: Benjamin Mahler <bmahler@apache.org>
+Date: Wed, 27 May 2020 18:38:55 -0400
+Subject: [PATCH 9/9] Added a test for the DC/OS reservation label filtering.
+
+Review: https://reviews.apache.org/r/72554
+---
+ src/tests/hierarchical_allocator_tests.cpp | 112 +++++++++++++++++++++
+ 1 file changed, 112 insertions(+)
+
+diff --git a/src/tests/hierarchical_allocator_tests.cpp b/src/tests/hierarchical_allocator_tests.cpp
+index 413c0355c..a28942e0e 100644
+--- a/src/tests/hierarchical_allocator_tests.cpp
++++ b/src/tests/hierarchical_allocator_tests.cpp
+@@ -7174,6 +7174,118 @@ TEST_P(HierarchicalAllocatorTestWithParam, AllocateSharedResources)
+ }
+ 
+ 
++// In DC/OS, Marathon and SDK use reservation labels to mark the
++// reservations that they created and to prevent other frameworks
++// from using them. However, some frameworks (e.g. Spark, Jenkins)
++// do not check the labels and can use reservations created by
++// Marathon / SDK. We use a cherry-picked patch to strip out
++// reservations belonging to another framework, using the framework
++// id label convention. Longer term, we would want to just use
++// framework specific reservations for this, see MESOS-7651.
++TEST_P(HierarchicalAllocatorTestWithParam, DCOSReservationLabelFiltering)
++{
++  Clock::pause();
++
++  initialize();
++
++  const string ROLE = "role";
++
++  if (GetParam()) {
++    // Assign a quota.
++    const Quota quota = createQuota("cpus:24;mem:4096;disk:4096");
++    allocator->updateQuota(ROLE, quota);
++  }
++
++  FrameworkInfo framework = createFrameworkInfo({ROLE});
++  allocator->addFramework(framework.id(), framework, {}, true, {});
++
++  // Add an agent, with reservations that:
++  //   - Have a matching 'framework_id' / 'marathon_framework_id' label.
++  //   - Have a non-matching 'framework_id' / 'marathon_framework_id' label.
++  //   - Don't have labels.
++
++  Labels matchingSDKLabel;
++  *matchingSDKLabel.add_labels() =
++    createLabel("framework_id", framework.id().value());
++
++  Labels matchingMarathonLabel;
++  *matchingMarathonLabel.add_labels() =
++    createLabel("marathon_framework_id", framework.id().value());
++
++  Labels nonMatchingSDKLabel;
++  *nonMatchingSDKLabel.add_labels() =
++    createLabel("framework_id", "X");
++
++  Labels nonMatchingMarathonLabel;
++  *nonMatchingMarathonLabel.add_labels() =
++    createLabel("marathon_framework_id", "X");
++
++  Resources matchingReservations = Resources() +
++    createReservedResource(
++        "cpus",
++        "1",
++        createDynamicReservationInfo(ROLE, "principal", matchingSDKLabel)) +
++    createReservedResource(
++        "cpus",
++        "2",
++        createDynamicReservationInfo(ROLE, "principal", matchingMarathonLabel));
++
++  Resources nonMatchingReservations = Resources() +
++    createReservedResource(
++        "cpus",
++        ".1",
++        createDynamicReservationInfo(
++            ROLE, "principal", nonMatchingSDKLabel)) +
++      createReservedResource(
++        "cpus",
++        ".2",
++        createDynamicReservationInfo(
++            ROLE, "principal", nonMatchingMarathonLabel));
++
++  Resources unlabeledReservations =
++    createReservedResource(
++        "cpus",
++        "10",
++        createDynamicReservationInfo(ROLE, "principal", Labels()));
++
++  Resources unreserved = Resources::parse("cpus:10.7;mem:4096;disk:4096").get();
++
++  Resources allocated =
++    unreserved +
++    matchingReservations +
++    nonMatchingReservations +
++    unlabeledReservations;
++
++  SlaveInfo agent = createSlaveInfo("cpus:24;mem:4096;disk:4096");
++  allocator->addSlave(
++      agent.id(),
++      agent,
++      AGENT_CAPABILITIES(),
++      None(),
++      allocated,
++      {{framework.id(), allocatedResources(allocated, ROLE)}});
++
++  // The framework should get the matching reservations, and the
++  // unlabled reservations, but not the non-matching reservations.
++  Allocation expected = Allocation(
++      framework.id(),
++      {{ROLE, {{agent.id(),
++          matchingReservations + unlabeledReservations + unreserved}}}});
++
++  allocator->recoverResources(
++      framework.id(),
++      agent.id(),
++      allocatedResources(allocated, ROLE),
++      None(),
++      true);
++
++  Clock::advance(flags.allocation_interval);
++
++  Future<Allocation> allocation = allocations.get();
++  AWAIT_EXPECT_EQ(expected, allocation);
++}
++
++
+ // Resource sharing types used for the PersistentVolumes benchmark test:
+ //
+ // 1. `REGULAR` uses no shared resources.
+-- 
+2.25.1
+
