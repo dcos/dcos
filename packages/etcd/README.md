@@ -1,6 +1,6 @@
-## etcd backup and restore
+## Managing etcd
 
-This section describes the process of backing up and restoring the state of etcd running inside a DC/OS cluster.
+This section describes various administration procedures for etcd on DC/OS, such as backing up and restoring the state of etcd running inside a DC/OS cluster.
 
 The etcd cluster is possible to recover from temporary failures and tolerates up to (N-1)/2 permanent failures for a cluster with N members. However, the following scenarios, the operator is recommended to backup and restore etcd data:
 - to recover from a disastrous failure to return a cluster to a healthy state
@@ -55,3 +55,57 @@ The above command typically presents the results of etcdctl command [`endpoint h
 
 - `endpoint health` checks the healthiness of on the current etcd instance, which should meet `healthy` 
 - `member list -w json` returns the cluster members, which should return all etcd instances
+
+## Recovering an etcd cluster
+
+If you ever encounter a situation where you loose the majority of your etcd quorum, you might still be able to recover your data from just a single healthy node using the following procedure. 
+
+Note that all shell commands must be issued as a priviledged user.
+
+1. Pick one master that `etcd` is still running and that you are going to use for your data recovery.
+
+2. Stop all other `etcd` instances in your cluster, leaving only that instance running. You can do this by invoking the following command on every other master:
+  ```sh
+  sudo systemctl stop dcos-etcd
+  ```
+
+3. Go to your master where `etcd` is still running and open a ZooKeeper shell using the following command:
+  ```sh
+  /opt/mesosphere/bin/dcos-shell zkCli.sh
+  ```
+
+  * If you are running an enterprise cluster you need to authenticate to ZK prior to invoking the next commands. You can use the etcd service credentials on `/run/dcos/etc/etcd/zk-creds` :
+  ```
+  addauth digest <DATASTORE_ZK_USER>:<DATASTORE_ZK_SECRET>
+  ```
+
+4. Replace the conents of the `/etcd/nodes` keeping only the private IP address of your current node using the command:
+  ```
+  set /etcd/nodes '{"nodes": ["<PRIVATE IP>"]}'
+  ```
+
+5. Exit the ZooKeeper shell:
+  ```
+  quit
+  ```
+
+6. Force `etcd` to form a fresh quorum by updating the following flag file on your master node:
+  ```sh
+  echo -e "new --force-new-cluster" > /var/lib/dcos/etcd/initial-state
+  ```
+
+7. Restart the `etcd` service on the master
+  ```sh
+  systemctl restart dcos-etcd
+  ```
+
+8. Restore the contents of the `initial-state` flag file to avoid re-creating your etcd custer at every reboot:
+  ```sh
+  echo -e "new" > /var/lib/dcos/etcd/initial-state
+  ```
+
+9. You can now force every other master to reset and re-join the quorum by running the following commands on every other master (as a privileged user):
+  ```sh
+  rm -rf /var/lib/dcos/etcd/*
+  systemctl start dcos-etcd
+  ```

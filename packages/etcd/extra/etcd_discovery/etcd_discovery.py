@@ -152,7 +152,7 @@ def zk_lock(zk: KazooClient, lock_path: str, contender_id: str,
     lock = zk.Lock(lock_path, contender_id)
     try:
         log.info("Acquiring ZooKeeper lock.")
-        lock.acquire(blocking=True, timeout=timeout)
+        lock.acquire(blocking=True, timeout=timeout, ephemeral=True)
     except (ConnectionLoss, SessionExpiredError) as e:
         msg_fmt = "Failed to acquire lock: {}"
         msg = msg_fmt.format(e.__class__.__name__)
@@ -165,10 +165,12 @@ def zk_lock(zk: KazooClient, lock_path: str, contender_id: str,
         raise e
     else:
         log.info("ZooKeeper lock acquired.")
-    yield
-    log.info("Releasing ZooKeeper lock")
-    lock.release()
-    log.info("ZooKeeper lock released.")
+    try:
+        yield
+    finally:
+        log.info("Releasing ZooKeeper lock")
+        lock.release()
+        log.info("ZooKeeper lock released.")
 
 
 def get_registered_nodes(zk: KazooClient, zk_path: str) -> List[str]:
@@ -390,10 +392,11 @@ def join_cluster(args: argparse.Namespace) -> None:
     # Check if etcd is up and running already. If so - we can skip quering ZK,
     # as etcd is able to get the list of peers directly from the shared
     # storage.
-    if os.path.isdir(args.etcd_data_dir) and os.path.exists(args.cluster_nodes_file):
+    if os.path.isdir(args.etcd_data_dir) and os.path.exists(
+            args.cluster_nodes_file) and os.path.exists(args.cluster_state_file):
         log.info(
-            "directory `%s` and initial nodes file `%s` already exists, etcd seems to be already initialized",
-            args.etcd_data_dir, args.cluster_nodes_file)
+            "directory `%s`, initial nodes file `%s` and state file `%s` already exists, etcd seems initialized",
+            args.etcd_data_dir, args.cluster_nodes_file, args.cluster_state_file)
         return
 
     # Determine our internal IP.
@@ -415,6 +418,7 @@ def join_cluster(args: argparse.Namespace) -> None:
     ):
 
         nodes = get_registered_nodes(zk=zk, zk_path=ZK_NODES_PATH)
+        cluster_state = ""
 
         # The order of nodes is important - the first node to register
         # becomes the `designated node` that will initialize cluster, all
@@ -426,10 +430,11 @@ def join_cluster(args: argparse.Namespace) -> None:
         # within this script/making it a wrapper around etcd.
         if len(nodes) == 0:
             log.info("Cluster has not been initialized yet: %s", nodes)
-            dump_state_to_file("new", args.cluster_state_file)
+            cluster_state = "new"
         else:
             # There is already at least one etcd node which we should join
             log.info("Cluster has members that already registered: %s", nodes)
+            cluster_state = "existing"
 
             etcdctl = EtcdctlHelper(
                 args.secure,
@@ -464,7 +469,6 @@ def join_cluster(args: argparse.Namespace) -> None:
                 # acceptable considering the simplicity of this script.
                 log.info("current node is not a member of the quorum, joining "
                          "the existing quorum")
-                dump_state_to_file("existing", args.cluster_state_file)
                 etcdctl.ensure_member(private_ip)
 
             # NOTE(mainred): considering the case private IP presents in zk,
@@ -477,14 +481,17 @@ def join_cluster(args: argparse.Namespace) -> None:
             # tocommit(8) is out of range [lastIndex(0)]. Was the raft log corrupted, truncated, or lost? # NOQA
             elif not os.path.exists(args.etcd_data_dir):
                 log.info("rejoining the quorum as a result of data loss")
-                dump_state_to_file("existing", args.cluster_state_file)
                 etcdctl.remove_member(private_ip)
                 etcdctl.ensure_member(private_ip)
 
         nodes = register_cluster_membership(zk=zk,
                                             zk_path=ZK_NODES_PATH,
                                             ip=private_ip)
+
+        # NOTE(icharala): Ensure that both node & state files are always present
+        # otherwise the `etcd.sh` script will fail to start.
         dump_nodes_to_file(nodes, args.cluster_nodes_file)
+        dump_state_to_file(cluster_state, args.cluster_state_file)
 
     log.info("registration complete")
 
@@ -505,13 +512,21 @@ class EtcdctlHelper:
         self._etcdctl_path = etcdctl_path
         self._etcd_client_tls_cert = etcd_client_tls_cert
         self._etcd_client_tls_key = etcd_client_tls_key
+        self._designated_node = None
+        self._nodes = nodes
 
-        # Choose one node from the list
-        healthy_nodes = list(filter(self._is_node_healthy, nodes))
-        # In order to not to always hit the same node, we randomize the choice:
-        if len(healthy_nodes) == 0:
-            raise Exception("there are no healthy nodes")
-        self._designated_node = random.choice(healthy_nodes)
+    def get_designated_node(self) -> str:
+        """
+        Lazily finds out the designated node to use
+        """
+        if self._designated_node is None:
+            # Choose one node from the list
+            healthy_nodes = list(filter(self._is_node_healthy, self._nodes))
+            # In order to not to always hit the same node, we randomize the choice:
+            if len(healthy_nodes) == 0:
+                raise Exception("there are no healthy nodes")
+            self._designated_node = random.choice(healthy_nodes)
+        return self._designated_node
 
     def get_members(self) -> JsonTypeMembers:
         """ gets etcd cluster members
@@ -532,7 +547,7 @@ class EtcdctlHelper:
         ]
         """
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             ["member", "list", "-w", "json"],
         )
         result.check_returncode()
@@ -568,7 +583,7 @@ class EtcdctlHelper:
 
     def add_member(self, node_ip: str) -> None:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "member",
                 "add",
@@ -587,7 +602,7 @@ class EtcdctlHelper:
 
     def list_roles(self) -> List[str]:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "role",
                 "list",
@@ -600,7 +615,7 @@ class EtcdctlHelper:
 
     def grant_role(self, user_name: str, role_name: str) -> None:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "user",
                 "grant-role",
@@ -613,7 +628,7 @@ class EtcdctlHelper:
 
     def enable_auth(self) -> None:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "auth",
                 "enable",
@@ -624,7 +639,7 @@ class EtcdctlHelper:
 
     def add_role(self, role_name: str) -> None:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "role",
                 "add",
@@ -636,7 +651,7 @@ class EtcdctlHelper:
 
     def add_permission(self, role_name: str, prefix: str) -> None:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "role",
                 "grant",
@@ -657,7 +672,7 @@ class EtcdctlHelper:
 
     def add_user(self, user_name: str) -> None:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "user",
                 "add",
@@ -670,7 +685,7 @@ class EtcdctlHelper:
 
     def list_users(self) -> List[str]:
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             [
                 "user",
                 "list",
@@ -689,7 +704,7 @@ class EtcdctlHelper:
             return
 
         result = self._execute_etcdctl(
-            self._designated_node,
+            self.get_designated_node(),
             ["member", "remove", node_id],
         )
         result.check_returncode()
