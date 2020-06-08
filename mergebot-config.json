@@ -51,7 +51,6 @@
                     "mergebot/has_ship-it",
                     "mergebot/review/approved/min_1",
                     "teamcity/dcos/build/dcos",
-                    "teamcity/dcos/build/tox",
                     "continuous-integration/jenkins/pr-head",
                     "teamcity/dcos/test/test-e2e/group1",
                     "teamcity/dcos/test/terraform/aws/onprem/static/group1",
