@@ -7,6 +7,8 @@
 set -x
 set -o errexit -o pipefail
 
+lsb_release -a
+
 function now { date +"%Y-%m-%dT%H:%M:%S.000" | tr -d '\n' ;}
 function _scope_msg() {
     # Here we want to turn off `-x` that is present when running the bash script
