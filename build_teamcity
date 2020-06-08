@@ -10,6 +10,10 @@ set -o errexit -o pipefail
 export DEBIAN_FRONTEND="noninteractive"
 apt-get install -y python3.6 python3.6-pip
 
+export LC_ALL="en_US.UTF-8"
+export LC_CTYPE="en_US.UTF-8"
+dpkg-reconfigure locales
+
 function now { date +"%Y-%m-%dT%H:%M:%S.000" | tr -d '\n' ;}
 function _scope_msg() {
     # Here we want to turn off `-x` that is present when running the bash script
