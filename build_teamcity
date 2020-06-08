@@ -59,6 +59,7 @@ _scope_opened "setup"
 export PYTHONUNBUFFERED="notemtpy"
 
 # enable pkgpanda virtualenv *ALWAYS COPY* otherwise the TC cleanup will traverse and corrupt system python
+which python3.6
 python3.6 -m venv --clear --copies build/env
 . build/env/bin/activate
 
