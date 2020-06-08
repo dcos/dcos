@@ -3036,7 +3036,11 @@ package:
           # Flush
           # =====
           # Set the flush interval in seconds.
-          Flush        5
+          Flush        1
+          # Storage
+          # =======
+          # Configure buffer path
+          storage.path              /var/lib/dcos/flb-storage/
           # Daemon
           # ======
           # Instruct Fluent Bit to run in foreground or background mode.
@@ -3073,6 +3077,9 @@ package:
           # fluent bit will attempt to send the entire contents of the journal
           # on startup, which can cause performance issues.
           Read_From_Tail    On
+          # Buffer logs to filesystem
+          storage.type      filesystem
+          Mem_Buf_Limit     100MB
       # Log forwarding is disabled by default.
       [OUTPUT]
           Name  null
