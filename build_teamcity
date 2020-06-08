@@ -7,7 +7,7 @@
 set -x
 set -o errexit -o pipefail
 
-lsb_release -a
+apt-get install -y python3.6
 
 function now { date +"%Y-%m-%dT%H:%M:%S.000" | tr -d '\n' ;}
 function _scope_msg() {
