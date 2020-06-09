@@ -106,14 +106,75 @@ def dcos_signal(b, opts):
     b.cluster_id()
 
 
+def migrate_containers(legacy_containers_dir, new_containers_dir):
+    if not legacy_containers_dir.exists():
+        log.info(
+            'Legacy containers dir %s does not exist. Skipping migration.',
+            legacy_containers_dir
+        )
+        return
+
+    if new_containers_dir.exists() and any(new_containers_dir.iterdir()):
+        log.error(
+            "Can't migrate %s because destination %s contains files. Exiting.",
+            legacy_containers_dir,
+            new_containers_dir
+        )
+        raise RuntimeError()
+
+    # Ensure that the full path to the destination dir exists
+    new_containers_dir.parent.mkdir(parents=True, exist_ok=True)
+
+    # Delete destination dir, so we don't move the legacy dir *into* it.
+    if new_containers_dir.exists():
+        new_containers_dir.rmdir()
+
+    log.info('Migrating %s to %s...', legacy_containers_dir, new_containers_dir)
+    legacy_containers_dir.replace(new_containers_dir)
+
+    log.info('Granting dcos_telegraf user permissions on %s...', new_containers_dir)
+    for child in new_containers_dir.iterdir():
+        child.chmod(0o664)
+    log.info('Done.')
+
+
+def dcos_telegraf_common():
+    # Use `chmod` to set directory mode, rather than `mkdir`s `mode` parameter.
+    # Unlike `mkdir`, `chmod` does not use umask, so we avoid the group-write
+    # permissions getting ignored by a typical 022 umask.  We don't change the
+    # umask because that affects any created parent directories, that may then
+    # be unintentionally writable by non-owners.  Also `mkdir` only sets mode
+    # on creation, so separate `chmod` ensures that the permissions are
+    # correct on each restart.
+
+    telegraf_run = utils.dcos_run_path / 'telegraf'
+    telegraf_run.mkdir(parents=True, exist_ok=True)
+    utils.chown(telegraf_run, user='root', group='dcos_telegraf')
+    telegraf_run.chmod(0o775)
+
+    # Migrate old containers dir to new location in case the cluster was upgraded.
+    legacy_containers_dir = Path(os.environ['LEGACY_CONTAINERS_DIR'])
+    telegraf_containers_dir = Path(os.environ['TELEGRAF_CONTAINERS_DIR'])
+    migrate_containers(legacy_containers_dir, telegraf_containers_dir)
+
+    telegraf_containers_dir.mkdir(parents=True, exist_ok=True)
+    utils.chown(telegraf_containers_dir, user='root', group='dcos_telegraf')
+    telegraf_containers_dir.chmod(0o775)
+
+    user_config_dir = Path(os.environ['TELEGRAF_USER_CONFIG_DIR'])
+    user_config_dir.mkdir(parents=True, exist_ok=True)
+
+
 @check_root
 def dcos_telegraf_master(b, opts):
     b.cluster_id()
+    dcos_telegraf_common()
 
 
 @check_root
 def dcos_telegraf_agent(b, opts):
     b.cluster_id(readonly=True)
+    dcos_telegraf_common()
 
 
 @check_root
