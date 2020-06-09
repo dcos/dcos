@@ -20,6 +20,14 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * DC/OS no longer increases the rate limit for journald logging.  Scale testing demonstrated that raising the limit overloads journald, causing problems for other components that see delayed or lost logs or, worse, hang until log buffers are read. The default of 10000 messages per 30 seconds appears to distinguish well between busy components and excessively verbose components. (DCOS-53763)
 
+#### Update Metronome to 0.6.48
+
+* Fix an issue in Metronome where it became unresponsive when lots of pending jobs existed during boot. (DCOS_OSS-5965)
+
+* There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
+
+* Metronome jobs networking is now configurable (MARATHON-8727)
+
 ### Security updates
 
 * Update to OpenSSL 1.0.2u. (D2IQ-66526)
