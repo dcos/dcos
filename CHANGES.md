@@ -123,6 +123,8 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Updated DC/OS UI to [v5.0.52](https://github.com/dcos/dcos-ui/releases/tag/v5.0.52).
 
 
+* Ensured that marathon and SDK labeled reservations are not offered to other schedulers (D2IQ-68800)
+
 #### Update Marathon to 1.10.6
 
 * Marathon updated to 1.9.136

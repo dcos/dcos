@@ -1,0 +1,89 @@
+From 27debb25a549efc405a99e87af5063931069b0d8 Mon Sep 17 00:00:00 2001
+From: Benjamin Mahler <bmahler@apache.org>
+Date: Tue, 26 May 2020 16:25:14 -0400
+Subject: [PATCH 8/9] Ensure framework labeled reservations are offered to
+ owning framework.
+
+In DC/OS frameworks may share roles and this means that their
+reservations may be offered to other frameworks. By convention,
+the SDK and marathon label their reservations with their framework
+ID in order to ignore reservations made by other frameworks. However,
+some frameworks (e.g. Spark, Jenkins) do not have this logic and will
+use reservations that do not belong to them.
+
+In order to prevent this, we carry a DC/OS specific patch to strip
+out reservations belonging to other frameworks when making an offer.
+
+Longer term, we would want to just use framework specific reservations
+for this, see MESOS-7651.
+
+Review: https://reviews.apache.org/r/72543
+---
+ src/master/allocator/mesos/hierarchical.cpp | 37 +++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
+
+diff --git a/src/master/allocator/mesos/hierarchical.cpp b/src/master/allocator/mesos/hierarchical.cpp
+index 9e5079942..5679bdf67 100644
+--- a/src/master/allocator/mesos/hierarchical.cpp
++++ b/src/master/allocator/mesos/hierarchical.cpp
+@@ -202,6 +202,39 @@ static hashmap<string, vector<ResourceQuantities>> unpackFrameworkOfferFilters(
+ }
+ 
+ 
++// In DC/OS, Marathon and SDK use reservation labels to mark the
++// reservations that they created and to prevent other frameworks
++// from using them. However, some frameworks (e.g. Spark, Jenkins)
++// do not check the labels and can use reservations created by
++// Marathon / SDK.
++//
++// This strips reservations that belong to another framework, using
++// the framework id label convention. Longer term, we would want to
++// just use framework specific reservations for this, see MESOS-7651.
++Resources stripOtherFrameworkReservations(
++    const Resources& resources,
++    const FrameworkID& frameworkId)
++{
++  return resources.filter([&](const Resource& resource) {
++    if (Resources::isReserved(resource)) {
++      CHECK(!resource.reservations().empty());
++
++      foreach (const Resource::ReservationInfo& reservation,
++               resource.reservations()) {
++        foreach (const Label& label, reservation.labels().labels()) {
++          if (label.key() == "framework_id" ||
++              label.key() == "marathon_framework_id") {
++            return label.value() == frameworkId.value();
++          }
++        }
++      }
++    }
++
++    return true;
++  });
++}
++
++
+ void ScalarResourceTotals::add(
+     const SlaveID& slaveID,
+     const Resources& resources)
+@@ -2167,6 +2200,8 @@ void HierarchicalAllocatorProcess::__generateOffers()
+ 
+         available = stripIncapableResources(available, framework.capabilities);
+ 
++        available = stripOtherFrameworkReservations(available, frameworkId);
++
+         // In this first stage, we allocate the role's reservations as well as
+         // any unreserved resources while enforcing the role's quota limits and
+         // the global headroom. We'll "chop" the unreserved resources if needed.
+@@ -2395,6 +2430,8 @@ void HierarchicalAllocatorProcess::__generateOffers()
+ 
+         available = stripIncapableResources(available, framework.capabilities);
+ 
++        available = stripOtherFrameworkReservations(available, frameworkId);
++
+         // Reservations (including the roles ancestors' reservations),
+         // non-scalar resources and revocable resources are always allocated.
+         Resources toOffer = available.filter([&](const Resource& resource) {
+-- 
+2.25.1
+

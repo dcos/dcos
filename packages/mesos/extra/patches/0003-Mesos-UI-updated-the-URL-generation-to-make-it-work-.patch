@@ -1,7 +1,7 @@
-From 77d9a683465b75e4a3271c43fd68e4eee1653809 Mon Sep 17 00:00:00 2001
+From d59af8c38666474b7c72e5cad1a2286ce6419f0a Mon Sep 17 00:00:00 2001
 From: Armand Grillet <armand.grillet@outlook.com>
 Date: Wed, 28 Feb 2018 21:00:24 +0100
-Subject: [PATCH 3/7] Mesos UI: updated the URL generation to make it work with
+Subject: [PATCH 3/9] Mesos UI: updated the URL generation to make it work with
  adminrouter.
 
 - Use /mesos as the leading master URL prefix.
@@ -63,5 +63,5 @@ index 58cc76dcd..48dc43738 100644
  
      // Adding bindings into scope so that they can be used from within
 -- 
-2.21.0
+2.25.1
 
