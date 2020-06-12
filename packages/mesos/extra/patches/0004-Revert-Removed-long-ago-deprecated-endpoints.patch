@@ -1,4 +1,4 @@
-From 11130b14371f9ee0de6a203802a6499eed5b6571 Mon Sep 17 00:00:00 2001
+From b271126e350529ce2d09f83abd5296a59e21ec96 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Tue, 21 Aug 2018 17:59:27 +0200
 Subject: [PATCH] Revert "Removed long ago deprecated endpoints.".
@@ -20,7 +20,7 @@ Signed-off-by: Gilbert Song <songzihao1990@gmail.com>
  3 files changed, 73 insertions(+)
 
 diff --git a/src/files/files.cpp b/src/files/files.cpp
-index f200d5e..a64613c 100644
+index f200d5e79..a64613cf6 100644
 --- a/src/files/files.cpp
 +++ b/src/files/files.cpp
 @@ -222,6 +222,25 @@ FilesProcess::FilesProcess(
@@ -50,7 +50,7 @@ index f200d5e..a64613c 100644
            authenticationRealm,
            FilesProcess::BROWSE_HELP,
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index fbde112..60487be 100644
+index f641adc6a..aafc848f1 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -966,6 +966,16 @@ void Master::initialize()
@@ -108,7 +108,7 @@ index fbde112..60487be 100644
          READONLY_HTTP_AUTHENTICATION_REALM,
          Http::TASKS_HELP(),
 diff --git a/src/slave/slave.cpp b/src/slave/slave.cpp
-index 9c14784..426c389 100644
+index 7110ff447..f59a0d32e 100644
 --- a/src/slave/slave.cpp
 +++ b/src/slave/slave.cpp
 @@ -795,6 +795,17 @@ void Slave::initialize()
@@ -147,5 +147,5 @@ index 9c14784..426c389 100644
          READONLY_HTTP_AUTHENTICATION_REALM,
          Http::CONTAINERS_HELP(),
 -- 
-2.5.1
+2.25.1
 
