@@ -25,9 +25,7 @@ def _known_exec_directory():
     """
     # This directory must be outside /tmp to support
     # environments where /tmp is mounted noexec.
-    known_directory = utils.dcos_lib_path / 'exec'
-    known_directory.mkdir(parents=True, exist_ok=True)
-    return known_directory
+    return utils.dcos_lib_path / 'exec'
 
 
 def _create_private_directory(path, owner):
@@ -39,16 +37,14 @@ def _create_private_directory(path, owner):
         path (pathlib.Path): The path to the directory to create.
         owner (str): The owner of the directory.
     """
-    path.mkdir(exist_ok=True)
+    path.mkdir(parents=True, exist_ok=True)
     utils.chown(path, user=owner)
-    if utils.is_linux:
-        # TODO: Windows equivalent
-        path.chmod(0o700)
+    path.chmod(0o700)
 
 
 def check_root(fun):
     def wrapper(b, opts):
-        if utils.is_linux and os.getuid() != 0:
+        if os.getuid() != 0:
             log.error('bootstrap must be run as root')
             sys.exit(1)
         fun(b, opts)
@@ -197,34 +193,29 @@ def dcos_net_agent(b, opts):
 
 @check_root
 def dcos_bouncer(b, opts):
-    rundir = utils.dcos_run_path / 'dcos-bouncer'
-    rundir.mkdir(parents=True, exist_ok=True)
-    utils.chown('/run/dcos/dcos-bouncer', user='dcos_bouncer')
-    # Permissions are restricted to the dcos_bouncer user as this directory
-    # contains sensitive data.  See
-    # https://jira.mesosphere.com/browse/DCOS-18350
-
-    # The ``bouncer_tmpdir`` directory path corresponds to the
-    # TMPDIR environment variable configured in the dcos-bouncer.service file.
     user = 'dcos_bouncer'
+
+    rundir = utils.dcos_run_path / 'dcos-bouncer'
+    _create_private_directory(path=rundir, owner=user)
+
+    # Create the `TMPDIR` used by Bouncer.  This is not `/tmp` because many
+    # systems mark `/tmp` as `noexec` but Bouncer needs to store executable
+    # FFI files.  The security provided by `noexec` applies to directories
+    # that are writable by multiple users.  This directory is writable only
+    # by the owner, and hence is secure without `noexec`.
     bouncer_tmpdir = _known_exec_directory() / user
     _create_private_directory(path=bouncer_tmpdir, owner=user)
 
 
 @check_root
 def dcos_cockroach_config_change(b, opts):
-    # Permissions are restricted to the dcos_cockroach user in case this
-    # directory contains sensitive data - we also want to avoid the security
-    # risk of other users writing to this directory.
-    # See https://jira.mesosphere.com/browse/DCOS-18350 for a related change to
-    # dcos-bouncer.
-    #
-    # The ``dcos_cockroach`` user is the ``User`` used in the
-    # ``dcos-cockroachdb-config-change.service``
-
-    # The ``cockroach_tmpdir`` directory path corresponds to the
-    # dcos-cockroachdb-config-change.service.
     user = 'dcos_cockroach'
+
+    # Create the `TMPDIR` used by Cockroach.  This is not `/tmp` because many
+    # systems mark `/tmp` as `noexec` but Cockroach needs to store executable
+    # FFI files.  The security provided by `noexec` applies to directories
+    # that are writable by multiple users.  This directory is writable only
+    # by the owner, and hence is secure without `noexec`.
     cockroach_tmpdir = _known_exec_directory() / user
     _create_private_directory(path=cockroach_tmpdir, owner=user)
 
