@@ -102,13 +102,13 @@ def dcos_signal(b, opts):
     b.cluster_id()
 
 
-def migrate_containers(legacy_containers_dir, new_containers_dir):
+def migrate_containers(legacy_containers_dir: Path, new_containers_dir: Path) -> bool:
     if not legacy_containers_dir.exists():
         log.info(
             'Legacy containers dir %s does not exist. Skipping migration.',
             legacy_containers_dir
         )
-        return
+        return False
 
     if new_containers_dir.exists() and any(new_containers_dir.iterdir()):
         log.error(
@@ -129,12 +129,14 @@ def migrate_containers(legacy_containers_dir, new_containers_dir):
     legacy_containers_dir.replace(new_containers_dir)
 
     log.info('Granting dcos_telegraf user permissions on %s...', new_containers_dir)
+    new_containers_dir.chmod(0o775)
     for child in new_containers_dir.iterdir():
         child.chmod(0o664)
     log.info('Done.')
+    return True
 
 
-def dcos_telegraf_common():
+def dcos_telegraf_common() -> None:
     # Use `chmod` to set directory mode, rather than `mkdir`s `mode` parameter.
     # Unlike `mkdir`, `chmod` does not use umask, so we avoid the group-write
     # permissions getting ignored by a typical 022 umask.  We don't change the
@@ -151,11 +153,11 @@ def dcos_telegraf_common():
     # Migrate old containers dir to new location in case the cluster was upgraded.
     legacy_containers_dir = Path(os.environ['LEGACY_CONTAINERS_DIR'])
     telegraf_containers_dir = Path(os.environ['TELEGRAF_CONTAINERS_DIR'])
-    migrate_containers(legacy_containers_dir, telegraf_containers_dir)
 
-    telegraf_containers_dir.mkdir(parents=True, exist_ok=True)
+    if not migrate_containers(legacy_containers_dir, telegraf_containers_dir):
+        telegraf_containers_dir.mkdir(parents=True, exist_ok=True)
+        telegraf_containers_dir.chmod(0o775)
     utils.chown(telegraf_containers_dir, user='root', group='dcos_telegraf')
-    telegraf_containers_dir.chmod(0o775)
 
     user_config_dir = Path(os.environ['TELEGRAF_USER_CONFIG_DIR'])
     user_config_dir.mkdir(parents=True, exist_ok=True)
