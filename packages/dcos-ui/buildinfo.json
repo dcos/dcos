@@ -1,7 +1,7 @@
 {
   "single_source": {
     "kind": "url_extract",
-    "url": "https://github.com/dcos/dcos-ui/releases/download/v5.0.52/release.tar.gz",
-    "sha1": "dd66944ccb85e9b25aed581d814592cf7531c26e"
+    "url": "https://github.com/dcos/dcos-ui/releases/download/v5.0.57/release.tar.gz",
+    "sha1": "aaf8ae793dcab6efdcbd32470c346c3daf7aee9d"
   }
 }
