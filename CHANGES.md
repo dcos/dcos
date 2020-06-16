@@ -4,6 +4,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### What's new
 
+* Updated DC/OS UI to [v5.1.1](https://github.com/dcos/dcos-ui/releases/tag/v5.1.1)
+
 ### Security updates
 
 ### Notable changes
