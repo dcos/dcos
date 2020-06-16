@@ -1,12 +1,27 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
 
-## DC/OS 2.1.0-rc5-dev (in development)
+## DC/OS 2.1.1 (in development)
+
+
+### Security updates
+
+
+### Notable changes
+
+
+### Fixed and improved
+
+* Fix incorrect ownership after migration of `/run/dcos/telegraf/dcos_statsd/containers`. (D2IQ-69295)
+
+
+## DC/OS 2.1.0 (2020-06-09)
 
 
 ### What's new
 
 * Upgrade coreOS AMIs (D2IQ-64271)
+
 * Added a new configuration option `mesos_http_executors_domain_sockets`, which will cause the mesos-agent to use
   domain sockets when communicating with executors. While this change should not have any visible impact on users
   in itself, it does enable administrators to write firewall rules blocking unauthorized access to the agent port

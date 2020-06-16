@@ -25,9 +25,7 @@ def _known_exec_directory():
     """
     # This directory must be outside /tmp to support
     # environments where /tmp is mounted noexec.
-    known_directory = utils.dcos_lib_path / 'exec'
-    known_directory.mkdir(parents=True, exist_ok=True)
-    return known_directory
+    return utils.dcos_lib_path / 'exec'
 
 
 def _create_private_directory(path, owner):
@@ -39,16 +37,14 @@ def _create_private_directory(path, owner):
         path (pathlib.Path): The path to the directory to create.
         owner (str): The owner of the directory.
     """
-    path.mkdir(exist_ok=True)
+    path.mkdir(parents=True, exist_ok=True)
     utils.chown(path, user=owner)
-    if utils.is_linux:
-        # TODO: Windows equivalent
-        path.chmod(0o700)
+    path.chmod(0o700)
 
 
 def check_root(fun):
     def wrapper(b, opts):
-        if utils.is_linux and os.getuid() != 0:
+        if os.getuid() != 0:
             log.error('bootstrap must be run as root')
             sys.exit(1)
         fun(b, opts)
@@ -106,14 +102,77 @@ def dcos_signal(b, opts):
     b.cluster_id()
 
 
+def migrate_containers(legacy_containers_dir: Path, new_containers_dir: Path) -> bool:
+    if not legacy_containers_dir.exists():
+        log.info(
+            'Legacy containers dir %s does not exist. Skipping migration.',
+            legacy_containers_dir
+        )
+        return False
+
+    if new_containers_dir.exists() and any(new_containers_dir.iterdir()):
+        log.error(
+            "Can't migrate %s because destination %s contains files. Exiting.",
+            legacy_containers_dir,
+            new_containers_dir
+        )
+        raise RuntimeError()
+
+    # Ensure that the full path to the destination dir exists
+    new_containers_dir.parent.mkdir(parents=True, exist_ok=True)
+
+    # Delete destination dir, so we don't move the legacy dir *into* it.
+    if new_containers_dir.exists():
+        new_containers_dir.rmdir()
+
+    log.info('Migrating %s to %s...', legacy_containers_dir, new_containers_dir)
+    legacy_containers_dir.replace(new_containers_dir)
+
+    log.info('Granting dcos_telegraf user permissions on %s...', new_containers_dir)
+    new_containers_dir.chmod(0o775)
+    for child in new_containers_dir.iterdir():
+        child.chmod(0o664)
+    log.info('Done.')
+    return True
+
+
+def dcos_telegraf_common() -> None:
+    # Use `chmod` to set directory mode, rather than `mkdir`s `mode` parameter.
+    # Unlike `mkdir`, `chmod` does not use umask, so we avoid the group-write
+    # permissions getting ignored by a typical 022 umask.  We don't change the
+    # umask because that affects any created parent directories, that may then
+    # be unintentionally writable by non-owners.  Also `mkdir` only sets mode
+    # on creation, so separate `chmod` ensures that the permissions are
+    # correct on each restart.
+
+    telegraf_run = utils.dcos_run_path / 'telegraf'
+    telegraf_run.mkdir(parents=True, exist_ok=True)
+    utils.chown(telegraf_run, user='root', group='dcos_telegraf')
+    telegraf_run.chmod(0o775)
+
+    # Migrate old containers dir to new location in case the cluster was upgraded.
+    legacy_containers_dir = Path(os.environ['LEGACY_CONTAINERS_DIR'])
+    telegraf_containers_dir = Path(os.environ['TELEGRAF_CONTAINERS_DIR'])
+
+    if not migrate_containers(legacy_containers_dir, telegraf_containers_dir):
+        telegraf_containers_dir.mkdir(parents=True, exist_ok=True)
+        telegraf_containers_dir.chmod(0o775)
+    utils.chown(telegraf_containers_dir, user='root', group='dcos_telegraf')
+
+    user_config_dir = Path(os.environ['TELEGRAF_USER_CONFIG_DIR'])
+    user_config_dir.mkdir(parents=True, exist_ok=True)
+
+
 @check_root
 def dcos_telegraf_master(b, opts):
     b.cluster_id()
+    dcos_telegraf_common()
 
 
 @check_root
 def dcos_telegraf_agent(b, opts):
     b.cluster_id(readonly=True)
+    dcos_telegraf_common()
 
 
 @check_root
@@ -136,34 +195,29 @@ def dcos_net_agent(b, opts):
 
 @check_root
 def dcos_bouncer(b, opts):
-    rundir = utils.dcos_run_path / 'dcos-bouncer'
-    rundir.mkdir(parents=True, exist_ok=True)
-    utils.chown('/run/dcos/dcos-bouncer', user='dcos_bouncer')
-    # Permissions are restricted to the dcos_bouncer user as this directory
-    # contains sensitive data.  See
-    # https://jira.mesosphere.com/browse/DCOS-18350
-
-    # The ``bouncer_tmpdir`` directory path corresponds to the
-    # TMPDIR environment variable configured in the dcos-bouncer.service file.
     user = 'dcos_bouncer'
+
+    rundir = utils.dcos_run_path / 'dcos-bouncer'
+    _create_private_directory(path=rundir, owner=user)
+
+    # Create the `TMPDIR` used by Bouncer.  This is not `/tmp` because many
+    # systems mark `/tmp` as `noexec` but Bouncer needs to store executable
+    # FFI files.  The security provided by `noexec` applies to directories
+    # that are writable by multiple users.  This directory is writable only
+    # by the owner, and hence is secure without `noexec`.
     bouncer_tmpdir = _known_exec_directory() / user
     _create_private_directory(path=bouncer_tmpdir, owner=user)
 
 
 @check_root
 def dcos_cockroach_config_change(b, opts):
-    # Permissions are restricted to the dcos_cockroach user in case this
-    # directory contains sensitive data - we also want to avoid the security
-    # risk of other users writing to this directory.
-    # See https://jira.mesosphere.com/browse/DCOS-18350 for a related change to
-    # dcos-bouncer.
-    #
-    # The ``dcos_cockroach`` user is the ``User`` used in the
-    # ``dcos-cockroachdb-config-change.service``
-
-    # The ``cockroach_tmpdir`` directory path corresponds to the
-    # dcos-cockroachdb-config-change.service.
     user = 'dcos_cockroach'
+
+    # Create the `TMPDIR` used by Cockroach.  This is not `/tmp` because many
+    # systems mark `/tmp` as `noexec` but Cockroach needs to store executable
+    # FFI files.  The security provided by `noexec` applies to directories
+    # that are writable by multiple users.  This directory is writable only
+    # by the owner, and hence is secure without `noexec`.
     cockroach_tmpdir = _known_exec_directory() / user
     _create_private_directory(path=cockroach_tmpdir, owner=user)
 
