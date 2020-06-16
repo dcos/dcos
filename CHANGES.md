@@ -4,6 +4,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### What's new
 
+* Updated DC/OS UI to [v5.1.1](https://github.com/dcos/dcos-ui/releases/tag/v5.1.1)
+
 ### Security updates
 
 ### Notable changes
@@ -239,7 +241,6 @@ The Marathon option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES` has been deprecat
 * Improved the performance of command health checks to increase scalability. (DCOS-53656)
 
 * Added framework ID tags to Mesos framework metrics. (DCOS-53302)
-* Updated DC/OS UI to [v5.1.1](https://github.com/dcos/dcos-ui/releases/tag/v5.1.1).
 
 * Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
 
