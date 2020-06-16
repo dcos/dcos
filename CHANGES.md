@@ -362,6 +362,7 @@ No breaking changes are known to date.
 * Telegraf has been upgraded to 1.9.4. (DCOS_OSS-4675)
 
 * Allow the DC/OS installer to be used when there is a space in its path. (DCOS_OSS-4429)
+* Updated DC/OS UI to [v5.1.1](https://github.com/dcos/dcos-ui/releases/tag/v5.1.1).
 
 * Added a warning to the installer to let the user know in case kernel modules required by the DC/OS storage service are not loaded. (DCOS-49088)
 
