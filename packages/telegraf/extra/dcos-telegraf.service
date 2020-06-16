@@ -16,14 +16,5 @@ EnvironmentFile=/opt/mesosphere/etc/telegraf.env
 
 LimitNOFILE=16384
 
-ExecStartPre=/bin/bash -c "mkdir -p /run/dcos/telegraf"
-ExecStartPre=/bin/bash -c "chmod 775 /run/dcos/telegraf"
-ExecStartPre=/bin/bash -c "chown root:dcos_telegraf /run/dcos/telegraf"
-
-# Migrate old containers dir to new location in case the cluster was upgraded.
-ExecStartPre=/opt/mesosphere/active/telegraf/tools/migrate_containers_dir.sh "${LEGACY_CONTAINERS_DIR}" "${TELEGRAF_CONTAINERS_DIR}"
-
-ExecStartPre=/bin/bash -c "mkdir -p ${TELEGRAF_USER_CONFIG_DIR}"
-
 ExecStartPre=/opt/mesosphere/bin/bootstrap ${SERVICE}
 ExecStart=/opt/mesosphere/bin/start_telegraf.sh --config ${TELEGRAF_CONFIG_FILE} --config-directory ${TELEGRAF_CONFIG_DIR},${TELEGRAF_USER_CONFIG_DIR}
