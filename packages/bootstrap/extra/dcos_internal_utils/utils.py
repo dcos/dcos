@@ -4,6 +4,7 @@ except ImportError:
     pass
 import logging
 import os
+import shutil
 import subprocess
 import sys
 
@@ -21,6 +22,10 @@ log = logging.getLogger(__name__)
 def read_file_line(filename):
     with open(filename, 'r') as f:
         return f.read().strip()
+
+
+def chown(path, user=None, group=None):
+    shutil.chown(str(path), user, group)
 
 
 def detect_ip():

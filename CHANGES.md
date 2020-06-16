@@ -8,6 +8,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Removed trailing newline from ZooKeeper log messages. (D2IQ-68394)
 
+* Fix incorrect ownership after migration of `/run/dcos/telegraf/dcos_statsd/containers`. (D2IQ-69295)
+
 #### Update Metronome to 0.6.48
 
 * Fix an issue in Metronome where it became unresponsive when lots of pending jobs existed during boot. (DCOS_OSS-5965)
@@ -29,7 +31,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Marathon updated to 1.8.242
 
-    * Marathon was checking authorization for unrelated apps when performing a kill-and-scale operations; this has been resolved. (MARATHON-8731)
+* Marathon was checking authorization for unrelated apps when performing a kill-and-scale operations; this has been resolved. (MARATHON-8731)
 
 ### Security updates
 

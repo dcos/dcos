@@ -31,9 +31,6 @@ if [ -x "$fault_domain_script" ]; then
   export FAULT_DOMAIN_ZONE="$("$fault_domain_script" | "$fault_domain_extractor" zone)"
 fi
 
-# Create containers dir for dcos_statsd input.
-mkdir -p "${TELEGRAF_CONTAINERS_DIR}"
-
 # Ensure that old socket file is removed, if present
 # TODO(philipnrmn): investigate whether moving to a systemd-managed socket
 # would be a better solution than manually creating and removing this file.
