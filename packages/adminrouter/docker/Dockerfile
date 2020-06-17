@@ -1,8 +1,13 @@
 FROM ubuntu:16.04
 
+# The version of OpenResty here is built from the branch `1.15.8.x` SHA
+# 99ec14bfb2bdd95f71f75067620927d19d3f9a80.  It is "almost 1.15.8.4"
+# since 1.15.8.4 has not been released but contains fixes that we need.
+# See https://jira.d2iq.com/browse/DCOS_OSS-5967
+
 # Let's try to limit the number of layers to minimum:
-ENV OPENRESTY_VERSION=1.15.8.3 \
-    OPENRESTY_DOWNLOAD_SHASUM=277573100c216772b45390f26f0d1c3cf50370f1 \
+ENV OPENRESTY_VERSION=1.15.8.4-99ec14b \
+    OPENRESTY_DOWNLOAD_SHASUM=acb59b0c67dbe1b3a4ab68aa9d4ea3c188ee3a61 \
     OPENRESTY_DIR=/usr/local/src/openresty \
     OPENRESTY_COMPILE_SCRIPT=/usr/local/src/build-resty.sh \
     OPENRESTY_COMPILE_OPTS="" \
@@ -18,7 +23,7 @@ ENV OPENRESTY_VERSION=1.15.8.3 \
     IAM_SHARED_SECRET_FILE_PATH=/usr/local/iam.jwt-key.shared-secret
 
 # These depend on other ENV vars, so we need a separate ENV block:
-ENV OPENRESTY_DOWNLOAD_URL=https://openresty.org/download/openresty-$OPENRESTY_VERSION.tar.gz \
+ENV OPENRESTY_DOWNLOAD_URL=https://downloads.mesosphere.com/openresty_mirror/openresty-$OPENRESTY_VERSION.tar.gz \
     AUTH_ERROR_PAGE_DIR_PATH=${AR_BIN_DIR}/nginx/conf/errorpages
 
 WORKDIR /usr/local/src/
