@@ -4,6 +4,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to Mesos [1.11.0-dev](https://github.com/apache/mesos/blob/a679eb4bc35bd2d7c4cffdd9440ab301d8fc8986/CHANGELOG)
 
+* Update to Fluentbit [1.4.6](https://docs.fluentbit.io/manual/installation/upgrade-notes)
+
 
 ### Security updates
 
