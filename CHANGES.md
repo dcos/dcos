@@ -3,6 +3,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 2.1.1 (in development)
 
+* Update to Fluentbit [1.4.6](https://docs.fluentbit.io/manual/installation/upgrade-notes)
+
 
 ### Security updates
 
