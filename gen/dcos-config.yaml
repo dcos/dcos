@@ -3096,6 +3096,9 @@ package:
           Port 61092
           Chunk_Size 32
           Buffer_Size 64
+          # Buffer logs to filesystem
+          storage.type      filesystem
+          Mem_Buf_Limit     100MB          
   - path: /etc/dcos/network/cni/calico.conf
     content: |
       {
