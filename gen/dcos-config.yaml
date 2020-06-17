@@ -2958,7 +2958,11 @@ package:
           # Flush
           # =====
           # Set the flush interval in seconds.
-          Flush        5
+          Flush        1
+          # Storage
+          # =======
+          # Configure buffer path
+          storage.path              /run/flb-storage/
           # Daemon
           # ======
           # Instruct Fluent Bit to run in foreground or background mode.
@@ -2995,6 +2999,9 @@ package:
           # fluent bit will attempt to send the entire contents of the journal
           # on startup, which can cause performance issues.
           Read_From_Tail    On
+          # Buffer logs to filesystem
+          storage.type      filesystem
+          Mem_Buf_Limit     100MB
       # Log forwarding is disabled by default.
       [OUTPUT]
           Name  null
@@ -3011,3 +3018,68 @@ package:
           Port 61092
           Chunk_Size 32
           Buffer_Size 64
+<<<<<<< HEAD
+=======
+          # Buffer logs to filesystem
+          storage.type      filesystem
+          Mem_Buf_Limit     100MB
+  - path: /etc/dcos/network/cni/calico.conf
+    content: |
+      {
+        "name": "calico",
+        "type": "mesos-cni-port-mapper",
+        "excludeDevices": [
+          "cali+"
+        ],
+        "chain": "M-CALICO",
+        "delegate": {
+          "cniVersion": "0.1.0",
+          "type": "calico",
+          "mtu": {{ calico_veth_mtu }},
+          "etcd_endpoints": "http://master.dcos.thisdcos.directory:2379",
+          "ipam": {
+            "type": "calico-ipam"
+          }
+        }
+      }
+  - path: /etc/calico/calico-node.env
+    content: |
+      NO_DEFAULT_POOLS=false
+      CALICO_IPV4POOL_CIDR={{ calico_network_cidr }}
+      CALICO_IPV4POOL_NAT_OUTGOING=true
+      FELIX_IGNORELOOSERPF=true
+      FELIX_LOGFILEPATH=none
+      FELIX_PROMETHEUSMETRICSENABLED=true
+      FELIX_PROMETHEUSMETRICSPORT=62091
+{% switch calico_vxlan_enabled %}
+{% case "false" %}
+      FELIX_IPINIPMTU={{ calico_ipinip_mtu }}
+      CALICO_IPV4POOL_IPIP=always
+      CALICO_IPV4POOL_VXLAN=never
+      CALICO_NETWORKING_BACKEND=bird
+{% case "true" %}
+      CALICO_IPV4POOL_IPIP=never
+      CALICO_IPV4POOL_VXLAN=always
+      CALICO_NETWORKING_BACKEND=vxlan
+      FELIX_VXLANMTU={{ calico_vxlan_mtu }}
+      FELIX_VXLANPORT={{ calico_vxlan_port }}
+      FELIX_VXLANVNI={{ calico_vxlan_vni }}
+{% endswitch %}
+  - path: /etc/calico/calico-node-datastore.env
+    content: |
+      ETCD_ENDPOINTS=http://master.dcos.thisdcos.directory:2379
+{% switch calico_vxlan_enabled %}
+{% case "false" %}
+  - path: /etc/calico/bird_enabled
+    content: ""
+{% case "true" %}
+{% endswitch %}
+  - path: /etc/calico/calicoctl.cfg
+    content: |
+      apiVersion: projectcalico.org/v3
+      kind: CalicoAPIConfig
+      metadata:
+      spec:
+        datastoreType: etcdv3
+        etcdEndpoints: http://master.dcos.thisdcos.directory:2379
+>>>>>>> 72a38d5... Updated fluent bit configuration

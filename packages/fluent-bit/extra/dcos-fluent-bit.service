@@ -12,6 +12,8 @@ PermissionsStartOnly=True
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/fluent-bit.env
 
+RuntimeDirectory=flb-storage
+
 LimitNOFILE=16384
 
 ExecStartPre=/opt/mesosphere/bin/bootstrap ${FLUENT_BIT_SERVICE}
