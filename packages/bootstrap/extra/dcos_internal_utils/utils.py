@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import platform
 import shutil
 import socket
 import stat
@@ -11,29 +10,10 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-is_windows = platform.system() == "Windows"
-is_linux = not is_windows
-
-if is_windows:
-    _default_path = Path('c:\\d2iq\\dcos')
-    _paths_path = _default_path / 'etc' / 'paths.json'
-    if _paths_path.exists():
-        with _paths_path.open() as f:
-            paths = json.load(f)
-            install_path = Path(paths['install'])
-            var_path = Path(paths['var'])
-    else:
-        install_path = Path('c:\\dcos\\opt')
-        var_path = _default_path / 'var'
-
-    dcos_lib_path = var_path / 'lib'
-    dcos_run_path = var_path / 'run'
-    tmp_path = Path('C:\\Temp')
-else:
-    install_path = Path('/opt/mesosphere')
-    dcos_lib_path = Path('/var/lib/dcos')
-    dcos_run_path = Path('/run/dcos')
-    tmp_path = Path('/tmp')
+install_path = Path('/opt/mesosphere')
+dcos_lib_path = Path('/var/lib/dcos')
+dcos_run_path = Path('/run/dcos')
+tmp_path = Path('/tmp')
 
 dcos_etc_path = install_path / 'etc'
 
@@ -98,9 +78,7 @@ def _write_file_bytes(filepath, data, mode):
             os.write(fd, data)
         finally:
             os.close(fd)
-        if is_linux:
-            # TODO - provide a Windows equivalent
-            os.chmod(temporary_filename, stat.S_IMODE(mode))
+        os.chmod(temporary_filename, stat.S_IMODE(mode))
         os.replace(temporary_filename, filename)
     except Exception:
         os.remove(temporary_filename)
@@ -126,8 +104,7 @@ def write_file_on_mismatched_content(desired_content, target, write):
 
 
 def chown(path, user=None, group=None):
-    if is_linux:
-        shutil.chown(str(path), user, group)
+    shutil.chown(str(path), user, group)
 
 
 # Copied from gen/calc.py#L87-L102
@@ -151,10 +128,7 @@ def validate_ipv4_addresses(ips: list):
 
 
 def detect_ip():
-    if is_windows:
-        cmd = ['powershell', str(install_path / 'bin' / 'detect_ip.ps1')]
-    else:
-        cmd = [str(install_path / 'bin' / 'detect_ip')]
+    cmd = [str(install_path / 'bin' / 'detect_ip')]
     machine_ip = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode('ascii').strip()
     validate_ipv4_addresses([machine_ip])
     return machine_ip
@@ -179,7 +153,7 @@ def _apply_sysctl_settings(sysctl_settings, service):
 
 
 def apply_service_configuration(service):
-    if is_linux and DCOS_SERVICE_CONFIGURATION_PATH.exists():
+    if DCOS_SERVICE_CONFIGURATION_PATH.exists():
         dcos_service_properties = load_json(DCOS_SERVICE_CONFIGURATION_PATH)
         if SYSCTL_SETTING_KEY in dcos_service_properties:
             _apply_sysctl_settings(dcos_service_properties[SYSCTL_SETTING_KEY], service)
