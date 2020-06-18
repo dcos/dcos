@@ -14,6 +14,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fix incorrect ownership after migration of `/run/dcos/telegraf/dcos_statsd/containers`. (D2IQ-69295)
 
+* Fix to allow spaces in services endpoint URI's. (DCOS_OSS-5967)
+
 
 ## DC/OS 2.0.5 (2020-06-15)
 
@@ -28,6 +30,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Removed trailing newline from ZooKeeper log messages. (D2IQ-68394)
 
 * Ensured that marathon and SDK labeled reservations are not offered to other schedulers. (D2IQ-68800)
+
 
 #### Update Metronome to 0.6.48
 
