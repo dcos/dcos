@@ -14,6 +14,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fix incorrect ownership after migration of `/run/dcos/telegraf/dcos_statsd/containers`. (D2IQ-69295)
 
+* Fix to allow spaces in services endpoint URI's. (DCOS_OSS-5967)
+
 
 ## DC/OS 2.1.0 (2020-06-09)
 
