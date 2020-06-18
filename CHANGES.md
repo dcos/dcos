@@ -22,3 +22,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Removed Exhibitor snapshot cleanup and now rely on ZooKeeper autopurge. (D2IQ-68109)
 
 * Ensured that marathon and SDK labeled reservations are not offered to other schedulers (D2IQ-68800)
+
+* Updated OpenResty to 1.15.8.4. (DCOS_OSS-5967)
