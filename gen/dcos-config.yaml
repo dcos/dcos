@@ -2962,7 +2962,7 @@ package:
           # Storage
           # =======
           # Configure buffer path
-          storage.path              /run/flb-storage/
+          storage.path              /var/lib/dcos/flb-storage/
           # Daemon
           # ======
           # Instruct Fluent Bit to run in foreground or background mode.
