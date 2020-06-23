@@ -45,15 +45,14 @@ DCOS_BOOTSTRAP_CA=dcos-bootstrap-ca
 # kill any existing dcos-boostrap-ca processes before running genconf
 kill $(pidof $DCOS_BOOTSTRAP_CA || true) 2>/dev/null || true
 
-PORT=${{PORT:-9000}}
 DCOS_INSTALLER_DAEMONIZE=${{DCOS_INSTALLER_DAEMONIZE:-false}}
 DCOS_INSTALLER_CONTAINER_NAME=${{DCOS_INSTALLER_CONTAINER_NAME:-{genconf_tar}}}
 
 if [ "$DCOS_INSTALLER_DAEMONIZE" == "true" ]; then
-    docker run --name=$DCOS_INSTALLER_CONTAINER_NAME -d -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
+    docker run --name=$DCOS_INSTALLER_CONTAINER_NAME -d -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
 else
     trap 'docker kill {genconf_tar}' HUP QUIT INT TERM
-    docker run --rm --name=$DCOS_INSTALLER_CONTAINER_NAME -i -p $PORT:9000 -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
+    docker run --rm --name=$DCOS_INSTALLER_CONTAINER_NAME -i -v $(pwd)/genconf/:/genconf {docker_image_name} "$@"
 fi
 
 if [ -d genconf/ca ]; then
