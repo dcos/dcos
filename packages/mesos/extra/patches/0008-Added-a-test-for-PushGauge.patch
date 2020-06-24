@@ -1,7 +1,7 @@
-From 4943cb2348715086e5ffa322b41012f2a191f628 Mon Sep 17 00:00:00 2001
+From 00fa32f023d09d3f11cfe5eab99471833b225901 Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:06:58 -0700
-Subject: [PATCH 08/24] Added a test for PushGauge.
+Subject: [PATCH 08/25] Added a test for PushGauge.
 
 Review: https://reviews.apache.org/r/66830/
 ---
@@ -66,5 +66,5 @@ index bb7c9e37e..d394a42bf 100644
  {
    Counter counter("test/counter", process::TIME_SERIES_WINDOW);
 -- 
-2.21.0
+2.25.1
 

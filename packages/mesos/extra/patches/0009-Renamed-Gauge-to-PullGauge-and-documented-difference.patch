@@ -1,7 +1,7 @@
-From 53268d77bf71e669b6fedcfb019d85adb078e726 Mon Sep 17 00:00:00 2001
+From 59a613e2020396a19efbaddfbba83fdc58d9810e Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:07:01 -0700
-Subject: [PATCH 09/24] Renamed Gauge to PullGauge and documented differences
+Subject: [PATCH 09/25] Renamed Gauge to PullGauge and documented differences
  to PushGauge.
 
 Given `PushGauge`, it makes sense to explicitly distinguish the two
@@ -353,5 +353,5 @@ index 6beb973e0..4a193d778 100644
  // endpoint. This has been observed specifically for the memory
  // metrics. If in the future we put the error message from the Failure
 -- 
-2.21.0
+2.25.1
 

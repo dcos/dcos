@@ -1,7 +1,7 @@
-From 2dd0f553a3490eb16d206e700687dbbd878982dc Mon Sep 17 00:00:00 2001
+From 5ae9d2486a7d6097bded16126d17b826e1130202 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Tue, 9 Oct 2018 18:22:16 +0200
-Subject: [PATCH 24/24] Waited for TEARDOWN to be sent in v1 Java scheduler
+Subject: [PATCH 24/25] Waited for TEARDOWN to be sent in v1 Java scheduler
  shim.
 
 Destruction of the library is not always under our control. For
@@ -49,5 +49,5 @@ index 2a5fbd79a..6ec771111 100644
  
  
 -- 
-2.21.0
+2.25.1
 

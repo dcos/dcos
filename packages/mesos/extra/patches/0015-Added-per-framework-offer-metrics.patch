@@ -1,7 +1,7 @@
-From 1a407d39df5a186d25709b8522e030b4e5d40cf7 Mon Sep 17 00:00:00 2001
+From 28c71dd20cfd8d828a35ba5f5e14cc535b797952 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:25 -0700
-Subject: [PATCH 15/24] Added per-framework offer metrics.
+Subject: [PATCH 15/25] Added per-framework offer metrics.
 
 Review: https://reviews.apache.org/r/67812/
 ---
@@ -11,7 +11,7 @@ Review: https://reviews.apache.org/r/67812/
  3 files changed, 38 insertions(+), 1 deletion(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index f19a0eeec..1569e978d 100644
+index f8bf33a35..6feeae050 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -3999,6 +3999,8 @@ void Master::accept(
@@ -142,5 +142,5 @@ index fac4440da..b6fe20fb5 100644
  
  
 -- 
-2.21.0
+2.25.1
 

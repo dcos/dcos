@@ -1,7 +1,7 @@
-From aff32bda9922f88a6bed2ae201d2731ceecd5e65 Mon Sep 17 00:00:00 2001
+From 98db08d8451b6938dba75aec14677976f1f0ef38 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:59:04 -0700
-Subject: [PATCH 21/24] Added per-framework metrics for suppressed roles.
+Subject: [PATCH 21/25] Added per-framework metrics for suppressed roles.
 
 Review: https://reviews.apache.org/r/66870/
 ---
@@ -185,5 +185,5 @@ index daac93f7e..34cc16b3a 100644
  
  } // namespace internal {
 -- 
-2.21.0
+2.25.1
 

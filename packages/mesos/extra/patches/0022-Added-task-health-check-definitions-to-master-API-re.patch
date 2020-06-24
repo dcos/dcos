@@ -1,7 +1,7 @@
-From bf7a4b4518f66c3a3806c9cc8715810bcf006123 Mon Sep 17 00:00:00 2001
+From b55a651901fd237c944cfc9d88f7778e9942fb7d Mon Sep 17 00:00:00 2001
 From: Greg Mann <gregorywmann@gmail.com>
 Date: Fri, 2 Nov 2018 16:13:01 -0700
-Subject: [PATCH 22/24] Added task health check definitions to master API
+Subject: [PATCH 22/25] Added task health check definitions to master API
  responses.
 
 The `Task` protobuf message is updated to include the health check
@@ -102,5 +102,5 @@ index fda130727..5f3c2ae61 100644
    if (task.has_command() && task.command().has_user()) {
      t.set_user(task.command().user());
 -- 
-2.21.0
+2.25.1
 

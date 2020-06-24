@@ -1,7 +1,7 @@
-From 45e3c7d70a04d9e14109963e67f68ba8c4aea213 Mon Sep 17 00:00:00 2001
+From a72d8e19f0210dac94fec674cb9792beaf161b26 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:45 -0700
-Subject: [PATCH 18/24] Enabled per-framework metrics in the allocator.
+Subject: [PATCH 18/25] Enabled per-framework metrics in the allocator.
 
 The `FrameworkMetrics` struct will hold per-framework metrics tracked
 by the allocator.
@@ -81,5 +81,5 @@ index 6d386225c..daac93f7e 100644
  } // namespace allocator {
  } // namespace master {
 -- 
-2.21.0
+2.25.1
 

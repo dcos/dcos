@@ -1,7 +1,7 @@
-From 6e5d3e7ee4ed7fc0626109efa78834a3bd489d71 Mon Sep 17 00:00:00 2001
+From 475a9f282ff0a9b3adc648e84ecab9ab84a51ffe Mon Sep 17 00:00:00 2001
 From: Gilbert Song <songzihao1990@gmail.com>
 Date: Wed, 1 Aug 2018 07:58:06 -0700
-Subject: [PATCH 12/24] Added per-framework 'subscribed' metric and helpers.
+Subject: [PATCH 12/25] Added per-framework 'subscribed' metric and helpers.
 
 Review: https://reviews.apache.org/r/66820/
 ---
@@ -12,7 +12,7 @@ Review: https://reviews.apache.org/r/66820/
  4 files changed, 30 insertions(+), 8 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index e49883e96..5c615cabf 100644
+index 65632239b..7db60698f 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -455,6 +455,13 @@ void Framework::untrackUnderRole(const string& role)
@@ -159,5 +159,5 @@ index 9f10aecba..d3f093f9d 100644
  
  
 -- 
-2.21.0
+2.25.1
 

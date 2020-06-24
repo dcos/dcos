@@ -1,7 +1,7 @@
-From d2d9bfdb5a625d5ff3cde4bc5128c15ff68c87e8 Mon Sep 17 00:00:00 2001
+From 924368f596ed655001a709fb94e4868e4a71dda7 Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:49 -0700
-Subject: [PATCH 20/24] Tracked completed framework metrics in the allocator.
+Subject: [PATCH 20/25] Tracked completed framework metrics in the allocator.
 
 This ensures that per-framework metrics which are tracked in the
 allocator will be retained as long as the per-framework metrics
@@ -170,7 +170,7 @@ index b4594199c..be62158fb 100644
    {
    public:
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index e26057449..69385a519 100644
+index 059d3306d..9722cfd64 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -805,7 +805,8 @@ void Master::initialize()
@@ -567,5 +567,5 @@ index d012d396a..348ad492f 100644
    Try<Owned<cluster::Master>> master = this->StartMaster(&allocator);
    ASSERT_SOME(master);
 -- 
-2.21.0
+2.25.1
 

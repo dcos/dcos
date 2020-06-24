@@ -1,7 +1,7 @@
-From 93ea2ab8bb1e70d25fa0f0968d7993e863728942 Mon Sep 17 00:00:00 2001
+From bd58e87d4eb9a39f531359770ee00b717173c687 Mon Sep 17 00:00:00 2001
 From: Benjamin Mahler <bmahler@apache.org>
 Date: Fri, 27 Apr 2018 16:07:05 -0700
-Subject: [PATCH 10/24] Updated mesos source for Gauge -> PullGauge renaming.
+Subject: [PATCH 10/25] Updated mesos source for Gauge -> PullGauge renaming.
 
 Review: https://reviews.apache.org/r/66832/
 ---
@@ -941,10 +941,10 @@ index 3fc933ca6..2adff6664 100644
  
  } // namespace slave {
 diff --git a/src/slave/slave.hpp b/src/slave/slave.hpp
-index d638b8806..8d42011be 100644
+index 0c9c1a7a0..61852c6cb 100644
 --- a/src/slave/slave.hpp
 +++ b/src/slave/slave.hpp
-@@ -663,7 +663,7 @@ private:
+@@ -665,7 +665,7 @@ private:
    process::Future<Nothing> publishResources(
        const Option<Resources>& additionalResources = None());
  
@@ -954,5 +954,5 @@ index d638b8806..8d42011be 100644
    {
      return static_cast<double>(frameworks.size());
 -- 
-2.21.0
+2.25.1
 

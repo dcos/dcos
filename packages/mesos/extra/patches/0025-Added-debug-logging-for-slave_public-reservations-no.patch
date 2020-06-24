@@ -1,0 +1,230 @@
+From 50d2c039f001acf6171625fe4148fb586b6cac67 Mon Sep 17 00:00:00 2001
+From: Benjamin Mahler <bmahler@apache.org>
+Date: Wed, 24 Jun 2020 18:30:12 -0400
+Subject: [PATCH 25/25] Added debug logging for slave_public reservations not
+ being offered.
+
+---
+ src/master/allocator/mesos/hierarchical.cpp | 87 +++++++++++++++++++++
+ 1 file changed, 87 insertions(+)
+
+diff --git a/src/master/allocator/mesos/hierarchical.cpp b/src/master/allocator/mesos/hierarchical.cpp
+index 982377c5b..4b6600b48 100644
+--- a/src/master/allocator/mesos/hierarchical.cpp
++++ b/src/master/allocator/mesos/hierarchical.cpp
+@@ -1567,9 +1567,15 @@ void HierarchicalAllocatorProcess::__allocate()
+         slaves.contains(slaveId) &&
+         slaves.at(slaveId).activated) {
+       slaveIds.push_back(slaveId);
++    } else {
++      LOG(ERROR) << "__allocate() XXX Filtered out agent! " << slaveId;
+     }
+   }
+ 
++  LOG(ERROR) << "__allocate() allocation candidates size vs whitelisted size "
++             << allocationCandidates.size() << " vs " << slaveIds.size()
++             << " expected equal";
++
+   // Randomize the order in which slaves' resources are allocated.
+   //
+   // TODO(vinod): Implement a smarter sorting algorithm.
+@@ -1719,11 +1725,21 @@ void HierarchicalAllocatorProcess::__allocate()
+   // allocated in the current cycle.
+   hashmap<SlaveID, Resources> offeredSharedResources;
+ 
++  LOG(ERROR) << "__allocate() loop 1:"
++             << "\n roles = " << stringify(roles)
++             << "\n quotaRoleSorter->sort() = "
++               << stringify(quotaRoleSorter->sort());
++
+   // Quota comes first and fair share second. Here we process only those
+   // roles for which quota is set (quota'ed roles). Such roles form a
+   // special allocation group with a dedicated sorter.
+   foreach (const SlaveID& slaveId, slaveIds) {
+     foreach (const string& role, quotaRoleSorter->sort()) {
++      if (role == "slave_public") {
++        LOG(ERROR) << "__allocate() loop 1: reached 'slave_public'"
++                   << " in agent " << slaveId;
++      }
++
+       CHECK(quotas.contains(role));
+ 
+       const Quota& quota = quotas.at(role);
+@@ -1734,6 +1750,10 @@ void HierarchicalAllocatorProcess::__allocate()
+         continue;
+       }
+ 
++      if (role == "slave_public") {
++        LOG(ERROR) << "__allocate() loop 1: step 1";
++      }
++
+       // This is a __quantity__ with no meta-data.
+       Resources roleReservationScalarQuantities =
+         reservationScalarQuantities.get(role).getOrElse(Resources());
+@@ -1782,6 +1802,14 @@ void HierarchicalAllocatorProcess::__allocate()
+ 
+         Slave& slave = slaves.at(slaveId);
+ 
++        if (role == "slave_public") {
++          LOG(ERROR) << "__allocate() loop 1: step 2"
++                     << " with framework " << frameworkId
++                     << " with agent " << slaveId
++                     << " with available resources " << slave.getAvailable()
++                     << " and allocated " << slave.getAllocated();
++        }
++
+         // Only offer resources from slaves that have GPUs to
+         // frameworks that are capable of receiving GPUs.
+         // See MESOS-5634.
+@@ -1791,6 +1819,10 @@ void HierarchicalAllocatorProcess::__allocate()
+           continue;
+         }
+ 
++        if (role == "slave_public") {
++          LOG(ERROR) << "__allocate() loop 1: step 3";
++        }
++
+         // If this framework is not region-aware, don't offer it
+         // resources on agents in remote regions.
+         if (!framework.capabilities.regionAware && isRemoteSlave(slave)) {
+@@ -1813,6 +1845,11 @@ void HierarchicalAllocatorProcess::__allocate()
+           }
+         }
+ 
++        if (role == "slave_public") {
++          LOG(ERROR) << "__allocate() loop 1: step 4"
++                     << " available = " << available;
++        }
++
+         // We allocate the role's reservations as well as any unreserved
+         // resources while ensuring the role stays within its quota limits.
+         // This means that we'll "chop" the unreserved resources up to
+@@ -1951,6 +1988,11 @@ void HierarchicalAllocatorProcess::__allocate()
+           break;
+         }
+ 
++        if (role == "slave_public") {
++          LOG(ERROR) << "__allocate() loop 1: step 5"
++                     << " resources = " << resources;
++        }
++
+         // When reservation refinements are present, old frameworks without the
+         // RESERVATION_REFINEMENT capability won't be able to understand the
+         // new format. While it's possible to translate the refined reservations
+@@ -1972,6 +2014,10 @@ void HierarchicalAllocatorProcess::__allocate()
+           continue;
+         }
+ 
++        if (role == "slave_public") {
++          LOG(ERROR) << "__allocate() loop 1: step 6";
++        }
++
+         VLOG(2) << "Allocating " << resources << " on agent " << slaveId
+                 << " to role " << role << " of framework " << frameworkId
+                 << " as part of its role quota";
+@@ -2020,8 +2066,19 @@ void HierarchicalAllocatorProcess::__allocate()
+   // in the offers since these are not part of the headroom (and
+   // therefore can't be used to satisfy quota).
+ 
++  LOG(ERROR) << "__allocate() loop 2:"
++             << "\n roles = " << stringify(roles)
++             << "\n roleSorter->sort() = " << stringify(roleSorter->sort());
++
+   foreach (const SlaveID& slaveId, slaveIds) {
+     foreach (const string& role, roleSorter->sort()) {
++      if (role == "slave_public") {
++        LOG(ERROR) << "__allocate() loop 2: reached 'slave_public'"
++                   << " in agent " << slaveId
++                   << " quota.contains('slave_public')=="
++                   << quotas.contains(role) << " vs expected " << false;
++      }
++
+       // In the second allocation stage, we only allocate
+       // for non-quota roles.
+       if (quotas.contains(role)) {
+@@ -2042,6 +2099,14 @@ void HierarchicalAllocatorProcess::__allocate()
+         const Framework& framework = frameworks.at(frameworkId);
+         Slave& slave = slaves.at(slaveId);
+ 
++        if (role == "slave_public") {
++          LOG(ERROR) << "__allocate() loop 2: reached framework "
++                     << frameworkId << " for 'slave_public' in agent "
++                     << slaveId
++                     << " with available resources " << slave.getAvailable()
++                     << " and allocated " << slave.getAllocated();
++        }
++
+         // Only offer resources from slaves that have GPUs to
+         // frameworks that are capable of receiving GPUs.
+         // See MESOS-5634.
+@@ -2051,12 +2116,20 @@ void HierarchicalAllocatorProcess::__allocate()
+           continue;
+         }
+ 
++        if (role == "slave_public") {
++          LOG(ERROR) << "__allocate() loop 2: 'slave_public' reached step 1";
++        }
++
+         // If this framework is not region-aware, don't offer it
+         // resources on agents in remote regions.
+         if (!framework.capabilities.regionAware && isRemoteSlave(slave)) {
+           continue;
+         }
+ 
++        if (role == "slave_public") {
++          LOG(ERROR) << "__allocate() loop 2: 'slave_public' reached step 2";
++        }
++
+         // Calculate the currently available resources on the slave, which
+         // is the difference in non-shared resources between total and
+         // allocated, plus all shared resources on the agent (if applicable).
+@@ -2097,6 +2170,9 @@ void HierarchicalAllocatorProcess::__allocate()
+           break;
+         }
+ 
++        LOG(ERROR) << "__allocate() loop 2: 'slave_public' reached step 3"
++                   << " resources = " << resources;
++
+         // Remove revocable resources if the framework has not opted for them.
+         if (!framework.capabilities.revocableResources) {
+           resources = resources.nonRevocable();
+@@ -2138,11 +2214,16 @@ void HierarchicalAllocatorProcess::__allocate()
+           continue;
+         }
+ 
++        LOG(ERROR) << "__allocate() loop 2: 'slave_public' reached step 4"
++                   << " resources = " << resources;
++
+         // If the framework filters these resources, ignore.
+         if (isFiltered(frameworkId, role, slaveId, resources)) {
+           continue;
+         }
+ 
++        LOG(ERROR) << "__allocate() loop 2: 'slave_public' reached step 5";
++
+         VLOG(2) << "Allocating " << resources << " on agent " << slaveId
+                 << " to role " << role << " of framework " << frameworkId;
+ 
+@@ -2572,6 +2653,9 @@ void HierarchicalAllocatorProcess::trackFrameworkUnderRole(
+ {
+   CHECK(initialized);
+ 
++  LOG(ERROR) << "Tracking framework " << frameworkId
++             << " under role " << role;
++
+   // If this is the first framework to subscribe to this role, or have
+   // resources allocated to this role, initialize state as necessary.
+   if (!roles.contains(role)) {
+@@ -2600,6 +2684,9 @@ void HierarchicalAllocatorProcess::untrackFrameworkUnderRole(
+ {
+   CHECK(initialized);
+ 
++  LOG(ERROR) << "Untracking framework " << frameworkId
++             << " under role " << role;
++
+   CHECK(roles.contains(role));
+   CHECK(roles.at(role).contains(frameworkId));
+   CHECK(frameworkSorters.contains(role));
+-- 
+2.25.1
+

@@ -1,7 +1,7 @@
-From 048401921cef9c2c94793b2e4b800e23440e9516 Mon Sep 17 00:00:00 2001
+From 71a03c4550cb3e209099b881ee12360f3afd587d Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Gast=C3=B3n=20Kleiman?= <gaston@mesosphere.io>
 Date: Tue, 10 Jul 2018 08:06:32 -0700
-Subject: [PATCH 06/24] Improved logging for offers and inverse offers.
+Subject: [PATCH 06/25] Improved logging for offers and inverse offers.
 
 Log offer IDs and inverse offer IDs when sending out offers and
 inverse offers so it is easier to match them to their ACCEPT or DECLINE
@@ -19,7 +19,7 @@ Review: https://reviews.apache.org/r/67817/
  1 file changed, 18 insertions(+), 4 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 42f88b699..e49883e96 100644
+index 19526b537..65632239b 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -8753,6 +8753,9 @@ void Master::offer(
@@ -73,5 +73,5 @@ index 42f88b699..e49883e96 100644
    framework->send(message);
  }
 -- 
-2.21.0
+2.25.1
 

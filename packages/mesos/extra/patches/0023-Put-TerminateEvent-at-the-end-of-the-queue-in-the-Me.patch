@@ -1,7 +1,7 @@
-From 24e056553e4506176c18a3e5d8e7234ad81cce23 Mon Sep 17 00:00:00 2001
+From e47c3d61261fdf0ed3747f76d20fe3b1fe2a5cf0 Mon Sep 17 00:00:00 2001
 From: Alexander Rukletsov <alexr@apache.org>
 Date: Thu, 27 Sep 2018 15:20:01 +0200
-Subject: [PATCH 23/24] Put `TerminateEvent` at the end of the queue in the
+Subject: [PATCH 23/25] Put `TerminateEvent` at the end of the queue in the
  Mesos library.
 
 This is to ensure all pending dispatches are processed. However
@@ -34,5 +34,5 @@ index 9fde5e4cd..d889d762d 100644
  
      delete process;
 -- 
-2.21.0
+2.25.1
 

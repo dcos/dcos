@@ -1,7 +1,7 @@
-From 5b346926e9aa49e2d87a07ccbc32ab7e3893119b Mon Sep 17 00:00:00 2001
+From ea3d356216ce29a6c7ff8a50b534b17af1a61b5c Mon Sep 17 00:00:00 2001
 From: Joseph Wu <josephwu@apache.org>
 Date: Thu, 10 Nov 2016 11:29:19 -0800
-Subject: [PATCH 03/24] Revert "Fixed the broken metrics information of master
+Subject: [PATCH 03/25] Revert "Fixed the broken metrics information of master
  in WebUI."
 
 This reverts commit b2fc58883e2cd0ca144fd1b0e10cad4235a50223.
@@ -69,5 +69,5 @@ index 6e0a40f93..8d9b5f49d 100644
              $timeout(pollMetrics, $scope.delay);
            }
 -- 
-2.21.0
+2.25.1
 

@@ -1,7 +1,7 @@
-From 0d51c40f835b1be0c97e3a63e986f6ff84ef6354 Mon Sep 17 00:00:00 2001
+From bb4cf0a991405c567b2205870481272e9544d458 Mon Sep 17 00:00:00 2001
 From: Kevin Klues <klueska@gmail.com>
 Date: Thu, 9 Feb 2017 19:39:42 -0800
-Subject: [PATCH 04/24] Updated mesos containerizer to ignore GPU isolator
+Subject: [PATCH 04/25] Updated mesos containerizer to ignore GPU isolator
  creation failure.
 
 This cherry-pick will be maintained in DC/OS to avoid the problem of
@@ -45,5 +45,5 @@ index fa1473edd..79c5090cd 100644
      }
    }
 -- 
-2.21.0
+2.25.1
 

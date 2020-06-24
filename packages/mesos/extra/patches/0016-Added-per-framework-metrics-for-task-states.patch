@@ -1,7 +1,7 @@
-From 61567e86c97a2886372a0e12bcf3573d36289528 Mon Sep 17 00:00:00 2001
+From bb11c8e225d93e00527883d88495f5959637f96d Mon Sep 17 00:00:00 2001
 From: Greg Mann <greg@mesosphere.io>
 Date: Wed, 1 Aug 2018 07:58:31 -0700
-Subject: [PATCH 16/24] Added per-framework metrics for task states.
+Subject: [PATCH 16/25] Added per-framework metrics for task states.
 
 Review: https://reviews.apache.org/r/67813/
 ---
@@ -12,7 +12,7 @@ Review: https://reviews.apache.org/r/67813/
  4 files changed, 79 insertions(+), 2 deletions(-)
 
 diff --git a/src/master/master.cpp b/src/master/master.cpp
-index 1569e978d..263839e7e 100644
+index 6feeae050..272978034 100644
 --- a/src/master/master.cpp
 +++ b/src/master/master.cpp
 @@ -10297,6 +10297,8 @@ void Master::updateTask(Task* task, const StatusUpdate& update)
@@ -200,5 +200,5 @@ index b6fe20fb5..071246b71 100644
  
  
 -- 
-2.21.0
+2.25.1
 

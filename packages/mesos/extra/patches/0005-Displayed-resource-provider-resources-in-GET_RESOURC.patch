@@ -1,7 +1,7 @@
-From ca6e87bea52678bc5249b7ddf405cc1f4d955787 Mon Sep 17 00:00:00 2001
+From eb470c8f0ba3189338096488838de34f6eb7d296 Mon Sep 17 00:00:00 2001
 From: Benjamin Bannier <benjamin.bannier@mesosphere.io>
 Date: Tue, 20 Mar 2018 10:08:09 +0100
-Subject: [PATCH 05/24] Displayed resource provider resources in
+Subject: [PATCH 05/25] Displayed resource provider resources in
  GET_RESOURCE_PROVIDER response.
 
 Review: https://reviews.apache.org/r/65832/
@@ -87,5 +87,5 @@ index 01440330f..5985070f8 100644
  
  
 -- 
-2.21.0
+2.25.1
 
