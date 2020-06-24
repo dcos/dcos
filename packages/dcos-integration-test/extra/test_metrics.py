@@ -484,7 +484,8 @@ def test_metrics_diagnostics(dcos_api_session: DcosApiSession) -> None:
 
 def test_metrics_fluentbit(dcos_api_session: DcosApiSession) -> None:
     """Ensure that fluent bit metrics are present on masters and agents"""
-    nodes = get_master_and_agents(dcos_api_session)
+    nodes = dcos_api_session.masters
+    nodes.extend(get_agents(dcos_api_session))
 
     for node in nodes:
         @retrying.retry(wait_fixed=STD_INTERVAL, stop_max_delay=METRICS_WAITTIME)
