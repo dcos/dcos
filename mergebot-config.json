@@ -198,7 +198,7 @@
                           "id": "DcOs_Open_Test_IntegrationTest_AwsOnpremWStaticBackendGroup4TerraformSpotBlock"
                         }                                                          
                     },
-    "autotest-on-backports-and-trains": false,
-    "autotrigger-tests-on-ready-for-review": false,
+    "autotest-on-backports-and-trains": true,
+    "autotrigger-tests-on-ready-for-review": true,
     "ready-for-review-label": "Ready For Review"
 }
