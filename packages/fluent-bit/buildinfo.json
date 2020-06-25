@@ -1,8 +1,8 @@
 {
   "single_source" : {
     "kind": "url_extract",
-    "url": "https://fluentbit.io/releases/1.0/fluent-bit-1.0.4.tar.gz",
-    "sha1": "63c38fb107c1b6e409e89850fabfaeb84bc95d23"
+    "url": "https://fluentbit.io/releases/1.4/fluent-bit-1.4.6.tar.gz",
+    "sha1": "f57b92b76df80d51c72ba4407330268ce21ab4fd"
   },
   "username": "dcos_fluent_bit",
   "group": "systemd-journal"

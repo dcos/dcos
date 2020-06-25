@@ -2958,7 +2958,11 @@ package:
           # Flush
           # =====
           # Set the flush interval in seconds.
-          Flush        5
+          Flush        1
+          # Storage
+          # =======
+          # Configure buffer path
+          storage.path              /var/lib/dcos/flb-storage/
           # Daemon
           # ======
           # Instruct Fluent Bit to run in foreground or background mode.
@@ -2984,9 +2988,6 @@ package:
       [INPUT]
           Name systemd
           Tag host.*
-          # if /var/log/journal is unavailable (or journald is set to volatile)
-          # /run/log/journal is used instead, and this unit will not load.
-          Path /var/log/journal
           # Delete underscores at the start of field name. This is useful when logs
           # are further forwarded into elasticsearch, where fields with leading
           # underscore are reserved for internal use.
@@ -2995,6 +2996,9 @@ package:
           # fluent bit will attempt to send the entire contents of the journal
           # on startup, which can cause performance issues.
           Read_From_Tail    On
+          # Buffer logs to filesystem
+          storage.type      filesystem
+          Mem_Buf_Limit     100MB
       # Log forwarding is disabled by default.
       [OUTPUT]
           Name  null
@@ -3011,3 +3015,6 @@ package:
           Port 61092
           Chunk_Size 32
           Buffer_Size 64
+          # Buffer logs to filesystem
+          storage.type      filesystem
+          Mem_Buf_Limit     100MB

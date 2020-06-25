@@ -12,6 +12,9 @@ PermissionsStartOnly=True
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/fluent-bit.env
 
+ExecStartPre=/usr/bin/mkdir -p /var/lib/dcos/flb-storage/
+ExecStartPre=/bin/chown -R dcos_fluent_bit /var/lib/dcos/flb-storage/
+
 LimitNOFILE=16384
 
 ExecStartPre=/opt/mesosphere/bin/bootstrap ${FLUENT_BIT_SERVICE}
