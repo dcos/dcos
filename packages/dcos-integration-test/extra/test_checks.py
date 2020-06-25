@@ -2,12 +2,13 @@ import logging
 import random
 import uuid
 
+from dcos_test_utils.dcos_api import DcosApiSession
 
 __maintainer__ = 'branden'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
 
 
-def test_checks_cli(dcos_api_session):
+def test_checks_cli(dcos_api_session: DcosApiSession) -> None:
     base_cmd = [
         '/opt/mesosphere/bin/dcos-shell',
         'dcos-check-runner',
@@ -56,7 +57,7 @@ def test_checks_cli(dcos_api_session):
     })
 
 
-def test_checks_api(dcos_api_session):
+def test_checks_api(dcos_api_session: DcosApiSession) -> None:
     """
     Test the checks API at /system/checks/
     This will test that all checks run on all agents return a normal status. A

@@ -3,9 +3,13 @@ import logging
 import re
 import uuid
 
+from typing import Any, Optional
+
 import pytest
 import requests
 import retrying
+
+from dcos_test_utils.dcos_api import DcosApiSession
 
 
 __maintainer__ = 'mnaboka'
@@ -17,7 +21,7 @@ NEW_ENTRY_PATTERN = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}: "
 log = logging.getLogger(__name__)
 
 
-def skip_test_if_dcos_journald_log_disabled(dcos_api_session):
+def skip_test_if_dcos_journald_log_disabled(dcos_api_session: DcosApiSession) -> None:
     response = dcos_api_session.get('/dcos-metadata/ui-config.json').json()
     try:
         strategy = response['uiConfiguration']['plugins']['mesos']['logging-strategy']
@@ -28,7 +32,7 @@ def skip_test_if_dcos_journald_log_disabled(dcos_api_session):
         pytest.skip('Skipping a test since journald logging is disabled')
 
 
-def validate_json_entry(entry: dict):
+def validate_json_entry(entry: dict) -> None:
     required_fields = {'fields', 'cursor', 'monotonic_timestamp', 'realtime_timestamp'}
 
     assert set(entry.keys()) <= required_fields, (
@@ -37,20 +41,20 @@ def validate_json_entry(entry: dict):
     assert entry['fields'], '`fields` cannot be empty dict. Got {}'.format(entry)
 
 
-def validate_sse_entry(entry):
+def validate_sse_entry(entry: str) -> None:
     assert entry, 'Expect at least one line. Got {}'.format(entry)
     entry_json = json.loads(entry.lstrip('data: '))
     validate_json_entry(entry_json)
 
 
-def check_response_ok(response: requests.models.Response, headers: dict):
+def check_response_ok(response: requests.models.Response, headers: dict) -> None:
     assert response.ok, 'Request {} returned response code {}'.format(response.url, response.status_code)
     for name, value in headers.items():
         assert response.headers.get(name) == value, (
             'Request {} header {} must be {}. All headers {}'.format(response.url, name, value, response.headers))
 
 
-def test_log_text(dcos_api_session):
+def test_log_text(dcos_api_session: DcosApiSession) -> None:
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
         response = dcos_api_session.logs.get('/v1/range/?limit=10', node=node)
         check_response_ok(response, {'Content-Type': 'text/plain'})
@@ -61,21 +65,21 @@ def test_log_text(dcos_api_session):
         assert entries_count == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(entries_count, logs)
 
 
-def test_log_json(dcos_api_session):
+def test_log_json(dcos_api_session: DcosApiSession) -> None:
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
         response = dcos_api_session.logs.get('/v1/range/?limit=1', node=node, headers={'Accept': 'application/json'})
         check_response_ok(response, {'Content-Type': 'application/json'})
         validate_json_entry(response.json())
 
 
-def test_log_server_sent_events(dcos_api_session):
+def test_log_server_sent_events(dcos_api_session: DcosApiSession) -> None:
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
         response = dcos_api_session.logs.get('/v1/range/?limit=1', node=node, headers={'Accept': 'text/event-stream'})
         check_response_ok(response, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache'})
         validate_sse_entry(response.text)
 
 
-def test_stream(dcos_api_session):
+def test_stream(dcos_api_session: DcosApiSession) -> None:
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
         response = dcos_api_session.logs.get('/v1/stream/?skip_prev=1', node=node, stream=True,
                                              headers={'Accept': 'text/event-stream'})
@@ -87,7 +91,7 @@ def test_stream(dcos_api_session):
         validate_sse_entry(data)
 
 
-def test_log_proxy(dcos_api_session):
+def test_log_proxy(dcos_api_session: DcosApiSession) -> None:
     r = dcos_api_session.get('/mesos/master/slaves')
     check_response_ok(r, {})
 
@@ -101,7 +105,7 @@ def test_log_proxy(dcos_api_session):
         assert len(lines) == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(len(lines), lines)
 
 
-def test_task_logs(dcos_api_session):
+def test_task_logs(dcos_api_session: DcosApiSession) -> None:
     skip_test_if_dcos_journald_log_disabled(dcos_api_session)
     test_uuid = uuid.uuid4().hex
 
@@ -130,7 +134,7 @@ def test_task_logs(dcos_api_session):
         validate_sse_entry(data)
 
 
-def test_pod_logs(dcos_api_session):
+def test_pod_logs(dcos_api_session: DcosApiSession) -> None:
     skip_test_if_dcos_journald_log_disabled(dcos_api_session)
     test_uuid = uuid.uuid4().hex
 
@@ -164,13 +168,13 @@ def test_pod_logs(dcos_api_session):
 
 
 @retrying.retry(wait_fixed=1000, stop_max_delay=3000)
-def check_response(content, get_response):
+def check_response(content: str, get_response: Any) -> None:
     response = get_response()
     check_response_ok(response, {})
     assert content in response.text, 'Missing {} in response {}'.format(content, response.text)
 
 
-def get_task_url(dcos_api_session, task_name, stream=False):
+def get_task_url(dcos_api_session: DcosApiSession, task_name: str, stream: bool=False) -> str:
     """ The function returns a logging URL for a given task
 
     :param dcos_api_session: dcos_api_session fixture
@@ -247,16 +251,16 @@ def get_task_url(dcos_api_session, task_name, stream=False):
                                                                                          container_id)
 
 
-def validate_journald_cursor(c: str, cursor_regexp=None):
+def validate_journald_cursor(c: Any, cursor_regexp: Optional[bytes] = None) -> None:
     if not cursor_regexp:
         cursor_regexp = b'^id: s=[a-f0-9]+;i=[a-f0-9]+;b=[a-f0-9]+;'
         cursor_regexp += b'm=[a-f0-9]+;t=[a-f0-9]+;x=[a-f0-9]+$'
 
     p = re.compile(cursor_regexp)
-    assert p.match(c), "Cursor {} does not match regexp {}".format(c, cursor_regexp)
+    assert p.match(c), "Cursor {} does not match regexp {}".format(c, cursor_regexp.decode())
 
 
-def test_log_v2_text(dcos_api_session):
+def test_log_v2_text(dcos_api_session: DcosApiSession) -> None:
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
         response = dcos_api_session.logs.get('/v2/component?limit=10', node=node)
         check_response_ok(response, {'Content-Type': 'text/plain'})
@@ -267,7 +271,7 @@ def test_log_v2_text(dcos_api_session):
         assert entries_count == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(entries_count, logs)
 
 
-def test_log_v2_server_sent_events(dcos_api_session):
+def test_log_v2_server_sent_events(dcos_api_session: DcosApiSession) -> None:
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
         response = dcos_api_session.logs.get(
             '/v2/component?limit=1', node=node, headers={'Accept': 'text/event-stream'}, stream=True)
@@ -279,7 +283,7 @@ def test_log_v2_server_sent_events(dcos_api_session):
         validate_sse_entry(data)
 
 
-def test_log_v2_stream(dcos_api_session):
+def test_log_v2_stream(dcos_api_session: DcosApiSession) -> None:
     for node in dcos_api_session.masters + dcos_api_session.all_slaves:
         response = dcos_api_session.logs.get('/v2/component?skip=-1', node=node, stream=True,
                                              headers={'Accept': 'text/event-stream'})
@@ -291,7 +295,7 @@ def test_log_v2_stream(dcos_api_session):
         validate_sse_entry(data)
 
 
-def test_log_v2_proxy(dcos_api_session):
+def test_log_v2_proxy(dcos_api_session: DcosApiSession) -> None:
     r = dcos_api_session.get('/mesos/master/slaves')
     check_response_ok(r, {})
 
@@ -305,7 +309,7 @@ def test_log_v2_proxy(dcos_api_session):
         assert len(lines) == 10, 'Expect 10 log entries. Got {}. All lines {}'.format(len(lines), lines)
 
 
-def test_log_v2_task_logs(dcos_api_session):
+def test_log_v2_task_logs(dcos_api_session: DcosApiSession) -> None:
     test_uuid = uuid.uuid4().hex
 
     task_id = "integration-test-task-logs-{}".format(test_uuid)
@@ -333,7 +337,7 @@ def test_log_v2_task_logs(dcos_api_session):
         _assert_can_download_files(dcos_api_session, task_id, ['stdout', 'stderr'])
 
 
-def test_log_v2_pod_logs(dcos_api_session):
+def test_log_v2_pod_logs(dcos_api_session: DcosApiSession) -> None:
     test_uuid = uuid.uuid4().hex
 
     pod_id = 'integration-test-pod-logs-{}'.format(test_uuid)
@@ -360,7 +364,7 @@ def test_log_v2_pod_logs(dcos_api_session):
         _assert_can_download_files(dcos_api_session, pod_id, ['stdout', 'stderr', 'foo'])
 
 
-def test_log_v2_api(dcos_api_session):
+def test_log_v2_api(dcos_api_session: DcosApiSession) -> None:
     test_uuid = uuid.uuid4().hex
 
     task_id = "integration-test-task-logs-{}".format(test_uuid)
@@ -421,7 +425,7 @@ def test_log_v2_api(dcos_api_session):
         assert response.text == "three\nfour\nfive\n"
 
 
-def _assert_files_in_browse_response(dcos_api_session, task, expected_files):
+def _assert_files_in_browse_response(dcos_api_session: DcosApiSession, task: str, expected_files: Any) -> None:
     response = dcos_api_session.logs.get('/v2/task/{}/browse'.format(task))
     check_response_ok(response, {})
 
@@ -438,7 +442,7 @@ def _assert_files_in_browse_response(dcos_api_session, task, expected_files):
         assert expected_file in files, 'Expecting file {} in {}'.format(expected_file, files)
 
 
-def _assert_can_download_files(dcos_api_session, task, expected_files):
+def _assert_can_download_files(dcos_api_session: DcosApiSession, task: str, expected_files: Any) -> None:
     for expected_file in expected_files:
         response = dcos_api_session.logs.get('/v2/task/{}/file/{}/download'.format(task, expected_file))
         check_response_ok(response, {

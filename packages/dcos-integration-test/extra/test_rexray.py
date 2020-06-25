@@ -4,13 +4,14 @@ import uuid
 
 import pytest
 
+from dcos_test_utils.dcos_api import DcosApiSession
 from test_helpers import get_expanded_config
 
 __maintainer__ = 'gpaul'
 __contact__ = 'dcos-security@mesosphere.io'
 
 
-def test_move_external_volume_to_new_agent(dcos_api_session):
+def test_move_external_volume_to_new_agent(dcos_api_session: DcosApiSession) -> None:
     """Test that an external volume is successfully attached to a new agent.
 
     If the dcos_api_session has only one agent, the volume will be detached and
@@ -57,9 +58,9 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
         ).format(test_uuid=test_uuid, volume_path=mesos_volume_path),
         'constraints': [['hostname', 'LIKE', hosts[0]]],
     })
-    write_app['container']['type'] = 'MESOS'
-    write_app['container']['volumes'][0]['containerPath'] = mesos_volume_path
-    write_app['container']['volumes'][0]['external']['size'] = 1
+    write_app['container']['type'] = 'MESOS'  # type: ignore
+    write_app['container']['volumes'][0]['containerPath'] = mesos_volume_path  # type: ignore
+    write_app['container']['volumes'][0]['external']['size'] = 1  # type: ignore
 
     read_app = copy.deepcopy(base_app)
     read_app.update({
@@ -71,14 +72,14 @@ def test_move_external_volume_to_new_agent(dcos_api_session):
         ).format(test_uuid=test_uuid, volume_path=docker_volume_path),
         'constraints': [['hostname', 'LIKE', hosts[1]]],
     })
-    read_app['container'].update({
+    read_app['container'].update({  # type: ignore
         'type': 'DOCKER',
         'docker': {
             'image': 'busybox',
             'network': 'HOST',
         }
     })
-    read_app['container']['volumes'][0]['containerPath'] = docker_volume_path
+    read_app['container']['volumes'][0]['containerPath'] = docker_volume_path  # type: ignore
 
     # Volume operations can take several minutes.
     timeout = 600

@@ -5,6 +5,7 @@ Tests automated migration script for users stored by dcos-oauth service
 import logging
 import time
 from subprocess import check_call
+from typing import Any, Generator
 
 import kazoo.exceptions
 import pytest
@@ -36,13 +37,13 @@ def zk() -> KazooClient:
 
 
 @pytest.fixture()
-def create_dcos_oauth_users(zk: KazooClient) -> None:
+def create_dcos_oauth_users(zk: KazooClient) -> Generator:
 
-    def _create_dcos_oauth_user(uid):
+    def _create_dcos_oauth_user(uid: str) -> None:
         log.info('Creating user `%s`', uid)
         zk.create('/dcos/users/{uid}'.format(uid=uid), makepath=True)
 
-    def _delete_dcos_oauth_user(uid):
+    def _delete_dcos_oauth_user(uid: str) -> None:
         try:
             zk.delete('/dcos/users/{uid}'.format(uid=uid))
         except kazoo.exceptions.NoNodeError:
@@ -61,7 +62,7 @@ def create_dcos_oauth_users(zk: KazooClient) -> None:
 def test_iam_migration(dcos_api_session: DcosApiSession) -> None:
     check_call(['sudo', 'systemctl', 'stop', 'dcos-bouncer-migrate-users.service'])
 
-    def _filter_test_uids(r):
+    def _filter_test_uids(r: Any) -> list:
         return [
             u['uid'] for u in r.json()['array'] if '@example.com' in u['uid']]
 

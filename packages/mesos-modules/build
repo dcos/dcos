@@ -1,25 +1,25 @@
 #!/bin/bash
 
-pushd /pkg/src/mesos-modules/
-./bootstrap
-popd
-
+# protoc is compiled with shared libaries (a part of mesos dcos package)
+# and needs LD_LIBARY_PATH to be set correctly, this is done by sourcing
+# the `environment.export` file below.
 source /opt/mesosphere/environment.export
 
-# Add the 3rdparty directories.
-export CPPFLAGS='-I/opt/mesosphere/active/boost-libs/include -I/opt/mesosphere/lib/mesos/3rdparty/include'
-export CFLAGS=-I/opt/mesosphere/lib/mesos/3rdparty/include
-export LDFLAGS='-L/opt/mesosphere/active/boost-libs/lib -L/opt/mesosphere/lib/mesos/3rdparty/lib'
+pushd /pkg/src/mesos-modules
 
 mkdir -p build
 pushd build
 
-/pkg/src/mesos-modules/configure \
-    --with-mesos=/opt/mesosphere/active/mesos \
-    --with-openssl=/opt/mesosphere/active/openssl \
-    --with-glog=/opt/mesosphere/lib/mesos/3rdparty/include/glog \
-    --prefix="$PKG_PATH"
+cmake .. \
+  -DMESOS_ROOT=/opt/mesosphere/active/mesos \
+  -DBOOST_ROOT_DIR=/opt/mesosphere/active/boost-libs \
+  -DCMAKE_INSTALL_RPATH=/opt/mesosphere/lib \
+  -DBUILD_TESTING=OFF \
+  -DCMAKE_BUILD_TYPE=Release
 
-make -j$NUM_CORES
-make install
+cmake --build . --config Release -- -j$NUM_CORES
+
+cmake -DCMAKE_INSTALL_PREFIX=$PKG_PATH -P cmake_install.cmake
+
+popd
 popd
