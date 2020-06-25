@@ -33,6 +33,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Marathon updated to 1.8.242
 
 * Marathon was checking authorization for unrelated apps when performing a kill-and-scale operations; this has been resolved. (MARATHON-8731)
+* Update to Fluentbit [1.4.6](https://docs.fluentbit.io/manual/installation/upgrade-notes)
+
 
 ### Security updates
 
