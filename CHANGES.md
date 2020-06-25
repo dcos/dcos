@@ -26,3 +26,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Ensured that marathon and SDK labeled reservations are not offered to other schedulers (D2IQ-68800)
 
 * Updated OpenResty to 1.15.8.4. (DCOS_OSS-5967)
+
+* Update Telegraf configuration to reduce errors, vary requests to reduce load, sample less frequently. (COPS-5629)
