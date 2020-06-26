@@ -18,6 +18,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fix to allow spaces in services endpoint URI's. (DCOS_OSS-5967)
 
+* Update Telegraf configuration to reduce errors, vary requests to reduce load, sample less frequently. (COPS-5629)
+
 
 ## DC/OS 2.1.0 (2020-06-09)
 
@@ -168,6 +170,3 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Metronome jobs networking is now configurable (MARATHON-8727)
 
 * A bug was fixed in which Metronome failed to see jobs from a prior version of Metronome (MARATHON-8746)
-* Updated OpenResty to 1.15.8.4. (DCOS_OSS-5967)
-
-* Update Telegraf configuration to reduce errors, vary requests to reduce load, sample less frequently. (COPS-5629)
