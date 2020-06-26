@@ -9,7 +9,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Removed trailing newline from ZooKeeper log messages. (D2IQ-68394)
 
 * Updated DC/OS UI to [v5.1.1](https://github.com/dcos/dcos-ui/releases/tag/v5.1.1).
+
 * Fix incorrect ownership after migration of `/run/dcos/telegraf/dcos_statsd/containers`. (D2IQ-69295)
+
+* Update Telegraf configuration to reduce errors, vary requests to reduce load, sample less frequently. (COPS-5629)
 
 #### Update Metronome to 0.6.48
 
@@ -33,6 +36,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Marathon updated to 1.8.242
 
 * Marathon was checking authorization for unrelated apps when performing a kill-and-scale operations; this has been resolved. (MARATHON-8731)
+
 * Update to Fluentbit [1.4.6](https://docs.fluentbit.io/manual/installation/upgrade-notes)
 
 
@@ -371,6 +375,3 @@ No breaking changes are known to date.
 * Added a warning to the installer to let the user know in case kernel modules required by the DC/OS storage service are not loaded. (DCOS-49088)
 
 * Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
-* Updated OpenResty to 1.15.8.4. (DCOS_OSS-5967)
-
-* Update Telegraf configuration to reduce errors, vary requests to reduce load, sample less frequently. (COPS-5629)
