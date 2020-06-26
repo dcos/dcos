@@ -18,6 +18,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fix to allow spaces in services endpoint URI's. (DCOS_OSS-5967)
 
+* Update Telegraf configuration to reduce errors, vary requests to reduce load, sample less frequently. (COPS-5629)
+
 
 ## DC/OS 2.0.5 (2020-06-15)
 
