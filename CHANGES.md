@@ -92,7 +92,9 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 
 * A race condition would cause Marathon to fail to start properly. (MARATHON-8741)
 
-#### Update Metronome to [0.6.42](https://github.com/dcos/metronome/blob/4e1eac1c4d6c97296332f9664ba4269a15336ed8/changelog.md)
+#### Update Metronome to [0.6.48](https://github.com/dcos/metronome/blob/b1ac8790de6ad89e5dbb15ed096fac759ff88a0e/changelog.md)
+
+* Fix an issue in Metronome where it became unresponsive when lots of pending jobs existed during boot. (DCOS_OSS-5965)
 
 * There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
 
