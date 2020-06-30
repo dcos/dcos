@@ -1,10 +1,10 @@
 {
-  "requires": ["java", "python-requests"],
+  "requires": ["java"],
   "sources": {
     "exhibitor": {
       "kind": "git",
       "git": "https://github.com/dcos/exhibitor.git",
-      "ref": "4965c0c9e3e2150dd5bd5af44d55204bb605a5ba",
+      "ref": "6b0d5d951196e383d0852068ad565fc4da56631a",
       "ref_origin": "master"
     },
     "zookeeper": {

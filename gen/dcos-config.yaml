@@ -314,7 +314,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liboverlay.so",
             "modules":
               [
                 {
@@ -347,7 +347,7 @@ package:
         "libraries":
         [
           {
-            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmesos_network_overlay.so",
+            "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/liboverlay.so",
             "modules":
               [
                 {
@@ -370,7 +370,7 @@ package:
     content: |
       {
         "libraries": [ {
-          "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmetrics-module.so",
+          "file": "/opt/mesosphere/active/mesos-modules/lib/mesos/libmetrics.so",
           "modules": [ {
             "name": "com_mesosphere_dcos_MetricsIsolatorModule",
             "parameters": [
@@ -1438,7 +1438,7 @@ package:
     content: |
       MESOS_RESOURCES=[{"name":"ports","type":"RANGES","ranges": {"range": [{"begin": 1, "end": 21},{"begin": 23, "end": 5050},{"begin": 5052, "end": 32000}]}}]
       MESOS_DEFAULT_ROLE=slave_public
-      MESOS_ATTRIBUTES=public_ip:true;os:linux
+      MESOS_ATTRIBUTES=public_ip:true
   - path: /etc/mesos-executor-environment.json
     content: |
       {
@@ -1800,6 +1800,16 @@ package:
               },
               {
                   "Location": "/var/log/mesos-state.tar.gz",
+                  "Role": ["master"],
+                  "Optional": true
+              },
+              {
+                  "Location": "/var/lib/dcos/etcd/initial-state",
+                  "Role": ["master"],
+                  "Optional": true
+              },
+              {
+                  "Location": "/var/lib/dcos/etcd/initial-nodes",
                   "Role": ["master"],
                   "Optional": true
               }
@@ -2310,31 +2320,31 @@ package:
 {% endswitch %}
       [agent]
         ## Default data collection interval for all inputs
-        interval = "10s"
+        interval = "60s"
         ## Rounds collection interval to 'interval'
         ## ie, if interval="10s" then always collect on :00, :10, :20, etc.
-        round_interval = true
+        round_interval = false
         ## Telegraf will send metrics to outputs in batches of at most
         ## metric_batch_size metrics.
         ## This controls the size of writes that Telegraf sends to output plugins.
-        metric_batch_size = 1000
+        metric_batch_size = 50000
         ## For failed writes, telegraf will cache metric_buffer_limit metrics for each
         ## output, and will flush this buffer on a successful write. Oldest metrics
         ## are dropped first when this buffer fills.
         ## This buffer only fills when writes fail to output plugin(s).
-        metric_buffer_limit = 90000
+        metric_buffer_limit = 500000
         ## Collection jitter is used to jitter the collection by a random amount.
         ## Each plugin will sleep for a random time within jitter before collecting.
         ## This can be used to avoid many plugins querying things like sysfs at the
         ## same time, which can have a measurable effect on the system.
-        collection_jitter = "0s"
+        collection_jitter = "20s"
         ## Default flushing interval for all outputs. You shouldn't set this below
         ## interval. Maximum flush_interval will be flush_interval + flush_jitter
-        flush_interval = "10s"
+        flush_interval = "60s"
         ## Jitter the flush interval by a random amount. This is primarily to avoid
         ## large write spikes for users running a large number of telegraf instances.
         ## ie, a jitter of 5s and interval 10s means flushes will happen every 10-15s
-        flush_jitter = "0s"
+        flush_jitter = "20s"
         ## By default or when set to "0s", precision will be set to the same
         ## timestamp order as the collection interval, with the maximum being 1s.
         ##   ie, when interval = "10s", precision will be "1s"
@@ -2405,7 +2415,7 @@ package:
         ## Address to listen on
         listen = ":61091"
         ## Expiration interval for each metric before it's evicted from cache.
-        expiration_interval = "60s"
+        expiration_interval = "120s"
       # Read metrics from DC/OS Net Prometheus endpoint.
       [[inputs.prometheus]]
         ## An array of urls to scrape metrics from.
@@ -3026,7 +3036,11 @@ package:
           # Flush
           # =====
           # Set the flush interval in seconds.
-          Flush        5
+          Flush        1
+          # Storage
+          # =======
+          # Configure buffer path
+          storage.path              /var/lib/dcos/flb-storage/
           # Daemon
           # ======
           # Instruct Fluent Bit to run in foreground or background mode.
@@ -3052,9 +3066,6 @@ package:
       [INPUT]
           Name systemd
           Tag host.*
-          # if /var/log/journal is unavailable (or journald is set to volatile)
-          # /run/log/journal is used instead, and this unit will not load.
-          Path /var/log/journal
           # Delete underscores at the start of field name. This is useful when logs
           # are further forwarded into elasticsearch, where fields with leading
           # underscore are reserved for internal use.
@@ -3063,6 +3074,9 @@ package:
           # fluent bit will attempt to send the entire contents of the journal
           # on startup, which can cause performance issues.
           Read_From_Tail    On
+          # Buffer logs to filesystem
+          storage.type      filesystem
+          Mem_Buf_Limit     100MB
       # Log forwarding is disabled by default.
       [OUTPUT]
           Name  null
@@ -3079,6 +3093,9 @@ package:
           Port 61092
           Chunk_Size 32
           Buffer_Size 64
+          # Buffer logs to filesystem
+          storage.type      filesystem
+          Mem_Buf_Limit     100MB
   - path: /etc/dcos/network/cni/calico.conf
     content: |
       {

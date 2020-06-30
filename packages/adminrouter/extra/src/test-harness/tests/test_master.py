@@ -4,6 +4,7 @@ import copy
 import logging
 import os
 import time
+import urllib
 
 import pytest
 import requests
@@ -31,6 +32,26 @@ class TestServiceEndpoint:
                                              '/service/scheduler-alwaysthere/foo/bar/',
                                              assert_headers={'Accept-Encoding': 'gzip'},
                                              )
+
+    def test_escapes_are_in_upstream_request(
+        self, master_ar_process_perclass, mocker, valid_user_header
+    ):
+        """
+        Any space, question mark, or hash escaped in a path element of the
+        `/service` endpoint gets passed through to the service unchanged.
+        """
+        path = urllib.parse.quote('/foo/a ?#z/')
+        url = master_ar_process_perclass.make_url_from_path(
+            '/service/scheduler-alwaysthere/{}'.format(path)
+        )
+        resp = requests.get(url,
+                            allow_redirects=False,
+                            headers=valid_user_header)
+
+        assert resp.status_code == 200
+        req_data = resp.json()
+        assert req_data['method'] == 'GET'
+        assert req_data['path'] == path
 
 
 class TestAgentEndpoint:

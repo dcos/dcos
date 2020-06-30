@@ -1,5 +1,4 @@
 #!/bin/bash
-libdir="$PKG_PATH/lib"
 
 # TODO(cmaloney): Check prerequisites installed (glog, protobuf, boost)
 pushd "/pkg/src/mesos"
@@ -9,44 +8,39 @@ for patch in /pkg/extra/patches/*; do
   git -c user.name="Mesosphere CI" -c user.email="mesosphere-ci@users.noreply.github.com" am $patch
 done
 
-./bootstrap
-
 mkdir -p build
 pushd build
-# TODO(cmaloney): --with-glog=/usr --with-protobuf=/usr --with-boost=/usr
-# TODO(cmaloney): DESTDIR builds so we don't have to build as root?
-# TODO(nfnt): --with-grpc=/usr
-LDFLAGS="-Wl,-rpath,/opt/mesosphere/lib" "/pkg/src/mesos/configure" \
-  --prefix="$PKG_PATH" --enable-optimize --disable-python \
-  --enable-libevent --enable-ssl \
-  --enable-launcher-sealing \
-  --enable-install-module-dependencies \
-  --enable-grpc \
-  --enable-jemalloc-allocator \
-  --enable-seccomp-isolator \
-  --with-ssl=/opt/mesosphere/active/openssl \
-  --with-libevent=/opt/mesosphere/active/libevent \
-  --with-curl=/opt/mesosphere/active/curl \
-  --with-boost=/opt/mesosphere/active/boost-libs \
-  --with-libseccomp=/opt/mesosphere/active/libseccomp \
-  --disable-werror \
-  --sbindir="$PKG_PATH/bin"
-make -j$NUM_CORES
 
-make install
+cmake .. \
+  -DENABLE_SSL=ON \
+  -DOPENSSL_ROOT_DIR=/opt/mesosphere/active/openssl \
+  -DENABLE_LIBEVENT=ON \
+  -DUNBUNDLED_LIBEVENT=ON \
+  -DLIBEVENT_ROOT_DIR=/opt/mesosphere/active/libevent \
+  -DENABLE_LAUNCHER_SEALING=ON \
+  -DENABLE_JEMALLOC_ALLOCATOR=ON \
+  -DENABLE_SECCOMP_ISOLATOR=ON \
+  -DUNBUNDLED_LIBSECCOMP=ON \
+  -DLIBSECCOMP_ROOT_DIR=/opt/mesosphere/active/libseccomp \
+  -DBOOST_ROOT_DIR=/opt/mesosphere/active/boost-libs \
+  -DCURL_ROOT_DIR=/opt/mesosphere/active/curl \
+  -DENABLE_JAVA=ON \
+  -DBUILD_TESTING=OFF \
+  -DENABLE_INSTALL_MODULE_DEPENDENCIES=ON \
+  -DCMAKE_INSTALL_RPATH=/opt/mesosphere/lib \
+  -DMESOS_FINAL_PREFIX=/opt/mesosphere/active/mesos \
+  -DCMAKE_BUILD_TYPE=Release
 
-cp src/java/target/mesos-*.jar "$libdir"
+cmake --build . --config Release -- -j$NUM_CORES
 
-# This is copied during `make install` as per the configure flag
-# `--enable-install-module-dependencies`.  Modules that have their
-# own protobufs may wish to use this during their builds.
-ln -s "$PKG_PATH/lib/mesos/3rdparty/bin/protoc" "$PKG_PATH/bin/protoc"
+cmake -DCMAKE_INSTALL_PREFIX=$PKG_PATH -P cmake_install.cmake
 
 popd
 popd
 
 # TODO(cmaloney): Make these a seperate mesos library package.
 # Copy the shared libraries from the system which mesos requires
+libdir="$PKG_PATH/lib"
 cp /usr/lib/x86_64-linux-gnu/libsasl2.so.2 "$libdir"
 cp -r /usr/lib/x86_64-linux-gnu/sasl2 "$libdir"
 cp /usr/lib/x86_64-linux-gnu/libsvn_delta-1.so.1 "$libdir"

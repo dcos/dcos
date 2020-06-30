@@ -1,5 +1,4 @@
 import logging
-import sys
 import uuid
 
 import kazoo.exceptions
@@ -8,9 +7,6 @@ from kazoo.retry import KazooRetry
 from kazoo.security import ACL, ANYONE_ID_UNSAFE, Permissions
 
 from dcos_internal_utils import utils
-
-if not utils.is_windows:
-    assert 'pwd' in sys.modules
 
 log = logging.getLogger(__name__)
 
