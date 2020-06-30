@@ -48,10 +48,6 @@ dcos-check-runner
 - Apache License, Version 2.0
 - https://github.com/dcos/dcos-check-runner/blob/master/LICENSE
 
-dcos-signal
-- Apache License, Version 2.0
-- https://github.com/dcos/dcos-signal/blob/master/LICENSE
-
 dcos-ui
 - Apache License, Version 2.0
 - https://github.com/dcos/dcos-ui/blob/master/LICENSE

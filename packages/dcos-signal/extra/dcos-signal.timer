@@ -1,5 +1,0 @@
-[Unit]
-Description=DC/OS Signal Timer: timer for DC/OS Signal service
-[Timer]
-Unit=dcos-signal.service
-OnCalendar=*:0/5
