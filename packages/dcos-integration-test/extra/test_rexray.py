@@ -19,7 +19,7 @@ def test_move_external_volume_to_new_agent(dcos_api_session: DcosApiSession) -> 
 
     """
     expanded_config = get_expanded_config()
-    if not (expanded_config['provider'] == 'aws' or expanded_config['platform'] == 'aws'):
+    if not (expanded_config['provider'] == 'aws' or expanded_config.get('platform') == 'aws'):
         pytest.skip('Must be run in an AWS environment!')
 
     if expanded_config.get('security') == 'strict':
