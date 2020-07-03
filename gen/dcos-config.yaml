@@ -1467,23 +1467,6 @@ package:
   - path: /etc/dns_search_config
     content: |
       {{ dcos_gen_resolvconf_search_str }}
-  - path: /etc/dcos-signal-config.json
-    content: |
-      {
-        "gen_platform": "{{ platform }}",
-        "gen_provider": "{{ provider }}",
-        "diagnostics_urls": [
-          "http://leader.mesos:1050/system/health/v1/report?cache=0"
-        ],
-        "cosmos_urls": [
-          "http://127.0.0.1:7070/package/list"
-        ],
-        "mesos_urls": [
-          "http://leader.mesos:{{ mesos_master_port }}/frameworks",
-          "http://leader.mesos:{{ mesos_master_port }}/metrics/snapshot"
-        ],
-        "enabled": "{{ telemetry_enabled }}"
-      }
   - path: /etc/dcos-check-config.json
     content: {{ check_config_contents }}
   - path: /etc/dcos-check-runner.env
@@ -2533,8 +2516,6 @@ package:
         systemd_unit = "dcos-mesos-master.service"
       [[inputs.procstat]]
         systemd_unit = "dcos-metronome.service"
-      [[inputs.procstat]]
-        systemd_unit = "dcos-signal.service"
       [[inputs.procstat]]
         systemd_unit = "dcos-ui-update-service.service"
 {% switch enable_mesos_input_plugin %}

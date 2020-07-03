@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 import platform
 import subprocess
 
@@ -9,10 +8,7 @@ import dns.resolver
 import kazoo.client
 import pytest
 import requests
-
 from dcos_test_utils.dcos_api import DcosApiSession
-from test_helpers import get_expanded_config
-
 
 __maintainer__ = 'mnaboka'
 __contact__ = 'dcos-cluster-ops@mesosphere.io'
@@ -138,8 +134,6 @@ def test_systemd_units_are_healthy(dcos_api_session: DcosApiSession) -> None:
         'dcos-mesos-dns.service',
         'dcos-mesos-master.service',
         'dcos-metronome.service',
-        'dcos-signal.service',
-        'dcos-signal.timer',
         'dcos-bouncer.service',
         'dcos-bouncer-migrate-users.service',
         'dcos-ui-update-service.service',
@@ -188,7 +182,7 @@ def test_systemd_units_are_healthy(dcos_api_session: DcosApiSession) -> None:
         "agent_public": set(all_node_units + all_slave_units + public_slave_units),
     }
 
-    # Collect the dcos-diagnostics output that `dcos-signal` uses to determine
+    # Collect the dcos-diagnostics output that to determine
     # whether or not there are failed units.
     resp = dcos_api_session.get('/system/health/v1/report?cache=0')
     # We expect reading the health report to succeed.
@@ -236,111 +230,3 @@ def test_systemd_units_are_healthy(dcos_api_session: DcosApiSession) -> None:
                 node, json.dumps(node_health, indent=4, sort_keys=True)))
             unhealthy_nodes += 1
     assert unhealthy_nodes == 0
-
-
-def test_signal_service(dcos_api_session: DcosApiSession) -> None:
-    """
-    signal-service runs on an hourly timer, this test runs it as a one-off
-    and pushes the results to the test_server app for easy retrieval
-
-    When this test fails due to `dcos-checks-poststart-service-unhealthy`,
-    consider that the issue may be due to check timeouts which are too low.
-    """
-    # This is due to caching done by dcos-diagnostics / Signal service
-    # We're going to remove this soon: https://mesosphere.atlassian.net/browse/DCOS-9050
-    dcos_version = os.environ["DCOS_VERSION"]
-    with open('/opt/mesosphere/etc/dcos-signal-config.json', 'r') as f:
-        signal_config_data = json.load(f)
-    customer_key = signal_config_data.get('customer_key', '')
-    enabled = signal_config_data.get('enabled', 'false')
-    with open('/var/lib/dcos/cluster-id', 'r') as f:
-        cluster_id = f.read().strip()
-
-    if enabled == 'false':
-        pytest.skip('Telemetry disabled in /opt/mesosphere/etc/dcos-signal-config.json... skipping test')
-
-    logging.info("Version: " + dcos_version)
-    logging.info("Customer Key: " + customer_key)
-    logging.info("Cluster ID: " + cluster_id)
-
-    signal_results = subprocess.check_output(["/opt/mesosphere/bin/dcos-signal", "-test"], universal_newlines=True)
-    r_data = json.loads(signal_results)
-
-    resp = dcos_api_session.get('/system/health/v1/report?cache=0')
-    # We expect reading the health report to succeed.
-    resp.raise_for_status()
-    # Parse the response into JSON.
-    health_report = resp.json()
-    # Reformat the /health json into the expected output format for dcos-signal.
-    units_health = {}
-    for unit, unit_health in health_report["Units"].items():
-        unhealthy = 0
-        for node_health in unit_health["Nodes"]:
-            for output_unit, output in node_health["Output"].items():
-                if unit != output_unit:
-                    # This is the output of some unrelated unit, ignore.
-                    continue
-                if output == "":
-                    # This unit is healthy on this node.
-                    pass
-                else:
-                    # This unit is unhealthy on this node.
-                    unhealthy += 1
-        prefix = "health-unit-{}".format(unit.replace('.', '-'))
-        units_health.update({
-            "{}-total".format(prefix): len(unit_health["Nodes"]),
-            "{}-unhealthy".format(prefix): unhealthy,
-        })
-
-    exp_data = {
-        'diagnostics': {
-            'event': 'health',
-            'anonymousId': cluster_id,
-            'properties': units_health,
-        },
-        'cosmos': {
-            'event': 'package_list',
-            'anonymousId': cluster_id,
-            'properties': {}
-        },
-        'mesos': {
-            'event': 'mesos_track',
-            'anonymousId': cluster_id,
-            'properties': {}
-        }
-    }
-
-    expanded_config = get_expanded_config()
-    # Generic properties which are the same between all tracks
-    generic_properties = {
-        'platform': expanded_config['platform'],
-        'provider': expanded_config['provider'],
-        'source': 'cluster',
-        'clusterId': cluster_id,
-        'licenseId': '',
-        'customerKey': customer_key,
-        'environmentVersion': dcos_version,
-        'variant': 'open'
-    }
-
-    # Insert the generic property data which is the same between all signal tracks
-    exp_data['diagnostics']['properties'].update(generic_properties)  # type: ignore
-    exp_data['cosmos']['properties'].update(generic_properties)  # type: ignore
-    exp_data['mesos']['properties'].update(generic_properties)  # type: ignore
-
-    # Check the entire hash of diagnostics data
-    if r_data['diagnostics'] != exp_data['diagnostics']:
-        # The optional second argument to `assert` is an error message that
-        # appears to get truncated in the output. As such, we log the output
-        # instead.
-        logging.error("Cluster is unhealthy: {}".format(
-            json.dumps(health_report, indent=4, sort_keys=True)))
-        assert r_data['diagnostics'] == exp_data['diagnostics']
-
-    # Check a subset of things regarding Mesos that we can logically check for
-    framework_names = [x['name'] for x in r_data['mesos']['properties']['frameworks']]
-    assert 'marathon' in framework_names
-    assert 'metronome' in framework_names
-
-    # There are no packages installed by default on the integration test, ensure the key exists
-    assert len(r_data['cosmos']['properties']['package_list']) == 0

@@ -212,7 +212,7 @@ def test_containerizer_debug_endpoint(dcos_api_session: DcosApiSession) -> None:
 
 def test_blkio_stats(dcos_api_session: DcosApiSession) -> None:
     expanded_config = test_helpers.get_expanded_config()
-    if expanded_config['provider'] == 'azure' or expanded_config['platform'] == 'azure':
+    if expanded_config['provider'] == 'azure' or expanded_config.get('platform') == 'azure':
         pytest.skip('See: https://jira.mesosphere.com/browse/DCOS-49023')
 
     # Launch a Marathon application to do some disk writes, and then verify that
