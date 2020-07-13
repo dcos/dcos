@@ -84,8 +84,6 @@ def wait(master_count_filename):
     cluster_size = int(utils.read_file_text(master_count_filename))
     log.info('Expected cluster size: {}'.format(cluster_size))
 
-    log.info('Waiting for ZooKeeper cluster to stabilize')
-
     try:
         response = requests.get(EXHIBITOR_STATUS_URL)
     except requests.exceptions.ConnectionError as ex:

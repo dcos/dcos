@@ -224,6 +224,11 @@ def dcos_etcd(b, opts):
     b.zk.ensure_path("/etcd/nodes")
 
 
+@check_root
+def dcos_cluster_id(b, opts):
+    b.cluster_id()
+
+
 def noop(b, opts):
     return
 
@@ -252,6 +257,7 @@ bootstrappers = {
     'dcos-telegraf-master': dcos_telegraf_master,
     'dcos-telegraf-agent': dcos_telegraf_agent,
     'dcos-ui-update-service': noop,
+    'dcos-cluster-id': dcos_cluster_id,  # used for testing
 }
 
 
