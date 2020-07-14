@@ -167,10 +167,6 @@ six
 - MIT License
 - https://github.com/benjaminp/six/blob/master/LICENSE
 
-strace
-- Berkeley-style license
-- https://github.com/strace/strace/blob/master/COPYING
-
 rexray
 - Apache License, Version 2.0
 - https://rexray.readthedocs.io/en/stable/about/license/
