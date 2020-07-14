@@ -54,11 +54,12 @@ def try_shortcut():
         log.info('Process no longer running (couldn\'t read the cmdline at: %s)', zk_pid)
         return False
 
-    log.info('PID %s has command line %s', zk_pid, cmd_line)
-
     if len(cmd_line) < 3:
         log.info("Command line too short to be zookeeper started by exhibitor")
         return False
+
+    # Only show first and last command arguments, to avoid logging sensitive info
+    log.info('PID %s has command line %s ... %s', zk_pid, cmd_line[0], cmd_line[-1])
 
     if cmd_line[-1] != b'/var/lib/dcos/exhibitor/conf/zoo.cfg' \
             or cmd_line[0] != b'/opt/mesosphere/active/java/usr/java/bin/java':
@@ -82,8 +83,6 @@ def wait(master_count_filename):
 
     cluster_size = int(utils.read_file_text(master_count_filename))
     log.info('Expected cluster size: {}'.format(cluster_size))
-
-    log.info('Waiting for ZooKeeper cluster to stabilize')
 
     try:
         response = requests.get(EXHIBITOR_STATUS_URL)
@@ -109,10 +108,19 @@ def wait(master_count_filename):
     log.info(
         "Serving hosts: `%s`, leader: `%s`", ','.join(serving), ','.join(leaders))
 
-    if len(serving) != cluster_size or len(leaders) != 1:
-        msg_fmt = 'Expected {} servers and 1 leader, got {} servers and {} leaders'
-        log.error(msg_fmt.format(cluster_size, len(serving), len(leaders)))
-        sys.exit(1)
+    if utils.is_static_cluster():
+        # For static clusters, wait for a ZooKeeper quorum to be ready.
+        quorum = cluster_size // 2 + 1
+        if len(leaders) != 1 or len(serving) < quorum:
+            msg_fmt = 'Require {}+ servers and 1 leader, have {} servers and {} leaders'
+            log.error(msg_fmt.format(quorum, len(serving), len(leaders)))
+            sys.exit(1)
+    else:
+        # For other clusters, wait for all ZooKeeper nodes to be ready.
+        if len(leaders) != 1 or len(serving) != cluster_size:
+            msg_fmt = 'Require {} servers and 1 leader, have {} servers and {} leaders'
+            log.error(msg_fmt.format(cluster_size, len(serving), len(leaders)))
+            sys.exit(1)
 
     # Local Zookeeper is up. Config should be stable, local zookeeper happy. Stash the PID so if
     # there is a restart we can come up quickly without requiring a new zookeeper quorum.

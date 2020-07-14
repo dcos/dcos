@@ -5,15 +5,18 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import Callable, Tuple
+from typing import Callable, Generator, Tuple
 
 import conditional
 import cryptography.hazmat.backends
 import jwt
 import pytest
+from _pytest.fixtures import SubRequest
+from cluster_helpers import wait_for_dcos_oss
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from dcos_e2e.backends import Docker
+from dcos_e2e.cluster import Cluster
 
 
 cryptography_default_backend = cryptography.hazmat.backends.default_backend()
@@ -109,3 +112,30 @@ def jwt_token() -> Callable[[str, str, int], str]:
         ).decode('ascii')
 
     return _token
+
+
+@pytest.fixture
+def three_master_cluster(
+    artifact_path: Path,
+    docker_backend: Docker,
+    request: SubRequest,
+    log_dir: Path,
+) -> Generator[Cluster, None, None]:
+    """Spin up a highly-available DC/OS cluster with three master nodes."""
+    with Cluster(
+        cluster_backend=docker_backend,
+        masters=3,
+        agents=0,
+        public_agents=0,
+    ) as cluster:
+        cluster.install_dcos_from_path(
+            dcos_installer=artifact_path,
+            dcos_config=cluster.base_config,
+            ip_detect_path=docker_backend.ip_detect_path,
+        )
+        wait_for_dcos_oss(
+            cluster=cluster,
+            request=request,
+            log_dir=log_dir,
+        )
+        yield cluster
