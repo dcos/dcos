@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 from typing import Callable, Tuple
 
+import conditional
 import cryptography.hazmat.backends
 import jwt
 import pytest
@@ -27,6 +28,14 @@ def configure_logging() -> None:
     logging.getLogger('urllib3.connectionpool').setLevel(logging.WARN)
     logging.getLogger('docker').setLevel(logging.WARN)
     logging.getLogger('sarge').setLevel(logging.WARN)
+
+
+@pytest.fixture(scope='session', autouse=True)
+def log_changed_files() -> None:
+    """
+    Log files that have changed for this PR
+    """
+    conditional.log_modified_files()
 
 
 @pytest.fixture(scope='session')
