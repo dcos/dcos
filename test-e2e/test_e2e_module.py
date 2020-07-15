@@ -7,7 +7,6 @@ import time
 from pathlib import Path
 from typing import Callable, Generator, Tuple
 
-import conditional
 import cryptography.hazmat.backends
 import jwt
 import pytest
@@ -25,20 +24,12 @@ cryptography_default_backend = cryptography.hazmat.backends.default_backend()
 @pytest.fixture(scope='session', autouse=True)
 def configure_logging() -> None:
     """
-    Surpress INFO, DEBUG and NOTSET log messages from libraries that log
+    Suppress INFO, DEBUG and NOTSET log messages from libraries that log
     excessive amount of debug output that isn't useful for debugging e2e tests.
     """
     logging.getLogger('urllib3.connectionpool').setLevel(logging.WARN)
     logging.getLogger('docker').setLevel(logging.WARN)
     logging.getLogger('sarge').setLevel(logging.WARN)
-
-
-@pytest.fixture(scope='session', autouse=True)
-def log_changed_files() -> None:
-    """
-    Log files that have changed for this PR
-    """
-    conditional.log_modified_files()
 
 
 @pytest.fixture(scope='session')

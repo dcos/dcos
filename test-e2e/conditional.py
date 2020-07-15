@@ -1,9 +1,18 @@
+import inspect
 import logging
 import os
-from typing import Any, cast, Dict, Iterator, Optional, Tuple
+from typing import Any, cast, Dict, Iterator, List, Optional, Tuple
 
 import requests
+from wcmatch import glob
 
+
+# E2E_SAFE_DEFAULT are files that typically do not affect e2e tests
+E2E_SAFE_DEFAULT = [
+    '**/*.{md,txt}', '.github/**', 'config/**', 'docs/**', 'flake8_dcos_lint/**',
+    'teamcity/**', 'test-util/**', '.editorconfig', '.git*', '.pre-commit-config.yaml',
+    'Jenkinsfile*', 'LICENSE', 'NOTICE', 'owners.json', 'symlink_check', 'tox.ini'
+]
 
 CI_UNKNOWN = 'unknown'
 CI_RELEASE = 'release'
@@ -57,24 +66,67 @@ def get_modified_files(sha_comparison: Dict[str, Any]) -> Iterator[str]:
     return cast(Iterator[str], [file['filename'] for file in sha_comparison['files']])
 
 
-def log_modified_files() -> None:
-    github_type, pr_id = github_pr_id()
-    if pr_id is None:
-        logging.info('GitHub type: %s', github_type)
-        return
-    try:
-        info = github_pr_info(pr_id)
-        logging.info('Merging %s into %s', info['head']['label'], info['base']['label'])
-        base_sha = info['base']['sha']
-        # Using `info['head']['sha']` will give the latest SHA, but this test may
-        # have been called for an earlier SHA, as given by `BUILD_VCS_NUMBER`
-        head_sha = os.environ.get('BUILD_VCS_NUMBER')
-        if head_sha is None:
-            logging.warn('Environment variable BUILD_VCS_NUMBER not set')
-            head_sha = info['head']['sha']
-        files = get_modified_files(github_pr_compare(base_sha, head_sha))
-        logging.info('Modified files: %s', files)
-        if info['user']['login'] == 'mesosphere-mergebot':
-            logging.info('PR appears to be a train')
-    except Exception:
-        logging.exception('Failed to get modified files')
+class ChangeDetector:
+
+    def __init__(self) -> None:
+        self.changed_files = None  # type: Optional[Tuple[str, Optional[Iterator[str]]]]
+
+    def get_changed_files(self) -> Tuple[str, Optional[Iterator[str]]]:
+        result = self.changed_files
+        if result is None:
+            github_type, pr_id = github_pr_id()
+            if pr_id is None:
+                logging.info('GitHub type: %s', github_type)
+                result = github_type, None
+            else:
+                try:
+                    info = github_pr_info(pr_id)
+                    logging.info('Merging %s into %s', info['head']['label'], info['base']['label'])
+                    base_sha = info['base']['sha']
+                    # Using `info['head']['sha']` will give the latest SHA, but this test may
+                    # have been called for an earlier SHA, as given by `BUILD_VCS_NUMBER`
+                    head_sha = os.environ.get('BUILD_VCS_NUMBER')
+                    if head_sha is None:
+                        logging.warn('Environment variable BUILD_VCS_NUMBER not set')
+                        head_sha = info['head']['sha']
+                    files = get_modified_files(github_pr_compare(base_sha, head_sha))
+                    logging.info('Modified files: %s', files)
+                    if info['user']['login'] == 'mesosphere-mergebot':
+                        logging.info('PR appears to be a train')
+                        result = CI_TRAIN, files
+                    else:
+                        result = CI_PULL_REQUEST, files
+                except Exception:
+                    logging.exception('Failed to get modified files')
+                    result = CI_UNKNOWN, None
+            self.changed_files = result
+        return result
+
+
+# Create a single instance to run remote queries once
+_change_detector = ChangeDetector()
+
+
+def only_changed(safelist: List[str], flags: int = glob.BRACE | glob.DOTGLOB | glob.GLOBSTAR | glob.NEGATE) -> bool:
+    """
+    Return True if we're in a Pull Request and the only files changed by this PR are in
+    the `safelist`. This function can be used to skip tests if only files named in the
+    `safelist` have been modified.
+    """
+    github_type, files_changed = _change_detector.get_changed_files()
+    if github_type != CI_PULL_REQUEST:
+        # return False for all other types, including trains, to force all tests.
+        return False
+    assert files_changed is not None
+    matches = glob.globfilter(files_changed, safelist, flags=flags)
+    not_safe = set(files_changed) - set(matches)
+    # When used in a `skipif`, this function is called during collection, so is
+    # logged away from the test. Add the file and lineno to identify the test.
+    caller = inspect.stack()[1]
+    caller_id = '{}:{}'.format(caller.filename, caller.lineno)
+    if not_safe:
+        logging.info('%s: Changed files not in safelist: %s', caller_id, tuple(not_safe))
+        return False
+    else:
+        logging.info('%s: All changed files in safelist', caller_id)
+        return True

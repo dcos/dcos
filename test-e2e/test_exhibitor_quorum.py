@@ -3,9 +3,11 @@ Tests for Exhibitor quorum
 """
 from pathlib import Path
 
+import pytest
 import requests
 import retrying
 from _pytest.fixtures import SubRequest
+from conditional import E2E_SAFE_DEFAULT, only_changed
 from dcos_e2e.cluster import Cluster
 from dcos_e2e.node import Node, Output
 
@@ -23,6 +25,13 @@ def wait_for_zookeeper_serving(master: Node, count: int) -> None:
     assert len([node for node in nodes if node['description'] == 'serving']) == count
 
 
+@pytest.mark.skipif(
+    only_changed(E2E_SAFE_DEFAULT + [
+        'packages/**', '!packages/{bootstrap,exhibitor,java}/**',  # All packages safe except named packages
+        'test-e2e/test_*', '!test-e2e/test_exhibitor_quorum.py',   # All e2e tests safe except this test
+    ]),
+    reason='Only safe files modified',
+)
 class TestExhibitorQuorum:
 
     def test_restart_with_missing_master(
