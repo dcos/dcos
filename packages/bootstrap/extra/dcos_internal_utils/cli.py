@@ -229,6 +229,11 @@ def dcos_etcd(b, opts):
     b.zk.ensure_path("/etcd/nodes")
 
 
+@check_root
+def dcos_cluster_id(b, opts):
+    b.cluster_id()
+
+
 def noop(b, opts):
     return
 
@@ -258,6 +263,7 @@ bootstrappers = {
     'dcos-telegraf-master': dcos_telegraf_master,
     'dcos-telegraf-agent': dcos_telegraf_agent,
     'dcos-ui-update-service': noop,
+    'dcos-cluster-id': dcos_cluster_id,  # used for testing
 }
 
 
@@ -293,6 +299,11 @@ def main():
 
 
 def get_zookeeper_address_agent():
+    # The environment variables `MASTER_SOURCE` and `EXHIBITOR_ADDRESS` are set
+    # for `dcos-net`.  These values allow agents to contact ZooKeeper before
+    # the DNS that resolves `.zk` addresses is available.
+    #
+    # Agent services other than `dcos-net` wait for the DNS to be working.
     if os.getenv('MASTER_SOURCE') == 'master_list':
         # dcos-net agents with static master list
         with (utils.dcos_etc_path / 'master_list').open() as f:
