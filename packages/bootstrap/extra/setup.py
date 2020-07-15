@@ -2,6 +2,7 @@ from setuptools import setup
 
 requires = [
     'kazoo',
+    'PyYAML',
     'requests',
 ]
 

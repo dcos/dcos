@@ -108,9 +108,19 @@ def wait(master_count_filename):
     log.info(
         "Serving hosts: `%s`, leader: `%s`", ','.join(serving), ','.join(leaders))
 
-    if len(serving) != cluster_size or len(leaders) != 1:
-        msg_fmt = 'Expected {} servers and 1 leader, got {} servers and {} leaders'
-        raise Exception(msg_fmt.format(cluster_size, len(serving), len(leaders)))
+    if utils.is_static_cluster():
+        # For static clusters, wait for a ZooKeeper quorum to be ready.
+        quorum = cluster_size // 2 + 1
+        if len(leaders) != 1 or len(serving) < quorum:
+            msg_fmt = 'Require {}+ servers and 1 leader, have {} servers and {} leaders'
+            log.error(msg_fmt.format(quorum, len(serving), len(leaders)))
+            sys.exit(1)
+    else:
+        # For other clusters, wait for all ZooKeeper nodes to be ready.
+        if len(leaders) != 1 or len(serving) != cluster_size:
+            msg_fmt = 'Require {} servers and 1 leader, have {} servers and {} leaders'
+            log.error(msg_fmt.format(cluster_size, len(serving), len(leaders)))
+            sys.exit(1)
 
     # Local Zookeeper is up. Config should be stable, local zookeeper happy. Stash the PID so if
     # there is a restart we can come up quickly without requiring a new zookeeper quorum.

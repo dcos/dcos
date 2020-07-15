@@ -4,6 +4,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
+* Starting services on clusters with static masters now only requires a majority of ZooKeeper nodes to be available. 
+  Previously, all ZooKeeper nodes needed to be available.
+  On clusters with dynamic master lists, all ZooKeeper nodes must still be available. (D2IQ-4248)
+  
 ### Fixed and improved
 
 * Removed trailing newline from ZooKeeper log messages. (D2IQ-68394)
@@ -13,6 +17,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Fix incorrect ownership after migration of `/run/dcos/telegraf/dcos_statsd/containers`. (D2IQ-69295)
 
 * Update Telegraf configuration to reduce errors, vary requests to reduce load, sample less frequently. (COPS-5629)
+
 
 #### Update Metronome to 0.6.48
 
