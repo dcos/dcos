@@ -2,15 +2,17 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 2.0.6 (in development)
 
-### What's new
-
-* Updated DC/OS UI to [v5.1.1](https://github.com/dcos/dcos-ui/releases/tag/v5.1.1)
-* Update to Fluentbit [1.4.6](https://docs.fluentbit.io/manual/installation/upgrade-notes)
-
-
 ### Security updates
 
 ### Notable changes
+
+* Updated DC/OS UI to [v5.1.1](https://github.com/dcos/dcos-ui/releases/tag/v5.1.1)
+
+* Update to Fluentbit [1.4.6](https://docs.fluentbit.io/manual/installation/upgrade-notes)
+
+* Starting services on clusters with static masters now only requires a majority of ZooKeeper nodes to be available. 
+  Previously, all ZooKeeper nodes needed to be available.
+  On clusters with dynamic master lists, all ZooKeeper nodes must still be available. (D2IQ-4248)
 
 ### Fixed and improved
 

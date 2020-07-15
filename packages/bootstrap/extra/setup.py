@@ -1,7 +1,10 @@
 from setuptools import setup
 
 requires = [
+    'cryptography',
     'kazoo',
+    'PyJWT',
+    'PyYAML',
     'requests',
 ]
 

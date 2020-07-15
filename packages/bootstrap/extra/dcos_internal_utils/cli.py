@@ -5,10 +5,7 @@ import json
 import logging
 import os
 import random
-import shutil
-import stat
 import sys
-import tempfile
 from pathlib import Path
 
 import cryptography.hazmat.backends
@@ -18,7 +15,6 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt.utils import base64url_decode, bytes_to_number
 
 from dcos_internal_utils import bootstrap, exhibitor, utils
-from pkgpanda.actions import apply_service_configuration
 
 log = logging.getLogger(__name__)
 
@@ -29,9 +25,7 @@ def _known_exec_directory():
     """
     # This directory must be outside /tmp to support
     # environments where /tmp is mounted noexec.
-    known_directory = Path('/var/lib/dcos/exec')
-    known_directory.mkdir(parents=True, exist_ok=True)
-    return known_directory
+    return utils.dcos_lib_path / 'exec'
 
 
 def _create_private_directory(path, owner):
@@ -43,9 +37,9 @@ def _create_private_directory(path, owner):
         path (pathlib.Path): The path to the directory to create.
         owner (str): The owner of the directory.
     """
-    path.mkdir(exist_ok=True)
+    path.mkdir(parents=True, exist_ok=True)
+    utils.chown(path, user=owner)
     path.chmod(0o700)
-    shutil.chown(str(path), user=owner)
 
 
 def check_root(fun):
@@ -91,10 +85,11 @@ def dcos_adminrouter(b, opts):
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo)
 
-    os.makedirs('/run/dcos/dcos-adminrouter', exist_ok=True)
-    pubkey_path = '/run/dcos/dcos-adminrouter/auth-token-verification-key'
-    _write_file_bytes(pubkey_path, pubkey_pem_bytes, 0o644)
-    shutil.chown(pubkey_path, user='dcos_adminrouter')
+    rundir = utils.dcos_run_path / 'dcos-adminrouter'
+    rundir.mkdir(parents=True, exist_ok=True)
+    pubkey_path = rundir / 'auth-token-verification-key'
+    utils.write_public_file(pubkey_path, pubkey_pem_bytes)
+    utils.chown(pubkey_path, user='dcos_adminrouter')
 
 
 @check_root
@@ -145,7 +140,7 @@ def dcos_telegraf_common() -> None:
     # on creation, so separate `chmod` ensures that the permissions are
     # correct on each restart.
 
-    telegraf_run = Path('/run/dcos/telegraf')
+    telegraf_run = utils.dcos_run_path / 'telegraf'
     telegraf_run.mkdir(parents=True, exist_ok=True)
     utils.chown(telegraf_run, user='root', group='dcos_telegraf')
     telegraf_run.chmod(0o775)
@@ -195,15 +190,16 @@ def dcos_net_agent(b, opts):
 
 @check_root
 def dcos_bouncer(b, opts):
-    os.makedirs('/run/dcos/dcos-bouncer', exist_ok=True)
-    shutil.chown('/run/dcos/dcos-bouncer', user='dcos_bouncer')
-    # Permissions are restricted to the dcos_bouncer user as this directory
-    # contains sensitive data.  See
-    # https://jira.mesosphere.com/browse/DCOS-18350
-
-    # The ``bouncer_tmpdir`` directory path corresponds to the
-    # TMPDIR environment variable configured in the dcos-bouncer.service file.
     user = 'dcos_bouncer'
+
+    rundir = utils.dcos_run_path / 'dcos-bouncer'
+    _create_private_directory(path=rundir, owner=user)
+
+    # Create the `TMPDIR` used by Bouncer.  This is not `/tmp` because many
+    # systems mark `/tmp` as `noexec` but Bouncer needs to store executable
+    # FFI files.  The security provided by `noexec` applies to directories
+    # that are writable by multiple users.  This directory is writable only
+    # by the owner, and hence is secure without `noexec`.
     bouncer_tmpdir = _known_exec_directory() / user
     _create_private_directory(path=bouncer_tmpdir, owner=user)
 
@@ -225,20 +221,20 @@ def dcos_history(b, opts):
 
 @check_root
 def dcos_cockroach_config_change(b, opts):
-    # Permissions are restricted to the dcos_cockroach user in case this
-    # directory contains sensitive data - we also want to avoid the security
-    # risk of other users writing to this directory.
-    # See https://jira.mesosphere.com/browse/DCOS-18350 for a related change to
-    # dcos-bouncer.
-    #
-    # The ``dcos_cockroach`` user is the ``User`` used in the
-    # ``dcos-cockroachdb-config-change.service``
-
-    # The ``cockroach_tmpdir`` directory path corresponds to the
-    # dcos-cockroachdb-config-change.service.
     user = 'dcos_cockroach'
+
+    # Create the `TMPDIR` used by Cockroach.  This is not `/tmp` because many
+    # systems mark `/tmp` as `noexec` but Cockroach needs to store executable
+    # FFI files.  The security provided by `noexec` applies to directories
+    # that are writable by multiple users.  This directory is writable only
+    # by the owner, and hence is secure without `noexec`.
     cockroach_tmpdir = _known_exec_directory() / user
     _create_private_directory(path=cockroach_tmpdir, owner=user)
+
+
+@check_root
+def dcos_cluster_id(b, opts):
+    b.cluster_id()
 
 
 def noop(b, opts):
@@ -269,11 +265,12 @@ bootstrappers = {
     'dcos-telegraf-master': dcos_telegraf_master,
     'dcos-telegraf-agent': dcos_telegraf_agent,
     'dcos-ui-update-service': noop,
+    'dcos-cluster-id': dcos_cluster_id,  # used for testing
 }
 
 
 def get_roles():
-    return os.listdir('/opt/mesosphere/etc/roles')
+    return os.listdir(str(utils.dcos_etc_path / 'roles'))
 
 
 def main():
@@ -298,15 +295,20 @@ def main():
         if service not in bootstrappers:
             log.error('Unknown service: {}'.format(service))
             sys.exit(1)
-        apply_service_configuration(service)
+        utils.apply_service_configuration(service)
         log.info('bootstrapping {}'.format(service))
         bootstrappers[service](b, opts)
 
 
 def get_zookeeper_address_agent():
+    # The environment variables `MASTER_SOURCE` and `EXHIBITOR_ADDRESS` are set
+    # for `dcos-net`.  These values allow agents to contact ZooKeeper before
+    # the DNS that resolves `.zk` addresses is available.
+    #
+    # Agent services other than `dcos-net` wait for the DNS to be working.
     if os.getenv('MASTER_SOURCE') == 'master_list':
         # dcos-net agents with static master list
-        with open('/opt/mesosphere/etc/master_list', 'r') as f:
+        with (utils.dcos_etc_path / 'master_list').open() as f:
             master_list = json.load(f)
         assert len(master_list) > 0
         return random.choice(master_list) + ':2181'
@@ -342,41 +344,7 @@ def parse_args():
         help='Host string passed to Kazoo client constructor.')
     parser.add_argument(
         '--master_count',
-        type=str,
-        default='/opt/mesosphere/etc/master_count',
+        type=Path,
+        default=utils.dcos_etc_path / 'master_count',
         help='File with number of master servers')
     return parser.parse_args()
-
-
-def _write_file_bytes(path, data, mode):
-    """
-    Atomically write `data` to `path` using the file permissions
-    `stat.S_IMODE(mode)`.
-
-    File consumers can rely on seeing valid file contents once they are able to
-    open the file. This is achieved by performing all relevant operations on a
-    temporary file followed by a `os.replace()` which, if successful, renames to
-    the desired path (and overwrites upon conflict) in an atomic operation (on
-    both, Windows, and Linux).
-
-    If acting on the temporary file fails (be it writing, closing, chmodding,
-    replacing) an attempt is performed to remove the temporary file; and the
-    original exception is re-raised.
-    """
-    assert isinstance(data, bytes)
-
-    basename = os.path.basename(path)
-    tmpfile_dir = os.path.dirname(os.path.realpath(path))
-
-    fd, tmpfile_path = tempfile.mkstemp(prefix=basename, dir=tmpfile_dir)
-
-    try:
-        try:
-            os.write(fd, data)
-        finally:
-            os.close(fd)
-        os.chmod(tmpfile_path, stat.S_IMODE(mode))
-        os.replace(tmpfile_path, path)
-    except Exception:
-        os.remove(tmpfile_path)
-        raise

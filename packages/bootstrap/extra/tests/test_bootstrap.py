@@ -7,16 +7,11 @@ except ImportError:
 import random
 import string
 import subprocess
-import sys
 
 import pytest
 from kazoo.client import KazooClient, KazooRetry
 
 from dcos_internal_utils import bootstrap
-from pkgpanda.util import is_windows
-
-if not is_windows:
-    assert 'pwd' in sys.modules
 
 zookeeper_docker_image = 'jplock/zookeeper'
 zookeeper_docker_run_args = ['--publish=2181:2181', '--publish=2888:2888', '--publish=3888:3888']
@@ -63,17 +58,16 @@ def _check_consensus(methodname, monkeypatch, tmpdir):
 
     b = bootstrap.Bootstrapper(zk_hosts)
 
-    path = tmpdir.join('/cluster-id')
+    path = tmpdir / 'cluster-id'
     assert not path.exists()
 
     method = getattr(b, methodname)
 
-    id1 = method(str(path))
-    path.remove()
-    id2 = method(str(path))
+    id1 = method(path)
+    path.unlink()
+    id2 = method(path)
     assert id1 == id2
 
 
-@pytest.mark.skipif(is_windows, reason="test fails on Windows reason: docker file does not work on windows")
-def test_bootstrap(zk_server, monkeypatch, tmpdir):
-    _check_consensus('cluster_id', monkeypatch, tmpdir)
+def test_bootstrap(zk_server, monkeypatch, tmp_path):
+    _check_consensus('cluster_id', monkeypatch, tmp_path)
