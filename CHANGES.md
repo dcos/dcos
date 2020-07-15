@@ -2,6 +2,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 2.0.6 (in development)
 
+* Updated to Mesos [1.9.1-dev](https://github.com/apache/mesos/blob/7f5d1c6efb60746c6fbd4dac9c59d5b7248e7fe2/CHANGELOG)
+
 ### What's new
 
 * Updated DC/OS UI to [v5.1.1](https://github.com/dcos/dcos-ui/releases/tag/v5.1.1)
