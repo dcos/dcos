@@ -8,8 +8,9 @@ import shutil
 import subprocess
 import sys
 
-import gen
+import yaml
 
+import gen
 from pkgpanda.util import is_windows
 
 
@@ -17,6 +18,24 @@ if not is_windows:
     assert 'fcntl' in sys.modules
 
 log = logging.getLogger(__name__)
+
+
+def get_user_config():
+    """
+    Returns the contents of the cluster `config.yaml` file as a dictionary.
+    """
+    path = '/opt/mesosphere/etc/user.config.yaml'
+    with open(path) as f:
+        config = yaml.safe_load(f)
+    return config
+
+
+def is_static_cluster():
+    """
+    Returns True if this cluster has a static master list.
+    """
+    user_config = get_user_config()
+    return user_config['master_discovery'] == 'static'
 
 
 def read_file_line(filename):
