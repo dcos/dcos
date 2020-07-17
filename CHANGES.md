@@ -22,6 +22,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update Telegraf configuration to reduce errors, vary requests to reduce load, sample less frequently. (COPS-5629)
 
+* Display user email address in UI when logging in using external provider. (D2IQ-70199)
+
 
 ## DC/OS 2.0.5 (2020-06-15)
 
