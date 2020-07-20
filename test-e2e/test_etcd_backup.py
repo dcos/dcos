@@ -9,6 +9,7 @@ from typing import List, Set
 
 import pytest
 from _pytest.fixtures import SubRequest
+from conditional import E2E_SAFE_DEFAULT, escape, only_changed, trailing_path
 from dcos_e2e.cluster import Cluster
 from dcos_e2e.node import Node, Output
 
@@ -126,6 +127,17 @@ def etcd_client(three_master_cluster: Cluster) -> EtcdClient:
     return etcd_client
 
 
+@pytest.mark.skipif(
+    only_changed(E2E_SAFE_DEFAULT + [
+        # All packages safe except named packages
+        'packages/**',
+        '!packages/*treeinfo.json',
+        '!packages/etcd/**',  # All packages safe except named packages
+        # All e2e tests safe except this test
+        'test-e2e/test_*', '!' + escape(trailing_path(__file__, 2)),
+    ]),
+    reason='Only safe files modified',
+)
 class TestEtcdBackup:
     def test_snapshot_backup_and_restore(
         self,

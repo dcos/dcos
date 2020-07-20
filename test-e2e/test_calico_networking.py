@@ -12,6 +12,7 @@ import pytest
 
 from _pytest.fixtures import SubRequest
 from cluster_helpers import wait_for_dcos_oss
+from conditional import E2E_SAFE_DEFAULT, escape, only_changed, trailing_path
 from dcos_e2e.backends import Docker
 from dcos_e2e.cluster import Cluster
 from dcos_e2e.node import Node, Output
@@ -22,7 +23,7 @@ superuser_username = str(uuid.uuid4())
 superuser_password = str(uuid.uuid4())
 
 
-def assert_system_unit_state(node: Node, unit_name: str, active: bool=True) -> None:
+def assert_system_unit_state(node: Node, unit_name: str, active: bool = True) -> None:
     result = node.run(
         args=["systemctl show {}".format(unit_name)],
         output=Output.LOG_AND_CAPTURE,
@@ -71,39 +72,64 @@ def calico_ipip_cluster(docker_backend: Docker, artifact_path: Path,
         yield cluster
 
 
+@pytest.mark.skipif(
+    only_changed(E2E_SAFE_DEFAULT + [
+        # All packages safe except named packages
+        'packages/**',
+        '!packages/*treeinfo.json',
+        '!packages/{calico,etcd,java,marathon}/**',  # All packages safe except named packages
+        '!packages/dcos-integration-test/requirements.txt',
+        '!packages/dcos-integration-test/extra/{conftest,test_helpers,test_networking}.py',  # Used in test
+        # All e2e tests safe except this test
+        'test-e2e/test_*', '!' + escape(trailing_path(__file__, 2)),
+    ]),
+    reason='Only safe files modified',
+)
 def test_calico_ipip_container_connectivity(calico_ipip_cluster: Cluster) -> None:
 
-        environment_variables = {
-            "DCOS_LOGIN_UNAME":
-            superuser_username,
-            "DCOS_LOGIN_PW":
-            superuser_password,
-            "MASTER_PUBLIC_IP":
-            list(calico_ipip_cluster.masters)[0].public_ip_address,
-            "MASTERS_PRIVATE_IPS":
-            [node.private_ip_address for node in calico_ipip_cluster.masters],
-            "PUBLIC_AGENTS_PRIVATE_IPS":
-            [node.public_ip_address for node in calico_ipip_cluster.public_agents],
-            "PRIVATE_AGENTS_PRIVATE_IPS":
-            [node.private_ip_address for node in calico_ipip_cluster.agents],
-        }
+    environment_variables = {
+        "DCOS_LOGIN_UNAME":
+        superuser_username,
+        "DCOS_LOGIN_PW":
+        superuser_password,
+        "MASTER_PUBLIC_IP":
+        list(calico_ipip_cluster.masters)[0].public_ip_address,
+        "MASTERS_PRIVATE_IPS":
+        [node.private_ip_address for node in calico_ipip_cluster.masters],
+        "PUBLIC_AGENTS_PRIVATE_IPS":
+        [node.public_ip_address for node in calico_ipip_cluster.public_agents],
+        "PRIVATE_AGENTS_PRIVATE_IPS":
+        [node.private_ip_address for node in calico_ipip_cluster.agents],
+    }
 
-        pytest_command = [
-            "pytest",
-            "-vvv",
-            "-s",
-            "-x",
-            "test_networking.py",
-            "-k",
-            "test_calico",
-        ]
-        calico_ipip_cluster.run_with_test_environment(
-            args=pytest_command,
-            env=environment_variables,
-            output=Output.LOG_AND_CAPTURE,
-        )
+    pytest_command = [
+        "pytest",
+        "-vvv",
+        "-s",
+        "-x",
+        "test_networking.py",
+        "-k",
+        "test_calico",
+    ]
+    calico_ipip_cluster.run_with_test_environment(
+        args=pytest_command,
+        env=environment_variables,
+        output=Output.LOG_AND_CAPTURE,
+    )
 
 
+@pytest.mark.skipif(
+    only_changed(E2E_SAFE_DEFAULT + [
+        # All packages safe except named packages
+        'packages/**',
+        '!packages/*treeinfo.json',
+        '!packages/{bootstrap,calico,etcd,openssl}/**',
+        '!packages/python*/**',
+        # All e2e tests safe except this test
+        'test-e2e/test_*', '!' + escape(trailing_path(__file__, 2)),
+    ]),
+    reason='Only safe files modified',
+)
 def test_calico_ipip_unit_active(calico_ipip_cluster: Cluster) -> None:
     calico_units = ["dcos-calico-felix", "dcos-calico-bird", "dcos-calico-confd"]
     for node in calico_ipip_cluster.masters | calico_ipip_cluster.agents | calico_ipip_cluster.public_agents:
