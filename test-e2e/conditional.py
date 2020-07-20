@@ -7,9 +7,10 @@ import requests
 from wcmatch import glob
 
 
-# E2E_SAFE_DEFAULT are files that typically do not affect e2e tests
+# E2E_SAFE_DEFAULT includes files that typically do not affect e2e tests.
+# `*.txt` not included here because `requirements.txt` can affect tests.
 E2E_SAFE_DEFAULT = [
-    '**/*.{md,txt}', '.github/**', 'config/**', 'docs/**', 'flake8_dcos_lint/**',
+    '**/*.md', '.github/**', 'config/**', 'docs/**', 'flake8_dcos_lint/**',
     'teamcity/**', 'test-util/**', '.editorconfig', '.git*', '.pre-commit-config.yaml',
     'Jenkinsfile*', 'LICENSE', 'NOTICE', 'owners.json', 'symlink_check', 'tox.ini'
 ]
@@ -19,6 +20,15 @@ CI_RELEASE = 'release'
 CI_TRAIN = 'train'
 CI_PULL_REQUEST = 'PR'
 CI_EXTERNAL = 'external'
+
+
+def escape(name: str) -> str:
+    escaped = glob.escape(name)  # type: str
+    return escaped
+
+
+def trailing_path(path: str, n: int) -> str:
+    return '/'.join(path.rsplit('/', n)[-n:])
 
 
 def github_pr_id() -> Tuple[str, Optional[str]]:
@@ -62,8 +72,17 @@ def github_pr_compare(base_sha: str, head_sha: str) -> Dict[str, Any]:
     return cast(Dict[str, Any], r.json())
 
 
+_known_file_status = frozenset(('added', 'modified', 'removed', 'renamed'))
+
+
 def get_modified_files(sha_comparison: Dict[str, Any]) -> Iterator[str]:
-    return cast(Iterator[str], [file['filename'] for file in sha_comparison['files']])
+    result = []
+    for file in sha_comparison['files']:
+        assert file['status'] in _known_file_status, file
+        result.append(file['filename'])
+        if file['status'] == 'renamed':
+            result.append(file['previous_filename'])
+    return cast(Iterator[str], result)
 
 
 class ChangeDetector:
@@ -123,7 +142,7 @@ def only_changed(safelist: List[str], flags: int = glob.BRACE | glob.DOTGLOB | g
     # When used in a `skipif`, this function is called during collection, so is
     # logged away from the test. Add the file and lineno to identify the test.
     caller = inspect.stack()[1]
-    caller_id = '{}:{}'.format(caller.filename, caller.lineno)
+    caller_id = '{}:{}'.format(trailing_path(caller.filename, 2), caller.lineno)
     if not_safe:
         logging.info('%s: Changed files not in safelist: %s', caller_id, tuple(not_safe))
         return False

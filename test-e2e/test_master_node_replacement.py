@@ -11,6 +11,7 @@ import docker
 import pytest
 from _pytest.fixtures import SubRequest
 from cluster_helpers import wait_for_dcos_oss
+from conditional import E2E_SAFE_DEFAULT, escape, only_changed, trailing_path
 from dcos_e2e.backends import Docker
 from dcos_e2e.cluster import Cluster
 from dcos_e2e.node import Output, Role
@@ -63,6 +64,13 @@ def docker_network_three_available_addresses() -> Iterator[Network]:
         network.remove()
 
 
+@pytest.mark.skipif(
+    only_changed(E2E_SAFE_DEFAULT + [
+        # All e2e tests safe except this test
+        'test-e2e/test_*', '!' + escape(trailing_path(__file__, 2)),
+    ]),
+    reason='Only safe files modified',
+)
 def test_replace_all_static(
     artifact_path: Path,
     docker_network_three_available_addresses: Network,

@@ -11,7 +11,7 @@ import pytest
 from _pytest.fixtures import SubRequest
 
 from cluster_helpers import wait_for_dcos_oss
-from dcos_e2e.backends import Docker
+from conditional import E2E_SAFE_DEFAULT, escape, only_changed, trailing_path
 from dcos_e2e.cluster import Cluster
 from dcos_e2e.node import Node, Output
 from kazoo.client import KazooClient
@@ -23,36 +23,6 @@ LOGGER = logging.getLogger(__name__)
 
 # Arbitrary value written to ZooKeeper.
 FLAG = b'flag'
-
-
-@pytest.fixture
-def three_master_cluster(
-    artifact_path: Path,
-    docker_backend: Docker,
-    request: SubRequest,
-    log_dir: Path,
-) -> Cluster:
-    """
-    Spin up a highly-available DC/OS cluster with three master nodes.
-    """
-    with Cluster(
-        cluster_backend=docker_backend,
-        masters=3,
-        agents=0,
-        public_agents=0,
-    ) as cluster:
-        cluster.install_dcos_from_path(
-            dcos_installer=artifact_path,
-            dcos_config=cluster.base_config,
-            ip_detect_path=docker_backend.ip_detect_path,
-            output=Output.LOG_AND_CAPTURE,
-        )
-        wait_for_dcos_oss(
-            cluster=cluster,
-            request=request,
-            log_dir=log_dir,
-        )
-        yield cluster
 
 
 @pytest.fixture
@@ -106,6 +76,17 @@ def _zk_flag_exists(zk: KazooClient, znode: str) -> bool:
     return bool(value[0] == FLAG)
 
 
+@pytest.mark.skipif(
+    only_changed(E2E_SAFE_DEFAULT + [
+        # All packages safe except named packages
+        'packages/**',
+        '!packages/*treeinfo.json',
+        '!packages/{exhibitor,java}/**',
+        # All e2e tests safe except this test
+        'test-e2e/test_*', '!' + escape(trailing_path(__file__, 2)),
+    ]),
+    reason='Only safe files modified',
+)
 class TestZooKeeperBackup:
     """
     Within the context of DC/OS ZooKeeper can be backed up on a running
