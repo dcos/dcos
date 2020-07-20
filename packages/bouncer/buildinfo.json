@@ -4,8 +4,8 @@
     "bouncer": {
       "kind": "git",
       "git": "git@github.com:dcos/bouncer.git",
-      "ref": "4beab0338e6859508d58f254d52942cd7bdd9fbd",
-      "ref_origin": "master"
+      "ref": "0ebdc522f26881d1b37d307d1dda2e85c97a380e",
+      "ref_origin": "dcos/1.13"
     }
   },
   "username": "dcos_bouncer",
