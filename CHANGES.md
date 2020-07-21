@@ -127,6 +127,8 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 
 ### Fixed and improved
 
+* Updated `etcd` to [v3.4.9](https://github.com/etcd-io/etcd/releases/tag/v3.4.9).
+
 * Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
 
 * Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
@@ -142,7 +144,6 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Adjust dcos-net (l4lb) to allow for graceful shutdown of connections by changing the VIP backend weight to `0`
   when tasks are unhealthy or enter the `TASK_KILLING` state instead of removing them. (D2IQ-61077)
 * Set "os:linux" attribute for the Linux agents. (D2IQ-67223)
-* Updated `etcd` to [v3.4.9](https://github.com/etcd-io/etcd/releases/tag/v3.4.10).
 
 * Fixing some corner-cases that could render `etcd` unable to start [D2IQ-69069](https://jira.d2iq.com/browse/D2IQ-69069)
 
