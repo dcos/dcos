@@ -34,3 +34,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Update Telegraf configuration to reduce errors, vary requests to reduce load, sample less frequently. (COPS-5629)
 
 * Update Bouncer dependencies. (D2IQ-54115, D2IQ-62221)
+
+* Updated Exhibitor to version running atop [Jetty 9.4.30](https://github.com/dcos/exhibitor/commit/e6e232e1)
+
