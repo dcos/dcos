@@ -3,9 +3,9 @@
   "sources": {
     "exhibitor": {
       "kind": "git",
-      "git": "https://github.com/dcos/exhibitor.git",
-      "ref": "6b0d5d951196e383d0852068ad565fc4da56631a",
-      "ref_origin": "master"
+      "git": "https://github.com/jkoelker/exhibitor.git",
+      "ref": "47da8cefae0ae3e2520498861c8ae2bef06c8afd",
+      "ref_origin": "modernize"
     },
     "zookeeper": {
       "kind": "url_extract",
