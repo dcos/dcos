@@ -31,6 +31,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated CockroachDB Python package to 0.3.5. (D2IQ-62221) 
 
+* Updated Exhibitor to version running atop [Jetty 9.4.30](https://github.com/dcos/exhibitor/commit/e6e232e1)
+
 ## DC/OS 2.1.0 (2020-06-09)
 
 
