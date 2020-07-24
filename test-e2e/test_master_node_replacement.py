@@ -66,6 +66,7 @@ def docker_network_three_available_addresses() -> Iterator[Network]:
 
 @pytest.mark.skipif(
     only_changed(E2E_SAFE_DEFAULT + [
+        'packages/dcos-integration-test/**',
         # All e2e tests safe except this test
         'test-e2e/test_*', '!' + escape(trailing_path(__file__, 2)),
     ]),

@@ -4,10 +4,12 @@ Surrogate conftest.py contents loaded by the conftest.py file.
 import logging
 import os
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Callable, Generator, Tuple
 
 import cryptography.hazmat.backends
+import docker
 import jwt
 import pytest
 from _pytest.fixtures import SubRequest
@@ -16,6 +18,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from dcos_e2e.backends import Docker
 from dcos_e2e.cluster import Cluster
+from docker.models.containers import Container
 
 
 cryptography_default_backend = cryptography.hazmat.backends.default_backend()
@@ -106,7 +109,7 @@ def jwt_token() -> Callable[[str, str, int], str]:
 
 
 @pytest.fixture
-def three_master_cluster(
+def static_three_master_cluster(
     artifact_path: Path,
     docker_backend: Docker,
     request: SubRequest,
@@ -119,6 +122,77 @@ def three_master_cluster(
         agents=0,
         public_agents=0,
     ) as cluster:
+        cluster.install_dcos_from_path(
+            dcos_installer=artifact_path,
+            dcos_config=cluster.base_config,
+            ip_detect_path=docker_backend.ip_detect_path,
+        )
+        wait_for_dcos_oss(
+            cluster=cluster,
+            request=request,
+            log_dir=log_dir,
+        )
+        yield cluster
+
+
+@pytest.fixture
+def zookeeper_backend() -> Generator[Container, None, None]:
+    """
+    Create a ZooKeeper backend container to support a dynamic DC/OS cluster
+    setup.
+    """
+    ts = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+    client = docker.from_env(version='auto')
+    zookeeper = client.containers.run(
+        image='digitalwonderland/zookeeper',
+        name='zk-backend-{}'.format(ts),
+        environment={'ZOOKEEPER_TICK_TIME': 100},
+        detach=True,
+    )
+    zookeeper.reload()
+    try:
+        yield zookeeper
+    finally:
+        zookeeper.remove(force=True)
+
+
+@pytest.fixture
+def dynamic_three_master_cluster(
+    artifact_path: Path,
+    docker_backend: Docker,
+    zookeeper_backend: Container,
+    request: SubRequest,
+    log_dir: Path,
+) -> Generator[Cluster, None, None]:
+    """Spin up a dynamic DC/OS cluster with three master nodes."""
+    exhibitor_zk_port = 2181
+    exhibitor_zk_ip_address = zookeeper_backend.attrs['NetworkSettings']['IPAddress']
+    exhibitor_zk_host = '{ip_address}:{port}'.format(
+        ip_address=exhibitor_zk_ip_address,
+        port=exhibitor_zk_port,
+    )
+    dynamic_ee_config = {
+        'exhibitor_storage_backend': 'zookeeper',
+        'exhibitor_zk_hosts': exhibitor_zk_host,
+        'exhibitor_zk_path': '/zk-example',
+        'master_discovery': 'master_http_loadbalancer',
+        # `exhibitor_address` is required for a `zookeeper` based cluster, but
+        # does not need to be valid because the cluster has no agents.
+        'exhibitor_address': 'none',
+        'num_masters': '3',
+    }
+
+    with Cluster(
+        cluster_backend=docker_backend,
+        masters=3,
+        agents=0,
+        public_agents=0,
+    ) as cluster:
+        dcos_config = {
+            **cluster.base_config,
+            **dynamic_ee_config,
+        }
+        dcos_config.pop('master_list')
         cluster.install_dcos_from_path(
             dcos_installer=artifact_path,
             dcos_config=cluster.base_config,

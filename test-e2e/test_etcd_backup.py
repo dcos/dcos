@@ -122,8 +122,8 @@ class EtcdClient():
 
 
 @pytest.fixture()
-def etcd_client(three_master_cluster: Cluster) -> EtcdClient:
-    etcd_client = EtcdClient(three_master_cluster.masters)
+def etcd_client(static_three_master_cluster: Cluster) -> EtcdClient:
+    etcd_client = EtcdClient(static_three_master_cluster.masters)
     return etcd_client
 
 
@@ -141,7 +141,7 @@ def etcd_client(three_master_cluster: Cluster) -> EtcdClient:
 class TestEtcdBackup:
     def test_snapshot_backup_and_restore(
         self,
-        three_master_cluster: Cluster,
+        static_three_master_cluster: Cluster,
         etcd_client: EtcdClient,
         tmp_path: Path,
         request: SubRequest,
@@ -156,11 +156,11 @@ class TestEtcdBackup:
         backup_local_path = tmp_path / backup_name
 
         # Take etcd backup from one master node.
-        _do_backup(next(iter(three_master_cluster.masters)), backup_local_path)
+        _do_backup(next(iter(static_three_master_cluster.masters)), backup_local_path)
 
         # Restore etcd from backup on all master nodes.
-        _do_restore(three_master_cluster.masters, backup_local_path)
+        _do_restore(static_three_master_cluster.masters, backup_local_path)
 
         # assert all etcd containers
-        for master in three_master_cluster.masters:
+        for master in static_three_master_cluster.masters:
             assert etcd_client.get_key_from_node(test_key, master) == test_val

@@ -10,9 +10,14 @@ from wcmatch import glob
 # E2E_SAFE_DEFAULT includes files that typically do not affect e2e tests.
 # `*.txt` not included here because `requirements.txt` can affect tests.
 E2E_SAFE_DEFAULT = [
-    '**/*.md', '.github/**', 'config/**', 'docs/**', 'flake8_dcos_lint/**',
-    'teamcity/**', 'test-util/**', '.editorconfig', '.git*', '.pre-commit-config.yaml',
-    'Jenkinsfile*', 'LICENSE', 'NOTICE', 'owners.json', 'symlink_check', 'tox.ini'
+    # Safe file patterns
+    '**/*.md', '**/.git*', '**/LICENSE',
+    # Safe directories
+    '.github/**', 'config/**', 'docs/**', 'flake8_dcos_lint/**', 'teamcity/**',
+    'test-util/**',
+    # Safe files
+    '.editorconfig', '.pre-commit-config.yaml', 'Jenkinsfile*', 'NOTICE',
+    'owners.json', 'symlink_check', 'tox.ini'
 ]
 
 CI_UNKNOWN = 'unknown'
