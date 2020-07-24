@@ -7,9 +7,6 @@ import stat
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Dict
-
-import yaml
 
 log = logging.getLogger(__name__)
 
@@ -19,24 +16,6 @@ dcos_run_path = Path('/run/dcos')
 tmp_path = Path('/tmp')
 
 dcos_etc_path = install_path / 'etc'
-
-
-def get_user_config() -> Dict[str, str]:
-    """
-    Returns the contents of the cluster `config.yaml` file as a dictionary.
-    """
-    path = dcos_etc_path / 'user.config.yaml'
-    with path.open() as f:
-        config = yaml.safe_load(f)
-    return config
-
-
-def is_static_cluster() -> bool:
-    """
-    Returns True if this cluster has a static master list.
-    """
-    user_config = get_user_config()
-    return user_config['master_discovery'] == 'static'
 
 
 # Derived from pkgpanda/util.py#L257-L262
