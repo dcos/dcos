@@ -7,7 +7,7 @@ import pytest
 import requests
 import retrying
 from _pytest.fixtures import SubRequest
-from conditional import E2E_SAFE_DEFAULT, only_changed
+from conditional import E2E_SAFE_DEFAULT, escape, only_changed, trailing_path
 from dcos_e2e.cluster import Cluster
 from dcos_e2e.node import Node, Output
 
@@ -27,8 +27,13 @@ def wait_for_zookeeper_serving(master: Node, count: int) -> None:
 
 @pytest.mark.skipif(
     only_changed(E2E_SAFE_DEFAULT + [
-        'packages/**', '!packages/{bootstrap,exhibitor,java}/**',  # All packages safe except named packages
-        'test-e2e/test_*', '!test-e2e/test_exhibitor_quorum.py',   # All e2e tests safe except this test
+        # All packages safe except named packages
+        'packages/**',
+        '!packages/*treeinfo.json',
+        '!packages/{bootstrap,exhibitor,java}/**',
+        '!packages/python*/**',
+        # All e2e tests safe except this test
+        'test-e2e/test_*', '!' + escape(trailing_path(__file__, 2)),
     ]),
     reason='Only safe files modified',
 )

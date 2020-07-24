@@ -174,6 +174,23 @@ minidcos docker run --test-env pytest
 minidcos docker destroy
 ```
 
+# End-to-end Tests
+
+E2E tests start a cluster as part of the test. These are useful for testing specific configurations or performing more disruptive tests.
+
+To run the e2e tests, download a DC/OS installer, create a Python virtualenv, and run:
+
+```
+cd test-e2e
+pip install -r requirements.txt
+export DCOS_E2E_GENCONF_PATH=${PWD}/dcos_generate_config.sh
+export DCOS_E2E_TMP_DIR_PATH=/tmp
+export DCOS_E2E_LOG_DIR=/tmp/logs
+pytest
+```
+
+Tests are annotated to be skipped if specific files are unchanged.  This only applies to non-train Pull Requests run by D2iQ CI.  In other cases, including running locally, all tests will run.  You can use `pytest` arguments to restrict tests to a specific subset.
+
 # Build
 
 DC/OS can be built locally but requires the [development environment](#development-environment) specified above.

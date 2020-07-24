@@ -4,7 +4,7 @@
     "bouncer": {
       "kind": "git",
       "git": "git@github.com:dcos/bouncer.git",
-      "ref": "f1a19878597f80f30fb08041597aeb5e0aa69207",
+      "ref": "c5bb48e02edb79ec90d53e3c2bce223adfbb5dfd",
       "ref_origin": "master"
     }
   },
