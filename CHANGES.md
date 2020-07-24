@@ -39,6 +39,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Ensured that marathon and SDK labeled reservations are not offered to other schedulers. (D2IQ-68800)
 
+* Updated DC/OS UI to [v5.1.7](https://github.com/dcos/dcos-ui/releases/tag/v5.1.7).
 
 #### Update Metronome to 0.6.48
 
