@@ -26,6 +26,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Display user email address in UI when logging in using external provider. (D2IQ-70199)
 
 * Updated DC/OS UI to [v5.1.7](https://github.com/dcos/dcos-ui/releases/tag/v5.1.7).
+* Removed Exhibitor snapshot cleanup and now rely on ZooKeeper autopurge. (D2IQ-68109)
+
 
 ## DC/OS 2.1.0 (2020-06-09)
 
