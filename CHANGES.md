@@ -12,7 +12,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Removed trailing newline from ZooKeeper log messages. (D2IQ-68394)
 
-* Updated DC/OS UI to [v5.1.1](https://github.com/dcos/dcos-ui/releases/tag/v5.1.1).
+* Updated DC/OS UI to [v5.1.7](https://github.com/dcos/dcos-ui/releases/tag/v5.1.7).
 
 * Fix incorrect ownership after migration of `/run/dcos/telegraf/dcos_statsd/containers`. (D2IQ-69295)
 
@@ -97,7 +97,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Drop labels from Lashup's kv_message_queue_overflows_total metric. (DCOS_OSS-5634)
 
 * Reserve all agent VTEP IPs upon recovering from replicated log. (DCOS_OSS-5626)
-* Updated DC/OS UI to [v5.1.7](https://github.com/dcos/dcos-ui/releases/tag/v5.1.7).
 
 * Use Golang 1.10.8 to build CockroachDB. (DCOS-61502)
 * [Mesos] Support quoted realms in WWW-Authenticate header (DCOS-61529)
