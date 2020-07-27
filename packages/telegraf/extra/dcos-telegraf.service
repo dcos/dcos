@@ -16,5 +16,6 @@ EnvironmentFile=/opt/mesosphere/etc/telegraf.env
 
 LimitNOFILE=16384
 
+ExecStartPre=/bin/ping -c1 leader.mesos
 ExecStartPre=/opt/mesosphere/bin/bootstrap ${SERVICE}
 ExecStart=/opt/mesosphere/bin/start_telegraf.sh --config ${TELEGRAF_CONFIG_FILE} --config-directory ${TELEGRAF_CONFIG_DIR},${TELEGRAF_USER_CONFIG_DIR}
