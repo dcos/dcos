@@ -25,6 +25,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Display user email address in UI when logging in using external provider. (D2IQ-70199)
 
+* Updated DC/OS UI to [v5.1.7](https://github.com/dcos/dcos-ui/releases/tag/v5.1.7).
 
 ## DC/OS 2.1.0 (2020-06-09)
 
@@ -153,7 +154,6 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Fixing some corner-cases that could render `etcd` unable to start [D2IQ-69069](https://jira.d2iq.com/browse/D2IQ-69069)
 
 * Updated DC/OS UI to [v5.1.1](https://github.com/dcos/dcos-ui/releases/tag/v5.1.1).
-
 
 * Ensured that marathon and SDK labeled reservations are not offered to other schedulers (D2IQ-68800)
 
