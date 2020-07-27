@@ -102,7 +102,7 @@ class EtcdClient():
         master = list(self.masters)[0]
         etcdctl_with_args = get_etcdctl_with_base_args(endpoint_ip=MASTER_DNS)
         etcdctl_with_args += ["put", key, value]
-        master.run(args=etcdctl_with_args)
+        master.run(args=etcdctl_with_args, output=Output.LOG_AND_CAPTURE)
 
     def get_key_from_node(
             self,
