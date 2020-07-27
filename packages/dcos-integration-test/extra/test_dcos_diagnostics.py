@@ -332,7 +332,7 @@ def test_dcos_diagnostics_bundle_create_download_delete(dcos_api_session: DcosAp
         use_legacy_api=use_legacy_api,
     )
 
-    app, test_uuid = test_helpers.marathon_test_docker_app('diag-bundle', constraints=[])
+    app, test_uuid = test_helpers.marathon_test_app()
     with dcos_api_session.marathon.deploy_and_cleanup(app, timeout=120):
         bundle = _create_bundle(diagnostics)
         _check_diagnostics_bundle_status(dcos_api_session)
