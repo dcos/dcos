@@ -6,7 +6,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Notable changes
 
-* Updated DC/OS UI to [v5.1.1](https://github.com/dcos/dcos-ui/releases/tag/v5.1.1)
+* Updated DC/OS UI to [v5.1.7](https://github.com/dcos/dcos-ui/releases/tag/v5.1.7).
 
 * Update to Fluentbit [1.4.6](https://docs.fluentbit.io/manual/installation/upgrade-notes)
 
@@ -38,8 +38,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Removed trailing newline from ZooKeeper log messages. (D2IQ-68394)
 
 * Ensured that marathon and SDK labeled reservations are not offered to other schedulers. (D2IQ-68800)
-
-* Updated DC/OS UI to [v5.1.7](https://github.com/dcos/dcos-ui/releases/tag/v5.1.7).
 
 #### Update Metronome to 0.6.48
 
