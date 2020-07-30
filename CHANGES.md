@@ -1,5 +1,14 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
+## DC/OS 2.0.7 (In development)
+
+### Security updates
+
+### Notable changes
+
+### Fixed and improved
+
+
 ## DC/OS 2.0.6 (2020-07-30)
 
 ### Security updates
