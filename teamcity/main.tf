@@ -5,7 +5,7 @@ variable "AWS_REGION" {
 
 variable "custom_dcos_download_path" {
   type = "string"
-  default = "https://downloads.mesosphere.com/dcos-enterprise/testing/master/dcos_generate_config.ee.sh"
+  default = "https://downloads.mesosphere.com/dcos-enterprise/testing/master/dcos_generate_config.sh"
 }
 
 variable "variant" {
