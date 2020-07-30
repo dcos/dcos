@@ -76,7 +76,7 @@ setup(
         'docopt',
         'passlib',
         'py',
-        'pytest',
+        'pytest<6.0.0',
         'pyyaml',
         'responses',
         'requests==2.20.1',
