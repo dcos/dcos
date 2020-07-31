@@ -3,18 +3,18 @@
   "sources": {
     "python-jose": {
       "kind": "url_extract",
-      "url": "https://files.pythonhosted.org/packages/d1/c1/ecc8b1229f0e8cdaef93da903d4495579edea529f77eb42e60908879d3b7/python-jose-3.0.1.tar.gz",
-      "sha1": "bc4aaf20a2bb797494d7e51755a8e9a22ace86d0"
+      "url": "https://files.pythonhosted.org/packages/2e/0e/29e1f5bba4e719eb09efc2b76ea46439aa2dabffa5bcd7d3fccae816d128/python-jose-3.1.0.tar.gz",
+      "sha1": "b81ce740c7ac4cc90280c0c83183f183538a4384"
     },
     "ecdsa": {
        "kind": "url_extract",
-       "url": "https://files.pythonhosted.org/packages/f9/e5/99ebb176e47f150ac115ffeda5fedb6a3dbb3c00c74a59fd84ddf12f5857/ecdsa-0.13.tar.gz",
-      "sha1": "7bcf6d1773d08bcc4bdd28cd05c545969f5aa162"
+       "url": "https://files.pythonhosted.org/packages/e3/7c/b508ade1feb47cd79222e06d85e477f5cfc4fb0455ad3c70eb6330fc49aa/ecdsa-0.15.tar.gz",
+      "sha1": "5ac84f3012d807793bcb98a8e9c86c63b9965596"
     },
     "rsa": {
       "kind": "url_extract",
-      "url": "https://files.pythonhosted.org/packages/cb/d0/8f99b91432a60ca4b1cd478fd0bdf28c1901c58e3a9f14f4ba3dba86b57f/rsa-4.0.tar.gz",
-      "sha1": "8a68dcee7bd2a7727c253b9ed2820cd1b5b9241a"
+      "url": "https://files.pythonhosted.org/packages/a2/d5/04b8a9719149583fec76efdff2e7a81c6e3cc34909ee818d3fbf115edc2e/rsa-4.6.tar.gz",
+      "sha1": "43335708732a72541476be1432c06f9992dc8e2d"
     }
   }
 }

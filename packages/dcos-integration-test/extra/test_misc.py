@@ -14,7 +14,7 @@ __contact__ = 'dcos-cluster-ops@mesosphere.io'
 # TODO(cmaloney): Validate it contains some settings we expact.
 def test_load_user_config() -> None:
     with open('/opt/mesosphere/etc/user.config.yaml', 'r') as f:
-        user_config = yaml.load(f)
+        user_config = yaml.safe_load(f)
 
     # Calculated parameters shouldn't be in the user config
     assert 'master_quorum' not in user_config

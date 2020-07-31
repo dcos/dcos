@@ -2,7 +2,7 @@
   "requires": ["python"],
   "single_source": {
     "kind": "url_extract",
-    "url": "https://pypi.python.org/packages/4a/85/db5a2df477072b2902b0eb892feb37d88ac635d36245a72a6a69b23b383a/PyYAML-3.12.tar.gz",
-    "sha1": "cb7fd3e58c129494ee86e41baedfec69eb7dafbe"
+    "url": "https://files.pythonhosted.org/packages/64/c2/b80047c7ac2478f9501676c988a5411ed5572f35d1beff9cae07d321512c/PyYAML-5.3.1.tar.gz",
+    "sha1": "3b20272e119990b2bbeb03815a1dd3f3e48af07e"
   }
 }

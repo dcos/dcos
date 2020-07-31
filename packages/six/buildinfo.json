@@ -3,8 +3,8 @@
   "sources": {
     "six": {
       "kind": "url",
-      "url": "https://pypi.python.org/packages/py2.py3/s/six/six-1.10.0-py2.py3-none-any.whl",
-      "sha1": "19df5f56abce3db94d5e0e079e54bf430fddbb02"
+      "url": "https://files.pythonhosted.org/packages/ee/ff/48bde5c0f013094d729fe4b0316ba2a24774b3ff1c52d924a8a4cb04078a/six-1.15.0-py2.py3-none-any.whl",
+      "sha1": "8730d16507db66e828c696ecc7cb785e557900bb"
      }
   }
 }

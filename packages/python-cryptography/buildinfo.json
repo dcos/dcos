@@ -3,18 +3,18 @@
   "sources": {
     "cryptography": {
       "kind": "url_extract",
-      "url": "https://files.pythonhosted.org/packages/f3/39/d3904df7c56f8654691c4ae1bdb270c1c9220d6da79bd3b1fbad91afd0e1/cryptography-2.4.2.tar.gz",
-      "sha1": "dbebf76a5e10eeb3c251bd1a243e0d1dacfda765"
+      "url": "https://files.pythonhosted.org/packages/56/3b/78c6816918fdf2405d62c98e48589112669f36711e50158a0c15d804c30d/cryptography-2.9.2.tar.gz",
+      "sha1": "af16e069cad7d36442f8481542de51f87c3c7708"
     },
     "asn1crypto": {
       "kind": "url",
-      "url": "https://files.pythonhosted.org/packages/ea/cd/35485615f45f30a510576f1a56d1e0a7ad7bd8ab5ed7cdc600ef7cd06222/asn1crypto-0.24.0-py2.py3-none-any.whl",
-      "sha1": "fff0f73e555ae1b230a95beae1604ce3fbc22646"
+      "url": "https://files.pythonhosted.org/packages/e9/51/1db4a60049fb7390959be586b6eb743098e6cea3f6b2d3ed9e17fec62ba2/asn1crypto-1.3.0-py2.py3-none-any.whl",
+      "sha1": "072fabec7abe3acf53e935d6d5a965a6b81d3b87"
     },
     "cffi": {
       "kind": "url_extract",
-      "url": "https://files.pythonhosted.org/packages/e7/a7/4cd50e57cc6f436f1cc3a7e8fa700ff9b8b4d471620629074913e3735fb2/cffi-1.11.5.tar.gz",
-      "sha1": "1686e6689a691414d3d22626c837adeee3996dd9"
+      "url": "https://files.pythonhosted.org/packages/54/1d/15eae71ab444bd88a1d69f19592dcf32b9e3166ecf427dd9243ef0d3b7bc/cffi-1.14.1.tar.gz",
+      "sha1": "7b067fdb46d184f6bfdadc11732df6f0340e553d"
     }
   }
 }

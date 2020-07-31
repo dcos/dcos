@@ -2,7 +2,7 @@
   "requires": ["python"],
   "single_source": {
     "kind": "url",
-    "url": "https://pypi.python.org/packages/27/cc/6dd9a3869f15c2edfab863b992838277279ce92663d334df9ecf5106f5c6/idna-2.6-py2.py3-none-any.whl",
-    "sha1": "a75f31778ea0bbf218d7ae085f4f961d004d6ff2"
+    "url": "https://files.pythonhosted.org/packages/a2/38/928ddce2273eaa564f6f50de919327bf3a00f091b5baba8dfa9460f3a8a8/idna-2.10-py2.py3-none-any.whl",
+    "sha1": "999b6718b4d789d8ca0d2ddf7c07826154291825"
   }
 }

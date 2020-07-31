@@ -2,7 +2,7 @@
   "requires": ["python"],
   "single_source": {
       "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/source/f/future/future-0.15.2.tar.gz",
-      "sha1": "431bf8ff160e8e785a2f76c3e57c1b6c2b13b41a"
+      "url": "https://files.pythonhosted.org/packages/45/0b/38b06fd9b92dc2b68d58b75f900e97884c45bedd2ff83203d933cf5851c9/future-0.18.2.tar.gz",
+      "sha1": "d8c8b2d3889fc22bb38f049ed8e3dbdc35a83d6e"
   }
 }

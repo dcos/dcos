@@ -2,7 +2,7 @@
   "requires": ["python"],
   "single_source": {
     "kind": "url_extract",
-    "url": "https://pypi.python.org/packages/source/M/MarkupSafe/MarkupSafe-0.23.tar.gz",
-    "sha1": "cd5c22acf6dd69046d6cb6a3920d84ea66bdf62a"
+    "url": "https://files.pythonhosted.org/packages/b9/2e/64db92e53b86efccfaea71321f597fa2e1b2bd3853d8ce658568f7a13094/MarkupSafe-1.1.1.tar.gz",
+    "sha1": "f70e5fd3c120a1b108d4347ea1115e3962c42026"
   }
 }

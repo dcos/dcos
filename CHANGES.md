@@ -32,3 +32,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Updated OpenResty to 1.15.8.4. (DCOS_OSS-5967)
 
 * Update Telegraf configuration to reduce errors, vary requests to reduce load, sample less frequently. (COPS-5629)
+
+* Update Bouncer dependencies. (D2IQ-54115, D2IQ-62221)

@@ -2,7 +2,7 @@
   "requires": ["python"],
   "single_source": {
     "kind": "url",
-    "url": "https://files.pythonhosted.org/packages/93/d1/3378cc8184a6524dc92993090ee8b4c03847c567e298305d6cf86987e005/PyJWT-1.6.4-py2.py3-none-any.whl",
-    "sha1": "4a7a127bda251d12e10a89226a2d84bcab5f9dc4"
+    "url": "https://files.pythonhosted.org/packages/87/8b/6a9f14b5f781697e51259d81657e6048fd31a113229cf346880bb7545565/PyJWT-1.7.1-py2.py3-none-any.whl",
+    "sha1": "c279f764ba3bf3b21b29e5a12dfd2ea7dead4ab5"
   }
 }

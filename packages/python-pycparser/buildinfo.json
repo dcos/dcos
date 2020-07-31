@@ -2,7 +2,7 @@
   "requires": ["python"],
   "single_source": {
       "kind": "url_extract",
-      "url": "https://pypi.python.org/packages/8c/2d/aad7f16146f4197a11f8e91fb81df177adcc2073d36a17b1491fd09df6ed/pycparser-2.18.tar.gz",
-      "sha1": "1c75af69ae6273b1f1f531744f87d060965ed85d"
+      "url": "https://files.pythonhosted.org/packages/0f/86/e19659527668d70be91d0369aeaa055b4eb396b0f387a4f92293a20035bd/pycparser-2.20.tar.gz",
+      "sha1": "0ae93d89b69fab48af3a407a2f8663bcea270c3d"
   }
 }

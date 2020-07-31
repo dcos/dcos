@@ -2,7 +2,7 @@
   "requires": ["python"],
   "single_source": {
     "kind": "url",
-    "url": "https://files.pythonhosted.org/packages/ee/a7/d6d238d927df355d4e4e000670342ca4705a72f0bf694027cf67d9bcf5af/passlib-1.7.1-py2.py3-none-any.whl",
-    "sha1": "bc8fca38c407eb01ee55ec199538734c1d35ff8c"
+    "url": "https://files.pythonhosted.org/packages/11/b8/e9a78f3033228013ba8564adad8d0031bf9d39ea3acc3cdb9d55fabeb4ba/passlib-1.7.2-py2.py3-none-any.whl",
+    "sha1": "223eee683f8fc446bc99429a6b1ddbe056c4ccad"
   }
 }

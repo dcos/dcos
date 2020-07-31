@@ -85,7 +85,7 @@ def test_test_groups() -> None:
 
     test_group_file = Path(test_groups_path)
     test_group_file_contents = test_group_file.read_text()
-    test_groups = yaml.load(test_group_file_contents)['groups']
+    test_groups = yaml.safe_load(test_group_file_contents)['groups']
     test_patterns = []
     for group in test_groups:
         test_patterns += patterns_from_group(group_name=group, test_groups_path=test_groups_path)
