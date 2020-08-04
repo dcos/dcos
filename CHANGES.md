@@ -2,6 +2,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 1.13.10 (in development)
 
+### Security updates
+
+* Updated CockroachDB Python package to 0.3.5. (D2IQ-62221) 
+
 ### Notable changes
 
 * Starting services on clusters with static masters now only requires a majority of ZooKeeper nodes to be available. 
@@ -30,8 +34,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * There was a case where regex validation of project ids was ineffecient for certain inputs. The regex has been optimized. (MARATHON-8730)
 
 * Metronome jobs networking is now configurable (MARATHON-8727)
-
-### Security updates
 
 
 ## DC/OS 1.13.9 (2020-4-22)
