@@ -4,6 +4,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Security updates
 
+* Updated CockroachDB Python package to 0.3.5. (D2IQ-62221) 
+
 ### Notable changes
 
 ### Fixed and improved
