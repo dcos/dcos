@@ -80,7 +80,7 @@ class S3StorageProvider(AbstractStorageProvider):
         new_object = self.get_object(destination_path)
         old_path = src_object.bucket_name + '/' + src_object.key
 
-        new_object.copy_from(CopySource=old_path)
+        new_object.copy_from(CopySource=old_path, ACL='bucket-owner-full-control')
 
     def upload(self,
                destination_path: str,
@@ -89,6 +89,7 @@ class S3StorageProvider(AbstractStorageProvider):
                no_cache: bool=False,
                content_type: Optional[str]=None):
         extra_args = {}
+        extra_args['ACL'] = 'bucket-owner-full-control'
         if no_cache:
             extra_args['CacheControl'] = 'no-cache'
         if content_type:
