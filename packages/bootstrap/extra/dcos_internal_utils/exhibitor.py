@@ -1,4 +1,6 @@
 import logging
+import re
+import socket
 import sys
 
 import requests
@@ -10,64 +12,40 @@ log = logging.getLogger(__name__)
 
 EXHIBITOR_STATUS_URL = 'http://127.0.0.1:8181/exhibitor/v1/cluster/status'
 
-zk_pid_path = utils.dcos_lib_path / 'exhibitor' / 'zk.pid'
-stash_zk_pid_stat_mtime_path = utils.dcos_lib_path / 'bootstrap' / 'exhibitor_pid_stat'
+
+_zk_mode_pat = re.compile(br'^Mode: (.*)$', re.MULTILINE)
+ZK_MODE_LATENT = 'latent'
+ZK_MODE_STANDALONE = 'standalone'
+ZK_MODE_FOLLOWER = 'follower'
+ZK_MODE_LEADER = 'leader'
+
+zk_mode_map = {
+    b'standalone': ZK_MODE_STANDALONE,
+    b'follower': ZK_MODE_FOLLOWER,
+    b'leader': ZK_MODE_LEADER
+}
 
 
-def get_zk_pid_mtime():
-    try:
-        return zk_pid_path.stat().st_mtime_ns
-    except FileNotFoundError:
-        log.error("ZK pid file `%s` does not exist.", zk_pid_path)
-        return None
-
-
-def get_zk_pid():
-    return utils.read_file_text(zk_pid_path)
-
-
-def try_shortcut():
-    try:
-        # pid stat file exists, read the value out of it
-        stashed_pid_stat = int(utils.read_file_bytes(stash_zk_pid_stat_mtime_path).decode('utf8'))
-    except FileNotFoundError:
-        log.info('No zk.pid last mtime found at %s', stash_zk_pid_stat_mtime_path)
-        return False
-
-    # Make sure that the pid hasn't been written anew
-    cur_pid_stat = get_zk_pid_mtime()
-
-    if cur_pid_stat is None:
-        return False
-
-    if stashed_pid_stat != cur_pid_stat:
-        return False
-
-    # Check that the PID has a zk running at it currently.
-    zk_pid = get_zk_pid()
-    cmdline_path = '/proc/{}/cmdline'.format(zk_pid)
-    try:
-        # Custom because the command line is ascii with `\x00` as separator.
-        with open(cmdline_path, 'rb') as f:
-            cmd_line = f.read().split(b'\x00')[:-1]
-    except FileNotFoundError:
-        log.info('Process no longer running (couldn\'t read the cmdline at: %s)', zk_pid)
-        return False
-
-    if len(cmd_line) < 3:
-        log.info("Command line too short to be zookeeper started by exhibitor")
-        return False
-
-    # Only show first and last command arguments, to avoid logging sensitive info
-    log.info('PID %s has command line %s ... %s', zk_pid, cmd_line[0], cmd_line[-1])
-
-    if cmd_line[-1] != b'/var/lib/dcos/exhibitor/conf/zoo.cfg' \
-            or cmd_line[0] != b'/opt/mesosphere/active/java/usr/java/bin/java':
-        log.info("command line doesn't start with java and end with zookeeper.cfg")
-        return False
-
-    log.info("PID file hasn't been modified. ZK still seems to be at that PID.")
-    return True
+def get_zookeeper_mode():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        server_address = ('127.0.0.1', 2181)
+        sock.connect(server_address)
+        sock.sendall(b'srvr\n')
+        response = b''
+        buf = sock.recv(512)
+        while buf != b'':
+            response += buf
+            buf = sock.recv(512)
+    match = _zk_mode_pat.search(response)
+    if match:
+        mode = match.group(1)
+        result = zk_mode_map.get(mode)
+        if result is None:
+            raise KeyError('Unexpected mode: {} in {}'.format(mode, response))
+        return result
+    if response.strip() == b'This ZooKeeper instance is not currently serving requests':
+        return ZK_MODE_LATENT
+    raise RuntimeError('Unexpected response: {}'.format(response))
 
 
 def wait(master_count_filename):
@@ -76,26 +54,41 @@ def wait(master_count_filename):
         log.info("master_count file doesn't exist, not waiting")
         return
 
-    if try_shortcut():
-        log.info("Shortcut succeeeded, assuming local zk is in good config state, not waiting for quorum.")
-        return
-    log.info('Shortcut failed, waiting for exhibitor to bring up zookeeper and stabilize')
-
     cluster_size = int(utils.read_file_text(master_count_filename))
     log.info('Expected cluster size: {}'.format(cluster_size))
 
     try:
+        zk_mode = get_zookeeper_mode()
+    except ConnectionRefusedError:
+        log.error('ZooKeeper not running')
+        sys.exit(1)
+
+    if cluster_size == 1:
+        desired_modes = {ZK_MODE_STANDALONE}
+    else:
+        desired_modes = {ZK_MODE_FOLLOWER, ZK_MODE_LEADER}
+    if zk_mode not in desired_modes:
+        log.error('ZooKeeper not in correct mode: %s', zk_mode)
+        sys.exit(1)
+
+    log.info('ZooKeeper OK: %s', zk_mode)
+
+    # Check Exhibitor, but do not fail if it shows unexpected results
+    try:
         response = requests.get(EXHIBITOR_STATUS_URL)
     except requests.exceptions.ConnectionError as ex:
         log.error('Could not connect to exhibitor: {}'.format(ex))
-        sys.exit(1)
-
+        return
     if response.status_code != 200:
         log.error('Could not get exhibitor status: {}, Status code: {}'.format(
             EXHIBITOR_STATUS_URL, response.status_code))
-        sys.exit(1)
+        return
 
-    data = response.json()
+    try:
+        data = response.json()
+    except ValueError:
+        log.error('Non-JSON returned by Exhibitor: %r', response.content)
+        return
 
     serving = []
     leaders = []
@@ -105,26 +98,4 @@ def wait(master_count_filename):
         if node['description'] == 'serving':
             serving.append(node['hostname'])
 
-    log.info(
-        "Serving hosts: `%s`, leader: `%s`", ','.join(serving), ','.join(leaders))
-
-    if utils.is_static_cluster():
-        # For static clusters, wait for a ZooKeeper quorum to be ready.
-        quorum = cluster_size // 2 + 1
-        if len(leaders) != 1 or len(serving) < quorum:
-            msg_fmt = 'Require {}+ servers and 1 leader, have {} servers and {} leaders'
-            log.error(msg_fmt.format(quorum, len(serving), len(leaders)))
-            sys.exit(1)
-    else:
-        # For other clusters, wait for all ZooKeeper nodes to be ready.
-        if len(leaders) != 1 or len(serving) != cluster_size:
-            msg_fmt = 'Require {} servers and 1 leader, have {} servers and {} leaders'
-            log.error(msg_fmt.format(cluster_size, len(serving), len(leaders)))
-            sys.exit(1)
-
-    # Local Zookeeper is up. Config should be stable, local zookeeper happy. Stash the PID so if
-    # there is a restart we can come up quickly without requiring a new zookeeper quorum.
-    zk_pid_mtime = get_zk_pid_mtime()
-    if zk_pid_mtime is not None:
-        log.info('Stashing zk.pid mtime %s to %s', zk_pid_mtime, stash_zk_pid_stat_mtime_path)
-        utils.write_private_file(stash_zk_pid_stat_mtime_path, str(zk_pid_mtime).encode('utf8'))
+    log.info('ZK servers: %r leaders: %r', ','.join(serving), ','.join(leaders))

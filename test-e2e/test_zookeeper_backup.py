@@ -11,7 +11,6 @@ import pytest
 from _pytest.fixtures import SubRequest
 
 from cluster_helpers import wait_for_dcos_oss
-from dcos_e2e.backends import Docker
 from dcos_e2e.cluster import Cluster
 from dcos_e2e.node import Node, Output
 from kazoo.client import KazooClient
@@ -26,42 +25,12 @@ FLAG = b'flag'
 
 
 @pytest.fixture
-def three_master_cluster(
-    artifact_path: Path,
-    docker_backend: Docker,
-    request: SubRequest,
-    log_dir: Path,
-) -> Cluster:
-    """
-    Spin up a highly-available DC/OS cluster with three master nodes.
-    """
-    with Cluster(
-        cluster_backend=docker_backend,
-        masters=3,
-        agents=0,
-        public_agents=0,
-    ) as cluster:
-        cluster.install_dcos_from_path(
-            dcos_installer=artifact_path,
-            dcos_config=cluster.base_config,
-            ip_detect_path=docker_backend.ip_detect_path,
-            output=Output.LOG_AND_CAPTURE,
-        )
-        wait_for_dcos_oss(
-            cluster=cluster,
-            request=request,
-            log_dir=log_dir,
-        )
-        yield cluster
-
-
-@pytest.fixture
-def zk_client(three_master_cluster: Cluster) -> KazooClient:
+def zk_client(static_three_master_cluster: Cluster) -> KazooClient:
     """
     ZooKeeper client connected to a given DC/OS cluster.
     """
     zk_hostports = ','.join(['{}:2181'.format(m.public_ip_address)
-                             for m in three_master_cluster.masters])
+                             for m in static_three_master_cluster.masters])
     retry_policy = KazooRetry(
         max_tries=-1,
         delay=1,
@@ -114,7 +83,7 @@ class TestZooKeeperBackup:
 
     def test_transaction_log_backup_and_restore(
         self,
-        three_master_cluster: Cluster,
+        static_three_master_cluster: Cluster,
         zk_client: KazooClient,
         tmp_path: Path,
         request: SubRequest,
@@ -134,13 +103,13 @@ class TestZooKeeperBackup:
         backup_local_path = tmp_path / backup_name
 
         # Take ZooKeeper backup from one master node.
-        _do_backup(next(iter(three_master_cluster.masters)), backup_local_path)
+        _do_backup(next(iter(static_three_master_cluster.masters)), backup_local_path)
 
         # Store a datapoint which we expect to get lost.
         not_backed_up_flag = _zk_set_flag(zk_client)
 
         # Restore ZooKeeper from backup on all master nodes.
-        _do_restore(three_master_cluster.masters, backup_local_path)
+        _do_restore(static_three_master_cluster.masters, backup_local_path)
 
         # Read from ZooKeeper after restore
         assert _zk_flag_exists(zk_client, persistent_flag)
@@ -149,14 +118,14 @@ class TestZooKeeperBackup:
 
         # Assert that DC/OS is intact.
         wait_for_dcos_oss(
-            cluster=three_master_cluster,
+            cluster=static_three_master_cluster,
             request=request,
             log_dir=log_dir,
         )
 
     def test_snapshot_backup_and_restore(
         self,
-        three_master_cluster: Cluster,
+        static_three_master_cluster: Cluster,
         zk_client: KazooClient,
         tmp_path: Path,
         request: SubRequest,
@@ -175,17 +144,17 @@ class TestZooKeeperBackup:
             '-i', "'s/zoo-cfg-extra=/zoo-cfg-extra=snapCount\\\\=1\\&/'",
             '/opt/mesosphere/active/exhibitor/usr/exhibitor/start_exhibitor.py',
         ]
-        for master in three_master_cluster.masters:
+        for master in static_three_master_cluster.masters:
             master.run(
                 args=args,
                 shell=True,
                 output=Output.LOG_AND_CAPTURE,
             )
-        for master in three_master_cluster.masters:
+        for master in static_three_master_cluster.masters:
             master.run(['systemctl', 'restart', 'dcos-exhibitor'])
 
         wait_for_dcos_oss(
-            cluster=three_master_cluster,
+            cluster=static_three_master_cluster,
             request=request,
             log_dir=log_dir,
         )
@@ -204,13 +173,13 @@ class TestZooKeeperBackup:
         backup_local_path = tmp_path / backup_name
 
         # Take ZooKeeper backup from one master node.
-        _do_backup(next(iter(three_master_cluster.masters)), backup_local_path)
+        _do_backup(next(iter(static_three_master_cluster.masters)), backup_local_path)
 
         # Store a datapoint which we expect to be lost.
         not_backed_up_flag = _zk_set_flag(zk_client)
 
         # Restore ZooKeeper from backup on all master nodes.
-        _do_restore(three_master_cluster.masters, backup_local_path)
+        _do_restore(static_three_master_cluster.masters, backup_local_path)
 
         # Read from ZooKeeper after restore
         assert _zk_flag_exists(zk_client, persistent_flag)
@@ -219,7 +188,7 @@ class TestZooKeeperBackup:
 
         # Assert DC/OS is intact.
         wait_for_dcos_oss(
-            cluster=three_master_cluster,
+            cluster=static_three_master_cluster,
             request=request,
             log_dir=log_dir,
         )

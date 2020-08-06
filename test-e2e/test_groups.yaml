@@ -59,4 +59,4 @@ groups:
         - test_calico_networking.py
         - test_adminrouter_grpc.py
         - test_external_calicoctl.py
-        - test_exhibitor_quorum.py
+        - test_zookeeper_quorum.py

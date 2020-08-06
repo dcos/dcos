@@ -29,7 +29,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Removed Exhibitor snapshot cleanup and now rely on ZooKeeper autopurge. (D2IQ-68109)
 
-* Updated CockroachDB Python package to 0.3.5. (D2IQ-62221) 
+* Updated CockroachDB Python package to 0.3.5. (D2IQ-62221)
+
+* Wait on ZooKeeper instead of Exhibitor during bootstrap. (D2IQ-70393)
+
 
 ## DC/OS 2.1.0 (2020-06-09)
 

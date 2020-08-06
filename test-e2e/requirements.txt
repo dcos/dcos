@@ -1,12 +1,12 @@
-git+https://github.com/dcos/dcos-e2e.git@2019.10.11.0
+git+https://github.com/dcos/dcos-e2e.git@2020.05.26.0
 attrs==19.1.0
-cryptography==2.5
-docker==3.7.0
+cryptography==2.7
+docker==4.0.2
 etcd3==0.11.1
 jwt==0.5.4
 kazoo==2.6.1
-pytest==4.1.1
+pytest==5.0.0
 responses==0.10.6
-requests==2.21.0
+requests==2.22.0
 wheel==0.33.1
 teamcity-messages==1.21
