@@ -11,7 +11,7 @@ from typing import Iterator
 import pytest
 
 from _pytest.fixtures import SubRequest
-from cluster_helpers import wait_for_dcos_oss
+from cluster_helpers import artifact_dir_format, dump_cluster_journals, wait_for_dcos_oss
 from conditional import E2E_SAFE_DEFAULT, escape, only_changed, trailing_path
 from dcos_e2e.backends import Docker
 from dcos_e2e.cluster import Cluster
@@ -43,8 +43,8 @@ def calico_ipip_cluster(docker_backend: Docker, artifact_path: Path,
     with Cluster(
             cluster_backend=docker_backend,
             masters=1,
-            agents=2,
-            public_agents=1,
+            agents=4,
+            public_agents=4,
     ) as cluster:
 
         config = {
@@ -70,6 +70,11 @@ def calico_ipip_cluster(docker_backend: Docker, artifact_path: Path,
             log_dir=log_dir,
         )
         yield cluster
+
+        dump_cluster_journals(
+            cluster=cluster,
+            target_dir=log_dir / artifact_dir_format(request.node.name),
+        )
 
 
 @pytest.mark.skipif(
