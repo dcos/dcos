@@ -42,9 +42,9 @@ def calico_ipip_cluster(docker_backend: Docker, artifact_path: Path,
                         request: SubRequest, log_dir: Path) -> Iterator[Cluster]:
     with Cluster(
             cluster_backend=docker_backend,
-            masters=1,
-            agents=8,
-            public_agents=8,
+            masters=3,
+            agents=4,
+            public_agents=4,
     ) as cluster:
 
         config = {
