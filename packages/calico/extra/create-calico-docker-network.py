@@ -261,9 +261,11 @@ def config_docker_cluster_store():
                 raise RuntimeError(
                     "Cannot load Docker daemon configuration {!r}: {}".format(DOCKERD_CONFIG_FILE, str(e))
                 ) from e
+        mode = stat.S_IMODE(os.stat(DOCKERD_CONFIG_FILE)[stat.ST_MODE])
     else:
         existing_contents = None
         dockerd_config = {}
+        mode = 0o644
         print('Creating Docker daemon configuration {!r}'.format(DOCKERD_CONFIG_FILE))
 
     # cluster-store related options can take effect by reloading docker without
@@ -310,7 +312,6 @@ def config_docker_cluster_store():
         return
 
     print("Writing updated Docker daemon configuration to {!r}".format(DOCKERD_CONFIG_FILE))
-    mode = stat.S_IMODE(os.stat(DOCKERD_CONFIG_FILE)[stat.ST_MODE])
     write_file_bytes(DOCKERD_CONFIG_FILE, updated_contents, mode)
 
     # gracefully reload the docker daemon
