@@ -302,7 +302,7 @@ def config_docker_cluster_store():
         dockerd_config["cluster-store-opts"] = cluster_store_opts
     else:
         # Remove any previously configured key options
-        dockerd_config.pop("cluster-store-opts")
+        dockerd_config.pop("cluster-store-opts", None)
 
     updated_contents = json.dumps(dockerd_config, indent='\t').encode('ascii')
     if updated_contents == existing_contents:
