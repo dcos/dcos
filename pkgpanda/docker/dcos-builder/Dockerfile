@@ -68,9 +68,9 @@ RUN ln -sf /usr/bin/cpp-4.8 /usr/bin/cpp && \
   ln -sf /usr/bin/gcc-ranlib-4.8 /usr/bin/gcc-ranlib && \
   ln -sf /usr/bin/gcov-4.8 /usr/bin/gcov
 
-ENV GOLANG_VERSION 1.14
+ENV GOLANG_VERSION 1.15
 ENV GOLANG_DOWNLOAD_URL https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
-ENV GOLANG_DOWNLOAD_SHA256 08df79b46b0adf498ea9f320a0f23d6ec59e9003660b4c9c1ce8e5e2c6f823ca
+ENV GOLANG_DOWNLOAD_SHA256 2d75848ac606061efe52a8068d0e647b35ce487a15bb52272c427df485193602
 
 RUN curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
   && echo "$GOLANG_DOWNLOAD_SHA256  golang.tar.gz" | sha256sum -c - \
