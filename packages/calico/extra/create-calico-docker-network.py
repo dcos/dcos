@@ -255,7 +255,7 @@ def config_docker_cluster_store():
             try:
                 existing_contents = f.read()
                 # Load config with an OrderedDict to minimize changes to an existing file
-                dockerd_config = json.loads(existing_contents, object_pairs_hook=OrderedDict())
+                dockerd_config = json.loads(existing_contents, object_pairs_hook=OrderedDict)
                 print('Checking existing Docker daemon configuration {!r}'.format(DOCKERD_CONFIG_FILE))
             except Exception as e:
                 raise RuntimeError(
