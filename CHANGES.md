@@ -36,6 +36,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated Exhibitor to version running atop [Jetty 9.4.30](https://github.com/dcos/exhibitor/commit/e6e232e1)
 
+#### Bump Marathon to 1.10.26
+
+* Fix a regression where Marathon would sometimes fail to replace lost unreachable tasks (MARATHON-8758)
+
 ## DC/OS 2.1.0 (2020-06-09)
 
 
