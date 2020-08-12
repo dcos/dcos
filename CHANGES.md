@@ -35,6 +35,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Metronome jobs networking is now configurable (MARATHON-8727)
 
+#### Update Marathon to 1.8.244
+
+* Fix a regression where Marathon would sometimes fail to replace lost unreachable tasks (MARATHON-8758)
+
+* Improved the reliability of error handling for health check handling (MARATHON-8743)
 
 ## DC/OS 1.13.9 (2020-4-22)
 
