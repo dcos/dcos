@@ -20,6 +20,7 @@ EnvironmentFile=-/var/lib/dcos/mesos-resources
 EnvironmentFile=-/run/dcos/etc/mesos-slave-public
 EnvironmentFile=-/etc/mesosphere/mesos/agent-public.env
 ExecStartPre=/bin/ping -c1 ready.spartan
+ExecStartPre=/bin/bash -c 'test -S /run/dcos/telegraf/dcos_statsd.sock'
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-mesos-slave-public
 ExecStartPre=/opt/mesosphere/bin/make_disk_resources.py /var/lib/dcos/mesos-resources
 ExecStartPre=/opt/mesosphere/bin/upgrade_cni.py /var/lib/cni/networks /var/run/dcos/cni/networks /opt/mesosphere/etc/dcos-cni-networks
