@@ -9,9 +9,12 @@ import os
 import shlex
 import signal
 import socket
+import stat
 import subprocess
 import sys
+import tempfile
 import time
+from collections import OrderedDict
 
 from contextlib import contextmanager
 from typing import Generator
@@ -215,21 +218,55 @@ def is_docker_cluster_store_configured():
     return False
 
 
-def config_docker_cluster_store():
-    if is_docker_cluster_store_configured():
-        print("Docker cluster store has already been configured")
-        return
+def write_file_bytes(filename, data, mode):
+    """
+    Set the contents of file to a byte string.
 
-    # load previous daemon configuration (if any)
-    dockerd_config = {}
+    The code ensures an atomic write by creating a temporary file and then
+    moving that temporary file to the given ``filename``. This prevents race
+    conditions such as the file being read by another process after it is
+    created but not yet written to.
+
+    It also prevents an invalid file being created if the `write` fails (e.g.
+    because of low disk space).
+
+    The new file is created with permissions `mode`.
+    """
+    prefix = os.path.basename(filename)
+    tmp_file_dir = os.path.dirname(os.path.realpath(filename))
+    fd, temporary_filename = tempfile.mkstemp(prefix=prefix, dir=tmp_file_dir)
+    # On Linux `mkstemp` initially creates file with permissions 0o600
+    try:
+        try:
+            os.write(fd, data)
+        finally:
+            os.close(fd)
+        os.chmod(temporary_filename, stat.S_IMODE(mode))
+        os.replace(temporary_filename, filename)
+    except Exception:
+        os.remove(temporary_filename)
+        raise
+
+
+def config_docker_cluster_store():
+    # load any previous daemon configuration
     if os.path.exists(DOCKERD_CONFIG_FILE):
-        with open(DOCKERD_CONFIG_FILE, "r") as f:
+        with open(DOCKERD_CONFIG_FILE, "rb") as f:
             try:
-                dockerd_config = json.loads(f.read())
-                print("Loaded previous `docker.json` contents")
+                existing_contents = f.read()
+                # Load config with an OrderedDict to minimize changes to an existing file
+                dockerd_config = json.loads(existing_contents, object_pairs_hook=OrderedDict)
+                print('Checking existing Docker daemon configuration {!r}'.format(DOCKERD_CONFIG_FILE))
             except Exception as e:
-                raise Exception("Error: cannot load {}: {}".format(
-                    DOCKERD_CONFIG_FILE, str(e)))
+                raise RuntimeError(
+                    "Cannot load Docker daemon configuration {!r}: {}".format(DOCKERD_CONFIG_FILE, str(e))
+                ) from e
+        mode = stat.S_IMODE(os.stat(DOCKERD_CONFIG_FILE)[stat.ST_MODE])
+    else:
+        existing_contents = None
+        dockerd_config = {}
+        mode = 0o644
+        print('Creating Docker daemon configuration {!r}'.format(DOCKERD_CONFIG_FILE))
 
     # cluster-store related options can take effect by reloading docker without
     # requiring to restart docker daemon process, according to
@@ -264,13 +301,18 @@ def config_docker_cluster_store():
             "kv.certfile": env_key_file_map[ETCD_CERT_FILE_ENV_KEY],
             "kv.keyfile": env_key_file_map[ETCD_KEY_FILE_ENV_KEY],
         }
-        dockerd_config.update(
-            {"cluster-store-opts": cluster_store_opts})
+        dockerd_config["cluster-store-opts"] = cluster_store_opts
+    else:
+        # Remove any previously configured key options
+        dockerd_config.pop("cluster-store-opts", None)
 
-    print("Writing updated docker daemon configuration to {}".format(
-        DOCKERD_CONFIG_FILE))
-    with open(DOCKERD_CONFIG_FILE, "w") as f:
-        json.dump(dockerd_config, f)
+    updated_contents = json.dumps(dockerd_config, indent='\t').encode('ascii')
+    if updated_contents == existing_contents:
+        print('Docker daemon configuration has expected contents')
+        return
+
+    print("Writing updated Docker daemon configuration to {!r}".format(DOCKERD_CONFIG_FILE))
+    write_file_bytes(DOCKERD_CONFIG_FILE, updated_contents, mode)
 
     # gracefully reload the docker daemon
     reload_docker_daemon()
@@ -286,7 +328,7 @@ def config_docker_cluster_store():
             raise Exception("Cluster store not configured")
         return True
 
-    return _wait_docker_cluster_store_config()
+    _wait_docker_cluster_store_config()
 
 
 def is_docker_calico_network_available(retries: int = 5) -> bool:
@@ -318,7 +360,7 @@ def is_docker_calico_network_available(retries: int = 5) -> bool:
 
 def create_calico_docker_network():
     # Avoid race conditions by obtaining a cluster-wide exclusive lock
-    # (using zookeeper) and letting only on agent executing the logic.
+    # (using zookeeper) and letting only one agent execute the logic.
     zk = zk_connect()
     with zk_cluster_lock(zk, "mutex"):
         net_wait_delay = 5
@@ -345,7 +387,7 @@ def create_calico_docker_network():
         subnet = os.getenv("CALICO_IPV4POOL_CIDR")
         if not subnet:
             raise Exception(
-                "Environment varialbe CALICO_IPV4POOL_CIDR is not set")
+                "Environment variable CALICO_IPV4POOL_CIDR is not set")
 
         net_create_cmd = "{} network create --driver calico " \
             "--opt org.projectcalico.profile={} " \
