@@ -8,6 +8,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Security updates
 
+* Upgrade to OpenJDK 8u265b01. (D2IQ-70809)
 
 ### Notable changes
 
