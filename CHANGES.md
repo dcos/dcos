@@ -6,6 +6,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated CockroachDB Python package to 0.3.5. (D2IQ-62221) 
 
+* Upgrade to OpenJDK 8u265b01. (D2IQ-70809)
+
 ### Notable changes
 
 ### Fixed and improved
@@ -14,6 +16,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ## DC/OS 2.0.6 (2020-07-30)
 
 ### Security updates
+
 
 ### Notable changes
 
