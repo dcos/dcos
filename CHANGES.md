@@ -37,3 +37,4 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated Exhibitor to version running atop [Jetty 9.4.30](https://github.com/dcos/exhibitor/commit/e6e232e1)
 
+* Ensure Docker network for Calico is eventually created correctly following failures. (D2IQ-70674)

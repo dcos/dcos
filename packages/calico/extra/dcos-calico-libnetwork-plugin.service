@@ -8,7 +8,7 @@ EnvironmentFile=/opt/mesosphere/etc/calico/calico-node.env
 EnvironmentFile=/opt/mesosphere/etc/calico/calico-node-datastore.env
 ExecStart=/opt/mesosphere/bin/start-calico-libnetwork-plugin.sh
 ExecStartPost=/opt/mesosphere/bin/create-calico-docker-network.py
-TimeoutStartSec=60s
+TimeoutStartSec=180s
 
 Restart=always
 StartLimitInterval=0
