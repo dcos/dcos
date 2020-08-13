@@ -18,11 +18,11 @@ ln -s "$PKG_PATH/usr/java/bin/keytool" "$PKG_PATH/bin/keytool"
 # When updating Java, please change the following comment and check. If you need
 # to downgrade from this version, please highlight the change on DC/OS channels.
 
-# The OpenJDK 8 tarball hosted at https://downloads.mesosphere.com/java/OpenJDK8U-jdk_x64_linux_hotspot_8u232b09.tar.gz
+# The OpenJDK 8 tarball hosted at https://downloads.mesosphere.com/java/
 # was originally downloaded from
-# https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u232-b09/OpenJDK8U-jdk_x64_linux_hotspot_8u232b09.tar.gz
+# https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/
 
-expected='openjdk version "1.8.0_232"'
+expected='openjdk version "1.8.0_265"'
 version=$("$PKG_PATH/bin/java" -version 2>&1 | grep 'openjdk version')
 if [ "$version" != "$expected" ]
 then
