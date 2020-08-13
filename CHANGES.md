@@ -3,9 +3,12 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 2.1.1 (in development)
 
+* Updated to Mesos [1.10.1-dev](https://github.com/apache/mesos/blob/8683463a9fade9d86d77c0cea8336089fa2c10ca/CHANGELOG)
+
 
 ### Security updates
 
+* Upgrade to OpenJDK 8u265b01. (D2IQ-70809)
 
 ### Notable changes
 
