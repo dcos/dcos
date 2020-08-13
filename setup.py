@@ -77,7 +77,7 @@ setup(
         'py',
         'pytest<6.0.0',
         'pyyaml',
-        'responses==0.10.15',
+        'responses',
         'requests==2.24.0',
         'retrying',
         'schema',
