@@ -40,6 +40,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Ensure Docker network for Calico is eventually created correctly following failures. (D2IQ-70674)
 
+#### Bump Marathon to 1.10.26
+
+* Fix a regression where Marathon would sometimes fail to replace lost unreachable tasks (MARATHON-8758)
 
 ## DC/OS 2.1.0 (2020-06-09)
 
