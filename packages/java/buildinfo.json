@@ -2,8 +2,8 @@
   "sources" : {
     "java": {
       "kind": "url_extract",
-      "url": "https://downloads.mesosphere.com/java/OpenJDK8U-jdk_x64_linux_hotspot_8u232b09.tar.gz",
-      "sha1": "e2d1a6e27e6f2929dcf2d78fa790c808edaa3601"
+      "url": "https://downloads.mesosphere.com/java/OpenJDK8U-jdk_x64_linux_hotspot_8u265b01.tar.gz",
+      "sha1": "62046ecb28fccb372d8b6bddd0de1754bbdcaf58"
     }
   },
   "environment": {
