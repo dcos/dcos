@@ -27,21 +27,30 @@ def test_invalid_enable_mesos_input_plugin():
         err_msg)
 
 
-def test_invalid_ports():
-    test_bad_range = '["52.37.192.49", "52.37.181.230:53", "52.37.163.105:65536"]'
-    range_err_msg = "Must be between 1 and 65535 inclusive"
-    test_bad_value = '["52.37.192.49", "52.37.181.230:53", "52.37.163.105:abc"]'
-    value_err_msg = "Must be an integer but got a str: abc"
+def test_resolvers():
+    validate_error(
+        {'resolvers': '["52.37.192.49", "52.37.181.230:53", "52.37.163.105:65536"]'},
+        'resolvers',
+        "Must be between 1 and 65535 inclusive")
 
     validate_error(
-        {'resolvers': test_bad_range},
+        {'resolvers': '["52.37.192.49", "52.37.181.230:53", "52.37.163.105:abc"]'},
         'resolvers',
-        range_err_msg)
+        "Must be an integer but got a str: abc")
 
     validate_error(
-        {'resolvers': test_bad_value},
+        {'resolvers': '["52.37.192.49", "198.51.100.1:53"]'},
         'resolvers',
-        value_err_msg)
+        'Spartan addresses found in `resolvers`: 198.51.100.1')
+
+    validate_error(
+        {'resolvers': '["198.51.100.2", "52.37.192.49:53", "198.51.100.3:53"]'},
+        'resolvers',
+        'Spartan addresses found in `resolvers`: 198.51.100.2, 198.51.100.3')
+
+    validate_success(
+        {'resolvers': '["8.8.8.8", "1.1.1.1:5353"]'},
+    )
 
 
 def test_dns_bind_ip_blacklist():

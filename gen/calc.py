@@ -488,6 +488,15 @@ def validate_master_list(master_list):
 
 
 def validate_resolvers(resolvers):
+    resolvers_list = validate_json_list(resolvers)
+    check_duplicates(resolvers_list)
+
+    resolvers_set = set(r.split(':')[0] for r in resolvers_list)
+    spartan_resolvers = ('198.51.100.1', '198.51.100.2', '198.51.100.3')
+    intersection = resolvers_set & set(spartan_resolvers)
+    assert not intersection, 'Spartan addresses found in `resolvers`: {}'.format(
+        ', '.join(r for r in spartan_resolvers if r in intersection))
+
     return validate_ip_port_list(resolvers)
 
 
