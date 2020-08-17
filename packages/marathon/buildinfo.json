@@ -4,8 +4,8 @@
   ],
   "single_source": {
     "kind": "url_extract",
-    "url": "https://s3.amazonaws.com/downloads.mesosphere.io/marathon/builds/1.8.242-ee9086220/marathon-1.8.242-ee9086220.tgz",
-    "sha1": "c0b40df19b9fd8af1accafbba0409bbe5703cced"
+    "url": "https://s3.amazonaws.com/downloads.mesosphere.io/marathon/builds/1.8.244-248803b19/marathon-1.8.244-248803b19.tgz",
+    "sha1": "96cb0106a962e5e83d5f855b6eb2ee7205b19e3f"
   },
   "username": "dcos_marathon",
   "state_directory": true
