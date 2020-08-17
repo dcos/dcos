@@ -59,6 +59,13 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fix an issue in Metronome where it became unresponsive when lots of pending jobs existed during boot. (DCOS_OSS-5965)
 
+#### Update Marathon to 1.9.140
+
+  * Fix a regression where Marathon would sometimes fail to replace lost unreachable tasks (MARATHON-8758)
+
+  * Improved the reliability of error handling for health check handling (MARATHON-8743)
+
+  * Address an issue where Marathon could, in rare cases, become unresponsive after leader election (MARATHON-8741)
 
 ## DC/OS 2.0.4 (2020-05-12)
 
