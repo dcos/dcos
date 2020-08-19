@@ -12,6 +12,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Log diff to resolv.conf in addition to the new contents. (COPS-6411)
+
 
 ## DC/OS 2.0.6 (2020-07-30)
 
