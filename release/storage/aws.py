@@ -107,7 +107,7 @@ class S3StorageProvider(AbstractStorageProvider):
 
     def exists(self, path):
         try:
-            self.get_object(path).load()
+            self.get_object(path).load(ACL='bucket-owner-full-control')
             return True
         except botocore.client.ClientError:
             return False

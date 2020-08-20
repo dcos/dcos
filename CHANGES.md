@@ -40,3 +40,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Ensure Docker network for Calico is eventually created correctly following failures. (D2IQ-70674)
 
 * Check that `spartan` ips (`198.51.100.1-3`) are not listed as upstream resolvers. (COPS-4616)
+
+* Log diff to resolv.conf in addition to the new contents. (COPS-6411)
