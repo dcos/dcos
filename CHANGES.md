@@ -26,6 +26,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Removed Exhibitor snapshot cleanup and now rely on ZooKeeper autopurge. (D2IQ-68109)
 
+* Log diff to resolv.conf in addition to the new contents. (COPS-6411)
+
 
 #### Update Metronome to 0.6.48
 

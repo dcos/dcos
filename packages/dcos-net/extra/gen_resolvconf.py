@@ -1,5 +1,6 @@
 #!/opt/mesosphere/bin/python
 
+import difflib
 import errno
 import os
 import random
@@ -37,7 +38,7 @@ def check_server(addr):
     except dns.exception.Timeout:
         print('Skipping DNS server {}: no response'.format(
             addr), file=sys.stderr)
-    except:
+    except Exception:
         print("Unexpected error querying DNS for server \"{}\" exception: {}".format(
             addr, sys.exc_info()[1]))
 
@@ -90,6 +91,8 @@ else:
 # Don't change resolv.conf if it has the correct contents already. This is
 # especially important in Docker enviroments where an atomic overwrite using
 # `os.rename` is not possible (see below) and causes race conditions.
+existing_contents = ''
+
 with open(resolvconf_path, 'r') as f:
     existing_contents = f.read()
     if existing_contents == contents:
@@ -100,6 +103,15 @@ with open(resolvconf_path, 'r') as f:
 print('Updating {}'.format(resolvconf_path))
 with open(resolvconf_path + ".tmp", 'w') as f:
     print(contents, file=sys.stderr)
+    diff = difflib.unified_diff(
+        existing_contents.splitlines(),
+        contents.splitlines(),
+        fromfile=resolvconf_path,
+        tofile=f.name,
+        lineterm='',
+    )
+    print('\n'.join(list(diff)), file=sys.stderr)
+
     f.write(contents)
 
 # Move the temp file into place. This also takes care of
