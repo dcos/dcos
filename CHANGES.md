@@ -10,6 +10,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Log diff to resolv.conf in addition to the new contents. (COPS-6411)
+
 
 ## DC/OS 2.1.1
 
