@@ -1,8 +1,8 @@
 {
   "single_source" : {
       "kind": "url_extract",
-      "url": "https://binaries.cockroachdb.com/cockroach-v2.1.8.linux-amd64.tgz",
-      "sha1": "880511fc134a877238a114072457c2369e2bca37"
+      "url": "https://binaries.cockroachdb.com/cockroach-v19.1.11.linux-amd64.tgz",
+      "sha1": "76abd2981ebb3cf36ec7566877a28899388ab972"
   },
   "username": "dcos_cockroach",
   "state_directory": true
