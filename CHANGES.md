@@ -39,6 +39,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Update Telegraf configuration to reduce errors, vary requests to reduce load, sample less frequently. (COPS-5629)
 
 * Display user email address in UI when logging in using external provider. (D2IQ-70199)
+* Updated DC/OS UI to [v5.2.1](https://github.com/dcos/dcos-ui/releases/tag/v5.2.1).
 
 * Removed Exhibitor snapshot cleanup and now rely on ZooKeeper autopurge. (D2IQ-68109)
 
