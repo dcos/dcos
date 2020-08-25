@@ -3096,6 +3096,10 @@ package:
           # Buffer logs to filesystem
           storage.type      filesystem
           Mem_Buf_Limit     100MB
+{% switch calico_enabled %}
+{% case "true" %}
+  - path: /etc/calico/calico_enabled
+    content: ""
   - path: /etc/dcos/network/cni/calico.conf
     content: |
       {
@@ -3155,3 +3159,5 @@ package:
       spec:
         datastoreType: etcdv3
         etcdEndpoints: http://master.dcos.thisdcos.directory:2379
+{% case "false" %}
+{% endswitch %}

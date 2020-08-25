@@ -401,12 +401,14 @@ def validate_dcos_overlay_network(dcos_overlay_network):
 
 def validate_overlay_networks_not_overlap(dcos_overlay_network,
                                           dcos_overlay_enable,
-                                          calico_network_cidr):
+                                          calico_network_cidr,
+                                          calico_enabled):
     """ checks the subnets used for dcos overlay do not overlap calico network
 
     We assume the basic validations, like subnet cidr, have been done.
     """
-    if dcos_overlay_enable.lower() != "true":
+    if calico_enabled.lower() != "true" or dcos_overlay_enable.lower(
+    ) != "true":
         return
     try:
         overlay_network = json.loads(dcos_overlay_network)
@@ -1229,6 +1231,7 @@ entry = {
         lambda mesos_cni_root_dir_persist: validate_true_false(mesos_cni_root_dir_persist),
         lambda enable_mesos_input_plugin: validate_true_false(enable_mesos_input_plugin),
         validate_marathon_new_group_enforce_role,
+        lambda calico_enabled: validate_true_false(calico_enabled),
         lambda calico_network_cidr: validate_config_subnet("calico_network_cidr", calico_network_cidr),
         lambda calico_ipinip_mtu: validate_int_in_range(calico_ipinip_mtu, 552, None),
         lambda calico_veth_mtu: validate_int_in_range(calico_veth_mtu, 552, None),
@@ -1385,6 +1388,7 @@ entry = {
         'log_offers': 'true',
         'mesos_cni_root_dir_persist': 'false',
         'enable_mesos_input_plugin': 'true',
+        'calico_enabled': 'true',
         'calico_network_cidr': '172.29.0.0/16',
         'calico_ipinip_mtu': '1480',
         'calico_veth_mtu': '1500',

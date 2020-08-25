@@ -179,6 +179,7 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Adjust dcos-net (l4lb) to allow for graceful shutdown of connections by changing the VIP backend weight to `0`
   when tasks are unhealthy or enter the `TASK_KILLING` state instead of removing them. (D2IQ-61077)
 * Set "os:linux" attribute for the Linux agents. (D2IQ-67223)
+* Allow disabling Calico overlay by setting `calico_enabled` to `false`. (COPS-6451)
 
 * Fixing some corner-cases that could render `etcd` unable to start [D2IQ-69069](https://jira.d2iq.com/browse/D2IQ-69069)
 
