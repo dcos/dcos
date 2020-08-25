@@ -11,6 +11,7 @@ spec:
   ingress:
   - action: Allow
     destination: {}
-    source: {}
+    source:
+      selector: has(calico)
   labelsToApply:
     calico: ""

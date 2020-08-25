@@ -17,6 +17,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* The default `calico` policy is isololating ([D2IQ-71272](https://jira.d2iq.com/browse/D2IQ-71272)).
+
 * Updated `etcd` to [v3.4.9](https://github.com/etcd-io/etcd/releases/tag/v3.4.9).
 
 * Fixing some corner-cases that could render `etcd` unable to start [D2IQ-69069](https://jira.d2iq.com/browse/D2IQ-69069)
