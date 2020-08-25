@@ -111,6 +111,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Use Golang 1.10.8 to build CockroachDB. (DCOS-61502)
 * [Mesos] Support quoted realms in WWW-Authenticate header (DCOS-61529)
+* Updated DC/OS UI to [v5.2.1](https://github.com/dcos/dcos-ui/releases/tag/v5.2.1).
 
 
 ## DC/OS 1.13.6
