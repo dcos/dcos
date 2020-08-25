@@ -12,6 +12,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Log diff to resolv.conf in addition to the new contents. (COPS-6411)
 
+* Updated DC/OS UI to [v5.2.1](https://github.com/dcos/dcos-ui/releases/tag/v5.2.1).
 
 ## DC/OS 2.1.1
 
@@ -40,7 +41,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Display user email address in UI when logging in using external provider. (D2IQ-70199)
 
-* Updated DC/OS UI to [v5.2.1](https://github.com/dcos/dcos-ui/releases/tag/v5.2.1).
+* Updated DC/OS UI to [v5.1.7](https://github.com/dcos/dcos-ui/releases/tag/v5.1.7).
 
 * Removed Exhibitor snapshot cleanup and now rely on ZooKeeper autopurge. (D2IQ-68109)
 
