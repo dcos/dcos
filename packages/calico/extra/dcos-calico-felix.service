@@ -1,5 +1,6 @@
 [Unit]
 Description=DC/OS Calico Node (felix): Calico Core component responsible for programming routes and security policy
+ConditionPathExists=/opt/mesosphere/etc/calico/calico_enabled
 
 [Service]
 EnvironmentFile=/opt/mesosphere/environment

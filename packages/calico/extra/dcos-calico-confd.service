@@ -1,6 +1,7 @@
 [Unit]
 Description=DC/OS Calico Node (confd): A simple configuration management tool providing dynamic configurations for Calico Bird
 ConditionPathExists=/opt/mesosphere/etc/calico/bird_enabled
+ConditionPathExists=/opt/mesosphere/etc/calico/calico_enabled
 
 [Service]
 EnvironmentFile=/opt/mesosphere/environment
