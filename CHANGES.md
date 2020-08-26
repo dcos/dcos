@@ -16,7 +16,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Removed trailing newline from ZooKeeper log messages. (D2IQ-68394)
 
-* Updated DC/OS UI to [v5.1.7](https://github.com/dcos/dcos-ui/releases/tag/v5.1.7).
+* Updated DC/OS UI to [v5.2.1](https://github.com/dcos/dcos-ui/releases/tag/v5.2.1).
 
 * Fix incorrect ownership after migration of `/run/dcos/telegraf/dcos_statsd/containers`. (D2IQ-69295)
 
