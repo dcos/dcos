@@ -254,6 +254,26 @@ package:
         },
         "max_configuration_attempts": {{ dcos_overlay_config_attempts }}
       }
+  - path: /etc/dcos/storage/csi/nfs.conf
+    content: |
+      {
+        "type": "nfs.csi.k8s.io",
+        "containers": [
+          {
+            "services": [
+              "NODE_SERVICE"
+            ],
+            "command": {
+              "shell": true,
+              "value": "/opt/mesosphere/bin/nfsplugin --nodeid=$MESOS_AGENT_ID --endpoint=$CSI_ENDPOINT"
+            },
+            "resources": [
+              {"name": "cpus", "type": "SCALAR", "scalar": {"value": 1}},
+              {"name": "mem", "type": "SCALAR", "scalar": {"value": 128}}
+            ]
+          }
+        ]
+      }
   - path: /etc/mesos-master-modules/dummy.json
     content: |
       {}
