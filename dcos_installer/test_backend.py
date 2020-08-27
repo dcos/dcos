@@ -86,7 +86,7 @@ def test_version(monkeypatch):
     monkeypatch.setenv('BOOTSTRAP_VARIANT', 'some-variant')
     version_data = subprocess.check_output(['dcos_installer', '--version']).decode()
     assert json.loads(version_data) == {
-        'version': '1.13.10-dev',
+        'version': '1.13.11-dev',
         'variant': 'some-variant'
     }
 

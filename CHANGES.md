@@ -1,6 +1,19 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/blob/master/CHANGES-guidelines.md). Thank you!
 
-## DC/OS 1.13.10 (in development)
+## DC/OS 1.13.11 (in development)
+
+### Security updates
+
+
+### Notable changes
+
+
+### Fixed and improved
+
+
+
+
+## DC/OS 1.13.10 (2020-08-26)
 
 ### Security updates
 
