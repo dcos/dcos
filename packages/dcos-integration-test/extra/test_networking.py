@@ -301,8 +301,8 @@ def test_vip_ipv6(dcos_api_session: DcosApiSession) -> Any:
     list(marathon.Container))
 def test_vip_port_mapping(dcos_api_session: DcosApiSession,
                           container: marathon.Container,
-                          vip_net: marathon.Network=marathon.Network.HOST,
-                          proxy_net: marathon.Network=marathon.Network.HOST) -> Any:
+                          vip_net: marathon.Network = marathon.Network.HOST,
+                          proxy_net: marathon.Network = marathon.Network.HOST) -> Any:
     return test_vip(dcos_api_session, container, vip_net, proxy_net, with_port_mapping_app=True)
 
 
@@ -374,7 +374,7 @@ def test_calico_vip(dcos_api_session: DcosApiSession,
                     vip_net: marathon.Network,
                     proxy_net: marathon.Network,
                     ipv6: bool = False,
-                    with_port_mapping_app: bool =True) -> None:
+                    with_port_mapping_app: bool = True) -> None:
     '''Test VIPs between the following source and destination configurations:
         * containers: UCR and POD
         * networks: USER
