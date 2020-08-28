@@ -56,6 +56,20 @@ def calicoctl(tmpdir_factory: TempdirFactory) -> Callable[[List[str],
     return exec
 
 
+<<<<<<< HEAD
+=======
+@pytest.mark.skipif(
+    only_changed(E2E_SAFE_DEFAULT + [
+        # All packages safe except named packages
+        'packages/*/**',
+        '!packages/{adminrouter,bouncer,calico,etcd,openssl}/**',
+        '!packages/python*/**',
+        # All e2e tests safe except this test
+        'test-e2e/test_*', '!' + escape(trailing_path(__file__, 2)),
+    ]),
+    reason='Only safe files modified',
+)
+>>>>>>> 485c391... Read cluster store opts from file for secure mode
 def test_access(docker_backend: Docker,
                 artifact_path: Path,
                 request: SubRequest,
