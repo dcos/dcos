@@ -75,7 +75,7 @@ RUN set -ex \
 RUN python3 -m pip install --upgrade 'virtualenv<20'
 RUN set -ex \
     && virtualenv --no-site-packages $VENV_DIR \
-    && ${VENV_DIR}/bin/pip install --upgrade setuptools pip
+    && ${VENV_DIR}/bin/pip install --upgrade "setuptools<50" pip
 
 ENV PATH ${VENV_DIR}/bin:$PATH
 
