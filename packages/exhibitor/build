@@ -1,11 +1,21 @@
 #!/bin/bash
 set -o errexit -o nounset -o pipefail
 
+set -x
+
 # Zookeeper
 
 mkdir -p "$PKG_PATH/usr"
 cp -rp "/pkg/src/zookeeper" "$PKG_PATH/usr"
 rm -rf "$PKG_PATH/usr/zookeeper/"{src,docs,contrib}
+
+# Note(JP): the ZK 3.4 binary distribution had the zookeeper-3.4.x.jar
+# file placed in the root of the archive, whereas the 3.5 binary
+# distribution has this file in the lib/ directory in the archive.
+# Exhibitor seems to expect the former, though, otherwise erroring
+# out with ` java.io.IOException: Could not find zookeeper.* jar`.
+# Create a symbolic link for Exhibitor to be able to discover the file.
+ln -s "$PKG_PATH/usr/zookeeper/lib/zookeeper-3*.jar" "$PKG_PATH/usr/zookeeper"
 
 mkdir -p "$PKG_PATH/bin"
 ln -s "$PKG_PATH/usr/zookeeper/bin/zkCli.sh" "$PKG_PATH/bin/zkCli.sh"
@@ -49,7 +59,7 @@ envsubst '$PKG_PATH' < /pkg/extra/bootstrap_exhibitor_tls.py > "$exhibitor_tls_b
 chmod +x "$exhibitor_tls_bootsrapper"
 
 
-mkdir -p "$PKG_PATH/usr/zookeeper/build/lib/"
+mkdir -p "$PKG_PATH/usr/zookeeper/lib/"
 cp /pkg/src/log4j/log4j-systemd-journal-appender-1.3.2.jar "$PKG_PATH/usr/zookeeper/lib/"
 # DCOS-308: Renaming "jna-4.2.2" to "log4j-jna-4.2.2.jar" will
 # make sure that Exhibitor will include JNA library to cleanupInstance ZK
