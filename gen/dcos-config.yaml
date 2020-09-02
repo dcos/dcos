@@ -1862,6 +1862,8 @@ package:
                   "Command": ["ipset", "list"],
                   "Optional": true
               },
+{% switch calico_enabled %}
+{% case "true" %}
               {
                   "Command": ["/opt/mesosphere/bin/calicoctl", "get", "node", "-o", "yaml"],
                   "Role": ["master"]
@@ -1890,6 +1892,8 @@ package:
                   "Command": ["/opt/mesosphere/bin/calicoctl", "get", "globalNetworkPolicy", "-o", "yaml"],
                   "Role": ["master"]
               },
+{% case "false" %}
+{% endswitch %}
               {
                   "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
                   "Role": ["master"]
