@@ -2,6 +2,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 1.13.11 (in development)
 
+* Updated to Mesos [1.8.2-dev](https://github.com/apache/mesos/blob/d160015e544082ff310a7e4d2e94e3c4eae9499b/CHANGELOG)
+
 ### Security updates
 
 
