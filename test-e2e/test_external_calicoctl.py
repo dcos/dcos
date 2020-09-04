@@ -60,9 +60,8 @@ def calicoctl(tmpdir_factory: TempdirFactory) -> Callable[[List[str],
 @pytest.mark.skipif(
     only_changed(E2E_SAFE_DEFAULT + [
         # All packages safe except named packages
-        'packages/**',
-        '!packages/*treeinfo.json',
-        '!packages/{adminrouter,bouncer,etcd,openssl}/**',
+        'packages/*/**',
+        '!packages/{adminrouter,bouncer,calico,etcd,openssl}/**',
         '!packages/python*/**',
         # All e2e tests safe except this test
         'test-e2e/test_*', '!' + escape(trailing_path(__file__, 2)),

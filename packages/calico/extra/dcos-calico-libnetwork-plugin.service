@@ -7,6 +7,8 @@ Environment=CALICO_LIBNETWORK_LABEL_ENDPOINTS=true
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=/opt/mesosphere/etc/calico/calico-node.env
 EnvironmentFile=/opt/mesosphere/etc/calico/calico-node-datastore.env
+# Ensure correct certs are in place for create-calico-docker-network.py
+ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-calico-felix
 ExecStart=/opt/mesosphere/bin/start-calico-libnetwork-plugin.sh
 ExecStartPost=/opt/mesosphere/bin/create-calico-docker-network.py
 TimeoutStartSec=180s
