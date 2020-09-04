@@ -16,6 +16,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Upgraded to CockroachDB 19.1 (D2IQ-69872)
 
+* Metronome jobs now supports dependencies
 
 ### Fixed and improved
 
