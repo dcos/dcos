@@ -2,6 +2,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 2.0.7 (In development)
 
+* Updated to Mesos [1.9.1-dev](https://github.com/apache/mesos/blob/e98ced1e93751b78c3248221115fcf4db8a39b29/CHANGELOG)
+
 ### Security updates
 
 * Updated CockroachDB Python package to 0.3.5. (D2IQ-62221) 
