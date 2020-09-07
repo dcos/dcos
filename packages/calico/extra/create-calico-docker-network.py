@@ -343,6 +343,9 @@ def is_docker_calico_network_available(retries: int = 5) -> bool:
             print("Docker network exists")
             return True
 
+        print('inspect stdout:', p.stdout)
+        print('inspect stderr:', p.stderr)
+
         # Make sure that's an expected error
         if 'No such network' not in p.stderr:
             raise Exception("Unexpected docker error: {}".format(p.stderr))
@@ -396,6 +399,8 @@ def create_calico_docker_network():
                 DOCKER_BIN, CALICO_DOCKER_NETWORK_NAME, subnet,
                 CALICO_DOCKER_NETWORK_NAME)
         p = exec_cmd(net_create_cmd, check=False)
+        print('create stdout:', p.stdout)
+        print('create stderr:', p.stderr)
         if p.returncode != 0:
             # here we double-check the existence of calico network in case the
             # calico libnetwork plugin from other nodes creates it concurrently.
