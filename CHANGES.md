@@ -2,7 +2,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 2.2.0-dev (in development)
 
-* Updated to Mesos [1.11.0-dev](https://github.com/apache/mesos/blob/c78dc333fc893a43d40dc33299a61987198a6ea9/CHANGELOG)
+* Updated to Mesos [1.11.0-dev](https://github.com/apache/mesos/blob/2bf7f5d8dcb359845a663a011a941809ffc2366d/CHANGELOG)
 
 * Update to Fluentbit [1.4.6](https://docs.fluentbit.io/manual/installation/upgrade-notes)
 
@@ -16,16 +16,19 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Upgraded to CockroachDB 19.1 (D2IQ-69872)
 
+* Metronome jobs now supports dependencies
 
 ### Fixed and improved
 
 * Updated `etcd` to [v3.4.9](https://github.com/etcd-io/etcd/releases/tag/v3.4.9).
 
+* Allow disabling Calico overlay by setting `calico_enabled` to `false`. (COPS-6451)
+
 * Fixing some corner-cases that could render `etcd` unable to start [D2IQ-69069](https://jira.d2iq.com/browse/D2IQ-69069)
 
 * Storing etcd initial state on `/var/lib/dcos` instead of `/run/dcos` [COPS-6183](https://jira.d2iq.com/browse/COPS-6183)
 
-* Updated DC/OS UI to [v5.1.7](https://github.com/dcos/dcos-ui/releases/tag/v5.1.7).
+* Updated DC/OS UI to [v5.2.1](https://github.com/dcos/dcos-ui/releases/tag/v5.2.1).
 
 * Removed Exhibitor snapshot cleanup and now rely on ZooKeeper autopurge. (D2IQ-68109)
 
@@ -44,3 +47,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Check that `spartan` ips (`198.51.100.1-3`) are not listed as upstream resolvers. (COPS-4616)
 
 * Log diff to resolv.conf in addition to the new contents. (COPS-6411)
+
+* Turn on `enable_docker_gc` for on-prem by default. (COPS-5520)

@@ -1,0 +1,8 @@
+{
+  "single_source" : {
+    "kind": "git",
+    "git": "https://github.com/kubernetes-csi/csi-driver-nfs.git",
+    "ref": "8cdbbe13229fb82e9b0f727065d69e4423dddb7c",
+    "ref_origin": "master"
+  }
+}

@@ -1,6 +1,6 @@
 Copyright 2017 Mesosphere, Inc.
 
-Licensed under the Mesosphere Tools License Terms (the “Agreement”);
+Licensed under the Mesosphere Tools License Terms (the "Agreement");
 you may not use this file except in compliance with the Agreement.
 
 Unless required by applicable law or agreed to in writing, software
@@ -178,3 +178,7 @@ rexray
 dvdcli
 - Apache License, Version 2.0
 - https://github.com/codedellemc/dvdcli/blob/master/LICENSE
+
+csi-driver-nfs
+- Apache License, Version 2.0
+- https://github.com/kubernetes-csi/csi-driver-nfs/blob/master/LICENSE

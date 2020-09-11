@@ -40,6 +40,7 @@ ETCD_ENDPOINTS_ENV_KEY = "ETCD_ENDPOINTS"
 ETCD_CA_CERT_FILE_ENV_KEY = "ETCD_CA_CERT_FILE"
 ETCD_CERT_FILE_ENV_KEY = "ETCD_CERT_FILE"
 ETCD_KEY_FILE_ENV_KEY = "ETCD_KEY_FILE"
+ETCD_CLUSTER_STORE_OPTS_ENV_KEY = "ETCD_CLUSTER_STORE_OPTS"
 ZK_SERVER = "leader.mesos:2181"
 ZK_PREFIX = "/cluster/boot/calico-libnetwork-plugin"
 
@@ -282,25 +283,25 @@ def config_docker_cluster_store():
     etcd_endpoints = os.getenv(ETCD_ENDPOINTS_ENV_KEY)
     if etcd_endpoints.startswith("https"):
         print("etcd secure mode is enabled")
-        env_key_file_map = {
-            ETCD_CA_CERT_FILE_ENV_KEY: os.getenv(ETCD_CA_CERT_FILE_ENV_KEY),
-            ETCD_CERT_FILE_ENV_KEY: os.getenv(ETCD_CERT_FILE_ENV_KEY),
-            ETCD_KEY_FILE_ENV_KEY: os.getenv(ETCD_KEY_FILE_ENV_KEY),
-        }
-        # all calico node components rely on felix to intialize a calico
-        # node and generate etcd client secrets.
-        for key, val in env_key_file_map.items():
+        # `bootstrap calico-felix` will create a JSON file containing the
+        # `cluster-store-opts` configuration for secure mode.
+        cluster_store_opts_path = os.getenv(ETCD_CLUSTER_STORE_OPTS_ENV_KEY)
+        if not cluster_store_opts_path:
+            print("Error: Environment variable {} not set", ETCD_CLUSTER_STORE_OPTS_ENV_KEY)
+            sys.exit(1)
+        with open(cluster_store_opts_path, 'r') as f:
+            cluster_store_opts = json.load(f)
+        ok = True
+        for key in ('kv.cacertfile', 'kv.certfile', 'kv.keyfile'):
+            val = cluster_store_opts.get(key)
             if not val:
-                print("Error: ENV {} is required for secure mode etcd", key)
-                sys.exit(1)
-            if not os.path.exists(val):
-                print("Error: the file {} does not exist", val)
-                sys.exit(1)
-        cluster_store_opts = {
-            "kv.cacertfile": env_key_file_map[ETCD_CA_CERT_FILE_ENV_KEY],
-            "kv.certfile": env_key_file_map[ETCD_CERT_FILE_ENV_KEY],
-            "kv.keyfile": env_key_file_map[ETCD_KEY_FILE_ENV_KEY],
-        }
+                print("Error: {} is required for secure mode etcd", key)
+                ok = False
+            elif not os.path.exists(val):
+                print("Error: the {} file {} does not exist", key, val)
+                ok = False
+        if not ok:
+            sys.exit(1)
         dockerd_config["cluster-store-opts"] = cluster_store_opts
     else:
         # Remove any previously configured key options
