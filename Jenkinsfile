@@ -30,7 +30,7 @@ pipeline {
       parallel {
         stage('Tox') {
 	  agent {
-	    label 'python-dind'
+	    label 'python35-dind'
 	  }
       environment {
         AWS_REGION = 'us-west-2'
@@ -40,7 +40,7 @@ pipeline {
 	    withCredentials([usernamePassword(credentialsId: 'eng-devprod-tox', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
 	      sh('rm -rf dcos-release.config.yaml')
 	      sh('cp config/dcos-release.config.yaml dcos-release.config.yaml')
-	      sh('pip install tox && tox')
+	      sh('tox')
 	    }
 	  }
 	  post {
