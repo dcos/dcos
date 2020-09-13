@@ -186,25 +186,24 @@ def reload_docker_daemon():
     There is no `reload` command on systemctl for docker, however docker daemon
     can reload it's configuration when SIGHUP is sent to it's process
     """
-    exec_cmd("systemctl restart docker")
-    # docker_pid_file = "/var/run/docker.pid"
-    # if not os.path.exists(docker_pid_file):
-    #     # Not running, start now
-    #     print("Docker daemon pid was missing, starting docker service")
-    #     exec_cmd("systemctl start docker")
-    #     return
+    docker_pid_file = "/var/run/docker.pid"
+    if not os.path.exists(docker_pid_file):
+        # Not running, start now
+        print("Docker daemon pid was missing, starting docker service")
+        exec_cmd("systemctl start docker")
+        return
 
-    # docker_pid = 0
-    # with open(docker_pid_file, "r") as f:
-    #     docker_pid = int(f.read())
+    docker_pid = 0
+    with open(docker_pid_file, "r") as f:
+        docker_pid = int(f.read())
 
-    # try:
-    #     print("Reloading found docker daemon with pid={}".format(docker_pid))
-    #     os.kill(docker_pid, signal.SIGHUP)
-    # except OSError:
-    #     # The pid is stale, docker is not running. Start it now.
-    #     print("Unable to reload daemon, going to restart it instead")
-    #     exec_cmd("systemctl start docker")
+    try:
+        print("Reloading found docker daemon with pid={}".format(docker_pid))
+        os.kill(docker_pid, signal.SIGHUP)
+    except OSError:
+        # The pid is stale, docker is not running. Start it now.
+        print("Unable to reload daemon, going to restart it instead")
+        exec_cmd("systemctl start docker")
 
 
 def is_docker_cluster_store_configured():
@@ -269,6 +268,31 @@ def config_docker_cluster_store():
         dockerd_config = {}
         mode = 0o644
         print('Creating Docker daemon configuration {!r}'.format(DOCKERD_CONFIG_FILE))
+
+    if "cluster-store" in dockerd_config:
+        # https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-configuration-file
+        # "Updating and reloading the cluster configurations such as --cluster-store, --cluster-advertise and
+        # --cluster-store-opts will take effect only if these configurations were not previously configured."
+        # Remove the configuration, so we can re-add it.
+        dockerd_config.pop("cluster-store", None)
+        dockerd_config.pop("cluster-store-opts", None)
+        dockerd_config.pop("cluster-advertise", None)
+        existing_contents = json.dumps(dockerd_config, indent='\t').encode('ascii')
+        write_file_bytes(DOCKERD_CONFIG_FILE, existing_contents, mode)
+        reload_docker_daemon()
+
+        # Wait until daemon is reloaded and the configuration applied
+        @retrying.retry(
+            wait_fixed=5 * 1000,
+            stop_max_delay=30 * 1000,
+            retry_on_exception=lambda x: True,
+            retry_on_result=lambda x: x is False)
+        def _wait_docker_cluster_store_no_config():
+            if is_docker_cluster_store_configured():
+                raise Exception("Cluster store configured")
+            return True
+
+        _wait_docker_cluster_store_no_config()
 
     # cluster-store related options can take effect by reloading docker without
     # requiring to restart docker daemon process, according to
