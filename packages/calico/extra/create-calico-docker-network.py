@@ -186,24 +186,25 @@ def reload_docker_daemon():
     There is no `reload` command on systemctl for docker, however docker daemon
     can reload it's configuration when SIGHUP is sent to it's process
     """
-    docker_pid_file = "/var/run/docker.pid"
-    if not os.path.exists(docker_pid_file):
-        # Not running, start now
-        print("Docker daemon pid was missing, starting docker service")
-        exec_cmd("systemctl start docker")
-        return
+    exec_cmd("systemctl restart docker")
+    # docker_pid_file = "/var/run/docker.pid"
+    # if not os.path.exists(docker_pid_file):
+    #     # Not running, start now
+    #     print("Docker daemon pid was missing, starting docker service")
+    #     exec_cmd("systemctl start docker")
+    #     return
 
-    docker_pid = 0
-    with open(docker_pid_file, "r") as f:
-        docker_pid = int(f.read())
+    # docker_pid = 0
+    # with open(docker_pid_file, "r") as f:
+    #     docker_pid = int(f.read())
 
-    try:
-        print("Reloading found docker daemon with pid={}".format(docker_pid))
-        os.kill(docker_pid, signal.SIGHUP)
-    except OSError:
-        # The pid is stale, docker is not running. Start it now.
-        print("Unable to reload daemon, going to restart it instead")
-        exec_cmd("systemctl start docker")
+    # try:
+    #     print("Reloading found docker daemon with pid={}".format(docker_pid))
+    #     os.kill(docker_pid, signal.SIGHUP)
+    # except OSError:
+    #     # The pid is stale, docker is not running. Start it now.
+    #     print("Unable to reload daemon, going to restart it instead")
+    #     exec_cmd("systemctl start docker")
 
 
 def is_docker_cluster_store_configured():
