@@ -97,6 +97,11 @@ def dcos_calico_felix(b, opts):
     b.cluster_id()
 
 
+@check_root
+def dcos_calico_libnetwork(b, opts):
+    b.cluster_id()
+
+
 def migrate_containers(legacy_containers_dir: Path, new_containers_dir: Path) -> bool:
     if not legacy_containers_dir.exists():
         log.info(
@@ -237,6 +242,7 @@ bootstrappers = {
     'dcos-adminrouter': dcos_adminrouter,
     'dcos-bouncer': dcos_bouncer,
     'dcos-calico-felix': dcos_calico_felix,
+    'dcos-calico-libnetwork': dcos_calico_libnetwork,
     'dcos-etcd': dcos_etcd,
     'dcos-diagnostics-master': noop,
     'dcos-diagnostics-agent': noop,
