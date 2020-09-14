@@ -318,7 +318,7 @@ def config_docker_cluster_store():
     write_file_bytes(DOCKERD_CONFIG_FILE, updated_contents, mode)
 
     if restart_required:
-        exec_cmd("systemctl start docker")
+        exec_cmd("systemctl restart docker")
     else:
         reload_docker_daemon()
 
