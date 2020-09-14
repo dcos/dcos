@@ -263,16 +263,18 @@ def config_docker_cluster_store():
                     "Cannot load Docker daemon configuration {!r}: {}".format(DOCKERD_CONFIG_FILE, str(e))
                 ) from e
         mode = stat.S_IMODE(os.stat(DOCKERD_CONFIG_FILE)[stat.ST_MODE])
+        # Docker reload only works to update `cluster-store` related options on
+        # their initial creation.  Subsequent changes require a restart to take
+        # effect.  We attempt to identify whether Docker was previously
+        # configured so we can reload if possible and restart only if required.
+        restart_required = 'cluster-store' in dockerd_config
     else:
         existing_contents = None
         dockerd_config = {}
         mode = 0o644
+        restart_required = False
         print('Creating Docker daemon configuration {!r}'.format(DOCKERD_CONFIG_FILE))
 
-    # cluster-store related options can take effect by reloading docker without
-    # requiring to restart docker daemon process, according to
-    # https://docs.docker.com/engine/reference/commandline/dockerd/#miscellaneous-options # NOQA
-    # cluster-advertise is required to make cluster-store take effect
     p = exec_cmd("/opt/mesosphere/bin/detect_ip", check=True)
     private_node_ip = p.stdout.strip()
     dockerd_config.update({
@@ -315,8 +317,10 @@ def config_docker_cluster_store():
     print("Writing updated Docker daemon configuration to {!r}".format(DOCKERD_CONFIG_FILE))
     write_file_bytes(DOCKERD_CONFIG_FILE, updated_contents, mode)
 
-    # gracefully reload the docker daemon
-    reload_docker_daemon()
+    if restart_required:
+        exec_cmd("systemctl restart docker")
+    else:
+        reload_docker_daemon()
 
     # Wait until daemon is reloaded and the configuration applied
     @retrying.retry(
