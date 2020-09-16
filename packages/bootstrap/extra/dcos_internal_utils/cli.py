@@ -98,6 +98,11 @@ def dcos_calico_felix(b, opts):
 
 
 @check_root
+def dcos_calico_libnetwork(b, opts):
+    b.cluster_id()
+
+
+@check_root
 def dcos_signal(b, opts):
     b.cluster_id()
 
@@ -242,6 +247,7 @@ bootstrappers = {
     'dcos-adminrouter': dcos_adminrouter,
     'dcos-bouncer': dcos_bouncer,
     'dcos-calico-felix': dcos_calico_felix,
+    'dcos-calico-libnetwork': dcos_calico_libnetwork,
     'dcos-etcd': dcos_etcd,
     'dcos-signal': dcos_signal,
     'dcos-diagnostics-master': noop,
