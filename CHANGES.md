@@ -47,3 +47,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Check that `spartan` ips (`198.51.100.1-3`) are not listed as upstream resolvers. (COPS-4616)
 
 * Log diff to resolv.conf in addition to the new contents. (COPS-6411)
+
+* Turn on `enable_docker_gc` for on-prem by default. (COPS-5520)

@@ -85,7 +85,7 @@ onprem_source = Source(entry={
         'ip_detect_filename': 'genconf/ip-detect',
         'ip6_detect_filename': '',
         'bootstrap_id': lambda: calculate_environment_variable('BOOTSTRAP_ID'),
-        'enable_docker_gc': 'false'
+        'enable_docker_gc': 'true'
     },
     'must': {
         'provider': 'onprem',
