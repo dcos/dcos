@@ -49,3 +49,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Log diff to resolv.conf in addition to the new contents. (COPS-6411)
 
 * Turn on `enable_docker_gc` for on-prem by default. (COPS-5520)
+
+* Marathon apps have support for CSI volumes. (MARATHON-8765)
