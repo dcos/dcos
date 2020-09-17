@@ -85,6 +85,49 @@ def calico_ipip_cluster(docker_backend: Docker, artifact_path: Path,
         # All packages safe except named packages
         'packages/**',
         '!packages/*treeinfo.json',
+        '!packages/calico/**',
+        '!packages/python*/**',
+        # All e2e tests safe except this test
+        'test-e2e/test_*', '!' + escape(trailing_path(__file__, 2)),
+    ]),
+    reason='Only safe files modified',
+)
+def test_calico_disabled(docker_backend: Docker, artifact_path: Path,
+                         request: SubRequest, log_dir: Path) -> None:
+    with Cluster(
+            cluster_backend=docker_backend,
+            masters=1,
+            agents=1,
+            public_agents=1,
+    ) as cluster:
+        config = {"calico_enabled": "false"}
+        cluster.install_dcos_from_path(
+            dcos_installer=artifact_path,
+            dcos_config={
+                **cluster.base_config,
+                **config,
+            },
+            output=Output.LOG_AND_CAPTURE,
+            ip_detect_path=docker_backend.ip_detect_path,
+        )
+        wait_for_dcos_oss(
+            cluster=cluster,
+            request=request,
+            log_dir=log_dir,
+        )
+
+        calico_units = ["dcos-calico-felix", "dcos-calico-bird",
+                        "dcos-calico-confd", "dcos-calico-libnetwork-plugin"]
+        for node in cluster.masters | cluster.agents | cluster.public_agents:
+            for unit_name in calico_units:
+                assert_system_unit_state(node, unit_name, active=False)
+
+
+@pytest.mark.skipif(
+    only_changed(E2E_SAFE_DEFAULT + [
+        # All packages safe except named packages
+        'packages/**',
+        '!packages/*treeinfo.json',
         '!packages/{calico,etcd,java,marathon}/**',  # All packages safe except named packages
         '!packages/dcos-integration-test/requirements.txt',
         '!packages/dcos-integration-test/extra/{conftest,test_helpers,test_networking}.py',  # Used in test
