@@ -1,6 +1,6 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
-## DC/OS 2.2.0-dev (in development)
+## DC/OS 2.2.0-beta1
 
 * Updated to Mesos [1.11.0-dev](https://github.com/apache/mesos/blob/2bf7f5d8dcb359845a663a011a941809ffc2366d/CHANGELOG)
 
