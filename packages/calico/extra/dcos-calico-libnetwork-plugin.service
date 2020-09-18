@@ -1,5 +1,6 @@
 [Unit]
 Description=DC/OS Calico Node: Docker libnetwork plugin for Calico in DC/OS
+ConditionPathExists=/opt/mesosphere/etc/calico/calico_enabled
 
 [Service]
 Environment=CALICO_LIBNETWORK_LABEL_ENDPOINTS=true

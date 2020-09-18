@@ -36,6 +36,37 @@ def assert_system_unit_state(node: Node, unit_name: str, active: bool = True) ->
         assert "ConditionResult=no" in unit_properties
 
 
+def test_calico_disabled(docker_backend: Docker, artifact_path: Path,
+                         request: SubRequest, log_dir: Path) -> None:
+    with Cluster(
+            cluster_backend=docker_backend,
+            masters=1,
+            agents=1,
+            public_agents=1,
+    ) as cluster:
+        config = {"calico_enabled": "false"}
+        cluster.install_dcos_from_path(
+            dcos_installer=artifact_path,
+            dcos_config={
+                **cluster.base_config,
+                **config,
+            },
+            output=Output.LOG_AND_CAPTURE,
+            ip_detect_path=docker_backend.ip_detect_path,
+        )
+        wait_for_dcos_oss(
+            cluster=cluster,
+            request=request,
+            log_dir=log_dir,
+        )
+
+        calico_units = ["dcos-calico-felix", "dcos-calico-bird",
+                        "dcos-calico-confd", "dcos-calico-libnetwork-plugin"]
+        for node in cluster.masters | cluster.agents | cluster.public_agents:
+            for unit_name in calico_units:
+                assert_system_unit_state(node, unit_name, active=False)
+
+
 @pytest.fixture(scope="module")
 def calico_ipip_cluster(docker_backend: Docker, artifact_path: Path,
                         request: SubRequest, log_dir: Path) -> Iterator[Cluster]:

@@ -1374,7 +1374,12 @@ package:
       MESOS_MODULES_DIR=/opt/mesosphere/etc/mesos-slave-modules
       MESOS_NETWORK_CNI_ROOT_DIR_PERSIST={{ mesos_cni_root_dir_persist }}
       MESOS_NETWORK_CNI_CONFIG_DIR=/opt/mesosphere/etc/dcos/network/cni
+{% switch calico_enabled %}
+{% case "true" %}
       MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/:/opt/mesosphere/active/dcos-cni/:/opt/mesosphere/active/mesos/libexec/mesos:/opt/mesosphere/active/calico/cni
+{% case "false" %}
+      MESOS_NETWORK_CNI_PLUGINS_DIR=/opt/mesosphere/active/cni/:/opt/mesosphere/active/dcos-cni/:/opt/mesosphere/active/mesos/libexec/mesos
+{% endswitch %}
       MESOS_RECONFIGURATION_POLICY=additive
       MESOS_RECOVERY_TIMEOUT={{ mesos_recovery_timeout }}
       MESOS_SECCOMP_CONFIG_DIR=/opt/mesosphere/etc/dcos/mesos/seccomp
@@ -1874,6 +1879,8 @@ package:
                   "Command": ["ipset", "list"],
                   "Optional": true
               },
+{% switch calico_enabled %}
+{% case "true" %}
               {
                   "Command": ["/opt/mesosphere/bin/calicoctl", "get", "node", "-o", "yaml"],
                   "Role": ["master"]
@@ -1902,6 +1909,8 @@ package:
                   "Command": ["/opt/mesosphere/bin/calicoctl", "get", "globalNetworkPolicy", "-o", "yaml"],
                   "Role": ["master"]
               },
+{% case "false" %}
+{% endswitch %}
               {
                   "Command": ["/bin/sh", "-c", "cat /proc/`systemctl show dcos-mesos-master.service -p MainPID| cut -d'=' -f2`/environ"],
                   "Role": ["master"]
@@ -3096,6 +3105,10 @@ package:
           # Buffer logs to filesystem
           storage.type      filesystem
           Mem_Buf_Limit     100MB
+{% switch calico_enabled %}
+{% case "true" %}
+  - path: /etc/calico/calico_enabled
+    content: ""
   - path: /etc/dcos/network/cni/calico.conf
     content: |
       {
@@ -3155,3 +3168,5 @@ package:
       spec:
         datastoreType: etcdv3
         etcdEndpoints: http://master.dcos.thisdcos.directory:2379
+{% case "false" %}
+{% endswitch %}
