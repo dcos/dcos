@@ -285,3 +285,6 @@ The Marathon option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES` has been deprecat
 * Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
 
 * DC/OS Net: wait till agents become active before fanning out Mesos tasks. (DCOS_OSS-5463)
+* Marathon apps have support for CSI volumes. (MARATHON-8765)
+
+* Stop all services at once during upgrade. (COPS-6512)
