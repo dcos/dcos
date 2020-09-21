@@ -51,3 +51,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Turn on `enable_docker_gc` for on-prem by default. (COPS-5520)
 
 * Marathon apps have support for CSI volumes. (MARATHON-8765)
+
+* Stop all services at once during upgrade. (COPS-6512)
