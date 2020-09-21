@@ -215,3 +215,6 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Metronome jobs networking is now configurable (MARATHON-8727)
 
 * A bug was fixed in which Metronome failed to see jobs from a prior version of Metronome (MARATHON-8746)
+* Marathon apps have support for CSI volumes. (MARATHON-8765)
+
+* Stop all services at once during upgrade. (COPS-6512)
