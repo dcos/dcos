@@ -138,7 +138,7 @@ class Systemd:
                 log.debug("Remove %s", path)
                 os.remove(path)
             except FileNotFoundError:
-                log.warning(unit_name + " not found")
+                log.debug(unit_name + " not found")
 
     def activate_new_unit_files(self):
         log.info("Move new unit files to their final locations.")
