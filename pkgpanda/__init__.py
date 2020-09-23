@@ -80,7 +80,6 @@ class Systemd:
         if not os.path.exists(self.__unit_directory):
             log.warning("Do not stop services. %s does not exist", self.__unit_directory)
             return
-
         names = list(filter(
             lambda n: os.path.isfile(os.path.join(self.__unit_directory, n)),
             os.listdir(self.__unit_directory)))
