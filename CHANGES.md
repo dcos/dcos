@@ -12,6 +12,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Stop all services at once during upgrade. (COPS-6512)
 
 
 
@@ -409,5 +410,3 @@ No breaking changes are known to date.
 
 * Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
 * Marathon apps have support for CSI volumes. (MARATHON-8765)
-
-* Stop all services at once during upgrade. (COPS-6512)
