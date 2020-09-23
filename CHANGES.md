@@ -4,8 +4,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to Mesos [1.10.1-dev](https://github.com/apache/mesos/blob/3ca3879d52ea0f9bff05443d331d63105b2cc4db/CHANGELOG)
 
-* Stop all services at once during upgrade. (COPS-6512)
-
 ### Security updates
 
 
@@ -19,6 +17,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Updated DC/OS UI to [v5.2.1](https://github.com/dcos/dcos-ui/releases/tag/v5.2.1).
 
 * Allow disabling Calico overlay by setting `calico_enabled` to `false`. (COPS-6451)
+
+* Stop all services at once during upgrade. (COPS-6512)
 
 ## DC/OS 2.1.1
 
@@ -217,4 +217,3 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Metronome jobs networking is now configurable (MARATHON-8727)
 
 * A bug was fixed in which Metronome failed to see jobs from a prior version of Metronome (MARATHON-8746)
-* Marathon apps have support for CSI volumes. (MARATHON-8765)
