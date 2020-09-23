@@ -4,6 +4,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to Mesos [1.10.1-dev](https://github.com/apache/mesos/blob/3ca3879d52ea0f9bff05443d331d63105b2cc4db/CHANGELOG)
 
+* Stop all services at once during upgrade. (COPS-6512)
+
 ### Security updates
 
 
@@ -216,5 +218,3 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 
 * A bug was fixed in which Metronome failed to see jobs from a prior version of Metronome (MARATHON-8746)
 * Marathon apps have support for CSI volumes. (MARATHON-8765)
-
-* Stop all services at once during upgrade. (COPS-6512)
