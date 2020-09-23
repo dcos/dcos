@@ -88,7 +88,7 @@ class Systemd:
             cmd = ["systemctl", "stop"] + names
             if not self.__block:
                 cmd.append("--no-block")
-            check_call(cmd)
+            _check_call(cmd)
         except CalledProcessError as ex:
             # If the service doesn't exist, don't error. This happens when a
             # bootstrap tarball has just been extracted but nothing started
