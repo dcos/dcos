@@ -80,22 +80,22 @@ class Systemd:
         if not os.path.exists(self.__unit_directory):
             log.warning("Do not stop services. %s does not exist", self.__unit_directory)
             return
-        for name in os.listdir(self.__unit_directory):
-            # Skip directories
-            if os.path.isdir(os.path.join(self.__unit_directory, name)):
-                continue
-            try:
-                cmd = ["systemctl", "stop", name]
-                if not self.__block:
-                    cmd.append("--no-block")
-                _check_call(cmd)
-            except CalledProcessError as ex:
-                # If the service doesn't exist, don't error. This happens when a
-                # bootstrap tarball has just been extracted but nothing started
-                # yet during first activation.
-                log.warning(ex)
-                if ex.returncode != 5:
-                    raise
+
+        names = list(filter(
+            lambda n: os.path.isfile(os.path.join(self.__unit_directory, n)),
+            os.listdir(self.__unit_directory)))
+        try:
+            cmd = ["systemctl", "stop"] + names
+            if not self.__block:
+                cmd.append("--no-block")
+            _check_call(cmd)
+        except CalledProcessError as ex:
+            # If the service doesn't exist, don't error. This happens when a
+            # bootstrap tarball has just been extracted but nothing started
+            # yet during first activation.
+            log.warning(ex)
+            if ex.returncode != 5:
+                raise
 
     def remove_staged_unit_files(self):
         """Remove staged unit files created by Systemd.stage_new_units()."""

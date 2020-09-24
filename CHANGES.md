@@ -18,6 +18,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated DC/OS UI to [v5.2.1](https://github.com/dcos/dcos-ui/releases/tag/v5.2.1).
 
+* Stop all services at once during upgrade. (COPS-6512)
+
 ## DC/OS 2.0.6 (2020-07-30)
 
 ### Security updates
