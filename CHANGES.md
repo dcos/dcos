@@ -12,6 +12,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Stop all services at once during upgrade. (COPS-6512)
 
 
 
