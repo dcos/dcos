@@ -1,8 +1,7 @@
 [Unit]
-Description=CockroachDB Set Configuration Timer: Timer to periodically set the CockroachDB configuration
-Documentation=https://docs.mesosphere.com
+Description=DC/OS CockroachDB Config Check Timer
+Documentation=https://docs.d2iq.com/mesosphere/dcos/
 
 [Timer]
-OnBootSec=5sec
-OnStartupSec=5min
+# initial activation will be done by dcos-cockroach.service
 OnUnitActiveSec=10min
