@@ -24,11 +24,32 @@ import shutil
 import subprocess
 import sys
 
+DEBUG = os.environ.get('DCOS_NET_STARTUP_DEBUG')
+
+
+def run(cmd, *args, **kwargs):
+    command = ' '.join(cmd)
+
+    if DEBUG:
+        print('command: `{}`'.format(command))
+
+    result = subprocess.run(cmd, *args, **kwargs)
+    if result.stderr:
+        sys.stderr.buffer.write(result.stderr)
+
+    if DEBUG:
+        print('command: `{}` exited with status `{}`'.format(
+            command,
+            result.returncode,
+        ))
+
+    return result
+
 
 def main():
     return_code = 0
     if sys.argv[1:4] in [['ip', 'link', 'add'], ['ip', 'addr', 'add'], ['ip', '-6', 'addr']]:
-        result = subprocess.run(sys.argv[1:], stderr=subprocess.PIPE)
+        result = run(sys.argv[1:], stderr=subprocess.PIPE)
         sys.stderr.buffer.write(result.stderr)
         if result.stderr.strip().endswith(b'File exists'):
             result.returncode = 0
@@ -36,22 +57,22 @@ def main():
     elif sys.argv[1] == 'iptables':
         # check whether a rule matching the specification does exist
         argv = ['-C' if arg in ['-A', '-I'] else arg for arg in sys.argv[1:]]
-        result = subprocess.run(argv)
+        result = run(argv)
         if result.returncode != 0:
             # if it doesn't exist append or insert that rules
-            result = subprocess.run(sys.argv[1:])
+            result = run(sys.argv[1:])
         return_code = result.returncode
     elif sys.argv[1] == '--ipv6':
         if os.getenv('DCOS_NET_IPV6', 'true') == 'false':
             sys.exit(0)
         else:
             del sys.argv[1]
-            result = subprocess.run(sys.argv)
+            result = run(sys.argv)
             return_code = result.returncode
     elif sys.argv[1:3] == ['networkd', 'add'] and len(sys.argv) == 4:
         return_code = add_networkd_config_for_coreos(sys.argv[3])
     else:
-        result = subprocess.run(sys.argv[1:])
+        result = run(sys.argv[1:])
         return_code = result.returncode
     sys.exit(return_code)
 
@@ -70,8 +91,8 @@ def add_networkd_config_for_coreos(src: str) -> int:
     networkd_path = '/etc/systemd/network'
 
     # Check if there is networkd
-    result = subprocess.run(['systemctl', 'list-unit-files', networkd],
-                            stdout=subprocess.PIPE)
+    result = run(['systemctl', 'list-unit-files', networkd],
+                 stdout=subprocess.PIPE)
     if result.returncode != 0:
         return result.returncode
     if networkd not in result.stdout:
@@ -87,7 +108,7 @@ def add_networkd_config_for_coreos(src: str) -> int:
         shutil.copyfile(src, dst)
 
     # Restart networkd only if it's active
-    result = subprocess.run(['systemctl', 'is-active', networkd],
+    result = run(['systemctl', 'is-active', networkd],
                             stdout=subprocess.PIPE)
     if result.returncode != 0:
         result.returncode = 0
@@ -95,7 +116,7 @@ def add_networkd_config_for_coreos(src: str) -> int:
 
     # Restart networkd only if the configuration is updated
     mtime = os.path.getmtime(dst)
-    result = subprocess.run(['systemctl', 'show', '--value',
+    result = run(['systemctl', 'show', '--value',
                              '--property', 'ActiveEnterTimestamp',
                              networkd], stdout=subprocess.PIPE)
     if result.returncode == 0:
@@ -111,7 +132,7 @@ def add_networkd_config_for_coreos(src: str) -> int:
                             active_enter_timestamp)
 
     # Restart networkd
-    return subprocess.run(['systemctl', 'restart', networkd]).returncode
+    return run(['systemctl', 'restart', networkd]).returncode
 
 
 def safe_filecmp(src, dst):
