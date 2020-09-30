@@ -23,6 +23,8 @@ import subprocess
 import sys
 
 DEBUG = os.environ.get('DCOS_NET_STARTUP_DEBUG')
+NETWORKD = os.environ.get('DCOS_NET_CONFIG_NETWORKD')
+NETWORK_MANAGER = os.environ.get('DCOS_NET_CONFIG_NETWORKD')
 
 
 def run(cmd, *args, **kwargs):
@@ -48,7 +50,6 @@ def main():
     return_code = 0
     if sys.argv[1:4] in [['ip', 'link', 'add'], ['ip', 'addr', 'add'], ['ip', '-6', 'addr']]:
         result = run(sys.argv[1:], stderr=subprocess.PIPE)
-        sys.stderr.buffer.write(result.stderr)
         if result.stderr.strip().endswith(b'File exists'):
             result.returncode = 0
         return_code = result.returncode
@@ -69,6 +70,8 @@ def main():
             return_code = result.returncode
     elif sys.argv[1:3] == ['networkd', 'add'] and len(sys.argv) == 4:
         return_code = add_networkd_config(sys.argv[3])
+    elif sys.argv[1:3] == ['networkmanager', 'add'] and len(sys.argv) == 4:
+        return_code = add_networkmanager_config(sys.argv[3])
     else:
         result = run(sys.argv[1:])
         return_code = result.returncode
@@ -79,8 +82,10 @@ def check_for_unit(unit: str) -> int:
     result = run(['systemctl', 'list-unit-files', unit],
                  stdout=subprocess.PIPE)
 
-    if result.returncode == 0 and unit in result.stdout.decode():
-        return 0
+    # NOTE(jkoelker) Use a negative return code as a signal that the unit
+    #                does not exist.
+    if result.returncode == 0 and unit not in result.stdout.decode():
+        return -1
 
     return result.returncode
 
@@ -97,11 +102,48 @@ def is_unit_active(unit: str) -> bool:
 def copy_file(src, dst) -> bool:
     try:
         if not filecmp.cmp(src, dst):
-            return bool(shutil.copyfile(src, dst))
+            shutil.copyfile(src, dst)
+            return True
 
         return False
     except FileNotFoundError:
-        return bool(shutil.copyfile(src, dst))
+        shutil.copyfile(src, dst)
+        return True
+
+
+def add_config(unit: str, src: str, path: str) -> int:
+    # Check if the unit exists
+    result = check_for_unit(unit)
+    if result < 0:
+        if DEBUG:
+            print('Unit {} does not exist'.format(unit))
+        return 0
+
+    if result != 0:
+        if DEBUG:
+            print('Error listing units: {}'.format(result))
+        return result
+
+    # Copy the configuration
+    dst = os.path.join(path, os.path.basename(src))
+
+    # Ensure the destination directory exists
+    os.makedirs(path, mode=0o755, exist_ok=True)
+
+    config_replaced = copy_file(src, dst)
+
+    # Restart the unit only if configuration changed and unit is active
+    if config_replaced and is_unit_active(unit):
+        return run(['systemctl', 'restart', unit]).returncode
+
+    return 0
+
+
+def add_networkmanager_config(src: str) -> int:
+    if NETWORK_MANAGER or 'el' in platform.release():
+        return add_config('NetworkManager.service', '/etc/NetworkManager/conf.d', src)
+
+    return 0
 
 
 def add_networkd_config(src: str) -> int:
@@ -111,33 +153,8 @@ def add_networkd_config(src: str) -> int:
     # https://jira.mesosphere.com/browse/DCOS_OSS-1790
     # We need to mark interfaces managed by DC/OS as unmanaged when networkd is
     # enabled on coreos
-    if platform.system() != "Linux" or "coreos" not in platform.release():
-        return 0
-
-    networkd = 'systemd-networkd.service'
-    networkd_path = '/etc/systemd/network'
-
-    # Check if there is networkd
-    result = check_for_unit(networkd)
-    if result.returncode != 0:
-        return result.returncode
-
-    # Copy the configuration
-    bname = os.path.basename(src)
-    dst = os.path.join(networkd_path, bname)
-
-    # Ensure the destination directory exists
-    os.makedirs(networkd_path, mode=0o755, exist_ok=True)
-
-    replaced = copy_file(src, dst)
-
-    # Restart networkd only if it's active
-    if not is_unit_active(networkd):
-        return 0
-
-    # Restart networkd only if the configuration is updated
-    if replaced:
-        return run(['systemctl', 'restart', networkd]).returncode
+    if NETWORKD or 'coreos' in platform.release():
+        return add_config('systemd-networkd.service', '/etc/systemd/network', src)
 
     return 0
 

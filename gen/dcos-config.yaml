@@ -102,6 +102,13 @@ package:
 
       [Link]
       Unmanaged=yes
+  - path: /etc/dcos-net.conf
+    content: |
+      [main]
+      plugins=keyfile
+
+      [keyfile]
+      unmanaged-devices=interface-name:docker*;interface-name:m-*;interface-name:d-*;interface-name:vtep*;interface-name:spartan;interface-name:minuteman;
   - path: /etc/dcos_net
     content: |
       DCOS_NET_WATCHDOG={{ dcos_net_watchdog }}
