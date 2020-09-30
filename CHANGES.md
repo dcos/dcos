@@ -53,3 +53,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Marathon apps have support for CSI volumes. (MARATHON-8765)
 
 * Stop all services at once during upgrade. (COPS-6512)
+
+* Mark inactive service as unhealthy. (COPS-6514)
