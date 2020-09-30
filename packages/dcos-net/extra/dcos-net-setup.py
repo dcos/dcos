@@ -15,9 +15,7 @@ Also the script prevents from duplicating iptables rules [3]
 The script allows to add configuration for networkd
 """
 
-import datetime
 import filecmp
-import logging
 import os
 import platform
 import shutil
@@ -70,14 +68,43 @@ def main():
             result = run(sys.argv)
             return_code = result.returncode
     elif sys.argv[1:3] == ['networkd', 'add'] and len(sys.argv) == 4:
-        return_code = add_networkd_config_for_coreos(sys.argv[3])
+        return_code = add_networkd_config(sys.argv[3])
     else:
         result = run(sys.argv[1:])
         return_code = result.returncode
     sys.exit(return_code)
 
 
-def add_networkd_config_for_coreos(src: str) -> int:
+def check_for_unit(unit: str) -> int:
+    result = run(['systemctl', 'list-unit-files', unit],
+                 stdout=subprocess.PIPE)
+
+    if result.returncode == 0 and unit in result.stdout.decode():
+        return 0
+
+    return result.returncode
+
+
+def is_unit_active(unit: str) -> bool:
+    result = run(['systemctl', 'is-active', unit],
+                 stdout=subprocess.PIPE)
+    if result.returncode == 0:
+        return True
+
+    return False
+
+
+def copy_file(src, dst) -> bool:
+    try:
+        if not filecmp.cmp(src, dst):
+            return bool(shutil.copyfile(src, dst))
+
+        return False
+    except FileNotFoundError:
+        return bool(shutil.copyfile(src, dst))
+
+
+def add_networkd_config(src: str) -> int:
     # systemd-networkd, when enabled, will wipe the configurations like IP
     # address of network interfaces and this behavior happens only on coreos
     # This problem is tracked by:
@@ -87,15 +114,12 @@ def add_networkd_config_for_coreos(src: str) -> int:
     if platform.system() != "Linux" or "coreos" not in platform.release():
         return 0
 
-    networkd = b'systemd-networkd.service'
+    networkd = 'systemd-networkd.service'
     networkd_path = '/etc/systemd/network'
 
     # Check if there is networkd
-    result = run(['systemctl', 'list-unit-files', networkd],
-                 stdout=subprocess.PIPE)
+    result = check_for_unit(networkd)
     if result.returncode != 0:
-        return result.returncode
-    if networkd not in result.stdout:
         return result.returncode
 
     # Copy the configuration
@@ -104,42 +128,18 @@ def add_networkd_config_for_coreos(src: str) -> int:
 
     # Ensure the destination directory exists
     os.makedirs(networkd_path, mode=0o755, exist_ok=True)
-    if not safe_filecmp(src, dst):
-        shutil.copyfile(src, dst)
+
+    replaced = copy_file(src, dst)
 
     # Restart networkd only if it's active
-    result = run(['systemctl', 'is-active', networkd],
-                            stdout=subprocess.PIPE)
-    if result.returncode != 0:
-        result.returncode = 0
-        return result.returncode
+    if not is_unit_active(networkd):
+        return 0
 
     # Restart networkd only if the configuration is updated
-    mtime = os.path.getmtime(dst)
-    result = run(['systemctl', 'show', '--value',
-                             '--property', 'ActiveEnterTimestamp',
-                             networkd], stdout=subprocess.PIPE)
-    if result.returncode == 0:
-        active_enter_timestamp = result.stdout.strip().decode()
-        try:
-            started = datetime.datetime.strptime(
-                active_enter_timestamp,
-                '%a %Y-%m-%d %H:%M:%S %Z')
-            if started.timestamp() > mtime:
-                return result.returncode
-        except ValueError:
-            logging.warning('Unexpected ActiveEnterTimestamp value: "%s"',
-                            active_enter_timestamp)
+    if replaced:
+        return run(['systemctl', 'restart', networkd]).returncode
 
-    # Restart networkd
-    return run(['systemctl', 'restart', networkd]).returncode
-
-
-def safe_filecmp(src, dst):
-    try:
-        return filecmp.cmp(src, dst)
-    except FileNotFoundError:
-        return False
+    return 0
 
 
 if __name__ == "__main__":
