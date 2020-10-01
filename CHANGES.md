@@ -4,6 +4,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to Mesos [1.10.1-dev](https://github.com/apache/mesos/blob/3ca3879d52ea0f9bff05443d331d63105b2cc4db/CHANGELOG)
 
+* Reset Docker start limit if it fails during reboot. (D2IQ-72103)
+
 ### Security updates
 
 
