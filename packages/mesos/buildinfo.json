@@ -8,9 +8,9 @@
   ],
   "single_source": {
     "kind": "git",
-    "git": "https://github.com/apache/mesos",
-    "ref": "2bf7f5d8dcb359845a663a011a941809ffc2366d",
-    "ref_origin": "master"
+    "git": "https://github.com/mesosphere/mesos-private",
+    "ref": "116a9c35da2c59a5498e89b52996d5b6eca59095",
+    "ref_origin": "ci/asekretenko/native_deprecated_update_framework"
   },
   "environment": {
     "JAVA_LIBRARY_PATH": "/opt/mesosphere/lib",
