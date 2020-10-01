@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import traceback
 from collections import OrderedDict
 
 from contextlib import contextmanager
@@ -183,27 +184,27 @@ def wait_calico_libnetwork_ready():
 
 def reload_docker_daemon():
     """
-    There is no `reload` command on systemctl for docker, however docker daemon
-    can reload it's configuration when SIGHUP is sent to it's process
+    There is no `reload` command on systemctl for Docker. However Docker will
+    reload the relevant configuration when SIGHUP is sent to its process
     """
     docker_pid_file = "/var/run/docker.pid"
-    if not os.path.exists(docker_pid_file):
-        # Not running, start now
-        print("Docker daemon pid was missing, starting docker service")
-        exec_cmd("systemctl start docker")
-        return
+    if os.path.exists(docker_pid_file):
+        with open(docker_pid_file, "r") as f:
+            docker_pid = int(f.read())
+        try:
+            print("Reloading found docker daemon with pid={}".format(docker_pid))
+            os.kill(docker_pid, signal.SIGHUP)
+            return
+        except OSError:
+            # The pid is stale, Docker is not running. Start it now.
+            traceback.print_exc(limit=1)
 
-    docker_pid = 0
-    with open(docker_pid_file, "r") as f:
-        docker_pid = int(f.read())
-
-    try:
-        print("Reloading found docker daemon with pid={}".format(docker_pid))
-        os.kill(docker_pid, signal.SIGHUP)
-    except OSError:
-        # The pid is stale, docker is not running. Start it now.
-        print("Unable to reload daemon, going to restart it instead")
-        exec_cmd("systemctl start docker")
+    print("Unable to reload daemon, going to restart it instead")
+    # If the Docker service starts before we setup the certificates, the unit
+    # may have entered failed state with an exhausted StartLimit.  Reset the
+    # limits and then restart. See https://jira.d2iq.com/browse/D2IQ-72103
+    exec_cmd('systemctl reset-failed docker.service')
+    exec_cmd("systemctl start docker")
 
 
 def is_docker_cluster_store_configured():
@@ -318,9 +319,8 @@ def config_docker_cluster_store():
     write_file_bytes(DOCKERD_CONFIG_FILE, updated_contents, mode)
 
     if restart_required:
-        exec_cmd("systemctl restart docker")
-    else:
-        reload_docker_daemon()
+        exec_cmd("systemctl stop docker")
+    reload_docker_daemon()
 
     # Wait until daemon is reloaded and the configuration applied
     @retrying.retry(
