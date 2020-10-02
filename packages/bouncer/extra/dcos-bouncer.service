@@ -1,5 +1,8 @@
 [Unit]
-Description=DC/OS Identity and Access Manager (Bouncer): offers login methods and user management
+Description=DC/OS Identity and Access Manager (Bouncer)
+Documentation=https://docs.d2iq.com/mesosphere/dcos/
+# Wait for CockroachDB to be available
+After=dcos-cockroach.service
 
 [Service]
 Type=simple
