@@ -4,8 +4,6 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Updated to Mesos [1.10.1-dev](https://github.com/apache/mesos/blob/3ca3879d52ea0f9bff05443d331d63105b2cc4db/CHANGELOG)
 
-* Reset Docker start limit if it fails during reboot. (D2IQ-72103)
-
 ### Security updates
 
 
@@ -21,6 +19,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Allow disabling Calico overlay by setting `calico_enabled` to `false`. (COPS-6451)
 
 * Stop all services at once during upgrade. (COPS-6512)
+
+* Reset Docker start limit if it fails during reboot. (D2IQ-72103)
+
+* Avoid timeouts in CockroachDB unit start. (D2IQ-69871)
 
 ## DC/OS 2.1.1
 
