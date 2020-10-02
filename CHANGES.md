@@ -3,6 +3,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 ## DC/OS 2.0.7 (In development)
 
 * Updated to Mesos [1.9.1-dev](https://github.com/apache/mesos/blob/e98ced1e93751b78c3248221115fcf4db8a39b29/CHANGELOG)
+* Updated to Mesos [1.10.1-dev](https://github.com/apache/mesos/blob/3ca3879d52ea0f9bff05443d331d63105b2cc4db/CHANGELOG)
 
 ### Security updates
 
@@ -21,6 +22,14 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Stop all services at once during upgrade. (COPS-6512)
 
 ## DC/OS 2.0.6 (2020-07-30)
+* Reset Docker start limit if it fails during reboot. (D2IQ-72103)
+
+* Avoid timeouts in CockroachDB unit start. (D2IQ-69871)
+
+## DC/OS 2.1.1
+
+* Updated to Mesos [1.10.1-dev](https://github.com/apache/mesos/blob/8683463a9fade9d86d77c0cea8336089fa2c10ca/CHANGELOG)
+
 
 ### Security updates
 
