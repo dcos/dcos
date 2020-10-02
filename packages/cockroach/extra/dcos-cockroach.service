@@ -23,7 +23,7 @@ ExecStartPre=/bin/chown -R dcos_cockroach /run/dcos/cockroach
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-cockroach
 ExecStartPre=/opt/mesosphere/active/cockroach/bin/register.py
 ExecStart=/opt/mesosphere/active/cockroach/bin/cockroach.sh
-ExecStartPost=-timeout 30 /opt/mesosphere/active/cockroach/bin/cockroachdb-change-config.py
+ExecStartPost=-/usr/bin/timeout 30 /opt/mesosphere/active/cockroach/bin/cockroachdb-change-config.py
 PIDFile=/run/dcos/cockroach/cockroach.pid
 TimeoutStartSec=90s
 
