@@ -1,9 +1,11 @@
 [Unit]
-Description=CockroachDB: Database for the DC/OS IAM
-Documentation=https://docs.mesosphere.com
+Description=DC/OS CockroachDB Database
+Documentation=https://docs.d2iq.com/mesosphere/dcos/
+# Wait for ZooKeeper to be available
+After=dcos-exhibitor.service
 
 [Service]
-Type=simple
+Type=notify
 PermissionsStartOnly=True
 User=dcos_cockroach
 Restart=always
@@ -21,10 +23,9 @@ ExecStartPre=/bin/chown -R dcos_cockroach /run/dcos/cockroach
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-cockroach
 ExecStartPre=/opt/mesosphere/active/cockroach/bin/register.py
 ExecStart=/opt/mesosphere/active/cockroach/bin/cockroach.sh
-ExecStartPost=-/bin/sleep 15
-ExecStartPost=-/opt/mesosphere/active/cockroach/bin/cockroachdb-change-config.py
+ExecStartPost=-/usr/bin/timeout 30 /opt/mesosphere/active/cockroach/bin/cockroachdb-change-config.py
 PIDFile=/run/dcos/cockroach/cockroach.pid
-TimeoutStartSec=60s
+TimeoutStartSec=90s
 
 [Install]
 WantedBy=multi-user.target
