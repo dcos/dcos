@@ -14,6 +14,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Stop all services at once during upgrade. (COPS-6512)
 
+* Avoid timeouts in CockroachDB unit start. (D2IQ-69871)
 
 
 ## DC/OS 1.13.10 (2020-08-26)
