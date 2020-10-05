@@ -1,5 +1,5 @@
 [Unit]
-Description=DC/OS CockroachDB Database
+Description=CockroachDB: Database for the DC/OS IAM
 Documentation=https://docs.d2iq.com/mesosphere/dcos/
 # Wait for ZooKeeper to be available
 After=dcos-exhibitor.service
