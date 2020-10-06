@@ -37,4 +37,4 @@ ExecStartPre=$PKG_PATH/bin/set_exhibitor_file_permissions.py
 # Start Exhibitor
 ExecStart=$PKG_PATH/usr/exhibitor/start_exhibitor.py
 # Wait for ZooKeeper to start listening
-ExecStartPost=-/usr/bin/timeout 20 /bin/sh -c 'until lsof -i :2181; do sleep 1; done'
+ExecStartPost=-/usr/bin/timeout 60 /bin/sh -c 'until echo ruok | /opt/mesosphere/bin/curl --connect-timeout 5 telnet://localhost:2181; do sleep 5; done'
