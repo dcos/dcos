@@ -210,6 +210,16 @@ def dcos_bouncer(b, opts):
 
 
 @check_root
+def dcos_cockroach(b, opts):
+    user = 'dcos_cockroach'
+
+    cockroach_run = utils.dcos_run_path / 'cockroach'
+    cockroach_run.mkdir(parents=True, exist_ok=True)
+    utils.chown(cockroach_run, user=user)
+    cockroach_run.chmod(0o700)
+
+
+@check_root
 def dcos_cockroach_config_change(b, opts):
     user = 'dcos_cockroach'
 
@@ -255,7 +265,7 @@ bootstrappers = {
     'dcos-mesos-slave': noop,
     'dcos-mesos-slave-public': noop,
     'dcos-cosmos': noop,
-    'dcos-cockroach': noop,
+    'dcos-cockroach': dcos_cockroach,
     'dcos-cockroach-config-change': dcos_cockroach_config_change,
     'dcos-metronome': noop,
     'dcos-mesos-dns': noop,

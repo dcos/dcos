@@ -1,9 +1,15 @@
 [Unit]
-Description=CockroachDB: Database for the DC/OS IAM
-Documentation=https://docs.mesosphere.com
+Description=DC/OS CockroachDB Database
+Documentation=https://docs.d2iq.com/mesosphere/dcos/
+# Wait for ZooKeeper to be available
+After=dcos-exhibitor.service
+# When CockroachDB is started, run the config change immediately afterwards
+Wants=dcos-cockroachdb-config-change.service
+Before=dcos-cockroachdb-config-change.service
 
 [Service]
-Type=simple
+Type=notify
+SyslogIdentifier=dcos-cockroach
 PermissionsStartOnly=True
 User=dcos_cockroach
 Restart=always
@@ -13,16 +19,12 @@ LimitNOFILE=16384
 EnvironmentFile=/opt/mesosphere/environment
 EnvironmentFile=-/run/dcos/etc/cockroach
 Environment=COCKROACH_SKIP_ENABLING_DIAGNOSTIC_REPORTING=true
-ExecStartPre=/usr/bin/mkdir -p /run/dcos/cockroach
-ExecStartPre=/bin/chown -R dcos_cockroach /run/dcos/cockroach
 # The CockroachDB multi node coordination performed by register.py
-# requires the ZooKeeper cluster to be formed. This is achieved
-# by the noop bootstrapper.
+# requires the ZooKeeper cluster to be formed. This is checked by
+# the bootstrapper.
 ExecStartPre=/opt/mesosphere/bin/bootstrap dcos-cockroach
 ExecStartPre=/opt/mesosphere/active/cockroach/bin/register.py
 ExecStart=/opt/mesosphere/active/cockroach/bin/cockroach.sh
-ExecStartPost=-/bin/sleep 15
-ExecStartPost=-/opt/mesosphere/active/cockroach/bin/cockroachdb-change-config.py
 PIDFile=/run/dcos/cockroach/cockroach.pid
 TimeoutStartSec=60s
 

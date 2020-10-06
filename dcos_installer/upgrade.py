@@ -137,7 +137,7 @@ fi
 
 echo "Upgrading DC/OS $role_name {{ installed_cluster_version }} -> {{ installer_version }}"
 pkgpanda fetch --repository-url={{ bootstrap_url }} {{ cluster_packages }} >&3
-pkgpanda activate --no-block {{ cluster_packages }} >&3
+pkgpanda activate {{ cluster_packages }} >&3
 
 if [[ "$SKIP_CHECKS" = "false" ]]; then
     T=300

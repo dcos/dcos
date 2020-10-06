@@ -1,5 +1,6 @@
 [Unit]
-Description=Exhibitor: Zookeeper supervisor service
+Description=Exhibitor and ZooKeeper
+
 [Service]
 User=dcos_exhibitor
 StandardOutput=journal
@@ -35,3 +36,5 @@ ExecStartPre=$PKG_PATH/bin/bootstrap_exhibitor_tls.py
 ExecStartPre=$PKG_PATH/bin/set_exhibitor_file_permissions.py
 # Start Exhibitor
 ExecStart=$PKG_PATH/usr/exhibitor/start_exhibitor.py
+# Wait for ZooKeeper to start listening
+ExecStartPost=-/usr/bin/timeout 60 /bin/sh -c 'until echo ruok | /opt/mesosphere/bin/curl --connect-timeout 5 telnet://localhost:2181; do sleep 5; done'

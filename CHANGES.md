@@ -2,7 +2,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 2.2.0-dev (in development)
 
-* Updated to Mesos [1.11.0-dev](https://github.com/apache/mesos/blob/2bf7f5d8dcb359845a663a011a941809ffc2366d/CHANGELOG)
+* Updated to Mesos [1.11.0-dev](https://github.com/apache/mesos/blob/c28fd3a93e0d9d9a868aec2380abd1dd338304ef/CHANGELOG)
 
 * Update to Fluentbit [1.4.6](https://docs.fluentbit.io/manual/installation/upgrade-notes)
 
@@ -53,3 +53,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Marathon apps have support for CSI volumes. (MARATHON-8765)
 
 * Stop all services at once during upgrade. (COPS-6512)
+
+* Sequence service start-up to avoid timeouts in CockroachDB unit start. (D2IQ-62292)

@@ -1,5 +1,8 @@
 [Unit]
-Description=Admin Router Master: Uses NGINX to expose a unified control plane proxy for components and services
+Description=DC/OS Admin Router Master
+Documentation=https://docs.d2iq.com/mesosphere/dcos/
+# Wait for Bouncer to be available
+After=dcos-bouncer.service
 
 [Service]
 Restart=always
