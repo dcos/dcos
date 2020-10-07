@@ -15,110 +15,148 @@ Also the script prevents from duplicating iptables rules [3]
 The script allows to add configuration for networkd
 """
 
-import datetime
 import filecmp
-import logging
 import os
 import platform
 import shutil
 import subprocess
 import sys
 
+DEBUG = os.environ.get('DCOS_NET_STARTUP_DEBUG')
+NETWORKD = os.environ.get('DCOS_NET_CONFIG_NETWORKD')
+NETWORK_MANAGER = os.environ.get('DCOS_NET_CONFIG_NETWORKD')
+
+
+def run(cmd, *args, **kwargs):
+    command = ' '.join(cmd)
+
+    if DEBUG:
+        print('command: `{}`'.format(command))
+
+    result = subprocess.run(cmd, *args, **kwargs)
+    if result.stderr:
+        sys.stderr.buffer.write(result.stderr)
+
+    if DEBUG:
+        print('command: `{}` exited with status `{}`'.format(
+            command,
+            result.returncode,
+        ))
+
+    return result
+
 
 def main():
     return_code = 0
     if sys.argv[1:4] in [['ip', 'link', 'add'], ['ip', 'addr', 'add'], ['ip', '-6', 'addr']]:
-        result = subprocess.run(sys.argv[1:], stderr=subprocess.PIPE)
-        sys.stderr.buffer.write(result.stderr)
+        result = run(sys.argv[1:], stderr=subprocess.PIPE)
         if result.stderr.strip().endswith(b'File exists'):
             result.returncode = 0
         return_code = result.returncode
     elif sys.argv[1] == 'iptables':
         # check whether a rule matching the specification does exist
         argv = ['-C' if arg in ['-A', '-I'] else arg for arg in sys.argv[1:]]
-        result = subprocess.run(argv)
+        result = run(argv)
         if result.returncode != 0:
             # if it doesn't exist append or insert that rules
-            result = subprocess.run(sys.argv[1:])
+            result = run(sys.argv[1:])
         return_code = result.returncode
     elif sys.argv[1] == '--ipv6':
         if os.getenv('DCOS_NET_IPV6', 'true') == 'false':
             sys.exit(0)
         else:
             del sys.argv[1]
-            result = subprocess.run(sys.argv)
+            result = run(sys.argv)
             return_code = result.returncode
     elif sys.argv[1:3] == ['networkd', 'add'] and len(sys.argv) == 4:
-        return_code = add_networkd_config_for_coreos(sys.argv[3])
+        return_code = add_networkd_config(sys.argv[3])
+    elif sys.argv[1:3] == ['networkmanager', 'add'] and len(sys.argv) == 4:
+        return_code = add_networkmanager_config(sys.argv[3])
     else:
-        result = subprocess.run(sys.argv[1:])
+        result = run(sys.argv[1:])
         return_code = result.returncode
     sys.exit(return_code)
 
 
-def add_networkd_config_for_coreos(src: str) -> int:
+def check_for_unit(unit: str) -> int:
+    result = run(['systemctl', 'list-unit-files', unit],
+                 stdout=subprocess.PIPE)
+
+    # NOTE(jkoelker) Use a negative return code as a signal that the unit
+    #                does not exist.
+    if result.returncode == 0 and unit not in result.stdout.decode():
+        return -1
+
+    return result.returncode
+
+
+def is_unit_active(unit: str) -> bool:
+    result = run(['systemctl', 'is-active', unit],
+                 stdout=subprocess.PIPE)
+    if result.returncode == 0:
+        return True
+
+    return False
+
+
+def copy_file(src, dst) -> bool:
+    try:
+        if not filecmp.cmp(src, dst):
+            shutil.copyfile(src, dst)
+            return True
+
+        return False
+    except FileNotFoundError:
+        shutil.copyfile(src, dst)
+        return True
+
+
+def add_config(unit: str, src: str, path: str) -> int:
+    # Check if the unit exists
+    result = check_for_unit(unit)
+    if result < 0:
+        if DEBUG:
+            print('Unit {} does not exist'.format(unit))
+        return 0
+
+    if result != 0:
+        if DEBUG:
+            print('Error listing units: {}'.format(result))
+        return result
+
+    # Copy the configuration
+    dst = os.path.join(path, os.path.basename(src))
+
+    # Ensure the destination directory exists
+    os.makedirs(path, mode=0o755, exist_ok=True)
+
+    config_replaced = copy_file(src, dst)
+
+    # Restart the unit only if configuration changed and unit is active
+    if config_replaced and is_unit_active(unit):
+        return run(['systemctl', 'restart', unit]).returncode
+
+    return 0
+
+
+def add_networkmanager_config(src: str) -> int:
+    if NETWORK_MANAGER or 'el' in platform.release():
+        return add_config('NetworkManager.service', '/etc/NetworkManager/conf.d', src)
+
+    return 0
+
+
+def add_networkd_config(src: str) -> int:
     # systemd-networkd, when enabled, will wipe the configurations like IP
     # address of network interfaces and this behavior happens only on coreos
     # This problem is tracked by:
     # https://jira.mesosphere.com/browse/DCOS_OSS-1790
     # We need to mark interfaces managed by DC/OS as unmanaged when networkd is
     # enabled on coreos
-    if platform.system() != "Linux" or "coreos" not in platform.release():
-        return 0
+    if NETWORKD or 'coreos' in platform.release():
+        return add_config('systemd-networkd.service', '/etc/systemd/network', src)
 
-    networkd = b'systemd-networkd.service'
-    networkd_path = '/etc/systemd/network'
-
-    # Check if there is networkd
-    result = subprocess.run(['systemctl', 'list-unit-files', networkd],
-                            stdout=subprocess.PIPE)
-    if result.returncode != 0:
-        return result.returncode
-    if networkd not in result.stdout:
-        return result.returncode
-
-    # Copy the configuration
-    bname = os.path.basename(src)
-    dst = os.path.join(networkd_path, bname)
-
-    # Ensure the destination directory exists
-    os.makedirs(networkd_path, mode=0o755, exist_ok=True)
-    if not safe_filecmp(src, dst):
-        shutil.copyfile(src, dst)
-
-    # Restart networkd only if it's active
-    result = subprocess.run(['systemctl', 'is-active', networkd],
-                            stdout=subprocess.PIPE)
-    if result.returncode != 0:
-        result.returncode = 0
-        return result.returncode
-
-    # Restart networkd only if the configuration is updated
-    mtime = os.path.getmtime(dst)
-    result = subprocess.run(['systemctl', 'show', '--value',
-                             '--property', 'ActiveEnterTimestamp',
-                             networkd], stdout=subprocess.PIPE)
-    if result.returncode == 0:
-        active_enter_timestamp = result.stdout.strip().decode()
-        try:
-            started = datetime.datetime.strptime(
-                active_enter_timestamp,
-                '%a %Y-%m-%d %H:%M:%S %Z')
-            if started.timestamp() > mtime:
-                return result.returncode
-        except ValueError:
-            logging.warning('Unexpected ActiveEnterTimestamp value: "%s"',
-                            active_enter_timestamp)
-
-    # Restart networkd
-    return subprocess.run(['systemctl', 'restart', networkd]).returncode
-
-
-def safe_filecmp(src, dst):
-    try:
-        return filecmp.cmp(src, dst)
-    except FileNotFoundError:
-        return False
+    return 0
 
 
 if __name__ == "__main__":
