@@ -55,3 +55,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Stop all services at once during upgrade. (COPS-6512)
 
 * Sequence service start-up to avoid timeouts in CockroachDB unit start. (D2IQ-62292)
+
+* dcos-net now configures NetworkManager ignores for its interfaces (COPS-6519)
