@@ -22,6 +22,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Avoid timeouts in CockroachDB unit start. (D2IQ-69871)
 
+* dcos-net now configures NetworkManager ignores for its interfaces (COPS-6519)
+
 ## DC/OS 2.0.6 (2020-07-30)
 
 ### Security updates
