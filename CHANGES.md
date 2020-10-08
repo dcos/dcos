@@ -6,7 +6,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Security updates
 
-* Updated CockroachDB Python package to 0.3.5. (D2IQ-62221) 
+* Updated CockroachDB Python package to 0.3.5. (D2IQ-62221)
 
 * Upgrade to OpenJDK 8u265b01. (D2IQ-70809)
 
@@ -24,6 +24,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * dcos-net now configures NetworkManager ignores for its interfaces (COPS-6519)
 
+#### Update Marathon to 1.9.141
+
+* Allow migrations to re-run by default (MARATHON-8762)
+
 ## DC/OS 2.0.6 (2020-07-30)
 
 ### Security updates
@@ -35,7 +39,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update to Fluentbit [1.4.6](https://docs.fluentbit.io/manual/installation/upgrade-notes)
 
-* Starting services on clusters with static masters now only requires a majority of ZooKeeper nodes to be available. 
+* Starting services on clusters with static masters now only requires a majority of ZooKeeper nodes to be available.
   Previously, all ZooKeeper nodes needed to be available.
   On clusters with dynamic master lists, all ZooKeeper nodes must still be available. (D2IQ-4248)
 
