@@ -24,6 +24,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Avoid timeouts in CockroachDB unit start. (D2IQ-69871)
 
+* dcos-net now configures NetworkManager ignores for its interfaces (COPS-6519)
 
 #### Update Marathon to Marathon 1.10.27
 
