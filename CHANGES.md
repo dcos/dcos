@@ -18,18 +18,22 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * dcos-net now configures NetworkManager ignores for its interfaces (COPS-6519)
 
+#### Update Marathon to 1.8.245
+
+* Allow migrations to re-run by default (MARATHON-8762)
+
 ## DC/OS 1.13.10 (2020-08-26)
 
 ### Security updates
 
-* Updated CockroachDB Python package to 0.3.5. (D2IQ-62221) 
+* Updated CockroachDB Python package to 0.3.5. (D2IQ-62221)
 
 ### Notable changes
 
-* Starting services on clusters with static masters now only requires a majority of ZooKeeper nodes to be available. 
+* Starting services on clusters with static masters now only requires a majority of ZooKeeper nodes to be available.
   Previously, all ZooKeeper nodes needed to be available.
   On clusters with dynamic master lists, all ZooKeeper nodes must still be available. (D2IQ-4248)
-  
+
 ### Fixed and improved
 
 * Removed trailing newline from ZooKeeper log messages. (D2IQ-68394)
