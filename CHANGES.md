@@ -26,6 +26,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * dcos-net now configures NetworkManager ignores for its interfaces (COPS-6519)
 
+#### Update Marathon to Marathon 1.10.27
+
+* Allow migrations to re-run by default (MARATHON-8762)
+
 ## DC/OS 2.1.1
 
 * Updated to Mesos [1.10.1-dev](https://github.com/apache/mesos/blob/8683463a9fade9d86d77c0cea8336089fa2c10ca/CHANGELOG)
@@ -39,7 +43,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Update to Fluentbit [1.4.6](https://docs.fluentbit.io/manual/installation/upgrade-notes)
 
-* Starting services on clusters with static masters now only requires a majority of ZooKeeper nodes to be available. 
+* Starting services on clusters with static masters now only requires a majority of ZooKeeper nodes to be available.
   Previously, all ZooKeeper nodes needed to be available.
   On clusters with dynamic master lists, all ZooKeeper nodes must still be available. (D2IQ-4248)
 
