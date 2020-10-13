@@ -5,8 +5,8 @@
   ],
   "single_source": {
     "kind": "url_extract",
-    "url": "https://s3.amazonaws.com/downloads.mesosphere.io/metronome/builds/0.6.62-7298d33/metronome-0.6.62-7298d33.tgz",
-    "sha1": "20a535c4163cd46b5ed37c881f0b1f8e1082921f"
+    "url": "https://s3.amazonaws.com/downloads.mesosphere.io/metronome/builds/0.6.63-b7b4a2c/metronome-0.6.63-b7b4a2c.tgz",
+    "sha1": "e9790e183b5a902f80fb1951c5cc17f384238230"
   },
   "username": "dcos_metronome",
   "state_directory": true
