@@ -14,7 +14,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Log diff to resolv.conf in addition to the new contents. (COPS-6411)
 
-* Updated DC/OS UI to [v5.2.1](https://github.com/dcos/dcos-ui/releases/tag/v5.2.1).
+* Updated DC/OS UI to [v6.1.7](https://github.com/dcos/dcos-ui/releases/tag/v6.1.7).
 
 * Allow disabling Calico overlay by setting `calico_enabled` to `false`. (COPS-6451)
 
@@ -200,7 +200,6 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Fixing some corner-cases that could render `etcd` unable to start [D2IQ-69069](https://jira.d2iq.com/browse/D2IQ-69069)
 
 * Updated DC/OS UI to [v5.1.1](https://github.com/dcos/dcos-ui/releases/tag/v5.1.1).
-* Updated DC/OS UI to [v6.1.7](https://github.com/dcos/dcos-ui/releases/tag/v6.1.7).
 
 * Removed Exhibitor snapshot cleanup and now rely on ZooKeeper autopurge. (D2IQ-68109)
 
