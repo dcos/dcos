@@ -1,7 +1,12 @@
 {
   "single_source": {
     "kind": "url_extract",
+<<<<<<< HEAD
     "url": "https://github.com/dcos/dcos-ui/releases/download/v5.2.1/release.tar.gz",
     "sha1": "eb42a5d849a3ee04f5dbc72c46dd95a42e6b9cf3"
+=======
+    "url": "https://github.com/dcos/dcos-ui/releases/download/v6.1.7/release.tar.gz",
+    "sha1": "0a320b23fe16b694ac3b1c8a2c9865a6ff1acc32"
+>>>>>>> e81a413... chore: Bump DC/OS UI v6.1.7
   }
 }
