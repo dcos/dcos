@@ -63,3 +63,5 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Resource limits are now properly read from persistence (MARATHON-8773)
 
 * Enforce-role property no longer shows for sub-groups (MARATHON-8769)
+
+* Fix issue in which PUT /v2/groups ignored the enforceRole setting (MARATHON-8770)
