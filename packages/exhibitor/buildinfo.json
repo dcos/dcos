@@ -9,7 +9,7 @@
     },
     "zookeeper": {
       "kind": "url_extract",
-      "url": "https://www-us.apache.org/dist/zookeeper/zookeeper-3.4.14/zookeeper-3.4.14.tar.gz",
+      "url": "https://downloads.mesosphere.com/zookeeper/zookeeper-3.4.14.tar.gz",
       "sha1": "285a0c85112d9f99d42cbbf8fb750c9aa5474716"
     },
     "log4j": {
