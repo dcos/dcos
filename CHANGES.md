@@ -50,10 +50,16 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Turn on `enable_docker_gc` for on-prem by default. (COPS-5520)
 
-* Marathon apps have support for CSI volumes. (MARATHON-8765)
-
 * Stop all services at once during upgrade. (COPS-6512)
 
 * Sequence service start-up to avoid timeouts in CockroachDB unit start. (D2IQ-62292)
 
 * dcos-net now configures NetworkManager ignores for its interfaces (COPS-6519)
+
+#### Marathon updated to 1.11.14
+
+* Marathon apps have support for CSI volumes. (MARATHON-8765) (MARATHON-8767)
+
+* Resource limits are now properly read from persistence (MARATHON-8773)
+
+* Enforce-role property no longer shows for sub-groups (MARATHON-8769)
