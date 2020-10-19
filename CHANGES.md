@@ -26,9 +26,16 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * dcos-net now configures NetworkManager ignores for its interfaces (COPS-6519)
 
-#### Update Marathon to Marathon 1.10.27
+#### Update Marathon to Marathon 1.10.32
 
 * Allow migrations to re-run by default (MARATHON-8762)
+
+* Read ResourceLimits from persistence (MARATHON-8773)
+
+* Don't show `enforceRole` for sub-groups (MARATHON-8769)
+
+* Respect `enforceRole` on `PUT /v2/groups` (MARATHON-8770)
+
 
 ## DC/OS 2.1.1
 
