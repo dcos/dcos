@@ -15,8 +15,7 @@ from dcos_e2e.node import Output
 @pytest.mark.skipif(
     only_changed(E2E_SAFE_DEFAULT + [
         # All packages safe except named packages
-        'packages/**',
-        '!packages/*treeinfo.json',
+        'packages/*/**',
         '!packages/{bouncer,bouncer-deps,cockroach,flask,libpq,openssl,six}/**',
         '!packages/python*/**',
         # All e2e tests safe except this test

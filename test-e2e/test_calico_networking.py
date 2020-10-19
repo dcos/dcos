@@ -126,8 +126,7 @@ def test_calico_disabled(docker_backend: Docker, artifact_path: Path,
 @pytest.mark.skipif(
     only_changed(E2E_SAFE_DEFAULT + [
         # All packages safe except named packages
-        'packages/**',
-        '!packages/*treeinfo.json',
+        'packages/*/**',
         '!packages/{calico,etcd,java,marathon}/**',  # All packages safe except named packages
         '!packages/dcos-integration-test/requirements.txt',
         '!packages/dcos-integration-test/extra/{conftest,test_helpers,test_networking}.py',  # Used in test
@@ -172,8 +171,7 @@ def test_calico_ipip_container_connectivity(calico_ipip_cluster: Cluster) -> Non
 @pytest.mark.skipif(
     only_changed(E2E_SAFE_DEFAULT + [
         # All packages safe except named packages
-        'packages/**',
-        '!packages/*treeinfo.json',
+        'packages/*/**',
         '!packages/{bootstrap,calico,etcd,openssl}/**',
         '!packages/python*/**',
         # All e2e tests safe except this test

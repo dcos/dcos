@@ -79,8 +79,7 @@ def _zk_flag_exists(zk: KazooClient, znode: str) -> bool:
 @pytest.mark.skipif(
     only_changed(E2E_SAFE_DEFAULT + [
         # All packages safe except named packages
-        'packages/**',
-        '!packages/*treeinfo.json',
+        'packages/*/**',
         '!packages/{exhibitor,java}/**',
         # All e2e tests safe except this test
         'test-e2e/test_*', '!' + escape(trailing_path(__file__, 2)),
