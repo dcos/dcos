@@ -13,11 +13,11 @@ E2E_SAFE_DEFAULT = [
     # Safe file patterns
     '**/*.md', '**/.git*', '**/LICENSE',
     # Safe directories
-    '.github/**', 'config/**', 'docs/**', 'flake8_dcos_lint/**', 'teamcity/**',
-    'test-util/**',
+    '.github/**', 'config/**', 'docs/**', 'flake8_dcos_lint/**',
+    'gen/tests/**', 'teamcity/**', 'test-util/**',
     # Safe files
     '.editorconfig', '.pre-commit-config.yaml', 'Jenkinsfile*', 'NOTICE',
-    'owners.json', 'symlink_check', 'tox.ini'
+    'owners.json', 'symlink_check', 'tox.ini',
 ]
 
 CI_UNKNOWN = 'unknown'
@@ -115,7 +115,10 @@ class ChangeDetector:
                         head_sha = info['head']['sha']
                     files = get_modified_files(github_pr_compare(base_sha, head_sha))
                     logging.info('Modified files: %s', files)
-                    if info['user']['login'] == 'mesosphere-mergebot':
+                    if (
+                        info['user']['login'] == 'mesosphere-mergebot' and
+                        'Mergebot Automated Train PR' in info['title']
+                    ):
                         logging.info('PR appears to be a train')
                         result = CI_TRAIN, files
                     else:
@@ -137,9 +140,20 @@ def only_changed(safelist: List[str], flags: int = glob.BRACE | glob.DOTGLOB | g
     the `safelist`. This function can be used to skip tests if only files named in the
     `safelist` have been modified.
     """
+    # Ensure flags enable globstar required for default safelist
+    flags |= glob.GLOBSTAR
     github_type, files_changed = _change_detector.get_changed_files()
-    if github_type != CI_PULL_REQUEST:
-        # return False for all other types, including trains, to force all tests.
+    if github_type == CI_PULL_REQUEST:
+        # use supplied safelist
+        pass
+    elif github_type == CI_TRAIN:
+        # For trains we want to run if the build has been affected in any way,
+        # but can skip for changes that do not affect the build or installation
+        # of DC/OS. To do this, skip e2e tests only when files in the default
+        # safelist are changed.
+        safelist = E2E_SAFE_DEFAULT
+    else:
+        # return False for all other types to force all tests.
         return False
     assert files_changed is not None
     matches = glob.globfilter(files_changed, safelist, flags=flags)
