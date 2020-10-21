@@ -18,9 +18,11 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * dcos-net now configures NetworkManager ignores for its interfaces (COPS-6519)
 
-#### Update Marathon to 1.8.245
+#### Update Marathon to 1.8.247
 
 * Allow migrations to re-run by default (MARATHON-8762)
+
+* Fix issue that would cause apps and pods to launch more slowly (MARATHON-8775)
 
 ## DC/OS 1.13.10 (2020-08-26)
 
