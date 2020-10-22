@@ -133,6 +133,151 @@ def test_if_marathon_app_can_be_deployed_with_mesos_containerizer(dcos_api_sessi
         *test_helpers.marathon_test_app(container_type=marathon.Container.MESOS))
 
 
+def test_if_marathon_app_can_be_deployed_with_nfs_csi_volume(dcos_api_session: DcosApiSession) -> None:
+    """Marathon app deployment integration test using an NFS CSI volume.
+
+    This test verifies that a Marathon app can be deployed which attaches to
+    an NFS volume provided by the NFS CSI plugin. In order to accomplish this,
+    we must first set up an NFS share on one agent.
+    """
+
+    # We will run an NFS server on one agent and an app on another agent to
+    # verify CSI volume functionality.
+    if len(dcos_api_session.slaves) < 2:
+        pytest.skip("CSI Volume Tests require a minimum of two agents.")
+
+    expanded_config = test_helpers.get_expanded_config()
+    if expanded_config.get('security') == 'strict':
+        pytest.skip('Cannot setup NFS server as root user with EE strict mode enabled')
+
+    test_uuid = uuid.uuid4().hex
+
+    hosts = dcos_api_session.slaves[0], dcos_api_session.slaves[1]
+
+    # A helper to run a Metronome job as root to clean up the NFS share on an agent.
+    # We define this here so that it can be used during error handling.
+    def cleanup_nfs() -> None:
+        cleanup_command = """
+            sudo systemctl stop nfs-server && \
+            echo '' | sudo tee /etc/exports && \
+            sudo systemctl restart nfs-utils && \
+            sudo exportfs -arv && \
+            sudo rm -rf /var/lib/dcos-nfs-shares/test-volume-001
+        """
+
+        cleanup_job = {
+            'description': 'Clean up NFS share',
+            'id': 'nfs-share-cleanup-{}'.format(test_uuid),
+            'run': {
+                'cmd': cleanup_command,
+                'cpus': 0.5,
+                'mem': 256,
+                'disk': 32,
+                'user': 'root',
+                'restart': {'policy': 'ON_FAILURE'},
+                'placement': {
+                    'constraints': [{
+                        'attribute': '@hostname',
+                        'operator': 'LIKE',
+                        'value': hosts[0]
+                    }]
+                }
+            }
+        }
+
+        dcos_api_session.metronome_one_off(cleanup_job)
+
+    # Run a Metronome job as root to set up the NFS share on an agent.
+    command = """sudo mkdir -p /var/lib/dcos-nfs-shares/test-volume-001 && \
+        sudo chown -R nobody: /var/lib/dcos-nfs-shares/test-volume-001 && \
+        sudo chmod 777 /var/lib/dcos-nfs-shares/test-volume-001 && \
+        echo '/var/lib/dcos-nfs-shares/test-volume-001 *(rw,sync)' | sudo tee /etc/exports && \
+        sudo systemctl restart nfs-utils && \
+        sudo exportfs -arv && \
+        sudo systemctl start nfs-server && \
+        sudo systemctl enable nfs-server
+    """
+
+    setup_job = {
+        'description': 'Set up NFS share',
+        'id': 'nfs-share-setup-{}'.format(test_uuid),
+        'run': {
+            'cmd': command,
+            'cpus': 0.5,
+            'mem': 256,
+            'disk': 32,
+            'user': 'root',
+            'restart': {'policy': 'ON_FAILURE'},
+            'placement': {
+                'constraints': [{
+                    'attribute': '@hostname',
+                    'operator': 'LIKE',
+                    'value': hosts[0]
+                }]
+            }
+        }
+    }
+
+    dcos_api_session.metronome_one_off(setup_job)
+
+    # Create an app which writes to the NFS volume.
+    app = {
+        'id': 'csi-nfs-write-app-{}'.format(test_uuid),
+        'instances': 1,
+        'cpus': 0.5,
+        'mem': 256,
+        'cmd': 'echo some-stuff > test-volume-dir/output && sleep 999999',
+        'user': 'root',
+        'container': {
+            'type': 'MESOS',
+            'volumes': [{
+                'mode': 'rw',
+                'containerPath': 'test-volume-dir',
+                'external': {
+                    'provider': 'csi',
+                    'name': 'test-volume-001',
+                    'options': {
+                        'pluginName': 'nfs.csi.k8s.io',
+                        'capability': {
+                            'accessType': 'mount',
+                            'accessMode': 'MULTI_NODE_MULTI_WRITER',
+                            'fsType': 'nfs'
+                        },
+                        'volumeContext': {
+                            'server': hosts[0],
+                            'share': '/var/lib/dcos-nfs-shares/test-volume-001'
+                        }
+                    }
+                }
+            }]
+        },
+        'constraints': [
+            [
+                'hostname',
+                'LIKE',
+                hosts[1]
+            ]
+        ],
+        'healthChecks': [{
+            'protocol': 'COMMAND',
+            'command': {'value': 'test `cat test-volume-dir/output` = some-stuff'},
+            'gracePeriodSeconds': 5,
+            'intervalSeconds': 10,
+            'timeoutSeconds': 10,
+            'maxConsecutiveFailures': 3
+        }]
+    }
+
+    try:
+        with dcos_api_session.marathon.deploy_and_cleanup(app):
+            # Trivial app if it deploys, there is nothing else to check
+            pass
+    except Exception as error:
+        raise(error)
+    finally:
+        cleanup_nfs()
+
+
 def test_if_marathon_pods_can_be_deployed_with_mesos_containerizer(dcos_api_session: DcosApiSession) -> None:
     """Marathon pods deployment integration test using the Mesos Containerizer
 
