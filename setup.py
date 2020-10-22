@@ -69,7 +69,7 @@ setup(
         'azure-storage==0.32.0',
         'azure-mgmt-network==0.30.0rc4',
         'azure-mgmt-resource==0.30.0rc4',
-        'botocore',
+        'botocore==1.19.2',
         'boto3==1.16.2',
         'checksumdir',
         'coloredlogs',
