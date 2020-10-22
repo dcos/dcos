@@ -70,7 +70,7 @@ setup(
         'azure-mgmt-network==0.30.0rc4',
         'azure-mgmt-resource==0.30.0rc4',
         'botocore',
-        'boto3',
+        'boto3==1.16.2',
         'checksumdir',
         'coloredlogs',
         'docopt',
