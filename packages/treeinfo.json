@@ -1,10 +1,7 @@
 {
   "exclude": [
     "dcos-launch",
-    "dcos-metrics",
-    "vcredist",
-    "nssm",
-    "winpanda"
+    "dcos-metrics"
   ],
   "bootstrap_package_list": ["dcos-image"]
 }
