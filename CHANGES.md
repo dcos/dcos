@@ -2,7 +2,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ## DC/OS 2.2.0-rc2-dev (in development)
 
-* Updated to Mesos [1.11.0-dev](https://github.com/apache/mesos/blob/d4678d33b223fec5d48007f8246f1ed1cda5e90d/CHANGELOG)
+* Updated to Mesos [1.11.0-dev](https://github.com/apache/mesos/blob/cb6cfe9b122d1b60a8264b28b6abb38a3c8417b4/CHANGELOG)
 
 * Update to Fluentbit [1.4.6](https://docs.fluentbit.io/manual/installation/upgrade-notes)
 
