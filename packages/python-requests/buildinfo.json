@@ -3,13 +3,13 @@
   "sources": {
     "requests": {
       "kind": "url",
-      "url": "https://files.pythonhosted.org/packages/ff/17/5cbb026005115301a8fb2f9b0e3e8d32313142fe8b617070e7baad20554f/requests-2.20.1-py2.py3-none-any.whl",
-      "sha1": "a38551c5a3baa3bfdaa89edb5f0f3e15b298ee6a"
+      "url": "https://files.pythonhosted.org/packages/51/bd/23c926cd341ea6b7dd0b2a00aba99ae0f828be89d72b2190f27c11d4b7fb/requests-2.22.0-py2.py3-none-any.whl",
+      "sha1": "e1fc28120002395fe1f2da9aacea4e15a449d9ee"
     },
     "urllib3": {
       "kind": "url",
-      "url": "https://files.pythonhosted.org/packages/df/1c/59cca3abf96f991f2ec3131a4ffe72ae3d9ea1f5894abe8a9c5e3c77cfee/urllib3-1.24.2-py2.py3-none-any.whl",
-      "sha1": "02e44dd64ebeb41ca01e1943c8c3e581c6547380"
+      "url": "https://files.pythonhosted.org/packages/9f/f0/a391d1463ebb1b233795cabfc0ef38d3db4442339de68f847026199e69d7/urllib3-1.25.10-py2.py3-none-any.whl",
+      "sha1": "4b768a05e3c46a01e84e79da651b7ebde990dcf4"
     },
     "chardet": {
       "kind": "url",
