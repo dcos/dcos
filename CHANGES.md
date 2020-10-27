@@ -16,7 +16,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Log diff to resolv.conf in addition to the new contents. (COPS-6411)
 
-* Updated DC/OS UI to [v5.2.1](https://github.com/dcos/dcos-ui/releases/tag/v5.2.1).
+* Update DC/OS UI to [v6.1.16](https://github.com/dcos/dcos-ui/releases/tag/v6.1.16).
 
 * Stop all services at once during upgrade. (COPS-6512)
 
@@ -299,4 +299,3 @@ The Marathon option `MARATHON_DEFAULT_ACCEPTED_RESOURCE_ROLES` has been deprecat
 * Fix preflight docker version check failing for docker 1.19. (DCOS-56831)
 
 * DC/OS Net: wait till agents become active before fanning out Mesos tasks. (DCOS_OSS-5463)
-* Update DC/OS UI to [v6.1.16](https://github.com/dcos/dcos-ui/releases/tag/v6.1.16).
