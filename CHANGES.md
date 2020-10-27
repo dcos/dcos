@@ -28,7 +28,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Storing etcd initial state on `/var/lib/dcos` instead of `/run/dcos` [COPS-6183](https://jira.d2iq.com/browse/COPS-6183)
 
-* Updated DC/OS UI to [v6.1.7](https://github.com/dcos/dcos-ui/releases/tag/v6.1.7).
+* Update DC/OS UI to [v6.1.16](https://github.com/dcos/dcos-ui/releases/tag/v6.1.16).
 
 * Removed Exhibitor snapshot cleanup and now rely on ZooKeeper autopurge. (D2IQ-68109)
 
