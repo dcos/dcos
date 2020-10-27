@@ -8,6 +8,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Remove DC/OS Signal [D2IQ-69818](https://jira.d2iq.com/browse/D2IQ-69818)
 
+
 ### Security updates
 
 
@@ -64,4 +65,3 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Enforce-role property no longer shows for sub-groups (MARATHON-8769)
 
 * Fix issue in which PUT /v2/groups ignored the enforceRole setting (MARATHON-8770)
-
