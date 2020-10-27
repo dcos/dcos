@@ -234,3 +234,4 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Metronome jobs networking is now configurable (MARATHON-8727)
 
 * A bug was fixed in which Metronome failed to see jobs from a prior version of Metronome (MARATHON-8746)
+* Update DC/OS UI to [v6.1.16](https://github.com/dcos/dcos-ui/releases/tag/v6.1.16).
