@@ -56,7 +56,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * dcos-net now configures NetworkManager ignores for its interfaces (COPS-6519)
 
-#### Marathon updated to 1.11.14
+#### Marathon updated to 1.11.23
 
 * Marathon apps have support for CSI volumes. (MARATHON-8765) (MARATHON-8767)
 
@@ -65,3 +65,9 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Enforce-role property no longer shows for sub-groups (MARATHON-8769)
 
 * Fix issue in which PUT /v2/groups ignored the enforceRole setting (MARATHON-8770)
+
+* Marathon can send offer constraints to Mesos to reduce the number of offers it needs to decline due to placement constraints (MARATHON-8764)
+
+* Marathon will allow GROUP_BY placement constraints to be temporarily imbalanced during deployments. (MARATHON-8752)
+
+* Marathon no longer logs task data, as it may contain secrets for Docker containers. (MARATHON-8774)
