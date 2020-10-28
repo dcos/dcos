@@ -753,6 +753,7 @@ def test_l4lb(dcos_api_session: DcosApiSession) -> None:
             app.purge(dcos_api_session)
 
 
+@retrying.retry(wait_fixed=5000, stop_max_attempt_number=3)
 def test_dcos_cni_l4lb(dcos_api_session: DcosApiSession) -> Any:
     '''
     This tests the `dcos - l4lb` CNI plugins:
