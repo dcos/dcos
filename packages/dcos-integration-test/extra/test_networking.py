@@ -592,7 +592,12 @@ def test_l4lb(dcos_api_session):
             app.purge(dcos_api_session)
 
 
+<<<<<<< HEAD
 def test_dcos_cni_l4lb(dcos_api_session):
+=======
+@retrying.retry(wait_fixed=5000, stop_max_attempt_number=3)
+def test_dcos_cni_l4lb(dcos_api_session: DcosApiSession) -> Any:
+>>>>>>> 02066c1... Use retry on test_dcos_cni_l4lb as from centos 7.6 first call will fail
     '''
     This tests the `dcos - l4lb` CNI plugins:
         https: // github.com / dcos / dcos - cni / tree / master / cmd / l4lb
