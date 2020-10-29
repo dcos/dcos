@@ -14,7 +14,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Log diff to resolv.conf in addition to the new contents. (COPS-6411)
 
-* Updated DC/OS UI to [v6.1.7](https://github.com/dcos/dcos-ui/releases/tag/v6.1.7).
+* Update DC/OS UI to [v6.1.16](https://github.com/dcos/dcos-ui/releases/tag/v6.1.16).
 
 * Allow disabling Calico overlay by setting `calico_enabled` to `false`. (COPS-6451)
 
@@ -234,3 +234,4 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Metronome jobs networking is now configurable (MARATHON-8727)
 
 * A bug was fixed in which Metronome failed to see jobs from a prior version of Metronome (MARATHON-8746)
+
