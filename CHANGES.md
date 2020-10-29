@@ -26,7 +26,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 #### Update Marathon to 1.9.145
 
-* BREAKING CHANGE - Marathon now returns an error if `acceptedResourceRoles` is completely invalid. (MARATHON-8748)
+* Reject role sanitization that would result in an empty array (MARATHON-8748)
 
 * Allow migrations to re-run by default (MARATHON-8762)
 
