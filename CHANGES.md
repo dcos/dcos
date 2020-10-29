@@ -1,5 +1,14 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
+## DC/OS 2.2.1 (in development)
+
+### Security updates
+
+### Notable changes
+
+### Fixed and improved
+
+
 ## DC/OS 2.2.0 (29-10-2020)
 
 * Updated to Mesos [1.11.0-dev](https://github.com/apache/mesos/blob/cb6cfe9b122d1b60a8264b28b6abb38a3c8417b4/CHANGELOG)
