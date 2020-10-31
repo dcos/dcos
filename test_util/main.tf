@@ -1,5 +1,4 @@
 provider "aws" {
-  version = "~> 2.58"
 }
 
 # Used to determine your public IP for forwarding rules
