@@ -1,19 +1,19 @@
 {
-  "docker": "calico/node:v3.14.0",
+  "docker": "calico/node:v3.16.4-1-g1c131e1",
   "sources": {
     "calico": {
       "kind": "url",
-      "url": "https://github.com/projectcalico/cni-plugin/releases/download/v3.14.0/calico-amd64",
+      "url": "https://github.com/projectcalico/cni-plugin/releases/download/3.16.4/calico-amd64",
       "sha1": "1579ebf178f72292a1bc8fab0d74a88ab0921084"
     },
     "calico-ipam": {
       "kind": "url",
-      "url": "https://github.com/projectcalico/cni-plugin/releases/download/v3.14.0/calico-ipam-amd64",
+      "url": "https://github.com/projectcalico/cni-plugin/releases/download/3.16.4/calico-ipam-amd64",
       "sha1": "7eeaf366c30c279c4688a220083cb5f123616042"
     },
     "calicoctl": {
       "kind": "url",
-      "url": "https://github.com/projectcalico/calicoctl/releases/download/v3.14.0/calicoctl-linux-amd64",
+      "url": "https://github.com/projectcalico/calicoctl/releases/download/3.16.4/calicoctl-linux-amd64",
       "sha1": "8734244e7549354d19617975413f143e36bf48bb"
     },
     "calico-libnetwork-plugin": {
