@@ -308,10 +308,9 @@ def config_docker_cluster_store():
     updated_contents = json.dumps(dockerd_config, indent='\t').encode('ascii')
     if updated_contents == existing_contents:
         print('Docker daemon configuration has expected contents')
-        return
-
-    print("Writing updated Docker daemon configuration to {!r}".format(DOCKERD_CONFIG_FILE))
-    write_file_bytes(DOCKERD_CONFIG_FILE, updated_contents, mode)
+    else:
+        print("Writing updated Docker daemon configuration to {!r}".format(DOCKERD_CONFIG_FILE))
+        write_file_bytes(DOCKERD_CONFIG_FILE, updated_contents, mode)
 
     if os.path.exists(DOCKER_RESTART_FILE):
         # Force a Docker restart by stopping the daemon.  The reload code will
