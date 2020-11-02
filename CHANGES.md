@@ -80,3 +80,4 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Marathon will allow GROUP_BY placement constraints to be temporarily imbalanced during deployments. (MARATHON-8752)
 
 * Marathon no longer logs task data, as it may contain secrets for Docker containers. (MARATHON-8774)
+* Update DC/OS UI to [6.1.19](https://github.com/dcos/dcos-ui/releases/tag/6.1.19)
