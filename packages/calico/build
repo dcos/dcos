@@ -1,6 +1,9 @@
 #!/bin/bash
 set -x
 
+# NOTE(jkoelker) fix repo location since centos decided to move urls
+sed -i 's,mirror.centos.org/centos,vault.centos.org,' /etc/yum.repos.d/centos.repo
+
 # calico container is missing 'envsubst'
 microdnf install -y gettext tar
 
