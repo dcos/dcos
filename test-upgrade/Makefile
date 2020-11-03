@@ -35,6 +35,7 @@ test: upgrade-target-test
 
 .PHONY: clean
 clean: dcos-clean
+	rm -rf ./*.tf
 	rm -rf ./cluster-upgrade.json
 	rm -rf ./upgrade-base-pretest.json
 	rm -rf ./upgrade.auto.tfvars
