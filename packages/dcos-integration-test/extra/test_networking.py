@@ -219,7 +219,8 @@ def lb_enabled() -> Any:
 
 @retrying.retry(wait_fixed=2000,
                 stop_max_delay=5 * 60 * 1000,
-                retry_on_result=lambda ret: ret is None)
+                retry_on_result=lambda ret: ret is None,
+                retry_on_exception=lambda e: isinstance(e, Exception))
 def ensure_routable(cmd: str, host: str, port: str, json_output: bool = True) -> Any:
     proxy_uri = 'http://{}:{}/run_cmd'.format(host, port)
     log.info('Sending {} data: {}'.format(proxy_uri, cmd))
