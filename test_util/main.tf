@@ -1,6 +1,8 @@
 provider "aws" {
 }
 
+data "aws_region" "current" {}
+
 # Used to determine your public IP for forwarding rules
 data "http" "whatismyip" {
   url = "http://whatismyip.akamai.com/"
@@ -15,6 +17,8 @@ locals {
   }
 
   tags = merge(local.default_tags, var.tags)
+
+  region_ami = length(var.aws_region_amis) > 0 ? lookup(var.aws_region_amis, data.aws_region.current.name, "no-ami-id-for-this-region") : ""
 }
 
 resource "random_string" "dcosuser" {
@@ -53,7 +57,7 @@ module "dcos" {
   num_public_agents  = var.num_public_agents
 
   dcos_instance_os             = "centos_7.6"
-  aws_ami                      = var.aws_ami
+  aws_ami                      = try(coalesce(var.aws_ami, local.region_ami), "")
   bootstrap_instance_type      = "m5.xlarge"
   masters_instance_type        = var.masters_instance_type
   private_agents_instance_type = var.private_agents_instance_type

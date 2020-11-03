@@ -89,3 +89,7 @@ variable "ssh_private_key_file_name" {
 variable "aws_ami" {
   default = null
 }
+
+variable "aws_region_amis" {
+  default = {}
+}
