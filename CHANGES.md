@@ -1,12 +1,11 @@
 Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos/dcos/wiki/CHANGES.md-guidelines). Thank you!
 
-## DC/OS 2.2.1 (in development)
+## DC/OS 2.2.1
 
-### Security updates
 
 ### Notable changes
 
-### Fixed and improved
+* Upgrade from 2.1.{0,1} to 2.2.0 stops workloads [D2IQ-72846](https://jira.d2iq.com/browse/D2IQ-72846)
 
 
 ## DC/OS 2.2.0 (29-10-2020)
