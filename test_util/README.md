@@ -47,6 +47,10 @@ version. It can be used to test pull request clusters: `TF_VAR_custom_dcos_downl
 
 `TF_VAR_dcos_security` determines wether the cluster is `permissive`, `strict` (only in enterprise) or empty. It defaults to empty string.
 
+`OVERWRITE_INTEGRATION_TESTS` rsyncs the local integration tests [folder](../packages/dcos-integration-test/extra/) into the cluster and overwrites its packaged default tests.
+
+`PYTEST_EXTRA_ARGS` set pytest args to be executed e.g. `-k 'not ..'`
+
 ### Under the Hood
 
 We use Terraform to launch cluster. The `main.tf` describes the creation.  You can change the configuration of the cluster.
@@ -72,3 +76,30 @@ Once Terraform finished you can setup the CLI with `dcos cluster setup $(terrafo
 Do not forget to destroy the cluster again with `terraform destroy`.
 
 By default instances will be destroyed by CloudCleaner to change expiration set `TF_VAR_expiration=8h` and `TF_VAR_owner=$USER`.
+
+### Makefile includes for other test environments
+This repository can be used as an library for other tests. Like the lokal [Makefile](./Makefile) following lines can be used to include the different targets:
+
+```Makefile
+# Terraform binary management
+include terraform.mk
+# Universal Installer related targets
+include dcos.mk
+# DC/OS diagnostics handling
+include diagnostics.mk
+```
+
+The simplest way of using these shared targets is a direct mapping:
+
+```Makefile
+.PHONY: test
+test: dcos-test
+
+.PHONY: destroy
+destroy: dcos-destroy
+
+.PHONY: clean
+clean: dcos-clean
+```
+
+But also more completx scenarios are possible. Have a look into [test-upgrade](../test-upgrade) [test-qualification](../test-qualification)
