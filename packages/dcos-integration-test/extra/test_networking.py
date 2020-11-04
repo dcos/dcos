@@ -215,14 +215,9 @@ def lb_enabled():
 
 @retrying.retry(wait_fixed=2000,
                 stop_max_delay=5 * 60 * 1000,
-<<<<<<< HEAD
-                retry_on_result=lambda ret: ret is None)
-def ensure_routable(cmd, host, port, json_output=True):
-=======
                 retry_on_result=lambda ret: ret is None,
                 retry_on_exception=lambda e: isinstance(e, Exception))
-def ensure_routable(cmd: str, host: str, port: str, json_output: bool = True) -> Any:
->>>>>>> 1552272... Fix: retry ensure_routable on exception
+def ensure_routable(cmd, host, port, json_output=True):
     proxy_uri = 'http://{}:{}/run_cmd'.format(host, port)
     log.info('Sending {} data: {}'.format(proxy_uri, cmd))
     response = requests.post(proxy_uri, data=cmd, timeout=5).json()
@@ -752,15 +747,7 @@ def test_l4lb(dcos_api_session):
             app.purge(dcos_api_session)
 
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 def test_dcos_cni_l4lb(dcos_api_session):
-=======
-@retrying.retry(wait_fixed=5000, stop_max_attempt_number=3)
-=======
->>>>>>> 1552272... Fix: retry ensure_routable on exception
-def test_dcos_cni_l4lb(dcos_api_session: DcosApiSession) -> Any:
->>>>>>> 02066c1... Use retry on test_dcos_cni_l4lb as from centos 7.6 first call will fail
     '''
     This tests the `dcos - l4lb` CNI plugins:
         https: // github.com / dcos / dcos - cni / tree / master / cmd / l4lb
