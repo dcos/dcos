@@ -35,6 +35,7 @@ from kazoo.security import make_digest_acl
 
 DOCKER_BIN = "/usr/bin/docker"
 DOCKERD_CONFIG_FILE = "/etc/docker/daemon.json"
+DOCKER_RESTART_FILE = '/run/dcos/calico-docker-restart'
 CALICO_DOCKER_NETWORK_NAME = "calico"
 CLUSTER_STORE_DOCKER_INFO_PREFIX = "Cluster Store"
 ETCD_ENDPOINTS_ENV_KEY = "ETCD_ENDPOINTS"
@@ -192,14 +193,14 @@ def reload_docker_daemon():
         with open(docker_pid_file, "r") as f:
             docker_pid = int(f.read())
         try:
-            print("Reloading found docker daemon with pid={}".format(docker_pid))
+            print("Attempting reload for docker daemon with pid={}".format(docker_pid))
             os.kill(docker_pid, signal.SIGHUP)
             return
         except OSError:
             # The pid is stale, Docker is not running. Start it now.
             traceback.print_exc(limit=1)
 
-    print("Unable to reload daemon, going to restart it instead")
+    print("Unable to reload daemon, restart it instead")
     # If the Docker service starts before we setup the certificates, the unit
     # may have entered failed state with an exhausted StartLimit.  Reset the
     # limits and then restart. See https://jira.d2iq.com/browse/D2IQ-72103
@@ -264,16 +265,10 @@ def config_docker_cluster_store():
                     "Cannot load Docker daemon configuration {!r}: {}".format(DOCKERD_CONFIG_FILE, str(e))
                 ) from e
         mode = stat.S_IMODE(os.stat(DOCKERD_CONFIG_FILE)[stat.ST_MODE])
-        # Docker reload only works to update `cluster-store` related options on
-        # their initial creation.  Subsequent changes require a restart to take
-        # effect.  We attempt to identify whether Docker was previously
-        # configured so we can reload if possible and restart only if required.
-        restart_required = 'cluster-store' in dockerd_config
     else:
         existing_contents = None
         dockerd_config = {}
         mode = 0o644
-        restart_required = False
         print('Creating Docker daemon configuration {!r}'.format(DOCKERD_CONFIG_FILE))
 
     p = exec_cmd("/opt/mesosphere/bin/detect_ip", check=True)
@@ -313,13 +308,15 @@ def config_docker_cluster_store():
     updated_contents = json.dumps(dockerd_config, indent='\t').encode('ascii')
     if updated_contents == existing_contents:
         print('Docker daemon configuration has expected contents')
-        return
+    else:
+        print("Writing updated Docker daemon configuration to {!r}".format(DOCKERD_CONFIG_FILE))
+        write_file_bytes(DOCKERD_CONFIG_FILE, updated_contents, mode)
 
-    print("Writing updated Docker daemon configuration to {!r}".format(DOCKERD_CONFIG_FILE))
-    write_file_bytes(DOCKERD_CONFIG_FILE, updated_contents, mode)
-
-    if restart_required:
+    if os.path.exists(DOCKER_RESTART_FILE):
+        # Force a Docker restart by stopping the daemon.  The reload code will
+        # then start the daemon rather than reloading the configuration.
         exec_cmd("systemctl stop docker")
+        os.unlink(DOCKER_RESTART_FILE)
     reload_docker_daemon()
 
     # Wait until daemon is reloaded and the configuration applied
