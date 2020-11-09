@@ -8,6 +8,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 ### Fixed and improved
 
+* Update DC/OS UI to [6.1.19](https://github.com/dcos/dcos-ui/releases/tag/6.1.19)
 
 ## DC/OS 2.2.0 (29-10-2020)
 
