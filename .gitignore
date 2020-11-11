@@ -32,3 +32,21 @@ package_lists
 /*.egg-info
 /packages/cache
 /dcos-release.config.yaml
+
+# Terraform stuff
+.terraform/
+*.tfstate.backup
+**terraform.tfstate*
+**terraform.d
+**crash.log
+plan.out
+cluster.tfvars
+terraform_backend.tf.json
+*.auto.tfvars
+bundle.zip
+test-qualification/test_id_rsa
+test_util/terraform.bin
+test_util/terraform*.zip
+test_util/terraform.initialized
+test_util/cluster.json*
+test_util/inventory
