@@ -111,7 +111,7 @@ def copy_file(src, dst) -> bool:
         return True
 
 
-def add_config(unit: str, src: str, path: str) -> int:
+def add_config(unit: str, path: str, src: str) -> int:
     # Check if the unit exists
     result = check_for_unit(unit)
     if result < 0:
