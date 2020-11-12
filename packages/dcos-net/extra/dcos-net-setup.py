@@ -153,7 +153,8 @@ def add_networkd_config(src: str) -> int:
     # https://jira.mesosphere.com/browse/DCOS_OSS-1790
     # We need to mark interfaces managed by DC/OS as unmanaged when networkd is
     # enabled on coreos
-    if NETWORKD or 'coreos' in platform.release():
+    release = platform.release()
+    if NETWORKD or 'coreos' in release or 'flatcar' in release:
         return add_config('systemd-networkd.service', '/etc/systemd/network', src)
 
     return 0
