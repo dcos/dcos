@@ -40,6 +40,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Marathon will allow GROUP_BY placement constraints to be temporarily imbalanced during deployments. (MARATHON-8752)
 
+* Fixed dcos-net startup script to configure network ignore file for on-prem (D2IQ-73113).
 
 ## DC/OS 2.1.1
 
@@ -238,4 +239,3 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Metronome jobs networking is now configurable (MARATHON-8727)
 
 * A bug was fixed in which Metronome failed to see jobs from a prior version of Metronome (MARATHON-8746)
-
