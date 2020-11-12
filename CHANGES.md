@@ -18,6 +18,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * dcos-net now configures NetworkManager ignores for its interfaces (COPS-6519)
 
+* Fixed dcos-net startup script to configure network ignore file for on-prem (D2IQ-73113).
+
 #### Update Marathon to 1.8.247
 
 * Allow migrations to re-run by default (MARATHON-8762)
@@ -417,3 +419,4 @@ No breaking changes are known to date.
 * Added a warning to the installer to let the user know in case kernel modules required by the DC/OS storage service are not loaded. (DCOS-49088)
 
 * Set network interfaces as unmanaged for networkd only on coreos. (DCOS-60956)
+* Update DC/OS UI to [v6.1.16](https://github.com/dcos/dcos-ui/releases/tag/v6.1.16).
