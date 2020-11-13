@@ -111,7 +111,7 @@ def copy_file(src, dst) -> bool:
         return True
 
 
-def add_config(unit: str, src: str, path: str) -> int:
+def add_config(unit: str, path: str, src: str) -> int:
     # Check if the unit exists
     result = check_for_unit(unit)
     if result < 0:
@@ -153,7 +153,8 @@ def add_networkd_config(src: str) -> int:
     # https://jira.mesosphere.com/browse/DCOS_OSS-1790
     # We need to mark interfaces managed by DC/OS as unmanaged when networkd is
     # enabled on coreos
-    if NETWORKD or 'coreos' in platform.release():
+    release = platform.release()
+    if NETWORKD or 'coreos' in release or 'flatcar' in release:
         return add_config('systemd-networkd.service', '/etc/systemd/network', src)
 
     return 0
