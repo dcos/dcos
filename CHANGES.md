@@ -24,7 +24,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * dcos-net now configures NetworkManager ignores for its interfaces (COPS-6519)
 
-#### Update Marathon to 1.9.145
+#### Update Marathon to 1.9.146
 
 * Reject role sanitization that would result in an empty array (MARATHON-8748)
 
@@ -36,6 +36,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Marathon no longer logs task data, as it may contain secrets for Docker containers. (MARATHON-8774)
 
+* Don't respect instances that are about to be restarted in placement constraints. (MARATHON-8771)
 
 ## DC/OS 2.0.6 (2020-07-30)
 
