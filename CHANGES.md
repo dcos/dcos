@@ -12,6 +12,10 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Fixed dcos-net startup script to configure network ignore file for on-prem (D2IQ-73113).
 
+#### Update Marathon to 1.11.24
+
+* Don't respect instances that are about to be restarted in placement constraints. (MARATHON-8771)
+
 ## DC/OS 2.2.0 (29-10-2020)
 
 * Updated to Mesos [1.11.0-dev](https://github.com/apache/mesos/blob/cb6cfe9b122d1b60a8264b28b6abb38a3c8417b4/CHANGELOG)
@@ -83,3 +87,4 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Marathon will allow GROUP_BY placement constraints to be temporarily imbalanced during deployments. (MARATHON-8752)
 
 * Marathon no longer logs task data, as it may contain secrets for Docker containers. (MARATHON-8774)
+
