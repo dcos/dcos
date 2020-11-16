@@ -26,7 +26,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * dcos-net now configures NetworkManager ignores for its interfaces (COPS-6519)
 
-#### Update Marathon to Marathon 1.10.34
+#### Update Marathon to Marathon 1.10.36
 
 * Allow migrations to re-run by default (MARATHON-8762)
 
@@ -40,6 +40,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Marathon will allow GROUP_BY placement constraints to be temporarily imbalanced during deployments. (MARATHON-8752)
 
+* Don't respect instances that are about to be restarted in placement constraints. (MARATHON-8771)
 
 ## DC/OS 2.1.1
 
