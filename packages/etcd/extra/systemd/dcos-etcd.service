@@ -1,6 +1,7 @@
 [Unit]
 Description=etcd: Distributed K/V storage
 Documentation=https://docs.d2iq.com
+ConditionPathExists=/opt/mesosphere/etc/calico/calico_enabled
 
 [Service]
 Type=notify

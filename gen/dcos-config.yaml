@@ -1740,6 +1740,20 @@ package:
               }
           ],
           "LocalFiles": [
+{% switch calico_enabled %}
+{% case "true" %}
+              {
+                  "Location": "/var/lib/dcos/etcd/initial-state",
+                  "Role": ["master"],
+                  "Optional": true
+              },
+              {
+                  "Location": "/var/lib/dcos/etcd/initial-nodes",
+                  "Role": ["master"],
+                  "Optional": true
+              },
+{% case "false" %}
+{% endswitch %}
               {
                   "Location": "/opt/mesosphere/active.buildinfo.full.json"
               },
@@ -1813,16 +1827,6 @@ package:
               },
               {
                   "Location": "/var/log/mesos-state.tar.gz",
-                  "Role": ["master"],
-                  "Optional": true
-              },
-              {
-                  "Location": "/var/lib/dcos/etcd/initial-state",
-                  "Role": ["master"],
-                  "Optional": true
-              },
-              {
-                  "Location": "/var/lib/dcos/etcd/initial-nodes",
                   "Role": ["master"],
                   "Optional": true
               }
@@ -1917,6 +1921,10 @@ package:
                   "Command": ["/opt/mesosphere/bin/calicoctl", "get", "globalNetworkPolicy", "-o", "yaml"],
                   "Role": ["master"]
               },
+              {
+                  "Command": ["/opt/mesosphere/bin/dcos-shell", "dcos-etcdctl", "diagnostic"],
+                  "Role": ["master"]
+              },
 {% case "false" %}
 {% endswitch %}
               {
@@ -1949,10 +1957,6 @@ package:
               },
               {
                   "Command": ["df"]
-              },
-              {
-                  "Command": ["/opt/mesosphere/bin/dcos-shell", "dcos-etcdctl", "diagnostic"],
-                  "Role": ["master"]
               }
           ]
         }
@@ -2243,6 +2247,19 @@ package:
   - path: /etc_master/adminrouter-grpc-proxy-port.conf
     content: |
       listen {{ adminrouter_grpc_proxy_port }} http2;
+  - path: /etc_master/adminrouter-grpc-proxy-etcd.conf
+{% switch calico_enabled %}
+{% case "true" %}
+    content: |
+      location / {
+        access_by_lua_block {
+          auth.access_grpc_etcd_endpoint();
+        }
+        grpc_pass grpc://127.0.0.1:2379;
+      }
+{% case "false" %}
+    content: ""
+{% endswitch %}
   - path: /etc/adminrouter-tls-master.conf
     content: |
       # Ref: https://github.com/cloudflare/sslconfig/blob/master/conf
@@ -2634,6 +2651,8 @@ package:
         # insecure_skip_verify = true
         [inputs.zookeeper.tags]
           dcos-component-name = "ZooKeeper"
+{% switch calico_enabled %}
+{% case "true" %}
       # Reads metrics from etcd's prometheus client
       [[inputs.prometheus]]
         ## An array of urls to scrape metrics from.
@@ -2648,6 +2667,8 @@ package:
         # insecure_skip_verify = true
         [inputs.prometheus.tags]
           dcos-component-name = "etcd"
+{% case "false" %}
+{% endswitch %}
       # Reads metrics from CockroachDB's prometheus client
       [[inputs.prometheus]]
         ## An array of urls to scrape metrics from.
