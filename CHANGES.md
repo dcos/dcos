@@ -26,7 +26,7 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * dcos-net now configures NetworkManager ignores for its interfaces (COPS-6519)
 
-#### Update Marathon to Marathon 1.10.34
+#### Update Marathon to Marathon 1.10.36
 
 * Allow migrations to re-run by default (MARATHON-8762)
 
@@ -39,6 +39,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 * Marathon no longer logs task data, as it may contain secrets for Docker containers. (MARATHON-8774)
 
 * Marathon will allow GROUP_BY placement constraints to be temporarily imbalanced during deployments. (MARATHON-8752)
+
+* Don't respect instances that are about to be restarted in placement constraints. (MARATHON-8771)
 
 * Fixed dcos-net startup script to configure network ignore file for on-prem (D2IQ-73113).
 
