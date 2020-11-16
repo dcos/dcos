@@ -61,7 +61,8 @@ def test_calico_disabled(docker_backend: Docker, artifact_path: Path,
         )
 
         calico_units = ["dcos-calico-felix", "dcos-calico-bird",
-                        "dcos-calico-confd", "dcos-calico-libnetwork-plugin"]
+                        "dcos-calico-confd", "dcos-calico-libnetwork-plugin",
+                        "dcos-etcd"]
         for node in cluster.masters | cluster.agents | cluster.public_agents:
             for unit_name in calico_units:
                 assert_system_unit_state(node, unit_name, active=False)
