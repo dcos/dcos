@@ -42,6 +42,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * Don't respect instances that are about to be restarted in placement constraints. (MARATHON-8771)
 
+* Fixed dcos-net startup script to configure network ignore file for on-prem (D2IQ-73113).
+
 ## DC/OS 2.1.1
 
 * Updated to Mesos [1.10.1-dev](https://github.com/apache/mesos/blob/8683463a9fade9d86d77c0cea8336089fa2c10ca/CHANGELOG)
@@ -239,4 +241,3 @@ instance to be expunged immediately; this helps with `GROUP_BY` or `UNIQUE` cons
 * Metronome jobs networking is now configurable (MARATHON-8727)
 
 * A bug was fixed in which Metronome failed to see jobs from a prior version of Metronome (MARATHON-8746)
-
