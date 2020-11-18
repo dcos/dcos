@@ -125,7 +125,7 @@ The tests can be run via Pytest while SSH'd as root into a master node of the cl
     This test user has a known login token with far future expiration. DO NOT USE IN PRODUCTION.
     After the test, remember to delete the test user.
 
-    For more information, see [User Management](https://docs.mesosphere.com/latest/security/oss/user-management/).
+    For more information, see [User Management](https://docs.d2iq.com/mesosphere/dcos/latest/security/oss/user-account-management/).
 
 
 2. Run the tests using pytest in the cluster.
