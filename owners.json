@@ -3,6 +3,7 @@
   "cprovencher": {"slack": "cprovencher", "jira": "charlesprovencher"},
   "DominikDary": {"slack": "dom", "jira": "dominikdary"},
   "fatz": {"slack": "julferts", "jira": "janulferts"},
+  "jkoelker": {"slack": "jkoelker", "jira": "jasonkoelker"},
   "jr0d": {"slack": "jared.rodriguez", "jira": "jaredrodriguez"},
   "jongiddy": {"slack": "jongiddy", "jira": "jonathangiddy"},
   "mesosphere-mergebot": {"slack": "mergebot", "jira": "svc.mergebot"},
