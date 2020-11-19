@@ -1,13 +1,7 @@
 git+https://github.com/dcos/dcos-e2e.git@2019.08.28.0
 attrs==19.1.0
-<<<<<<< HEAD
-cryptography==2.5
 docker==3.7.0
-=======
 cryptography==3.2.1
-docker==4.0.2
-etcd3==0.11.1
->>>>>>> d7473c8... Update Python security libraries
 jwt==0.5.4
 kazoo==2.6.1
 pytest==4.1.1
