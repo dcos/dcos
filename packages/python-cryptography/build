@@ -5,10 +5,6 @@ mkdir -p "$LIB_INSTALL_DIR"
 
 export PKG_CONFIG_PATH=/opt/mesosphere/lib/pkgconfig
 
-for package in asn1crypto; do
-  pip3 install --no-deps --no-index --prefix=$PKG_PATH /pkg/src/$package/*.whl
-done
-
 for package in cffi cryptography; do
   pip3 install --no-deps --install-option="--prefix=$PKG_PATH" --root=/ /pkg/src/$package/
 done

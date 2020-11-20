@@ -2,7 +2,7 @@
   "requires": ["python"],
   "single_source": {
     "kind": "url",
-    "url": "https://pypi.python.org/packages/29/9b/25ef61e948321296f029f53c9f67cc2b54e224db509eb67ce17e0df6044a/certifi-2017.11.5-py2.py3-none-any.whl",
-    "sha1": "0e09a6f85d5f93ec1012ae8de014af2fecb7e2ea"
+    "url": "https://files.pythonhosted.org/packages/c1/6f/3d85f0850962279a7e4c622695d7b3171e95ac65308a57d3b29738b27149/certifi-2020.11.8-py2.py3-none-any.whl",
+    "sha1": "40bc8ec02f344f99fa1f8cbdc77dec867c1762db"
   }
 }
