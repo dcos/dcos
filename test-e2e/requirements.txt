@@ -1,6 +1,6 @@
 git+https://github.com/dcos/dcos-e2e.git@2020.05.26.0
 attrs==19.1.0
-cryptography==2.7
+cryptography==3.2.1
 docker==4.0.2
 etcd3==0.11.1
 jwt==0.5.4
