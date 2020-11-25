@@ -149,6 +149,7 @@ COPY adminrouter-redirect-http-https.conf \
      adminrouter-tls-master.conf \
      adminrouter-ui-security.conf \
      adminrouter-grpc-proxy-port.conf \
+     adminrouter-grpc-proxy-etcd.conf \
         /opt/mesosphere/etc/
 
 # The `ca.crt` file is copied into two places due to the fact that
