@@ -407,8 +407,7 @@ def validate_overlay_networks_not_overlap(dcos_overlay_network,
 
     We assume the basic validations, like subnet cidr, have been done.
     """
-    if calico_enabled.lower() != "true" or dcos_overlay_enable.lower(
-    ) != "true":
+    if calico_enabled.lower() != "true" or dcos_overlay_enable.lower() != "true":
         return
     try:
         overlay_network = json.loads(dcos_overlay_network)
