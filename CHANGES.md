@@ -28,6 +28,8 @@ Please follow the [`CHANGES.md` modification guidelines](https://github.com/dcos
 
 * dcos-net now configures NetworkManager ignores for its interfaces (COPS-6519)
 
+* Metronome jobs support double `-` characters in job ids (MARATHON-8730).
+
 #### Update Marathon to Marathon 1.10.36
 
 * Allow migrations to re-run by default (MARATHON-8762)
