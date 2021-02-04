@@ -86,7 +86,7 @@ def _do_restore(all_masters: Set[Node], backup_local_path: Path) -> None:
 
 
 class EtcdClient():
-    """Communicates with etcd thsrough CLI on master nodes."""
+    """Communicates with etcd through CLI on master nodes."""
 
     def __init__(self, all_masters: Set[Node]) -> None:
         self.masters = all_masters
