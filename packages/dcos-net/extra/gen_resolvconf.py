@@ -73,6 +73,8 @@ else:
 
     # Resolvconf does not support custom ports, skip if not default
     for ns in os.environ['RESOLVERS'].split(','):
+        if len(ns.strip()) == 0:
+            continue
         ip, separator, port = ns.rpartition(':')
         if not separator:
             fallback_servers.append(ns)
