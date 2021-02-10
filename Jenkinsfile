@@ -30,7 +30,7 @@ pipeline {
       parallel {
         stage('Tox') {
 	  agent {
-	    label 'python35-dind'
+	    label 'py36'
 	  }
       environment {
         AWS_REGION = 'us-west-2'
