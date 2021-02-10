@@ -129,6 +129,8 @@ class TestSuperuserServiceAccountCredentials:
             message=(
                 'superuser_service_account_public_key has an invalid value. It '
                 'must hold an RSA public key encoded in the OpenSSL PEM '
-                'format. Error: Could not deserialize key data.'
+                'format. Error: Could not deserialize key data. The data may '
+                'be in an incorrect format or it may be encrypted with an '
+                'unsupported algorithm.'
             )
         )
