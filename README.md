@@ -12,6 +12,15 @@ Unlike traditional operating systems, DC/OS spans multiple machines within a net
 To learn more, see the [DC/OS Overview](https://docs.d2iq.com/mesosphere/dcos/latest/overview/).
 
 
+# Project status
+
+D2iQ (formerly Mesosphere), that created and sponsored this project from the very beginning, has [announced on October 30th, 2020](https://d2iq.com/blog/d2iq-takes-the-next-step-forward):
+
+> Starting today, we will begin the process to wind down the Mesosphere DC/OS Platform. We will continue to provide support for our current DC/OS customers, of course, but will no longer be investing in new features or capabilities. We are working closely with existing customers to migrate […]”
+
+**Future of this project is for now uncertain**, and it might be a good idea to consider the above announcement when evaluating if DC/OS is the right solution for future deployments.
+
+
 # How Do I...?
 
 - Learn More - <https://dcos.io/>
