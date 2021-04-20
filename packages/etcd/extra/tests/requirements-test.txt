@@ -31,7 +31,7 @@ pickleshare==0.7.5
 pluggy==0.13.0
 prompt-toolkit==2.0.9
 ptyprocess==0.6.0
-py==1.8.0
+py==1.10.0
 pycodestyle==2.5.0
 pyflakes==2.1.1
 pylint==2.3.1
