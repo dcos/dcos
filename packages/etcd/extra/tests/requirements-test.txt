@@ -14,7 +14,7 @@ flake8==3.7.8
 importlib-metadata==0.22
 ipdb==0.12.2
 ipython-genutils==0.2.0
-ipython==7.8.0
+ipython==7.16.3
 isort==4.3.21
 jedi==0.15.1
 kazoo==2.6.1
