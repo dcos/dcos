@@ -53,7 +53,7 @@ setup(
         # DCOS-21656 - `botocore`` requires less than 2.7.0 while
         # `analytics-python` package installs 2.7.0 version
         'python-dateutil>=2.1,<2.7.0',
-        'aiohttp==0.22.5',
+        'aiohttp==3.7.4',
         'analytics-python',
         'coloredlogs',
         'Flask',
