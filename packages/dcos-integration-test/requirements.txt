@@ -1,6 +1,6 @@
 click==7.0
 cryptography==3.2.1
-pyjwt==1.7.1
+pyjwt==2.4.0
 pytest==4.4.0
 PyYAML==4.2b4
 webtest==2.0.32
