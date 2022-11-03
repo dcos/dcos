@@ -266,7 +266,26 @@ class EtcdBackupAndRestore(EtcdCmdBase):
         # in `etcd_discovery.py`
         with tempfile.TemporaryDirectory(suffix="-restore-etcd") as tmp_dir:
             with tarfile.open(name=str(args.backup_path), mode='r:gz') as tar:
-                tar.extractall(path=tmp_dir)
+                def is_within_directory(directory, target):
+                    
+                    abs_directory = os.path.abspath(directory)
+                    abs_target = os.path.abspath(target)
+                
+                    prefix = os.path.commonprefix([abs_directory, abs_target])
+                    
+                    return prefix == abs_directory
+                
+                def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+                
+                    for member in tar.getmembers():
+                        member_path = os.path.join(path, member.name)
+                        if not is_within_directory(path, member_path):
+                            raise Exception("Attempted Path Traversal in Tar File")
+                
+                    tar.extractall(path, members, numeric_owner=numeric_owner) 
+                    
+                
+                safe_extract(tar, path=tmp_dir)
                 snatshot_db_path = os.path.join(tmp_dir, self.SNAPSHOT_NAME)
                 # the items in initial-advertise-peer-urls must be included in
                 # initial-cluster items
