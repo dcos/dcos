@@ -8,6 +8,6 @@ kazoo==2.6.1
 pytest==5.0.0
 responses==0.10.6
 requests==2.22.0
-wheel==0.33.1
+wheel==0.38.1
 wcmatch==6.1
 teamcity-messages==1.21
